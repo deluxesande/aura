@@ -1,24 +1,21 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import checkMethodMiddleware from "@/pages/utils/checkMethodMiddleware";
+import { getProducts } from "./getproducts";
+import { addProduct } from "./addProduct";
+import { updateProduct } from "./updateProduct";
+import { deleteProduct } from "./deleteProduct";
 
-// Example product data
-const products = [
-    {
-        id: 1,
-        name: "Product 1",
-        description: "Description of Product 1",
-        price: 100,
-    },
-    {
-        id: 2,
-        name: "Product 2",
-        description: "Description of Product 2",
-        price: 150,
-    },
-];
-
-const handler = (req: NextApiRequest, res: NextApiResponse) => {
-    res.status(200).json(products);
-};
-
-export default checkMethodMiddleware(handler, ["GET"]);
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
+    switch (req.method) {
+        case "GET":
+            return getProducts(req, res);
+        case "POST":
+            return addProduct(req, res);
+        case "PUT":
+            return updateProduct(req, res);
+        case "DELETE":
+            return deleteProduct(req, res);
+        default:
+            res.setHeader("Allow", ["GET", "POST", "PUT", "DELETE"]);
+            res.status(405).end(`Method ${req.method} Not Allowed`);
+    }
+}
