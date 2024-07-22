@@ -1,8 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { getProducts } from "./getproducts";
-import { addProduct } from "./addProduct";
-import { updateProduct } from "./updateProduct";
-import { deleteProduct } from "./deleteProduct";
+import { getProducts } from "./get";
+import { addProduct } from "./post";
+import { updateProduct } from "./update";
+import { deleteProduct } from "./delete";
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
     switch (req.method) {
