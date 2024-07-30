@@ -15,4 +15,19 @@ model Product {
   name        String
   description String
   price       Float
+  sku         String   @unique
+  quantity    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  categoryId  Int
+  Category    Category @relation(fields: [categoryId], references: [id])
 }
+
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  products    Product[]
+}
+
+
