@@ -47,8 +47,8 @@ model InvoiceItem {
   price      Float
   productId  Int
   Product    Product  @relation(fields: [productId], references: [id])
-  invoiceId  Int
-  Invoice    Invoice  @relation(fields: [invoiceId], references: [id])
+  invoiceId  Int?
+  Invoice    Invoice?  @relation(fields: [invoiceId], references: [id])
 }
 
 model Customer {

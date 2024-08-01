@@ -35,8 +35,8 @@ export interface InvoiceItem {
     price: number;
     productId: number;
     Product: Product;
-    invoiceId: number;
-    Invoice: Invoice;
+    invoiceId?: number;
+    Invoice?: Invoice;
 }
 
 export interface Customer {
