@@ -21,6 +21,7 @@ model Product {
   updatedAt   DateTime @updatedAt
   categoryId  Int
   Category    Category @relation(fields: [categoryId], references: [id])
+  invoiceItems InvoiceItem[]
 }
 
 model Category {
@@ -30,4 +31,30 @@ model Category {
   products    Product[]
 }
 
+model Invoice {
+  id          Int           @id @default(autoincrement())
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  customerId  Int
+  Customer    Customer      @relation(fields: [customerId], references: [id])
+  invoiceItems InvoiceItem[]
+  totalAmount Float
+}
 
+model InvoiceItem {
+  id         Int      @id @default(autoincrement())
+  quantity   Int
+  price      Float
+  productId  Int
+  Product    Product  @relation(fields: [productId], references: [id])
+  invoiceId  Int
+  Invoice    Invoice  @relation(fields: [invoiceId], references: [id])
+}
+
+model Customer {
+  id          Int       @id @default(autoincrement())
+  name        String?
+  email       String?   @unique
+  phoneNumber String
+  invoices    Invoice[]
+}
