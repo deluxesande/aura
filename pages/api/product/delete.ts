@@ -17,6 +17,6 @@ export const deleteProduct = async (
         });
         res.status(204).end();
     } catch (error) {
-        res.status(500).json({ error: "Failed to delete product" });
+        res.status(404).json({ error: "Failed to delete product" });
     }
 };

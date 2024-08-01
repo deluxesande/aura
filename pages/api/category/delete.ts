@@ -17,6 +17,6 @@ export const deleteCategory = async (
         });
         res.status(204).end();
     } catch (error) {
-        res.status(500).json({ error: "Failed to delete category" });
-    }
+        res.status(404).json({ error: "Failed to delete category" });
+    } 
 };
