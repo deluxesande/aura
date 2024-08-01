@@ -54,7 +54,7 @@ model InvoiceItem {
 model Customer {
   id          Int       @id @default(autoincrement())
   name        String?
-  email       String?   @unique
-  phoneNumber String
+  email       String?   
+  phoneNumber String    @unique
   invoices    Invoice[]
 }
