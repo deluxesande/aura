@@ -13,10 +13,8 @@ export const addInvoice = async (req: NextApiRequest, res: NextApiResponse) => {
                 customerId,
                 totalAmount,
                 invoiceItems: {
-                    create: invoiceItems.map((item: InvoiceItem) => ({
-                        quantity: item.quantity,
-                        price: item.price,
-                        productId: item.productId,
+                    connect: invoiceItems.map((item: InvoiceItem) => ({
+                        id: item.id,
                     })),
                 },
             },
