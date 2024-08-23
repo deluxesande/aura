@@ -3,10 +3,10 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export const getInvoiceItem = async (
+export const getCustomers = async (
     req: NextApiRequest,
     res: NextApiResponse
 ) => {
-    const invoiceItem = await prisma.invoiceItem.findMany();
-    res.status(200).json(invoiceItem);
+    const categories = await prisma.customer.findMany();
+    res.status(200).json(categories);
 };

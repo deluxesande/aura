@@ -21,6 +21,7 @@ export const addInvoice = async (req: NextApiRequest, res: NextApiResponse) => {
         });
         res.status(201).json(invoice);
     } catch (error) {
+        console.log(error);
         res.status(400).json({ error: "Failed to add or update invoice" });
     }
 };

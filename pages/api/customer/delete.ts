@@ -1,22 +1,22 @@
 import { PrismaClient } from "@prisma/client";
-import type { NextApiRequest, NextApiResponse } from "next";
+import { NextApiRequest, NextApiResponse } from "next";
 
 const prisma = new PrismaClient();
 
-export const deleteInvoiceItem = async (
+export const deleteCustomer = async (
     req: NextApiRequest,
     res: NextApiResponse
 ) => {
-    const id = Number(req.query.id);
+    const { id } = req.body;
 
     try {
-        await prisma.invoiceItem.delete({
+        await prisma.customer.delete({
             where: {
                 id: id,
             },
         });
         res.status(204).end();
     } catch (error) {
-        res.status(404).json({ error: "Failed to delete invoice item" });
+        res.status(404).json({ error: "Failed to delete customer" });
     }
 };
