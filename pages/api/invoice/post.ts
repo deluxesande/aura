@@ -8,6 +8,16 @@ export const addInvoice = async (req: NextApiRequest, res: NextApiResponse) => {
     const { customerId, invoiceItems, totalAmount } = req.body;
 
     try {
+        // Check if customer exists
+        const customerExists = await prisma.customer.findUnique({
+            where: { id: customerId },
+        });
+
+        if (!customerExists) {
+            return res.status(400).json({ error: "Customer not found" });
+        }
+
+        // Create invoice
         const invoice = await prisma.invoice.create({
             data: {
                 customerId,
@@ -19,6 +29,7 @@ export const addInvoice = async (req: NextApiRequest, res: NextApiResponse) => {
                 },
             },
         });
+
         res.status(201).json(invoice);
     } catch (error) {
         console.log(error);
