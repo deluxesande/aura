@@ -8,9 +8,15 @@ export const addProduct = async (req: NextApiRequest, res: NextApiResponse) => {
     const { name, description, price, quantity, categoryId } = req.body;
 
     try {
-        // Check if a product with the same name already exists
+        // Generate SKU for the new product
+        const sku = generateSKU(name);
+
+        // Check if a product with the same name exists in the specified category
         const existingProduct = await prisma.product.findFirst({
-            where: { name },
+            where: {
+                name,
+                categoryId,
+            },
         });
 
         if (existingProduct) {
@@ -30,7 +36,7 @@ export const addProduct = async (req: NextApiRequest, res: NextApiResponse) => {
                     name,
                     description,
                     price,
-                    sku: generateSKU(name), // Generate a unique SKU
+                    sku, // Use the generated SKU
                     quantity,
                     categoryId,
                 },

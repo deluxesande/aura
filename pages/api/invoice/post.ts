@@ -17,6 +17,26 @@ export const addInvoice = async (req: NextApiRequest, res: NextApiResponse) => {
             return res.status(400).json({ error: "Customer not found" });
         }
 
+        // Check if any invoiceItem is already linked to another invoice
+        const existingInvoiceItems = await prisma.invoiceItem.findMany({
+            where: {
+                id: {
+                    in: invoiceItems.map((item: InvoiceItem) => item.id),
+                },
+                invoiceId: {
+                    not: null,
+                },
+            },
+        });
+
+        if (existingInvoiceItems.length > 0) {
+            return res
+                .status(400)
+                .json({
+                    error: "One or more invoice items are already linked to another invoice",
+                });
+        }
+
         // Create invoice
         const invoice = await prisma.invoice.create({
             data: {
@@ -32,7 +52,6 @@ export const addInvoice = async (req: NextApiRequest, res: NextApiResponse) => {
 
         res.status(201).json(invoice);
     } catch (error) {
-        console.log(error);
         res.status(400).json({ error: "Failed to add or update invoice" });
     }
 };
