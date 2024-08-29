@@ -1,9 +1,10 @@
-import Image from "next/image";
-
 export default function Home() {
-  return (
-    <div>
-      <h2>Home page</h2>
-    </div>
-  );
+    return (
+        <div>
+            <h2>Home page</h2>
+            <a className="text-2xl font-bold underline" href="/dashboard">
+                Dashboard
+            </a>
+        </div>
+    );
 }

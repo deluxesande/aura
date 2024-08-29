@@ -29,7 +29,6 @@ export const addInvoiceItem = async (
         });
         res.status(201).json(invoiceItem);
     } catch (error) {
-        console.log(error);
         res.status(400).json({ error: "Failed to add or update invoice item" });
     }
 };
