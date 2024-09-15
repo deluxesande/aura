@@ -6,7 +6,7 @@ export default function Navbar() {
     return (
         <div className="flex">
             <Sidebar />
-            <div className="p-6">
+            <div className="w-full p-6">
                 <div className="flex items-center  justify-between gap-4">
                     <div className="flex items-center w-full">
                         <div className="flex items-center mx-4 bg-white rounded-lg shadow-sm flex-grow">
