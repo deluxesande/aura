@@ -1,5 +1,10 @@
 import React from "react";
+import Navbar from "@components/Navbar";
 
 export default function index() {
-    return <div className="w-20 h-20 bg-red-200">index</div>;
+    return (
+        <div className="w-full h-full bg-red-500">
+            <Navbar />
+        </div>
+    );
 }
