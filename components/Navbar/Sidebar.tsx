@@ -9,7 +9,7 @@ import React from "react";
 const Sidebar = () => {
     return (
         <div className="w-20 h-screen bg-white shadow-sm p-6 flex flex-col items-center justify-between">
-            <div>
+            <div className="flex flex-col items-center">
                 <h2 className="text-2xl font-bold mt-3 mb-12">L</h2>
                 <ul className="flex flex-col items-center">
                     <li className="mb-4">
@@ -34,7 +34,7 @@ const Sidebar = () => {
                     </li>
                 </ul>
             </div>
-            <div className="w-10 h-10 rounded-full bg-red-500 mt-auto mb-4"></div>
+            <div className="w-10 h-10 rounded-full bg-red-500 mt-auto mb-4 flex items-center justify-center"></div>
         </div>
     );
 };
