@@ -12,7 +12,8 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                 className="flex-grow ml-20 flex flex-col"
                 style={{ width: "calc(100% - 5rem)" }}
             >
-                <div className="p-6">
+                {/* Top navbar */}
+                <div className="p-6 sticky top-0 right-0 z-10">
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center w-full">
                             <div className="flex items-center mx-4 bg-white rounded-lg shadow-sm flex-grow">
@@ -46,6 +47,8 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                         </div>
                     </div>
                 </div>
+
+                {/* Body content goes here */}
                 <div className="flex-grow px-10 py-1 overflow-y-auto">
                     {children}
                 </div>

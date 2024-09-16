@@ -9,7 +9,7 @@ export default function ProductCard({
     inStock,
 }: ProductCardProps) {
     return (
-        <div className="bg-white shadow-md rounded-lg overflow-hidden w-52">
+        <div className="bg-white shadow-md rounded-lg overflow-hidden w-52 cursor-pointer">
             <div className="relative w-full h-48">
                 <Image src={image} alt={name} layout="fill" objectFit="cover" />
             </div>
