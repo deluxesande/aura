@@ -4,9 +4,14 @@ import Sidebar from "./Sidebar";
 
 export default function Navbar({ children }: { children: React.ReactNode }) {
     return (
-        <div className="flex">
-            <Sidebar />
-            <div className="w-full">
+        <div className="flex h-screen overflow-hidden">
+            <div className="fixed h-full">
+                <Sidebar />
+            </div>
+            <div
+                className="flex-grow ml-20 flex flex-col"
+                style={{ width: "calc(100% - 5rem)" }}
+            >
                 <div className="p-6">
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center w-full">
@@ -41,7 +46,9 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                         </div>
                     </div>
                 </div>
-                <div className="px-10 py-1">{children}</div>
+                <div className="flex-grow px-10 py-1 overflow-y-auto">
+                    {children}
+                </div>
             </div>
         </div>
     );

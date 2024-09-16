@@ -4,3 +4,11 @@ interface CategoryBox {
     icon: React.ElementType;
     active?: boolean;
 }
+
+interface ProductCardProps {
+    image: string;
+    name: string;
+    quantity: number;
+    price: string;
+    inStock: boolean;
+}
