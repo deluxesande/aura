@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { NextApiRequest, NextApiResponse } from "next";
-import { generateSKU } from "@/pages/utils/generateSKU";
+import { generateSKU } from "@/utils/generateSKU";
 
 const prisma = new PrismaClient();
 

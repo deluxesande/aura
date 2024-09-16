@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { PrismaClient } from "@prisma/client";
-import { InvoiceItem } from "@/pages/utils/typesDefinitions";
+import { InvoiceItem } from "@/utils/typesDefinitions";
 
 const prisma = new PrismaClient();
 
@@ -30,11 +30,9 @@ export const addInvoice = async (req: NextApiRequest, res: NextApiResponse) => {
         });
 
         if (existingInvoiceItems.length > 0) {
-            return res
-                .status(400)
-                .json({
-                    error: "One or more invoice items are already linked to another invoice",
-                });
+            return res.status(400).json({
+                error: "One or more invoice items are already linked to another invoice",
+            });
         }
 
         // Create invoice

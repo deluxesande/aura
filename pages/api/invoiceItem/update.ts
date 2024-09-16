@@ -1,4 +1,4 @@
-import { InvoiceItem } from "@/pages/utils/typesDefinitions";
+import { InvoiceItem } from "@/utils/typesDefinitions";
 import { PrismaClient } from "@prisma/client";
 import { NextApiRequest, NextApiResponse } from "next";
 
