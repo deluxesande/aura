@@ -1,5 +1,7 @@
 import React from "react";
 
-export default function page() {
-    return <div>page</div>;
-}
+const InvoicePage: React.FC = () => {
+    return <div>Invoice Page</div>;
+};
+
+export default InvoicePage;
