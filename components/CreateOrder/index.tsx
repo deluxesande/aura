@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X } from "lucide-react"; // Import an icon for the close button
+import { X } from "lucide-react";
 
 interface CreateOrderProps {
     children: React.ReactNode;

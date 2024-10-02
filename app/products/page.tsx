@@ -13,6 +13,9 @@ import {
     Ellipsis,
 } from "lucide-react";
 import React from "react";
+import { X } from "lucide-react";
+import Image from "next/image";
+import OrderCard from "@/components/OrderCard";
 
 const categories = [
     { category: "All", itemCount: 200, icon: Store, active: true },
@@ -92,6 +95,8 @@ const products = [
 ];
 
 export default function Page() {
+    const image = "https://via.placeholder.com/150";
+
     return (
         <div className="flex h-screen overflow-hidden">
             {/* Main Content */}
@@ -144,8 +149,7 @@ export default function Page() {
 
                         {/* Order Items */}
                         <div className="mt-10 flex flex-col gap-4">
-                            <div className="w-full h-10 bg-red-50 shadow-sm rounded-md"></div>
-                            <div className="w-full h-10 bg-red-50 shadow-sm rounded-md"></div>
+                            <OrderCard />
                         </div>
                     </div>
 

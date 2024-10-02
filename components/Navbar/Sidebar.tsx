@@ -5,31 +5,38 @@ import {
     Settings,
 } from "lucide-react";
 import React from "react";
+import Image from "next/image";
+
+import logo from "@/assets/Icon.png";
 
 const Sidebar = () => {
     return (
         <div className="w-20 h-screen bg-white shadow-sm p-6 flex flex-col items-center justify-between">
             <div className="flex flex-col items-center">
-                <h2 className="text-2xl font-bold mt-3 mb-12">L</h2>
+                <Image
+                    src={logo}
+                    alt="Logo"
+                    className="mt-3 mb-12 rounded-full cursor-pointer"
+                />
                 <ul className="flex flex-col items-center">
                     <li className="mb-4">
                         <div className="cursor-pointer w-8 h-8 rounded-lg bg-[#fafafa] flex items-center justify-center">
-                            <LayoutDashboard />
+                            <LayoutDashboard size={22} />
                         </div>
                     </li>
                     <li className="mb-4">
                         <div className="cursor-pointer w-8 h-8 rounded-lg bg-[#deefe7] flex items-center justify-center">
-                            <ShoppingBasket />
+                            <ShoppingBasket size={22} />
                         </div>
                     </li>
                     <li className="mb-4">
                         <div className="cursor-pointer w-8 h-8 rounded-lg bg-[#fafafa] flex items-center justify-center">
-                            <HistoryIcon />
+                            <HistoryIcon size={22} />
                         </div>
                     </li>
                     <li className="mb-4">
                         <div className="cursor-pointer w-8 h-8 rounded-lg bg-[#fafafa] flex items-center justify-center">
-                            <Settings />
+                            <Settings size={22} />
                         </div>
                     </li>
                 </ul>
