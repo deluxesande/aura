@@ -40,8 +40,8 @@ model Invoice {
   id          Int           @id @default(autoincrement())
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
-  customerId  Int
-  Customer    Customer      @relation(fields: [customerId], references: [id])
+  customerId  Int?
+  Customer    Customer?      @relation(fields: [customerId], references: [id])
   invoiceItems InvoiceItem[]
   totalAmount Float
 }

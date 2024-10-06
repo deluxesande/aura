@@ -19,6 +19,7 @@ import { AppState } from "@/store";
 import { addItem } from "@/store/slices/cartSlice";
 import { Product } from "@/utils/typesDefinitions";
 import { show } from "@/store/slices/visibilitySlice";
+import axios from "axios";
 
 const categories = [
     { category: "All", itemCount: 200, icon: Store, active: true },
@@ -39,16 +40,75 @@ export default function Page() {
         dispatch(show());
     };
 
-    const handleOrder = () => {
-        // console.log(cartItems);
+    const handleOrder = async () => {
+        /**
+         * Create invoice items for each cart item
+         *
+         * This will create an invoice item for each cart item
+         * and store the invoice item ID in an array.
+         *
+         * If all invoice items are created successfully, an invoice
+         * will be created with the total amount based on the cart items.
+         *
+         * This approach reduces the number of API calls to create an invoice.
+         */
+
+        // Check if cartItems are empty
+        if (cartItems.length === 0) {
+            console.warn("Cart is empty. No order to process.");
+            return;
+        }
+
+        const invoiceItemPromises = cartItems.map(async (item) => {
+            const data = {
+                quantity: item.cartQuantity,
+                price: item.price * item.cartQuantity,
+                productId: item.id,
+            };
+
+            try {
+                const response = await axios.post("/api/invoiceItem/", data);
+                return response.data;
+            } catch (error) {
+                console.error("Error creating invoice item:", error);
+                return null;
+            }
+        });
+
+        const results = await Promise.all(invoiceItemPromises);
+
+        const invoiceItems = results
+            .filter((result) => result !== null) // Filter out any null results
+            .map((result) => ({
+                id: result.id, // Use the invoice item ID returned from the API response
+            }));
+
+        if (invoiceItems.length === cartItems.length) {
+            try {
+                // Calculate total amount based on cart items and quantities
+                // to reduce amount of API calls
+                const totalAmount = cartItems.reduce(
+                    (total, item) => total + item.price * item.cartQuantity,
+                    0
+                );
+                const invoiceData = {
+                    invoiceItems: invoiceItems,
+                    totalAmount: totalAmount,
+                };
+
+                const response = await axios.post("/api/invoice/", invoiceData);
+                // console.log("Invoice created:", response.data);
+            } catch (error) {
+                console.error("Error creating invoice:", error);
+            }
+        }
     };
 
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const response = await fetch("/api/product");
-                const data = await response.json();
-                setProducts(data);
+                const response = await axios.get("/api/product");
+                setProducts(response.data);
             } catch (error) {
                 console.error("Error fetching products:", error);
             }

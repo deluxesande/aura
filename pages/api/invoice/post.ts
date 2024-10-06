@@ -8,13 +8,14 @@ export const addInvoice = async (req: NextApiRequest, res: NextApiResponse) => {
     const { customerId, invoiceItems, totalAmount } = req.body;
 
     try {
-        // Check if customer exists
-        const customerExists = await prisma.customer.findUnique({
-            where: { id: customerId },
-        });
+        if (customerId) {
+            const customerExists = await prisma.customer.findUnique({
+                where: { id: customerId },
+            });
 
-        if (!customerExists) {
-            return res.status(400).json({ error: "Customer not found" });
+            if (!customerExists) {
+                return res.status(400).json({ error: "Customer not found" });
+            }
         }
 
         // Check if any invoiceItem is already linked to another invoice
@@ -35,17 +36,22 @@ export const addInvoice = async (req: NextApiRequest, res: NextApiResponse) => {
             });
         }
 
-        // Create invoice
-        const invoice = await prisma.invoice.create({
-            data: {
-                customerId,
-                totalAmount,
-                invoiceItems: {
-                    connect: invoiceItems.map((item: InvoiceItem) => ({
-                        id: item.id,
-                    })),
-                },
+        // Create invoice omit customerId if not provided
+        const invoiceData: any = {
+            totalAmount,
+            invoiceItems: {
+                connect: invoiceItems.map((item: InvoiceItem) => ({
+                    id: item.id,
+                })),
             },
+        };
+
+        if (customerId) {
+            invoiceData.customerId = customerId;
+        }
+
+        const invoice = await prisma.invoice.create({
+            data: invoiceData,
         });
 
         res.status(201).json(invoice);

@@ -31,7 +31,7 @@ export default function OrderCard({ product }: { product: Product }) {
     };
 
     return (
-        <div className="w-full h-20 p-2 bg-white shadow-sm rounded-md flex items-center justify-between">
+        <div className="w-full h-20 p-2 bg-slate-50 shadow-sm rounded-md flex items-center justify-between">
             <div className="flex items-center">
                 <div className="relative h-10 w-10 rounded-md">
                     <Image
@@ -43,7 +43,9 @@ export default function OrderCard({ product }: { product: Product }) {
                     />
                 </div>
                 <div className="ml-4">
-                    <p className="font-bold text-sm">{product.name}</p>
+                    <p className="font-bold text-sm max-w-24 whitespace-nowrap truncate">
+                        {product.name}
+                    </p>
                     <p className="mt-2 text-xs">$ {product.price}</p>
                 </div>
             </div>

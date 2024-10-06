@@ -25,8 +25,8 @@ export interface Invoice {
     id: number;
     createdAt: Date;
     updatedAt: Date;
-    customerId: number;
-    Customer: Customer;
+    customerId?: number;
+    Customer?: Customer;
     invoiceItems: InvoiceItem[];
     totalAmount: number;
 }
