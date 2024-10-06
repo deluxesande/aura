@@ -81,6 +81,10 @@ export default function Page() {
         dispatch(show());
     };
 
+    const handleOrder = () => {
+        // console.log(cartItems);
+    };
+
     return (
         <div className="flex h-screen overflow-hidden">
             {/* Main Content */}
@@ -160,7 +164,10 @@ export default function Page() {
                                     .toFixed(2)}
                             </p>
                         </div>
-                        <button className="px-4 py-2 mt-4 bg-[#159A9C] w-full text-white rounded-md">
+                        <button
+                            className="px-4 py-2 mt-4 bg-[#159A9C] w-full text-white rounded-md"
+                            onClick={handleOrder}
+                        >
                             Place Order
                         </button>
                     </div>
