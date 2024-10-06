@@ -8,7 +8,7 @@ export const updateProduct = async (
     res: NextApiResponse
 ) => {
     const id = Number(req.query.id);
-    const { name, description, price, quantity, categoryId } = req.body;
+    const { name, description, price, quantity, categoryId, image } = req.body;
 
     if (!id || typeof id !== "number") {
         return res.status(400).json({ error: "Invalid or missing product ID" });
@@ -25,6 +25,7 @@ export const updateProduct = async (
                 price,
                 quantity,
                 categoryId,
+                image,
             },
         });
 

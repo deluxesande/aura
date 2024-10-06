@@ -5,9 +5,13 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// datasource db {
+//   provider = "postgresql"
+//   url      = env("DATABASE_URL")
+// }
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model Product {
@@ -22,6 +26,7 @@ model Product {
   categoryId  Int
   Category    Category @relation(fields: [categoryId], references: [id])
   invoiceItems InvoiceItem[]
+  image       String?
 }
 
 model Category {

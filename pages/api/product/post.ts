@@ -5,7 +5,7 @@ import { generateSKU } from "@/utils/generateSKU";
 const prisma = new PrismaClient();
 
 export const addProduct = async (req: NextApiRequest, res: NextApiResponse) => {
-    const { name, description, price, quantity, categoryId } = req.body;
+    const { name, description, price, quantity, categoryId, image } = req.body;
 
     try {
         // Generate SKU for the new product
@@ -38,7 +38,10 @@ export const addProduct = async (req: NextApiRequest, res: NextApiResponse) => {
                     price,
                     sku, // Use the generated SKU
                     quantity,
-                    categoryId,
+                    image,
+                    Category: {
+                        connect: { id: categoryId },
+                    },
                 },
             });
 
