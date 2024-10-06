@@ -8,6 +8,7 @@ import React from "react";
 import Image from "next/image";
 
 import logo from "@/assets/Icon.png";
+import Link from "next/link";
 
 const Sidebar = () => {
     return (
@@ -20,24 +21,32 @@ const Sidebar = () => {
                 />
                 <ul className="flex flex-col items-center">
                     <li className="mb-4">
-                        <div className="cursor-pointer w-8 h-8 rounded-lg bg-[#fafafa] flex items-center justify-center">
-                            <LayoutDashboard size={22} />
-                        </div>
+                        <Link href="/dashboard">
+                            <div className="cursor-pointer w-8 h-8 rounded-lg bg-[#fafafa] flex items-center justify-center">
+                                <LayoutDashboard size={22} />
+                            </div>
+                        </Link>
                     </li>
                     <li className="mb-4">
-                        <div className="cursor-pointer w-8 h-8 rounded-lg bg-[#deefe7] flex items-center justify-center">
-                            <ShoppingBasket size={22} />
-                        </div>
+                        <Link href="/products">
+                            <div className="cursor-pointer w-8 h-8 rounded-lg bg-[#deefe7] flex items-center justify-center">
+                                <ShoppingBasket size={22} />
+                            </div>
+                        </Link>
                     </li>
                     <li className="mb-4">
-                        <div className="cursor-pointer w-8 h-8 rounded-lg bg-[#fafafa] flex items-center justify-center">
-                            <HistoryIcon size={22} />
-                        </div>
+                        <Link href="/invoices">
+                            <div className="cursor-pointer w-8 h-8 rounded-lg bg-[#fafafa] flex items-center justify-center">
+                                <HistoryIcon size={22} />
+                            </div>
+                        </Link>
                     </li>
                     <li className="mb-4">
-                        <div className="cursor-pointer w-8 h-8 rounded-lg bg-[#fafafa] flex items-center justify-center">
-                            <Settings size={22} />
-                        </div>
+                        <Link href="/">
+                            <div className="cursor-pointer w-8 h-8 rounded-lg bg-[#fafafa] flex items-center justify-center">
+                                <Settings size={22} />
+                            </div>
+                        </Link>
                     </li>
                 </ul>
             </div>

@@ -1,3 +1,5 @@
+"use client";
+
 import { show } from "@/store/slices/visibilitySlice";
 import {
     Bell,
