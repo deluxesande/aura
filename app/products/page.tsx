@@ -151,7 +151,8 @@ export default function Page() {
                                 {cartItems
                                     .reduce(
                                         (total, item) =>
-                                            total + item.price * item.quantity,
+                                            total +
+                                            item.price * item.cartQuantity,
                                         0
                                     )
                                     .toFixed(2)}
