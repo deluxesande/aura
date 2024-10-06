@@ -7,9 +7,13 @@ export default function ProductCard({
     quantity,
     price,
     inStock,
+    onAddToCart,
 }: ProductCardProps) {
     return (
-        <div className="bg-white shadow-md rounded-lg overflow-hidden w-52 cursor-pointer">
+        <div
+            className="bg-white shadow-md rounded-lg overflow-hidden w-52 cursor-pointer"
+            onClick={onAddToCart}
+        >
             <div className="relative w-full h-48">
                 <Image src={image} alt={name} layout="fill" objectFit="cover" />
             </div>

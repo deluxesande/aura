@@ -1,8 +1,9 @@
 import React from "react";
 import { X } from "lucide-react";
 import Image from "next/image";
+import { Product } from "@/utils/typesDefinitions";
 
-export default function OrderCard() {
+export default function OrderCard({ product }: { product: Product }) {
     const image = "https://via.placeholder.com/150";
 
     const [quantity, setQuantity] = React.useState(1);
@@ -20,7 +21,7 @@ export default function OrderCard() {
             <div className="flex items-center">
                 <div className="relative h-10 w-10 rounded-md">
                     <Image
-                        src={image}
+                        src={product.image || image}
                         alt="Image"
                         layout="fill"
                         objectFit="cover"
@@ -28,8 +29,8 @@ export default function OrderCard() {
                     />
                 </div>
                 <div className="ml-4">
-                    <p className="font-bold text-sm">Product</p>
-                    <p className="mt-2 text-xs">$ 200</p>
+                    <p className="font-bold text-sm">{product.name}</p>
+                    <p className="mt-2 text-xs">$ {product.price}</p>
                 </div>
             </div>
             <div className="relative flex items-center h-full">

@@ -10,6 +10,8 @@ export interface Product {
     categoryId: number;
     Category: Category;
     invoiceItems: InvoiceItem[];
+    image: string;
+    inStock: boolean;
 }
 
 export interface Category {

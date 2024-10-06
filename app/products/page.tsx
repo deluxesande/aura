@@ -13,9 +13,11 @@ import {
     Ellipsis,
 } from "lucide-react";
 import React from "react";
-import { X } from "lucide-react";
-import Image from "next/image";
 import OrderCard from "@/components/OrderCard";
+import { useDispatch, useSelector } from "react-redux";
+import { AppState } from "@/store";
+import { addItem } from "@/store/slices/cartSlice";
+import { Product } from "@/utils/typesDefinitions";
 
 const categories = [
     { category: "All", itemCount: 200, icon: Store, active: true },
@@ -28,74 +30,54 @@ const categories = [
 
 const products = [
     {
-        image: "https://via.placeholder.com/150",
-        name: "Product",
+        id: 1,
+        name: "Product 1",
+        description: "Description for Product 1",
+        price: 20.0,
+        sku: "SKU001",
         quantity: 10,
-        price: "$20.00",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        categoryId: 1,
+        Category: {
+            id: 1,
+            name: "books",
+            description: "Books category",
+            products: [],
+        },
+        invoiceItems: [],
+        image: "https://via.placeholder.com/150",
         inStock: true,
     },
     {
-        image: "https://via.placeholder.com/150",
-        name: "Product",
+        id: 2,
+        name: "Product 2",
+        description: "Description for Product 2",
+        price: 15.0,
+        sku: "SKU002",
         quantity: 5,
-        price: "$15.00",
-        inStock: false,
-    },
-    {
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        categoryId: 2,
+        Category: {
+            id: 1,
+            name: "books",
+            description: "Books category",
+            products: [],
+        },
+        invoiceItems: [],
         image: "https://via.placeholder.com/150",
-        name: "Product",
-        quantity: 10,
-        price: "$20.00",
         inStock: true,
     },
-    {
-        image: "https://via.placeholder.com/150",
-        name: "Product",
-        quantity: 5,
-        price: "$15.00",
-        inStock: false,
-    },
-    {
-        image: "https://via.placeholder.com/150",
-        name: "Product",
-        quantity: 10,
-        price: "$20.00",
-        inStock: true,
-    },
-    {
-        image: "https://via.placeholder.com/150",
-        name: "Product",
-        quantity: 5,
-        price: "$15.00",
-        inStock: false,
-    },
-
-    {
-        image: "https://via.placeholder.com/150",
-        name: "Product",
-        quantity: 10,
-        price: "$20.00",
-        inStock: true,
-    },
-    {
-        image: "https://via.placeholder.com/150",
-        name: "Product",
-        quantity: 5,
-        price: "$15.00",
-        inStock: false,
-    },
-    {
-        image: "https://via.placeholder.com/150",
-        name: "Product",
-        quantity: 5,
-        price: "$15.00",
-        inStock: false,
-    },
-    // Add more products as needed
 ];
 
 export default function Page() {
-    const image = "https://via.placeholder.com/150";
+    const dispatch = useDispatch();
+    const cartItems = useSelector((state: AppState) => state.cart.items);
+
+    const handleAddToCart = (product: Product) => {
+        dispatch(addItem(product));
+    };
 
     return (
         <div className="flex h-screen overflow-hidden">
@@ -128,6 +110,7 @@ export default function Page() {
                                 quantity={product.quantity}
                                 price={product.price}
                                 inStock={product.inStock}
+                                onAddToCart={() => handleAddToCart(product)}
                             />
                         ))}
                     </div>
@@ -149,7 +132,9 @@ export default function Page() {
 
                         {/* Order Items */}
                         <div className="mt-10 flex flex-col gap-4">
-                            <OrderCard />
+                            {cartItems.map((item) => (
+                                <OrderCard key={item.id} product={item} />
+                            ))}
                         </div>
                     </div>
 
@@ -161,7 +146,16 @@ export default function Page() {
                         {/* Values */}
                         <div className="flex items-center justify-between">
                             <p className="font-bold text-xl">Total: </p>
-                            <p className="font-bold text-xl">$100.00</p>
+                            <p className="font-bold text-xl">
+                                $
+                                {cartItems
+                                    .reduce(
+                                        (total, item) =>
+                                            total + item.price * item.quantity,
+                                        0
+                                    )
+                                    .toFixed(2)}
+                            </p>
                         </div>
                         <button className="px-4 py-2 mt-4 bg-[#159A9C] w-full text-white rounded-md">
                             Place Order
