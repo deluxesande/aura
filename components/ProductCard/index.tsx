@@ -11,7 +11,7 @@ export default function ProductCard({
 }: ProductCardProps) {
     return (
         <div
-            className="bg-white shadow-md rounded-lg overflow-hidden w-52 cursor-pointer"
+            className="bg-white shadow-md rounded-lg overflow-hidden w-56 cursor-pointer"
             onClick={onAddToCart}
         >
             <div className="relative w-full h-48">
@@ -19,8 +19,8 @@ export default function ProductCard({
             </div>
             <div className="p-4">
                 <div className="flex justify-between items-center">
-                    <p className="text-lg font-bold">{name}</p>
-                    <span className="text-sm text-gray-600">
+                    <p className="text-sm font-bold truncate">{name}</p>
+                    <span className="text-sm text-gray-600 whitespace-nowrap ml-2">
                         {quantity} pcs
                     </span>
                 </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useEffect, useState } from "react";
 import CategoryBox from "@/components/CategoryBox";
 import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
@@ -12,7 +13,6 @@ import {
     Popcorn,
     Ellipsis,
 } from "lucide-react";
-import React from "react";
 import OrderCard from "@/components/OrderCard";
 import { useDispatch, useSelector } from "react-redux";
 import { AppState } from "@/store";
@@ -29,52 +29,10 @@ const categories = [
     { category: "Other", itemCount: 2000, icon: Ellipsis },
 ];
 
-const products = [
-    {
-        id: 1,
-        name: "Product 1",
-        description: "Description for Product 1",
-        price: 20.0,
-        sku: "SKU001",
-        quantity: 10,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        categoryId: 1,
-        Category: {
-            id: 1,
-            name: "books",
-            description: "Books category",
-            products: [],
-        },
-        invoiceItems: [],
-        image: "https://via.placeholder.com/150",
-        inStock: true,
-    },
-    {
-        id: 2,
-        name: "Product 2",
-        description: "Description for Product 2",
-        price: 15.0,
-        sku: "SKU002",
-        quantity: 5,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        categoryId: 2,
-        Category: {
-            id: 1,
-            name: "books",
-            description: "Books category",
-            products: [],
-        },
-        invoiceItems: [],
-        image: "https://via.placeholder.com/150",
-        inStock: true,
-    },
-];
-
 export default function Page() {
     const dispatch = useDispatch();
     const cartItems = useSelector((state: AppState) => state.cart.items);
+    const [products, setProducts] = useState<Product[]>([]);
 
     const handleAddToCart = (product: Product) => {
         dispatch(addItem(product));
@@ -84,6 +42,20 @@ export default function Page() {
     const handleOrder = () => {
         // console.log(cartItems);
     };
+
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                const response = await fetch("/api/product");
+                const data = await response.json();
+                setProducts(data);
+            } catch (error) {
+                console.error("Error fetching products:", error);
+            }
+        };
+
+        fetchProducts();
+    }, []);
 
     return (
         <div className="flex h-screen overflow-hidden">
