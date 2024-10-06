@@ -1,15 +1,23 @@
-import React, { useState } from "react";
+"use client";
+
+import React from "react";
 import { X } from "lucide-react";
+import { useSelector, useDispatch } from "react-redux";
+import { AppState } from "@/store";
+import { hide } from "@/store/slices/visibilitySlice";
 
 interface CreateOrderProps {
     children: React.ReactNode;
 }
 
 const CreateOrder: React.FC<CreateOrderProps> = ({ children }) => {
-    const [isVisible, setIsVisible] = useState(true);
+    const dispatch = useDispatch();
+    const isVisible = useSelector(
+        (state: AppState) => state.visibility.isVisible
+    );
 
     const handleClose = () => {
-        setIsVisible(false);
+        dispatch(hide());
     };
 
     if (!isVisible) return null;

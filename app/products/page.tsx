@@ -18,6 +18,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppState } from "@/store";
 import { addItem } from "@/store/slices/cartSlice";
 import { Product } from "@/utils/typesDefinitions";
+import { show } from "@/store/slices/visibilitySlice";
 
 const categories = [
     { category: "All", itemCount: 200, icon: Store, active: true },
@@ -77,6 +78,7 @@ export default function Page() {
 
     const handleAddToCart = (product: Product) => {
         dispatch(addItem(product));
+        dispatch(show());
     };
 
     return (
@@ -118,7 +120,7 @@ export default function Page() {
             </div>
             {/* Right Sidebar */}
             <CreateOrder>
-                <div className="p-2 bg-white rounded-lg flex items-center gap-4 shadow-sm cursor-pointer">
+                <div className="p-2 mt-2 bg-white rounded-lg flex items-center gap-4 shadow-sm cursor-pointer">
                     <div className="w-8 h-8 rounded-full bg-red-500"></div>
                     <div className="w-28">
                         <p className="font-bold text-sm">John Doe</p>

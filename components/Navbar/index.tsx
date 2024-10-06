@@ -1,8 +1,21 @@
-import { Bell, SlidersHorizontal, Search as SearchIcon } from "lucide-react";
+import { show } from "@/store/slices/visibilitySlice";
+import {
+    Bell,
+    Search as SearchIcon,
+    ShoppingCart,
+    SlidersHorizontal,
+} from "lucide-react";
 import React from "react";
+import { useDispatch } from "react-redux";
 import Sidebar from "./Sidebar";
 
 export default function Navbar({ children }: { children: React.ReactNode }) {
+    const dispatch = useDispatch();
+
+    const toggleSidebar = () => {
+        dispatch(show());
+    };
+
     return (
         <div className="flex h-screen overflow-hidden">
             <div className="fixed h-full">
@@ -32,6 +45,10 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                         </div>
 
                         <div className="flex items-center">
+                            <div className="p-2 bg-white mx-2 rounded-lg cursor-pointer flex items-center justify-center">
+                                <Bell size={25} />
+                            </div>
+
                             <div className="p-2 bg-white rounded-lg flex items-center gap-4 cursor-pointer">
                                 <div className="w-8 h-8 rounded-full bg-red-500"></div>
                                 <div className="w-28">
@@ -41,8 +58,12 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                                     <p className="font-light text-xs">Admin</p>
                                 </div>
                             </div>
-                            <div className="p-2 bg-white mx-4 rounded-lg cursor-pointer flex items-center justify-center">
-                                <Bell size={25} />
+
+                            <div
+                                className="p-2 bg-white mx-2 rounded-lg cursor-pointer flex items-center justify-center"
+                                onClick={toggleSidebar}
+                            >
+                                <ShoppingCart size={25} />
                             </div>
                         </div>
                     </div>
