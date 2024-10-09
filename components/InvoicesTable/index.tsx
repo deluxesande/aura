@@ -33,19 +33,19 @@ export default function InvoicesTable() {
                         <tbody>
                             {Array.from({ length: 10 }).map((_, index) => (
                                 <tr key={index} className="hover:bg-gray-100">
-                                    <td className="py-2 px-4 border-b text-black border-gray-100">
+                                    <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
                                         INV-{index + 1}
                                     </td>
-                                    <td className="py-2 px-4 border-b text-black border-gray-100">
+                                    <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
                                         Product {index + 1}
                                     </td>
-                                    <td className="py-2 px-4 border-b text-black border-gray-100">
+                                    <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
                                         MPESA-{index + 1}
                                     </td>
-                                    <td className="py-2 px-4 border-b text-black border-gray-100">
+                                    <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
                                         {index + 1}
                                     </td>
-                                    <td className="py-2 px-4 border-b text-black border-gray-100">
+                                    <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
                                         $100.{index}0
                                     </td>
                                     <td className="py-2 px-4 border-b border-gray-100 flex items-center">
