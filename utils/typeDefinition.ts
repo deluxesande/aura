@@ -5,6 +5,12 @@ interface CategoryBox {
     active?: boolean;
 }
 
+interface InfoCard {
+    title: string;
+    number: number;
+    icon: React.ElementType;
+}
+
 interface ProductCardProps {
     image: string;
     name: string;

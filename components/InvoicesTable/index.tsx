@@ -40,7 +40,7 @@ export default function InvoicesTable({ title }: { title: string }) {
                                         Product {index + 1}
                                     </td>
                                     <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
-                                        MPESA-{index + 1}
+                                        OOOP-{index + 1}
                                     </td>
                                     <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
                                         {index + 1}
