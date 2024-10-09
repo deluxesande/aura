@@ -35,7 +35,7 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                                 <input
                                     type="text"
                                     placeholder="Search..."
-                                    className="py-3 px-4 rounded-l-lg focus:outline-none w-full"
+                                    className="py-3 px-4 rounded-l-lg bg-transparent focus:outline-none w-full"
                                 />
                                 <div className="py-2 px-4">
                                     <SearchIcon size={25} />
