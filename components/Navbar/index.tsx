@@ -37,21 +37,21 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                                     placeholder="Search..."
                                     className="py-3 px-4 rounded-l-lg bg-transparent focus:outline-none w-full"
                                 />
-                                <div className="py-2 px-4">
+                                <div className="py-2 px-4 text-black">
                                     <SearchIcon size={25} />
                                 </div>
                             </div>
-                            <div className="p-2 bg-white rounded-lg cursor-pointer flex items-center justify-center">
+                            <div className="p-2 bg-white text-black rounded-lg cursor-pointer flex items-center justify-center">
                                 <SlidersHorizontal size={25} />
                             </div>
                         </div>
 
                         <div className="flex items-center">
-                            <div className="p-2 bg-white mx-2 rounded-lg cursor-pointer flex items-center justify-center">
+                            <div className="p-2 bg-white text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center">
                                 <Bell size={25} />
                             </div>
 
-                            <div className="p-2 bg-white rounded-lg flex items-center gap-4 cursor-pointer">
+                            <div className="p-2 bg-white text-black rounded-lg flex items-center gap-4 cursor-pointer">
                                 <div className="w-8 h-8 rounded-full bg-red-500"></div>
                                 <div className="w-28">
                                     <p className="font-bold text-sm">
@@ -62,7 +62,7 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                             </div>
 
                             <div
-                                className="p-2 bg-white mx-2 rounded-lg cursor-pointer flex items-center justify-center"
+                                className="p-2 bg-white text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
                                 onClick={toggleSidebar}
                             >
                                 <ShoppingCart size={25} />
