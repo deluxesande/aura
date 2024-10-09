@@ -1,10 +1,10 @@
 import React from "react";
 import { Edit, Trash, ChevronLeft, ChevronRight } from "lucide-react";
 
-export default function InvoicesTable() {
+export default function InvoicesTable({ title }: { title: string }) {
     return (
         <div className="p-4 card bg-white shadow-lg rounded-lg">
-            <h1 className="text-2xl font-bold mb-6 text-black">All Invoices</h1>
+            <h1 className="text-2xl font-bold mb-6 text-gray-400">{title}</h1>
             <div className="overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="min-w-full bg-white">
@@ -52,7 +52,7 @@ export default function InvoicesTable() {
                                         <button className="btn btn-sm btn-ghost text-black">
                                             <Edit className="w-4 h-4" />
                                         </button>
-                                        <div className="border-l border-gray-300 h-4 mx-2"></div>
+                                        <div className="border-l border-gray-300 h-4 mx-1"></div>
                                         <button className="btn btn-sm btn-ghost text-black">
                                             <Trash className="w-4 h-4" />
                                         </button>

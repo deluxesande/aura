@@ -7,15 +7,23 @@ import {
     ShoppingCart,
     SlidersHorizontal,
 } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import React from "react";
 import { useDispatch } from "react-redux";
 import Sidebar from "./Sidebar";
 
 export default function Navbar({ children }: { children: React.ReactNode }) {
+    const pathname = usePathname();
+    const router = useRouter();
     const dispatch = useDispatch();
 
     const toggleSidebar = () => {
-        dispatch(show());
+        if (pathname !== "/products") {
+            router.push("/products");
+            dispatch(show());
+        } else {
+            dispatch(show());
+        }
     };
 
     return (

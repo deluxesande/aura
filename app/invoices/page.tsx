@@ -5,7 +5,7 @@ import React from "react";
 export default function page() {
     return (
         <Navbar>
-            <InvoicesTable />
+            <InvoicesTable title="All Invoices" />
         </Navbar>
     );
 }
