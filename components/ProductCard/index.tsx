@@ -19,13 +19,15 @@ export default function ProductCard({
             </div>
             <div className="p-4">
                 <div className="flex justify-between items-center">
-                    <p className="text-sm font-bold truncate">{name}</p>
+                    <p className="text-sm text-black font-bold truncate">
+                        {name}
+                    </p>
                     <span className="text-sm text-gray-600 whitespace-nowrap ml-2">
                         {quantity} pcs
                     </span>
                 </div>
                 <div className="flex justify-between items-center mt-4">
-                    <span className="font-semibold">{price}</span>
+                    <span className="font-semibold text-black">{price}</span>
                     <span
                         className={`text-sm ${
                             inStock ? "text-green-500" : "text-red-500"

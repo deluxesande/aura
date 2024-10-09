@@ -17,8 +17,10 @@ export default function CategoryBox({
                 />
             </div>
             <div>
-                <p className="font-bold text-lg">{category}</p>
-                <p className="font-semibold text-sm">{itemCount} Items</p>
+                <p className="font-bold text-lg text-black">{category}</p>
+                <p className="font-semibold text-sm text-black">
+                    {itemCount} Items
+                </p>
             </div>
         </div>
     );
