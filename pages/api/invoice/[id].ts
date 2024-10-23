@@ -13,6 +13,13 @@ async function getInvoiceById(req: NextApiRequest, res: NextApiResponse) {
             where: {
                 id: Number(id),
             },
+            include: {
+                invoiceItems: {
+                    select: {
+                        Product: true,
+                    },
+                },
+            },
         });
 
         if (invoice) {

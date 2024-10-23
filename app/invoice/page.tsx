@@ -3,13 +3,14 @@ import Navbar from "@/components/Navbar";
 import { useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import TopProducts from "@/components/TopProducts";
-import { Product } from "@/utils/typesDefinitions";
+import { Invoice, Product } from "@/utils/typesDefinitions";
 import axios from "axios";
 
 const InvoicePage: React.FC = () => {
     const searchParams = useSearchParams();
     const id = searchParams ? searchParams.get("id") : null;
     const [products, setProducts] = useState<Product[]>([]);
+    const [invoice, setInvoice] = useState<Invoice>();
 
     // Example status, you can replace this with actual status from your data
     const status = "pending"; // This can be "pending", "active", etc.
@@ -31,23 +32,31 @@ const InvoicePage: React.FC = () => {
     };
 
     useEffect(() => {
-        const fetchProducts = async () => {
+        const fetchInvoice = async () => {
             try {
-                const response = await axios.get("/api/product");
-                const limitedProducts = response.data.slice(0, 5);
-                setProducts(limitedProducts);
+                const response = await axios.get(`/api/invoice/${id}`);
+                const invoiceData = response.data;
+                // Convert createdAt and updatedAt to Date objects
+                invoiceData.createdAt = new Date(invoiceData.createdAt);
+                invoiceData.updatedAt = new Date(invoiceData.updatedAt);
+                setInvoice(invoiceData);
+
+                const productData = response.data.invoiceItems.map(
+                    (item: any) => item.Product
+                );
+                setProducts(productData);
             } catch (error) {
-                console.error("Error fetching products:", error);
+                console.error("Error fetching invoice:", error);
             }
         };
 
-        fetchProducts();
-    }, []);
+        fetchInvoice();
+    }, [id]);
 
     return (
         <Navbar>
-            <div className="flex flex-row gap-10 justify-between p-4 card bg-white shadow-lg rounded-lg">
-                <div className="w-1/2">
+            <div className="flex flex-row md:flex-wrap lg:flex-nowrap gap-10 justify-between p-4 card bg-white shadow-lg rounded-lg">
+                <div className="md:w-full w-1/2">
                     <div className="flex justify-between">
                         <p className="text-gray-600">OOOP-1</p>
                         <span
@@ -64,11 +73,15 @@ const InvoicePage: React.FC = () => {
                             <p className="text-black font-semibold">
                                 Invoice No:
                             </p>
-                            <p className="text-black font-semibold">INV-1</p>
+                            <p className="text-black font-semibold">
+                                {invoice?.id}
+                            </p>
                         </div>
                         <div className="flex justify-between">
                             <p className="text-black font-semibold">Created:</p>
-                            <p className="text-black font-semibold">20241012</p>
+                            <p className="text-black font-semibold">
+                                {invoice?.createdAt?.toLocaleDateString()}
+                            </p>
                         </div>
 
                         <div className="flex justify-between mt-10">
@@ -89,12 +102,12 @@ const InvoicePage: React.FC = () => {
                                 Amount
                             </p>
                             <p className="text-white text-xl font-light">
-                                Ksh. 2000
+                                ${invoice?.totalAmount}
                             </p>
                         </div>
                     </div>
                 </div>
-                <div className="w-1/2">
+                <div className="md:w-full w-1/2">
                     <div className="flex justify-between">
                         <p className="text-gray-600 font-light">Items</p>
                     </div>
