@@ -1,6 +1,7 @@
 import React from "react";
 import { Edit, Trash, ChevronLeft, ChevronRight } from "lucide-react";
 import { Invoice } from "@/utils/typesDefinitions";
+import { useRouter } from "next/navigation";
 
 // Extend the Invoice interface
 interface ExtendedInvoice extends Invoice {
@@ -15,6 +16,12 @@ export default function InvoicesTable({
     title: string;
     invoices: ExtendedInvoice[];
 }) {
+    const router = useRouter();
+
+    const handleRowClick = (invoiceId: number) => {
+        router.push(`/invoice?id=${invoiceId}`);
+    };
+
     return (
         <div className="p-4 card bg-white shadow-lg rounded-lg">
             <h1 className="text-2xl font-bold mb-6 text-gray-400">{title}</h1>
@@ -45,7 +52,11 @@ export default function InvoicesTable({
                         </thead>
                         <tbody>
                             {invoices?.map((invoice, index) => (
-                                <tr key={index} className="hover:bg-gray-100">
+                                <tr
+                                    key={index}
+                                    className="hover:bg-gray-100 cursor-pointer"
+                                    onClick={() => handleRowClick(invoice.id)}
+                                >
                                     <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
                                         INV-{index + 1}
                                     </td>
