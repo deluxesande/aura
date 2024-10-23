@@ -73,11 +73,11 @@ export default function InvoicesTable({
                                         ${invoice.totalAmount}
                                     </td>
                                     <td className="py-2 px-4 border-b border-gray-100 flex items-center">
-                                        <button className="btn btn-sm btn-ghost text-black">
+                                        <button className="btn btn-sm btn-ghost text-black cursor-not-allowed">
                                             <Edit className="w-4 h-4" />
                                         </button>
                                         <div className="border-l border-gray-300 h-4 mx-1"></div>
-                                        <button className="btn btn-sm btn-ghost text-black">
+                                        <button className="btn btn-sm btn-ghost text-black cursor-not-allowed">
                                             <Trash className="w-4 h-4" />
                                         </button>
                                     </td>

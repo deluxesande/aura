@@ -55,8 +55,8 @@ const InvoicePage: React.FC = () => {
 
     return (
         <Navbar>
-            <div className="flex flex-row md:flex-wrap lg:flex-nowrap gap-10 justify-between p-4 card bg-white shadow-lg rounded-lg">
-                <div className="md:w-full w-1/2">
+            <div className="flex flex-row flex-wrap gap-10 justify-between p-4 card bg-white shadow-lg rounded-lg">
+                <div className="w-full">
                     <div className="flex justify-between">
                         <p className="text-gray-600">OOOP-1</p>
                         <span
@@ -107,7 +107,7 @@ const InvoicePage: React.FC = () => {
                         </div>
                     </div>
                 </div>
-                <div className="md:w-full w-1/2">
+                <div className="w-full">
                     <div className="flex justify-between">
                         <p className="text-gray-600 font-light">Items</p>
                     </div>
