@@ -1,7 +1,20 @@
 import React from "react";
 import { Edit, Trash, ChevronLeft, ChevronRight } from "lucide-react";
+import { Invoice } from "@/utils/typesDefinitions";
 
-export default function InvoicesTable({ title }: { title: string }) {
+// Extend the Invoice interface
+interface ExtendedInvoice extends Invoice {
+    itemName?: string;
+    totalQuantity?: number;
+}
+
+export default function InvoicesTable({
+    title,
+    invoices,
+}: {
+    title: string;
+    invoices: ExtendedInvoice[];
+}) {
     return (
         <div className="p-4 card bg-white shadow-lg rounded-lg">
             <h1 className="text-2xl font-bold mb-6 text-gray-400">{title}</h1>
@@ -31,22 +44,22 @@ export default function InvoicesTable({ title }: { title: string }) {
                             </tr>
                         </thead>
                         <tbody>
-                            {Array.from({ length: 10 }).map((_, index) => (
+                            {invoices?.map((invoice, index) => (
                                 <tr key={index} className="hover:bg-gray-100">
                                     <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
                                         INV-{index + 1}
                                     </td>
                                     <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
-                                        Product {index + 1}
+                                        <p>{invoice.itemName}</p>
                                     </td>
                                     <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
                                         OOOP-{index + 1}
                                     </td>
                                     <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
-                                        {index + 1}
+                                        {invoice.totalQuantity}
                                     </td>
                                     <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
-                                        $100.{index}0
+                                        ${invoice.totalAmount}
                                     </td>
                                     <td className="py-2 px-4 border-b border-gray-100 flex items-center">
                                         <button className="btn btn-sm btn-ghost text-black">

@@ -37,7 +37,16 @@ const LineChart = () => {
                 backgroundColor: "rgba(75,192,192,0.2)",
                 borderColor: "rgba(75,192,192,1)",
                 tension: 0.4,
-                pointRadius: 0, // Remove the dots
+                pointRadius: 0, // Remove markers from the line chart
+            },
+            {
+                label: "Dataset 2",
+                data: [10, 20, 15, 25, 30, 20, 10, 30],
+                fill: true,
+                backgroundColor: "rgba(192,75,75,0.2)",
+                borderColor: "rgba(192,75,75,1)",
+                tension: 0.4,
+                pointRadius: 0, // Remove markers from the line chart
             },
         ],
     };
@@ -46,7 +55,7 @@ const LineChart = () => {
         responsive: true,
         plugins: {
             legend: {
-                display: false,
+                display: true, // Show legend to differentiate datasets
             },
             title: {
                 display: false,
@@ -55,10 +64,10 @@ const LineChart = () => {
         scales: {
             x: {
                 grid: {
-                    display: false,
+                    display: false, // Hide grid lines on the x-axis
                 },
                 border: {
-                    display: false, // Hide x-axis line
+                    display: false, // Show x-axis line
                 },
                 ticks: {
                     display: true, // Show x-axis ticks
@@ -67,7 +76,7 @@ const LineChart = () => {
             y: {
                 beginAtZero: true,
                 grid: {
-                    display: false,
+                    display: false, // Hide grid lines on the y-axis
                 },
                 ticks: {
                     stepSize: 10,

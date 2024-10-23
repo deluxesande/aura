@@ -23,7 +23,7 @@ export default function Page() {
 
     return (
         <Navbar>
-            <InvoicesTable title="All Invoices" />
+            <InvoicesTable title="All Invoices" invoices={invoices} />
         </Navbar>
     );
 }

@@ -18,6 +18,20 @@ const infoCards = [
 
 export default function Page() {
     const [products, setProducts] = useState<Product[]>([]);
+    const [invoices, setInvoices] = React.useState([]);
+
+    useEffect(() => {
+        const fetchInvoices = async () => {
+            try {
+                const response = await axios.get("/api/invoice");
+                setInvoices(response.data);
+            } catch (error) {
+                console.error("Error fetching invoices:", error);
+            }
+        };
+
+        fetchInvoices();
+    }, []);
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -67,7 +81,7 @@ export default function Page() {
                 </div>
             </div>
 
-            <InvoicesTable title="Recent Invoices" />
+            <InvoicesTable title="Recent Invoices" invoices={invoices} />
         </Navbar>
     );
 }
