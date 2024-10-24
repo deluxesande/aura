@@ -1,10 +1,28 @@
+"use client";
 import Navbar from "@/components/Navbar";
-import React from "react";
+import { Category } from "@/utils/typesDefinitions";
+import axios from "axios";
+import React, { useEffect, useState } from "react";
 
 export default function Page() {
+    const [categories, setCategories] = useState<Category[]>([]);
+
     const handleSubmit = () => {
         console.log("Submitted");
     };
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await axios.get("/api/category");
+                setCategories(response.data);
+            } catch (error) {
+                console.error("Error fetching categories:", error);
+            }
+        };
+
+        fetchCategories();
+    }, []);
 
     return (
         <Navbar>
@@ -77,9 +95,14 @@ export default function Page() {
                                         <option value={"Select"}>
                                             Select Category
                                         </option>
-                                        <option value={"Category 1"}>
-                                            Category 1
-                                        </option>
+                                        {categories.map((category, index) => (
+                                            <option
+                                                key={index}
+                                                value={category.id}
+                                            >
+                                                {category.name}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
                             </div>
