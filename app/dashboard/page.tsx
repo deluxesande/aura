@@ -62,7 +62,7 @@ export default function Page() {
             </div>
 
             <div className="flex gap-4 my-4">
-                <div className="px-6 py-4 h-[26rem] rounded-lg gap-4 bg-white flex-1 w-[40%]">
+                <div className="px-6 py-4 h-fit rounded-lg gap-4 bg-white flex-1 w-[40%]">
                     <h1 className="text-2xl font-bold mb-6 text-gray-400">
                         Monthly Sales
                     </h1>

@@ -119,7 +119,7 @@ export default function Page() {
 
         toast.promise(promise(), {
             loading: "Processing order...",
-            success: (data) => `Order has been successfully processed`,
+            success: "Order has been successfully processed",
             error: "Error processing order",
         });
     };

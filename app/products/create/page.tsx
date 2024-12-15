@@ -3,11 +3,31 @@ import Navbar from "@/components/Navbar";
 import { Category } from "@/utils/typesDefinitions";
 import axios from "axios";
 import React, { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function Page() {
     const [categories, setCategories] = useState<Category[]>([]);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+    const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     const handleSubmit = () => {
+        const promise = () => new Promise<void>((resolve) => resolve());
+
+        toast.promise(promise(), {
+            loading: "Loading...",
+            success: "Product added to inventory.",
+            error: "Error",
+        });
         console.log("Submitted");
     };
 
@@ -64,7 +84,7 @@ export default function Page() {
                                     <input
                                         id="productPrice"
                                         type="number"
-                                        className="px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
+                                        className="no-spinner px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
                                         required
                                     />
                                 </div>
@@ -77,7 +97,7 @@ export default function Page() {
                                     <input
                                         id="productQuantity"
                                         type="number"
-                                        className="px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
+                                        className="no-spinner px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
                                         required
                                     />
                                 </div>
@@ -106,36 +126,64 @@ export default function Page() {
                                     </select>
                                 </div>
                             </div>
+
                             <div className="w-1/2">
                                 {/* Product Image */}
                                 <div className="flex flex-col gap-2">
-                                    <label htmlFor="productImage">Image:</label>
-                                    <input
-                                        id="productImage"
-                                        type="text"
-                                        className="px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
-                                        required
-                                    />
+                                    <label
+                                        htmlFor="productImage"
+                                        className="flex items-center gap-2"
+                                    >
+                                        Image:
+                                    </label>
+                                    <div className="relative w-72 h-72 border-2 border-dashed border-gray-400 rounded-lg flex text-center items-center justify-center bg-slate-50">
+                                        {imagePreview ? (
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            <img
+                                                src={imagePreview}
+                                                alt="Preview"
+                                                className="object-cover w-full h-full rounded-lg"
+                                            />
+                                        ) : (
+                                            <span className="text-gray-500">
+                                                No image selected
+                                            </span>
+                                        )}
+                                        <input
+                                            id="productImage"
+                                            type="file"
+                                            accept="image/*"
+                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                            onChange={handleImageChange}
+                                            required
+                                        />
+                                    </div>
                                 </div>
 
                                 {/* Product InStock */}
-                                <div className="flex flex-row gap-4 my-4">
-                                    <label htmlFor="productInStock">
-                                        Instock:
+                                <div className="flex flex-row items-center gap-4 my-4">
+                                    <label
+                                        htmlFor="productInStock"
+                                        className="flex items-center gap-2 cursor-pointer"
+                                    >
+                                        <input
+                                            id="productInStock"
+                                            type="checkbox"
+                                            className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                            required
+                                        />
+                                        <span className="text-gray-700">
+                                            Instock
+                                        </span>
                                     </label>
-                                    <input
-                                        id="productInStock"
-                                        type="checkbox"
-                                        className="px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
-                                        required
-                                    />
                                 </div>
                             </div>
                         </div>
 
                         <button
-                            type="submit"
+                            type="button"
                             className="btn btn-md btn-ghost text-black flex items-center bg-green-400 w-full mt-8"
+                            onClick={handleSubmit}
                         >
                             <span className="ml-2">Add Product</span>
                         </button>
