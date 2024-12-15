@@ -60,7 +60,6 @@ export default function Page() {
             success: "Product added to inventory.",
             error: "Error",
         });
-        console.log("Submitted");
     };
 
     useEffect(() => {

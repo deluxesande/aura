@@ -1,12 +1,22 @@
 import { Product } from "@/utils/typesDefinitions";
-import { ChevronLeft, ChevronRight, Edit, Trash } from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit, Plus, Trash } from "lucide-react";
+import Link from "next/link";
 
 export default function ProductList({ products }: { products: Product[] }) {
     return (
         <div className="p-4 card bg-white shadow-lg rounded-lg">
-            <h1 className="text-2xl font-bold mb-6 text-gray-400">
-                All Products
-            </h1>
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold text-gray-400">
+                    All Products
+                </h1>
+                <Link href="/products/create">
+                    <button className="btn btn-sm btn-ghost text-black flex items-center bg-green-400 w-full mt-8">
+                        <Plus className="w-4 h-4" />
+                        Add
+                    </button>
+                </Link>
+            </div>
+
             <div className="overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="min-w-full bg-white">
