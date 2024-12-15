@@ -21,6 +21,38 @@ export default function Page() {
     };
 
     const handleSubmit = () => {
+        const productName = (
+            document.getElementById("productName") as HTMLInputElement
+        ).value;
+        const productDescription = (
+            document.getElementById("productDescription") as HTMLTextAreaElement
+        ).value;
+        const productPrice = (
+            document.getElementById("productPrice") as HTMLInputElement
+        ).value;
+        const productQuantity = (
+            document.getElementById("productQuantity") as HTMLInputElement
+        ).value;
+        const productCategory = (
+            document.getElementById("productCategory") as HTMLSelectElement
+        ).value;
+        const productInStock = (
+            document.getElementById("productInStock") as HTMLInputElement
+        ).checked;
+        const productImage = (
+            document.getElementById("productImage") as HTMLInputElement
+        ).files?.[0];
+
+        const productData = {
+            name: productName,
+            description: productDescription,
+            price: productPrice,
+            quantity: productQuantity,
+            category: productCategory,
+            inStock: productInStock,
+            image: productImage,
+        };
+
         const promise = () => new Promise<void>((resolve) => resolve());
 
         toast.promise(promise(), {
