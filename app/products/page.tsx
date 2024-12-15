@@ -20,6 +20,7 @@ import { addItem } from "@/store/slices/cartSlice";
 import { Product } from "@/utils/typesDefinitions";
 import { show } from "@/store/slices/visibilitySlice";
 import axios from "axios";
+import { toast } from "sonner";
 
 const categories = [
     { category: "All", itemCount: 200, icon: Store, active: true },
@@ -55,53 +56,72 @@ export default function Page() {
 
         // Check if cartItems are empty
         if (cartItems.length === 0) {
-            console.warn("Cart is empty. No order to process.");
+            toast.warning("Cart is empty. No order to process.");
             return;
         }
 
-        const invoiceItemPromises = cartItems.map(async (item) => {
-            const data = {
-                quantity: item.cartQuantity,
-                price: item.price * item.cartQuantity,
-                productId: item.id,
-            };
-
-            try {
-                const response = await axios.post("/api/invoiceItem/", data);
-                return response.data;
-            } catch (error) {
-                console.error("Error creating invoice item:", error);
-                return null;
-            }
-        });
-
-        const results = await Promise.all(invoiceItemPromises);
-
-        const invoiceItems = results
-            .filter((result) => result !== null) // Filter out any null results
-            .map((result) => ({
-                id: result.id, // Use the invoice item ID returned from the API response
-            }));
-
-        if (invoiceItems.length === cartItems.length) {
-            try {
-                // Calculate total amount based on cart items and quantities
-                // to reduce amount of API calls
-                const totalAmount = cartItems.reduce(
-                    (total, item) => total + item.price * item.cartQuantity,
-                    0
-                );
-                const invoiceData = {
-                    invoiceItems: invoiceItems,
-                    totalAmount: totalAmount,
+        const promise = async () => {
+            const invoiceItemPromises = cartItems.map(async (item) => {
+                const data = {
+                    quantity: item.cartQuantity,
+                    price: item.price * item.cartQuantity,
+                    productId: item.id,
                 };
 
-                const response = await axios.post("/api/invoice/", invoiceData);
-                // console.log("Invoice created:", response.data);
-            } catch (error) {
-                console.error("Error creating invoice:", error);
+                try {
+                    const response = await axios.post(
+                        "/api/invoiceItem/",
+                        data
+                    );
+                    return response.data;
+                } catch (error) {
+                    console.error("Error creating invoice item:", error);
+                    return null;
+                }
+            });
+
+            const results = await Promise.all(invoiceItemPromises);
+
+            const invoiceItems = results
+                .filter((result) => result !== null) // Filter out any null results
+                .map((result) => ({
+                    id: result.id, // Use the invoice item ID returned from the API response
+                }));
+
+            if (invoiceItems.length === cartItems.length) {
+                try {
+                    // Calculate total amount based on cart items and quantities
+                    // to reduce amount of API calls
+                    const totalAmount = cartItems.reduce(
+                        (total, item) => total + item.price * item.cartQuantity,
+                        0
+                    );
+                    const invoiceData = {
+                        invoiceItems: invoiceItems,
+                        totalAmount: totalAmount,
+                    };
+
+                    const response = await axios.post(
+                        "/api/invoice/",
+                        invoiceData
+                    );
+                    return response.data;
+                } catch (error) {
+                    toast.error("Error creating invoice:" + error);
+                    throw error;
+                }
+            } else {
+                throw new Error(
+                    "Mismatch between cart items and invoice items"
+                );
             }
-        }
+        };
+
+        toast.promise(promise(), {
+            loading: "Processing order...",
+            success: (data) => `Order has been successfully processed`,
+            error: "Error processing order",
+        });
     };
 
     useEffect(() => {
