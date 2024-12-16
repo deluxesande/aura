@@ -16,13 +16,13 @@ export default function InfoCard({ title, number, icon: Icon }: InfoCard) {
                 </div>
             </div>
 
-            <p className="flex items-center mt-2">
+            <p className="flex items-center mt-2 whitespace-nowrap">
                 {isTrendingUp ? (
                     <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
                 ) : (
                     <TrendingDown className="w-4 h-4 text-red-500 mr-1" />
                 )}
-                +6.35% Since Yesterday
+                +6.35% Yesterday
             </p>
         </div>
     );

@@ -20,7 +20,7 @@ export default function Page() {
         }
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         const productName = (
             document.getElementById("productName") as HTMLInputElement
         ).value;
@@ -43,22 +43,35 @@ export default function Page() {
             document.getElementById("productImage") as HTMLInputElement
         ).files?.[0];
 
-        const productData = {
-            name: productName,
-            description: productDescription,
-            price: productPrice,
-            quantity: productQuantity,
-            category: productCategory,
-            inStock: productInStock,
-            image: productImage,
-        };
+        const formData = new FormData();
+        formData.append("name", productName);
+        formData.append("description", productDescription);
+        formData.append("price", productPrice);
+        formData.append("quantity", productQuantity);
+        formData.append("categoryId", productCategory);
+        formData.append("inStock", productInStock.toString());
+        if (productImage) {
+            formData.append("image", productImage);
+        }
 
-        const promise = () => new Promise<void>((resolve) => resolve());
+        const promise = async () => {
+            try {
+                const response = await axios.post("/api/product", formData, {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                });
+                return response.data;
+            } catch (error) {
+                console.error("Error adding product:", error);
+                throw error;
+            }
+        };
 
         toast.promise(promise(), {
             loading: "Loading...",
             success: "Product added to inventory.",
-            error: "Error",
+            error: "Error adding product.",
         });
     };
 
@@ -77,7 +90,7 @@ export default function Page() {
 
     return (
         <Navbar>
-            <div className="flex w-full justify-between">
+            <div className="flex w-auto justify-between">
                 <div className="px-6 py-4 rounded-lg gap-4 bg-white flex-1">
                     <h1 className="text-2xl font-bold mb-6 text-gray-400">
                         Create Product
@@ -212,7 +225,7 @@ export default function Page() {
                         </div>
 
                         <button
-                            type="button"
+                            type="submit"
                             className="btn btn-md btn-ghost text-black flex items-center bg-green-400 w-full mt-8"
                             onClick={handleSubmit}
                         >

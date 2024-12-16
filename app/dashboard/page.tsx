@@ -50,7 +50,7 @@ export default function Page() {
     return (
         <Navbar>
             {/* Info Cards */}
-            <div className="flex overflow-hidden gap-6 my-6">
+            <div className="flex overflow-hidden w-full justify-between gap-6 my-6">
                 {infoCards.map((card, index) => (
                     <InfoCard
                         key={index}
