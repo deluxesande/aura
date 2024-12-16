@@ -6,9 +6,9 @@ import { deleteCategory } from "./delete";
 const prisma = new PrismaClient();
 
 async function getCategoryById(req: NextApiRequest, res: NextApiResponse) {
-    const id = Number(req.query.id);
+    const id = req.query.id as string;
 
-    if (!id || typeof id !== "number") {
+    if (!id) {
         return res
             .status(400)
             .json({ error: "Invalid or missing category ID" });
@@ -40,7 +40,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         case "DELETE":
             return deleteCategory(req, res);
         default:
-            res.setHeader("Allow", ["GET"]);
+            res.setHeader("Allow", ["GET", "PUT", "DELETE"]);
             res.status(405).end(`Method ${req.method} Not Allowed`);
     }
 }

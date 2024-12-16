@@ -1,5 +1,5 @@
 export interface Product {
-    id: number;
+    id: string;
     name: string;
     description: string;
     price: number;
@@ -7,7 +7,7 @@ export interface Product {
     quantity: number;
     createdAt: Date;
     updatedAt: Date;
-    categoryId: number;
+    categoryId: string;
     Category: Category;
     invoiceItems: InvoiceItem[];
     image: string;
@@ -15,34 +15,34 @@ export interface Product {
 }
 
 export interface Category {
-    id: number;
+    id: string;
     name: string;
     description?: string;
     products: Product[];
 }
 
 export interface Invoice {
-    id: number;
+    id: string;
     createdAt: Date;
     updatedAt: Date;
-    customerId?: number;
+    customerId?: string;
     Customer?: Customer;
     invoiceItems: InvoiceItem[];
     totalAmount: number;
 }
 
 export interface InvoiceItem {
-    id: number;
+    id: string;
     quantity: number;
     price: number;
-    productId: number;
+    productId: string;
     Product: Product;
-    invoiceId?: number;
+    invoiceId?: string;
     Invoice?: Invoice;
 }
 
 export interface Customer {
-    id: number;
+    id: string;
     name?: string;
     email?: string;
     phoneNumber: string;

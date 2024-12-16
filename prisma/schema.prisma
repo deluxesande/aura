@@ -6,16 +6,12 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider  = "mongodb"
   url       = env("DATABASE_URL")
 }
-// datasource db {
-//   provider = "sqlite"
-//   url      = "file:./dev.db"
-// }
 
 model Product {
-  id          Int      @id @default(autoincrement())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   description String
   price       Float
@@ -23,41 +19,41 @@ model Product {
   quantity    Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  categoryId  Int
+  categoryId  String @db.ObjectId
   Category    Category @relation(fields: [categoryId], references: [id])
   invoiceItems InvoiceItem[]
   image       String?
 }
 
 model Category {
-  id          Int       @id @default(autoincrement())
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
   name        String    @unique
   description String?
   products    Product[]
 }
 
 model Invoice {
-  id          Int           @id @default(autoincrement())
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
-  customerId  Int?
+  customerId  String?      @db.ObjectId
   Customer    Customer?      @relation(fields: [customerId], references: [id])
   invoiceItems InvoiceItem[]
   totalAmount Float
 }
 
 model InvoiceItem {
-  id         Int      @id @default(autoincrement())
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
   quantity   Int
   price      Float
-  productId  Int
+  productId  String   @db.ObjectId
   Product    Product  @relation(fields: [productId], references: [id])
-  invoiceId  Int?
+  invoiceId  String?  @db.ObjectId
   Invoice    Invoice?  @relation(fields: [invoiceId], references: [id])
 }
 
 model Customer {
-  id          Int       @id @default(autoincrement())
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
   name        String?
   email       String?   
   phoneNumber String    @unique

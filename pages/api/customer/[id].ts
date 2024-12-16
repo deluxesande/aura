@@ -6,9 +6,9 @@ import { deleteCustomer } from "./delete";
 const prisma = new PrismaClient();
 
 async function getCustomerById(req: NextApiRequest, res: NextApiResponse) {
-    const id = Number(req.query.id);
+    const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
 
-    if (!id || typeof id !== "number") {
+    if (!id) {
         return res
             .status(400)
             .json({ error: "Invalid or missing customer ID" });

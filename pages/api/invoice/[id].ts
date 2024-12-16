@@ -6,12 +6,12 @@ import { deleteInvoice } from "./delete";
 const prisma = new PrismaClient();
 
 async function getInvoiceById(req: NextApiRequest, res: NextApiResponse) {
-    const { id } = req.query;
+    const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
 
     try {
         const invoice = await prisma.invoice.findUnique({
             where: {
-                id: Number(id),
+                id: id,
             },
             include: {
                 invoiceItems: {

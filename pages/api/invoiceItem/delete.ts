@@ -7,7 +7,7 @@ export const deleteInvoiceItem = async (
     req: NextApiRequest,
     res: NextApiResponse
 ) => {
-    const id = Number(req.query.id);
+    const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
 
     try {
         await prisma.invoiceItem.delete({
