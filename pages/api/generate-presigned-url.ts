@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
+import formidable from "formidable";
 import * as Minio from "minio";
 import { v4 as uuidv4 } from "uuid";
 
@@ -16,6 +17,15 @@ export const config = {
     },
 };
 
+// Function to check if bucket exists and create it if not
+async function ensureBucketExists(bucketName: string) {
+    const bucketExists = await minioClient.bucketExists(bucketName);
+    if (!bucketExists) {
+        await minioClient.makeBucket(bucketName, "us-east-1");
+    }
+}
+
+// Handle file upload and MinIO integration
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse
@@ -24,53 +34,56 @@ export default async function handler(
         return res.status(405).json({ error: "Method not allowed" });
     }
 
-    const chunks: Buffer[] = [];
-    req.on("data", (chunk) => {
-        chunks.push(chunk);
-    });
-
-    req.on("end", async () => {
-        const buffer = Buffer.concat(
-            chunks.map((chunk) => new Uint8Array(chunk.buffer))
-        );
-        const objectName = `${uuidv4()}-salesense-product-file`;
-
-        try {
-            // Check if the bucket exists, if not, create it
-            const bucketName = "salesense-bucket";
-            const bucketExists = await minioClient.bucketExists(bucketName);
-            if (!bucketExists) {
-                await minioClient.makeBucket(bucketName, "us-east-1");
-            }
-
-            // Upload the file to MinIO
-            await minioClient.putObject(
-                bucketName,
-                objectName,
-                buffer,
-                buffer.length,
-                {
-                    "Content-Type":
-                        req.headers["content-type"] ||
-                        "application/octet-stream",
+    try {
+        const form = formidable({});
+        const { fields, files } = await new Promise<{
+            fields: any;
+            files: any;
+        }>((resolve, reject) => {
+            form.parse(req, (err, fields, files) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve({ fields, files });
                 }
-            );
+            });
+        });
 
-            const presignedUrl = await minioClient.presignedUrl(
-                "GET",
-                bucketName,
-                objectName
-            );
-
-            return res.status(201).json({ presignedUrl });
-        } catch (error) {
-            console.error("Error uploading file:", error);
-            return res.status(500).json({ error: "Error uploading file" });
+        if (!files.file) {
+            return res.status(400).json({ error: "No file uploaded" });
         }
-    });
 
-    req.on("error", (err) => {
-        console.error("Error receiving file:", err);
-        res.status(500).json({ error: "Error receiving file" });
-    });
+        const file = files.file[0];
+        const filePath = file.filepath;
+        const objectName = `${uuidv4()}-salesense-product.png`;
+
+        const metaData = {
+            "Content-Type": "image/png",
+        };
+
+        const bucketName = "salesense-bucket";
+
+        // Ensure bucket exists
+        await ensureBucketExists(bucketName);
+
+        // Upload file to MinIO
+        await minioClient.fPutObject(
+            bucketName,
+            objectName,
+            filePath,
+            metaData
+        );
+
+        // Generate a presigned URL for accessing the uploaded file
+        const presignedUrl = await minioClient.presignedUrl(
+            "GET",
+            bucketName,
+            objectName
+        );
+
+        return res.status(201).json({ presignedUrl });
+    } catch (error) {
+        console.error("Error:", error);
+        return res.status(500).json({ error: error || "Error uploading file" });
+    }
 }

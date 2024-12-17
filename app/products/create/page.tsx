@@ -22,11 +22,12 @@ export default function Page() {
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
+
         const productName = (
             document.getElementById("productName") as HTMLInputElement
         ).value;
         const productDescription = (
-            document.getElementById("productDescription") as HTMLTextAreaElement
+            document.getElementById("productDescription") as HTMLInputElement
         ).value;
         const productPrice = (
             document.getElementById("productPrice") as HTMLInputElement
@@ -47,10 +48,10 @@ export default function Page() {
         let imageUrl = "";
 
         if (productImage) {
-            const formData = new FormData();
-            formData.append("file", productImage);
-
             try {
+                const formData = new FormData();
+                formData.append("file", productImage);
+
                 // Send the image file to the endpoint
                 const response = await axios.post(
                     "/api/generate-presigned-url",
@@ -75,17 +76,15 @@ export default function Page() {
             description: productDescription,
             price: parseFloat(productPrice),
             quantity: parseInt(productQuantity),
-            categoryId: productCategory,
+            categoryId: productCategory, // Pass categoryId as a string
+            inStock: productInStock,
             image: imageUrl,
         };
 
-        console.log(categories);
-        console.log("Product data:", data.categoryId);
-
         const promise = async () => {
             try {
-                const response = await axios.post("/api/product", data);
-                return response.data;
+                // const response = await axios.post("/api/product", data);
+                // return response.data;
             } catch (error) {
                 console.error("Error adding product:", error);
                 throw error;
