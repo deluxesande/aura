@@ -76,15 +76,15 @@ export default function Page() {
             description: productDescription,
             price: parseFloat(productPrice),
             quantity: parseInt(productQuantity),
-            categoryId: productCategory, // Pass categoryId as a string
+            categoryId: productCategory,
             inStock: productInStock,
             image: imageUrl,
         };
 
         const promise = async () => {
             try {
-                // const response = await axios.post("/api/product", data);
-                // return response.data;
+                const response = await axios.post("/api/product", data);
+                return response.data;
             } catch (error) {
                 console.error("Error adding product:", error);
                 throw error;
