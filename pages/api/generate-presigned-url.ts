@@ -17,12 +17,36 @@ export const config = {
     },
 };
 
+// Bucket policy to allow public read access
+const publicBucketPolicy = (bucketName: string) => ({
+    Version: "2012-10-17",
+    Statement: [
+        {
+            Effect: "Allow",
+            Principal: "*",
+            Action: "s3:GetObject",
+            Resource: `arn:aws:s3:::${bucketName}/*`,
+        },
+    ],
+});
+
 // Function to check if bucket exists and create it if not
 async function ensureBucketExists(bucketName: string) {
     const bucketExists = await minioClient.bucketExists(bucketName);
     if (!bucketExists) {
         await minioClient.makeBucket(bucketName, "us-east-1");
+        // Set the bucket policy of `my-bucketname`
+        await minioClient.setBucketPolicy(
+            bucketName,
+            JSON.stringify(publicBucketPolicy(bucketName))
+        );
     }
+}
+
+// Function to trim the presigned URL to remove query parameters
+function trimPresignedUrl(presignedUrl: string): string {
+    const [baseUrl] = presignedUrl.split("?");
+    return baseUrl;
 }
 
 // Handle file upload and MinIO integration
@@ -81,7 +105,10 @@ export default async function handler(
             objectName
         );
 
-        return res.status(201).json({ presignedUrl });
+        // Removing the auth part of presigned url
+        const trimUrl = trimPresignedUrl(presignedUrl);
+
+        return res.status(201).json({ trimUrl });
     } catch (error) {
         console.error("Error:", error);
         return res.status(500).json({ error: error || "Error uploading file" });
