@@ -22,7 +22,7 @@ model Product {
   categoryId  String @db.ObjectId
   Category    Category @relation(fields: [categoryId], references: [id])
   invoiceItems InvoiceItem[]
-  image       Bytes?
+  image       String?
 }
 
 model Category {
