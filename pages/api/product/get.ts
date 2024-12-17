@@ -11,7 +11,7 @@ export const getProducts = async (
         const products = await prisma.product.findMany();
 
         if (products.length === 0) {
-            return res.status(404).json({ message: "No products found" });
+            return res.status(200).json({ message: "No products found" });
         }
 
         res.status(200).json(products);

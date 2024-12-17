@@ -19,6 +19,6 @@ export const addCategory = async (
 
         res.status(201).json(newCategory);
     } catch (error) {
-        res.status(500).json({ error: "Failed to add category" });
+        res.status(500).json({ error: "Failed to add category" + error });
     }
 };

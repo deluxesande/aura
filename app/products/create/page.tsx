@@ -20,7 +20,8 @@ export default function Page() {
         }
     };
 
-    const handleSubmit = async () => {
+    const handleSubmit = async (event: React.FormEvent) => {
+        event.preventDefault();
         const productName = (
             document.getElementById("productName") as HTMLInputElement
         ).value;
@@ -43,25 +44,47 @@ export default function Page() {
             document.getElementById("productImage") as HTMLInputElement
         ).files?.[0];
 
-        const formData = new FormData();
-        formData.append("name", productName);
-        formData.append("description", productDescription);
-        formData.append("price", productPrice);
-        formData.append("quantity", productQuantity);
-        formData.append("categoryId", productCategory);
-        formData.append("inStock", productInStock.toString());
+        let imageUrl = "";
+
         if (productImage) {
-            formData.append("image", productImage);
+            const formData = new FormData();
+            formData.append("file", productImage);
+
+            try {
+                // Send the image file to the endpoint
+                const response = await axios.post(
+                    "/api/generate-presigned-url",
+                    formData,
+                    {
+                        headers: {
+                            "Content-Type": "multipart/form-data",
+                        },
+                    }
+                );
+
+                imageUrl = response.data.presignedUrl;
+            } catch (error) {
+                console.error("Error uploading image:", error);
+                toast.error("Error uploading image.");
+                return;
+            }
         }
+
+        const data = {
+            name: productName,
+            description: productDescription,
+            price: parseFloat(productPrice),
+            quantity: parseInt(productQuantity),
+            categoryId: parseInt(productCategory),
+            image: imageUrl,
+        };
+
+        console.log(data);
 
         const promise = async () => {
             try {
-                const response = await axios.post("/api/product", formData, {
-                    headers: {
-                        "Content-Type": "multipart/form-data",
-                    },
-                });
-                return response.data;
+                // const response = await axios.post("/api/product", data);
+                // return response.data;
             } catch (error) {
                 console.error("Error adding product:", error);
                 throw error;
@@ -196,7 +219,7 @@ export default function Page() {
                                         <input
                                             id="productImage"
                                             type="file"
-                                            accept="image/*"
+                                            accept="image/png"
                                             className="absolute inset-0 opacity-0 cursor-pointer"
                                             onChange={handleImageChange}
                                             required
