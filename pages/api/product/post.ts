@@ -1,13 +1,70 @@
 import { PrismaClient } from "@prisma/client";
 import { NextApiRequest, NextApiResponse } from "next";
 import { generateSKU } from "@/utils/generateSKU";
+import formidable from "formidable";
+import * as Minio from "minio";
+import { v4 as uuidv4 } from "uuid";
+import { generatePresignedUrl } from "@/utils/minio/generatePresignedUrl";
 
 const prisma = new PrismaClient();
 
-export const addProduct = async (req: NextApiRequest, res: NextApiResponse) => {
-    const { name, description, price, quantity, categoryId, image } = req.body;
+const minioClient = new Minio.Client({
+    endPoint: "localhost",
+    port: 9000,
+    useSSL: false,
+    accessKey: process.env.MINIO_ROOT_USER || "",
+    secretKey: process.env.MINIO_ROOT_PASSWORD || "",
+});
+
+const addProduct = async (req: NextApiRequest, res: NextApiResponse) => {
+    const form = formidable({ multiples: true });
 
     try {
+        const { fields, files } = await new Promise<{
+            fields: any;
+            files: any;
+        }>((resolve, reject) => {
+            form.parse(req, (err, fields, files) => {
+                if (err) {
+                    reject(new Error("Error parsing form"));
+                } else {
+                    resolve({ fields, files });
+                }
+            });
+        });
+
+        if (!files.file) {
+            return res.status(400).json({ error: "No file uploaded" });
+        }
+
+        const file = files.file[0];
+        const filePath = file.filepath;
+        const objectName = `${uuidv4()}-salesense-product.png`;
+
+        const metaData = {
+            "Content-Type": "image/png",
+        };
+
+        const bucketName = "salesense-bucket";
+
+        // Defined in utils and handles the MinIO integration
+        const presignedImageUrl = await generatePresignedUrl(
+            minioClient,
+            bucketName,
+            objectName,
+            filePath,
+            metaData
+        );
+
+        // Extract strings from lists and convert to appropriate types
+        const { name, description, price, quantity, categoryId } = {
+            name: fields.name[0],
+            description: fields.description[0],
+            price: parseFloat(fields.price[0]),
+            quantity: parseInt(fields.quantity[0], 10),
+            categoryId: fields.categoryId[0],
+        };
+
         // Generate SKU for the new product
         const sku = generateSKU(name);
 
@@ -38,7 +95,7 @@ export const addProduct = async (req: NextApiRequest, res: NextApiResponse) => {
                     price,
                     sku, // Use the generated SKU
                     quantity,
-                    image,
+                    image: presignedImageUrl,
                     Category: {
                         connect: { id: categoryId },
                     },
@@ -48,6 +105,9 @@ export const addProduct = async (req: NextApiRequest, res: NextApiResponse) => {
             res.status(201).json(newProduct);
         }
     } catch (error) {
+        console.log(error);
         res.status(500).json({ error: "Failed to add or update product" });
     }
 };
+
+export default addProduct;

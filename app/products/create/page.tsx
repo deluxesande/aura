@@ -45,45 +45,24 @@ export default function Page() {
             document.getElementById("productImage") as HTMLInputElement
         ).files?.[0];
 
-        let imageUrl = "";
-
+        const formData = new FormData();
+        formData.append("name", productName);
+        formData.append("description", productDescription);
+        formData.append("price", productPrice);
+        formData.append("quantity", productQuantity);
+        formData.append("categoryId", productCategory);
+        formData.append("inStock", productInStock.toString());
         if (productImage) {
-            try {
-                const formData = new FormData();
-                formData.append("file", productImage);
-
-                // Send the image file to the endpoint
-                const response = await axios.post(
-                    "/api/generate-presigned-url",
-                    formData,
-                    {
-                        headers: {
-                            "Content-Type": "multipart/form-data",
-                        },
-                    }
-                );
-
-                imageUrl = response.data.presignedUrl;
-            } catch (error) {
-                console.error("Error uploading image:", error);
-                toast.error("Error uploading image.");
-                return;
-            }
+            formData.append("file", productImage);
         }
-
-        const data = {
-            name: productName,
-            description: productDescription,
-            price: parseFloat(productPrice),
-            quantity: parseInt(productQuantity),
-            categoryId: productCategory,
-            inStock: productInStock,
-            image: imageUrl,
-        };
 
         const promise = async () => {
             try {
-                const response = await axios.post("/api/product", data);
+                const response = await axios.post("/api/product", formData, {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                });
                 return response.data;
             } catch (error) {
                 console.error("Error adding product:", error);

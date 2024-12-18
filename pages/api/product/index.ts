@@ -1,6 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getProducts } from "./get";
-import { addProduct } from "./post";
+import addProduct from "./post";
+
+export const config = {
+    api: {
+        bodyParser: false,
+    },
+};
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
     switch (req.method) {
