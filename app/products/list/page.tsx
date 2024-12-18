@@ -13,7 +13,12 @@ export default function Page() {
         const fetchProducts = async () => {
             try {
                 const response = await axios.get("/api/product");
-                setProducts(response.data);
+                // Ensure productsData is an array
+                if (!Array.isArray(response.data)) {
+                    setProducts([]);
+                } else {
+                    setProducts(response.data);
+                }
             } catch (error) {
                 console.error("Error fetching products:", error);
             }
