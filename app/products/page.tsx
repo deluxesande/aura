@@ -128,7 +128,12 @@ export default function Page() {
         const fetchProducts = async () => {
             try {
                 const response = await axios.get("/api/product");
-                setProducts(response.data);
+                // Ensure productsData is an array
+                if (!Array.isArray(response.data)) {
+                    setProducts([]);
+                } else {
+                    setProducts(response.data);
+                }
             } catch (error) {
                 console.error("Error fetching products:", error);
             }
@@ -160,7 +165,7 @@ export default function Page() {
 
                     {/* Products */}
                     <div className="flex flex-wrap gap-4 mt-10">
-                        {products.map((product) => (
+                        {products?.map((product) => (
                             <ProductCard
                                 key={product.name}
                                 image={product.image}
