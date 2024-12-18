@@ -45,6 +45,11 @@ export default function Page() {
             document.getElementById("productImage") as HTMLInputElement
         ).files?.[0];
 
+        if (productCategory === "") {
+            toast.error("Please select a category.");
+            return;
+        }
+
         const formData = new FormData();
         formData.append("name", productName);
         formData.append("description", productDescription);
@@ -157,8 +162,9 @@ export default function Page() {
                                         id="productCategory"
                                         className="px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
                                         required
+                                        defaultValue=""
                                     >
-                                        <option value={"Select"}>
+                                        <option value="" disabled>
                                             Select Category
                                         </option>
                                         {categories.map((category, index) => (
