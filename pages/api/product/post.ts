@@ -16,6 +16,10 @@ const minioClient = new Minio.Client({
     secretKey: process.env.MINIO_ROOT_PASSWORD || "",
 });
 
+const convertToBoolean = (value: string): boolean => {
+    return value.toLowerCase() === "true";
+};
+
 const addProduct = async (req: NextApiRequest, res: NextApiResponse) => {
     const form = formidable({ multiples: true });
 
@@ -57,11 +61,12 @@ const addProduct = async (req: NextApiRequest, res: NextApiResponse) => {
         );
 
         // Extract strings from lists and convert to appropriate types
-        const { name, description, price, quantity, categoryId } = {
+        const { name, description, price, quantity, inStock, categoryId } = {
             name: fields.name[0],
             description: fields.description[0],
             price: parseFloat(fields.price[0]),
             quantity: parseInt(fields.quantity[0], 10),
+            inStock: convertToBoolean(fields.inStock[0]),
             categoryId: fields.categoryId[0],
         };
 
@@ -96,6 +101,7 @@ const addProduct = async (req: NextApiRequest, res: NextApiResponse) => {
                     sku, // Use the generated SKU
                     quantity,
                     image: presignedImageUrl,
+                    inStock: inStock,
                     Category: {
                         connect: { id: categoryId },
                     },

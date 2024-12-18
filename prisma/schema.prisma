@@ -21,6 +21,7 @@ model Product {
   updatedAt   DateTime @updatedAt
   categoryId  String @db.ObjectId
   Category    Category @relation(fields: [categoryId], references: [id])
+  inStock     Boolean
   invoiceItems InvoiceItem[]
   image       String?
 }
