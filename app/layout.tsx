@@ -1,17 +1,10 @@
+import "@/app/styles/globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "@/app/styles/globals.css";
 
 import ReduxProvider from "@/components/ReduxProvider";
-import ToastProvider from "@/components/ToastProvider"; // Import ToastProvider
-import {
-    ClerkProvider,
-    SignedOut,
-    SignInButton,
-    SignedIn,
-    UserButton,
-} from "@clerk/nextjs";
-import Link from "next/link";
+import ToastProvider from "@/components/ToastProvider";
+import { ClerkProvider } from "@clerk/nextjs";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,34 +22,6 @@ export default function RootLayout({
         <ClerkProvider>
             <html lang="en">
                 <body className={`${inter.className} bg-[#f4f4f4]`}>
-                    <header className="bg-[#f4f4f4] text-black p-4">
-                        <nav className="flex justify-between items-center">
-                            <ul className="flex space-x-4">
-                                <li>
-                                    <Link href="/" className="hover:underline">
-                                        Home
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link
-                                        href="/dashboard"
-                                        className="hover:underline"
-                                    >
-                                        Dashboard
-                                    </Link>
-                                </li>
-                            </ul>
-
-                            <div>
-                                <SignedOut>
-                                    <SignInButton />
-                                </SignedOut>
-                                <SignedIn>
-                                    <UserButton />
-                                </SignedIn>
-                            </div>
-                        </nav>
-                    </header>
                     <ReduxProvider>
                         <ToastProvider>{children}</ToastProvider>
                     </ReduxProvider>

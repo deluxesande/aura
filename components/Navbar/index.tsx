@@ -11,6 +11,8 @@ import { usePathname, useRouter } from "next/navigation";
 import React from "react";
 import { useDispatch } from "react-redux";
 import Sidebar from "./Sidebar";
+import { SignedIn, UserButton } from "@clerk/nextjs";
+import CustomUserButton from "../CustomUserButton";
 
 export default function Navbar({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -36,41 +38,37 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                 style={{ width: "calc(100% - 5rem)" }}
             >
                 {/* Top navbar */}
-                <div className="p-6 sticky top-0 right-0 z-10">
+                <div className="p-6 sticky top-0 right-0 z-10 bg-white shadow-sm">
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center w-full">
-                            <div className="flex items-center mx-4 bg-white rounded-lg shadow-sm flex-grow">
+                            <div className="flex items-center mx-4 bg-gray-100 rounded-lg shadow-sm flex-grow">
                                 <input
                                     type="text"
                                     placeholder="Search..."
-                                    className="py-3 px-4 rounded-l-lg bg-transparent focus:outline-none w-full"
+                                    className="py-3 px-4 rounded-l-lg bg-transparent outline-none w-full"
                                 />
                                 <div className="py-2 px-4 text-black">
                                     <SearchIcon size={25} />
                                 </div>
                             </div>
-                            <div className="p-2 bg-white text-black rounded-lg cursor-pointer flex items-center justify-center">
+                            <div className="p-2 hover:bg-slate-100 text-black rounded-lg cursor-pointer flex items-center justify-center">
                                 <SlidersHorizontal size={25} />
                             </div>
                         </div>
 
                         <div className="flex items-center">
-                            <div className="p-2 bg-white text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center">
+                            <div className="p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center">
                                 <Bell size={25} />
                             </div>
 
-                            <div className="p-2 bg-white text-black rounded-lg flex items-center gap-4 cursor-pointer">
-                                <div className="w-8 h-8 rounded-full bg-red-500"></div>
-                                <div className="w-28">
-                                    <p className="font-bold text-sm">
-                                        John Doe
-                                    </p>
-                                    <p className="font-light text-xs">Admin</p>
-                                </div>
+                            <div className="p-2 text-black rounded-lg flex items-center gap-4 cursor-pointer">
+                                <SignedIn>
+                                    <CustomUserButton />
+                                </SignedIn>
                             </div>
 
                             <div
-                                className="p-2 bg-white text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
+                                className="p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
                                 onClick={toggleSidebar}
                             >
                                 <ShoppingCart size={25} />

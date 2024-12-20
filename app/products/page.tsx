@@ -21,6 +21,8 @@ import { Product } from "@/utils/typesDefinitions";
 import { show } from "@/store/slices/visibilitySlice";
 import axios from "axios";
 import { toast } from "sonner";
+import { SignedIn, UserButton } from "@clerk/nextjs";
+import CustomUserButton from "@/components/CustomUserButton";
 
 const categories = [
     { category: "All", itemCount: 200, icon: Store, active: true },
@@ -187,12 +189,10 @@ export default function Page() {
             </div>
             {/* Right Sidebar */}
             <CreateOrder>
-                <div className="p-2 mt-2 bg-white rounded-lg flex items-center gap-4 shadow-sm cursor-pointer">
-                    <div className="w-8 h-8 rounded-full bg-red-500"></div>
-                    <div className="w-28">
-                        <p className="font-bold text-sm">John Doe</p>
-                        <p className="font-light text-xs">Admin</p>
-                    </div>
+                <div className="p-2 mt-2 text-black rounded-lg flex items-center gap-4 cursor-pointer">
+                    <SignedIn>
+                        <CustomUserButton />
+                    </SignedIn>
                 </div>
 
                 <div className="mt-14 px-4 flex flex-col justify-between h-[85%]">
