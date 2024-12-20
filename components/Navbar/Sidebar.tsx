@@ -26,11 +26,13 @@ const Sidebar = () => {
     return (
         <div className="w-20 h-screen bg-white shadow-sm p-6 flex flex-col items-center justify-between">
             <div className="flex flex-col items-center">
-                <Image
-                    src={logo}
-                    alt="Logo"
-                    className="mt-3 mb-12 rounded-full cursor-pointer"
-                />
+                <Link href="/">
+                    <Image
+                        src={logo}
+                        alt="Logo"
+                        className="mt-3 mb-12 rounded-full cursor-pointer"
+                    />
+                </Link>
                 <ul className="flex flex-col items-center">
                     {links.map((link) => (
                         <li key={link.href} className="mb-4">
