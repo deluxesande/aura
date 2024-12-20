@@ -52,7 +52,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
             res.status(200).json(response.data);
         } catch (error) {
-            console.error("Error registering callback URL:", error);
             res.status(500).json({
                 error: "Failed to register callback URL",
                 details: error,
