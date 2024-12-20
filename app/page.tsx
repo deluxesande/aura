@@ -1,10 +1,7 @@
 export default function Home() {
     return (
-        <div>
-            <h2>Home page</h2>
-            <a className="text-2xl font-bold underline" href="/dashboard">
-                Dashboard
-            </a>
+        <div className="min-h-[calc(100vh-4rem)] px-4">
+            <p>Welcome to your new Clerk app.</p>
         </div>
     );
 }

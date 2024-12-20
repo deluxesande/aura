@@ -6,6 +6,7 @@ import axios from "axios";
 const shortCode = process.env.SHORTCODE || "";
 const confirmationURL = process.env.CONFIRMATION_URL || "";
 const validationURL = process.env.VALIDATION_URL || "";
+const callbackURL = process.env.CALLBACK_URL || "";
 const consumerKey = process.env.CONSUMER_KEY || "";
 const consumerSecret = process.env.CONSUMER_SECRET || "";
 
@@ -42,6 +43,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     ResponseType: "Completed",
                     ConfirmationURL: confirmationURL,
                     ValidationURL: validationURL,
+                    CallBackURL: callbackURL,
                 },
                 {
                     headers: {

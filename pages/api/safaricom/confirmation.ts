@@ -4,6 +4,9 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === "POST") {
         const confirmationData = req.body;
 
+        // Log the incoming request
+        console.log("Received confirmation request:", confirmationData);
+
         // Check if required fields are defined
         if (
             !confirmationData ||
@@ -39,7 +42,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
         // Return a success response to mpesa
         return res.json({
-            ResultCode: 0,
+            ResultCode: "0",
             ResultDesc: "Accepted",
         });
     } else {

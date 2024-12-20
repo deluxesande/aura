@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.9.5",
     "@prisma/client": "^5.17.0",
     "@reduxjs/toolkit": "^2.2.7",
     "@supabase/supabase-js": "^2.44.4",

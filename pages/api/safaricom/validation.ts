@@ -4,6 +4,9 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === "POST") {
         const validationData = req.body;
 
+        // Log the incoming request
+        console.log("Received validation request:", validationData);
+
         // Check if required fields are defined
         if (
             !validationData ||

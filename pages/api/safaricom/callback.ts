@@ -4,6 +4,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === "POST") {
         const callbackData = req.body;
 
+        console.log("Received callback data:", callbackData);
+
         // Check if Body and stkCallback are defined
         if (!callbackData.Body || !callbackData.Body.stkCallback) {
             return res.status(400).json({ error: "Invalid callback data" });
