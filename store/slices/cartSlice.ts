@@ -28,12 +28,12 @@ const cartSlice = createSlice({
                 state.items.push({ ...action.payload, cartQuantity: 1 });
             }
         },
-        removeItem: (state, action: PayloadAction<number>) => {
+        removeItem: (state, action: PayloadAction<string>) => {
             state.items = state.items.filter(
                 (item) => item.id !== action.payload
             );
         },
-        decrementItem: (state, action: PayloadAction<number>) => {
+        decrementItem: (state, action: PayloadAction<string>) => {
             const existingProduct = state.items.find(
                 (item) => item.id === action.payload
             );

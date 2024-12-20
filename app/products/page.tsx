@@ -16,7 +16,7 @@ import {
 import OrderCard from "@/components/OrderCard";
 import { useDispatch, useSelector } from "react-redux";
 import { AppState } from "@/store";
-import { addItem } from "@/store/slices/cartSlice";
+import { addItem, clearCart } from "@/store/slices/cartSlice";
 import { Product } from "@/utils/typesDefinitions";
 import { show } from "@/store/slices/visibilitySlice";
 import axios from "axios";
@@ -105,6 +105,12 @@ export default function Page() {
                         "/api/invoice/",
                         invoiceData
                     );
+
+                    // Clear cart if invoice is created successfully
+                    if (response.status == 201) {
+                        dispatch(clearCart());
+                    }
+
                     return response.data;
                 } catch (error) {
                     toast.error("Error creating invoice:" + error);
