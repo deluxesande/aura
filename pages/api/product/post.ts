@@ -10,7 +10,7 @@ import { addCreatedBy } from "../middleware";
 const prisma = new PrismaClient();
 
 const minioClient = new Minio.Client({
-    endPoint: "localhost",
+    endPoint: "https://rt50xtkl-9000.uks1.devtunnels.ms/",
     port: 9000,
     useSSL: false,
     accessKey: process.env.MINIO_ROOT_USER || "",
