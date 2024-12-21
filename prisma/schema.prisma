@@ -55,9 +55,9 @@ model InvoiceItem {
 
 model Customer {
   id          String       @id @default(auto()) @map("_id") @db.ObjectId
-  name        String?      @unique
+  firstName   String?      @unique
+  lastName    String?      @unique
   email       String?      @unique
   phoneNumber String       @unique
   invoices    Invoice[]
-  clerkUserId String       @db.String
 }

@@ -5,6 +5,7 @@ const isPrivateRoute = createRouteMatcher([
     "/products(.*)",
     "/invoice(.*)",
     "/invoices(.*)",
+    "/customer(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, request) => {

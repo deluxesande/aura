@@ -8,11 +8,17 @@ export const addCustomer = async (
     res: NextApiResponse
 ) => {
     try {
-        const { name, email = undefined, phoneNumber } = req.body;
+        const {
+            firstName,
+            lastName,
+            email = undefined, // Optional field
+            phoneNumber,
+        } = req.body;
 
         const newCustomer = await prisma.customer.create({
             data: {
-                name,
+                firstName,
+                lastName,
                 email,
                 phoneNumber,
             },
