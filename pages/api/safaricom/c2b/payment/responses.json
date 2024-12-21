@@ -1,0 +1,16 @@
+[
+  {
+    "MerchantRequestID": "aba0-4119-bd0a-28c60f0ef1ef1018921",
+    "CheckoutRequestID": "ws_CO_21122024195357633742210044",
+    "ResponseCode": "0",
+    "ResponseDescription": "Success. Request accepted for processing",
+    "CustomerMessage": "Success. Request accepted for processing"
+  },
+  {
+    "MerchantRequestID": "bbcd-4a89-bd1a-6ecdc639893b662441",
+    "CheckoutRequestID": "ws_CO_21122024195413285742210044",
+    "ResponseCode": "0",
+    "ResponseDescription": "Success. Request accepted for processing",
+    "CustomerMessage": "Success. Request accepted for processing"
+  }
+]
