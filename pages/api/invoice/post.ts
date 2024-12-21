@@ -1,10 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { PrismaClient } from "@prisma/client";
 import { InvoiceItem } from "@/utils/typesDefinitions";
+import { addCreatedBy } from "../middleware";
 
 const prisma = new PrismaClient();
 
-export const addInvoice = async (req: NextApiRequest, res: NextApiResponse) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const { customerId, invoiceItems, totalAmount } = req.body;
 
     try {
@@ -44,6 +45,7 @@ export const addInvoice = async (req: NextApiRequest, res: NextApiResponse) => {
                     id: item.id,
                 })),
             },
+            createdBy: req.body.createdBy,
         };
 
         if (customerId) {
@@ -59,3 +61,5 @@ export const addInvoice = async (req: NextApiRequest, res: NextApiResponse) => {
         res.status(400).json({ error: "Failed to add or update invoice" });
     }
 };
+
+export const addInvoice = addCreatedBy(handler);

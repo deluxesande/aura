@@ -5,6 +5,7 @@ import formidable from "formidable";
 import * as Minio from "minio";
 import { v4 as uuidv4 } from "uuid";
 import { generatePresignedUrl } from "@/utils/minio/generatePresignedUrl";
+import { addCreatedBy } from "../middleware";
 
 const prisma = new PrismaClient();
 
@@ -20,7 +21,7 @@ const convertToBoolean = (value: string): boolean => {
     return value.toLowerCase() === "true";
 };
 
-const addProduct = async (req: NextApiRequest, res: NextApiResponse) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const form = formidable({ multiples: true });
 
     try {
@@ -105,6 +106,7 @@ const addProduct = async (req: NextApiRequest, res: NextApiResponse) => {
                     Category: {
                         connect: { id: categoryId },
                     },
+                    createdBy: req.body.createdBy,
                 },
             });
 
@@ -116,4 +118,4 @@ const addProduct = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 };
 
-export default addProduct;
+export const addProduct = addCreatedBy(handler);

@@ -1,12 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import { NextApiRequest, NextApiResponse } from "next";
+import { addCreatedBy } from "../middleware";
 
 const prisma = new PrismaClient();
 
-export const addCategory = async (
-    req: NextApiRequest,
-    res: NextApiResponse
-) => {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const { name, description } = req.body;
 
     try {
@@ -14,6 +12,7 @@ export const addCategory = async (
             data: {
                 name,
                 description,
+                createdBy: req.body.createdBy,
             },
         });
 
@@ -22,3 +21,5 @@ export const addCategory = async (
         res.status(500).json({ error: "Failed to add category" + error });
     }
 };
+
+export const addCategory = addCreatedBy(handler);

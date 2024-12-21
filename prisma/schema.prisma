@@ -24,6 +24,7 @@ model Product {
   inStock     Boolean @default(false)
   invoiceItems InvoiceItem[]
   image       String?
+  createdBy   String?   
 }
 
 model Category {
@@ -31,6 +32,7 @@ model Category {
   name        String    @unique
   description String?
   products    Product[]
+  createdBy   String?   
 }
 
 model Invoice {
@@ -41,6 +43,7 @@ model Invoice {
   Customer    Customer?      @relation(fields: [customerId], references: [id])
   invoiceItems InvoiceItem[]
   totalAmount Float
+  createdBy   String?  
 }
 
 model InvoiceItem {
@@ -51,6 +54,7 @@ model InvoiceItem {
   Product    Product  @relation(fields: [productId], references: [id])
   invoiceId  String?  @db.ObjectId
   Invoice    Invoice?  @relation(fields: [invoiceId], references: [id])
+  createdBy  String?   
 }
 
 model Customer {
@@ -60,4 +64,5 @@ model Customer {
   email       String?      @unique
   phoneNumber String       @unique
   invoices    Invoice[]
+  createdBy   String?   
 }

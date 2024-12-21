@@ -70,7 +70,6 @@ export default function Page() {
                 });
                 return response.data;
             } catch (error) {
-                console.error("Error adding product:", error);
                 throw error;
             }
         };

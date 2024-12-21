@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getProducts } from "./get";
-import addProduct from "./post";
+import { addProduct } from "./post";
 import { getAuth } from "@clerk/nextjs/server";
 
 export const config = {
