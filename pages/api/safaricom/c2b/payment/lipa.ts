@@ -28,7 +28,8 @@ const getAccessToken = async () => {
 const initiatePayment = async (
     accessToken: string,
     phoneNumber: string,
-    amount: number
+    amount: number,
+    transactionType: string
 ) => {
     const url =
         "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest";
@@ -44,7 +45,7 @@ const initiatePayment = async (
         BusinessShortCode: shortCode,
         Password: password,
         Timestamp: timestamp,
-        TransactionType: "CustomerPayBillOnline",
+        TransactionType: transactionType,
         Amount: amount,
         PartyA: phoneNumber,
         PartyB: shortCode,
@@ -72,7 +73,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
-    const { phoneNumber, amount } = req.body;
+    const {
+        phoneNumber,
+        amount,
+        transactionType = "CustomerPayBillOnline",
+    } = req.body;
 
     if (!phoneNumber || !amount) {
         return res
@@ -85,7 +90,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         const paymentResponse = await initiatePayment(
             accessToken,
             phoneNumber,
-            amount
+            amount,
+            transactionType
         );
         res.status(200).json(paymentResponse);
     } catch (error) {
