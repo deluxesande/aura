@@ -8,7 +8,7 @@ export const updateCustomer = async (
     res: NextApiResponse
 ) => {
     const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
-    const { name, email = undefined, phoneNumber } = req.body;
+    const { firstName, lastName, email = undefined, phoneNumber } = req.body;
 
     if (!id) {
         return res
@@ -22,7 +22,8 @@ export const updateCustomer = async (
                 id: id,
             },
             data: {
-                name,
+                firstName,
+                lastName,
                 email,
                 phoneNumber,
             },
