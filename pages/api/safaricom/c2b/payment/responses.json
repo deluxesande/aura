@@ -12,5 +12,12 @@
     "ResponseCode": "0",
     "ResponseDescription": "Success. Request accepted for processing",
     "CustomerMessage": "Success. Request accepted for processing"
+  },
+  {
+    "MerchantRequestID": "bbcd-4a89-bd1a-6ecdc639893b667867",
+    "CheckoutRequestID": "ws_CO_21122024211720081742210044",
+    "ResponseCode": "0",
+    "ResponseDescription": "Success. Request accepted for processing",
+    "CustomerMessage": "Success. Request accepted for processing"
   }
 ]

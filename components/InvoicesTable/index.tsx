@@ -55,7 +55,9 @@ export default function InvoicesTable({
                                 <tr
                                     key={index}
                                     className="hover:bg-gray-100 cursor-pointer"
-                                    onClick={() => handleRowClick(invoice.id)}
+                                    onClick={() =>
+                                        handleRowClick(Number(invoice.id))
+                                    }
                                 >
                                     <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
                                         INV-{index + 1}
