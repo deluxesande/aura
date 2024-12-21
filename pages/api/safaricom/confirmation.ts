@@ -1,11 +1,28 @@
 import { NextApiRequest, NextApiResponse } from "next";
+import fs from "fs";
+import path from "path";
+
+// Function to store confirmation data in a JSON file
+const storeConfirmation = (confirmationData: any) => {
+    const filePath = path.join(
+        process.cwd(),
+        "pages/api/safaricom/c2b/payment/data/confirmations.json"
+    );
+    let confirmations = [];
+
+    if (fs.existsSync(filePath)) {
+        const fileData = fs.readFileSync(filePath, "utf8");
+        confirmations = JSON.parse(fileData);
+    }
+
+    confirmations.push(confirmationData);
+
+    fs.writeFileSync(filePath, JSON.stringify(confirmations, null, 2));
+};
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === "POST") {
         const confirmationData = req.body;
-
-        // Log the incoming request
-        console.log("Received confirmation request:", confirmationData);
 
         // Check if required fields are defined
         if (
@@ -24,8 +41,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
             !confirmationData.MiddleName ||
             !confirmationData.LastName
         ) {
-            // Log the invalid confirmation data
-            console.log("Invalid Confirmation Data:", confirmationData);
+            // Store the invalid confirmation data
+            storeConfirmation({ status: "invalid", data: confirmationData });
 
             // Return a rejection response to mpesa
             return res.json({
@@ -34,11 +51,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
             });
         }
 
-        // Log the confirmation data
-        console.log("Confirmation Data:", confirmationData);
-
-        // Save the variables to a file or database, etc.
-        // ...
+        // Store the valid confirmation data
+        storeConfirmation({ status: "valid", data: confirmationData });
 
         // Return a success response to mpesa
         return res.json({

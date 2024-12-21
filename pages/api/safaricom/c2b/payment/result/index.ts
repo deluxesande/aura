@@ -1,4 +1,24 @@
 import { NextApiRequest, NextApiResponse } from "next";
+import fs from "fs";
+import path from "path";
+
+// Function to store responses in a JSON file
+const storeResponse = (response: any) => {
+    const filePath = path.join(
+        process.cwd(),
+        "pages/api/safaricom/c2b/payment/data/resultResponse.json"
+    );
+    let responses = [];
+
+    if (fs.existsSync(filePath)) {
+        const fileData = fs.readFileSync(filePath, "utf8");
+        responses = JSON.parse(fileData);
+    }
+
+    responses.push(response);
+
+    fs.writeFileSync(filePath, JSON.stringify(responses, null, 2));
+};
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     if (req.method !== "POST") {
@@ -11,26 +31,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         return res.status(400).json({ error: "Invalid result data" });
     }
 
-    console.log("Result Type:", result.ResultType);
-    console.log("Result Code:", result.ResultCode);
-    console.log("Result Description:", result.ResultDesc);
-    console.log("Originator Conversation ID:", result.OriginatorConversationID);
-    console.log("Conversation ID:", result.ConversationID);
-    console.log("Transaction ID:", result.TransactionID);
+    // Store the result in the JSON file
+    storeResponse(result);
 
-    if (result.ResultParameters && result.ResultParameters.ResultParameter) {
-        result.ResultParameters.ResultParameter.forEach((param: any) => {
-            console.log(`${param.Key}: ${param.Value}`);
-        });
-    }
-
-    if (result.ReferenceData && result.ReferenceData.ReferenceItem) {
-        result.ReferenceData.ReferenceItem.forEach((item: any) => {
-            console.log(`${item.Key}: ${item.Value}`);
-        });
-    }
-
-    res.status(200).json({ message: "Result received successfully" });
+    res.status(200).json({
+        message: "Result received and stored successfully",
+    });
 };
 
 export default handler;

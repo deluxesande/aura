@@ -1,10 +1,28 @@
 import { NextApiRequest, NextApiResponse } from "next";
+import fs from "fs";
+import path from "path";
+
+// Function to store callbacks in a JSON file
+const storeCallback = (callbackData: any, fileName: string) => {
+    const filePath = path.join(
+        process.cwd(),
+        `pages/api/safaricom/c2b/payment/data/${fileName}`
+    );
+    let callbacks = [];
+
+    if (fs.existsSync(filePath)) {
+        const fileData = fs.readFileSync(filePath, "utf8");
+        callbacks = JSON.parse(fileData);
+    }
+
+    callbacks.push(callbackData);
+
+    fs.writeFileSync(filePath, JSON.stringify(callbacks, null, 2));
+};
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === "POST") {
         const callbackData = req.body;
-
-        console.log("Received callback data:", callbackData);
 
         // Check if Body and stkCallback are defined
         if (!callbackData.Body || !callbackData.Body.stkCallback) {
@@ -20,35 +38,12 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
                 ResultCode: resultCode,
                 ResultDesc: errorMessage,
             };
+            storeCallback(callbackData, "failedCallbacks.json");
             return res.json(responseData);
         }
 
-        // If the result code is 0, the transaction was completed
-        const body = callbackData.Body.stkCallback.CallbackMetadata;
-
-        // Get amount
-        const amountObj = body.Item.find((obj: any) => obj.Name === "Amount");
-        const amount = amountObj.Value;
-
-        // Get Mpesa code
-        const codeObj = body.Item.find(
-            (obj: any) => obj.Name === "MpesaReceiptNumber"
-        );
-        const mpesaCode = codeObj.Value;
-
-        // Get phone number
-        const phoneNumberObj = body.Item.find(
-            (obj: any) => obj.Name === "PhoneNumber"
-        );
-        const phone = phoneNumberObj.Value;
-
-        // Log the values
-        console.log("Amount:", amount);
-        console.log("Mpesa Code:", mpesaCode);
-        console.log("Phone Number:", phone);
-
-        // Save the variables to a file or database, etc.
-        // ...
+        // Store the successful callback data
+        storeCallback(callbackData, "successfulCallbacks.json");
 
         // Return a success response to mpesa
         return res.json("success");

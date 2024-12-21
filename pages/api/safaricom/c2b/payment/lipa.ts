@@ -13,7 +13,7 @@ const passkey = process.env.PASS_KEY || "";
 const storeResponse = (response: any) => {
     const filePath = path.join(
         process.cwd(),
-        "pages/api/safaricom/c2b/payment/responses.json"
+        "pages/api/safaricom/c2b/payment/data/responses.json"
     );
     let responses = [];
 

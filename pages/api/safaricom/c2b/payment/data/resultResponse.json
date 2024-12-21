@@ -1,0 +1,30 @@
+[
+  {
+    "ResultType": 0,
+    "ResultCode": 2001,
+    "ResultDesc": "The initiator information is invalid.",
+    "OriginatorConversationID": "b54f-471d-93d9-f7f3bf3f7c0e677402",
+    "ConversationID": "AG_20241221_2010461ce712ddd1013e",
+    "TransactionID": "SLL0000000",
+    "ReferenceData": {
+      "ReferenceItem": {
+        "Key": "Occasion",
+        "Value": "OK"
+      }
+    }
+  },
+  {
+    "ResultType": 0,
+    "ResultCode": 2001,
+    "ResultDesc": "The initiator information is invalid.",
+    "OriginatorConversationID": "1f39-4f4f-b9d9-6476d46b30ba132776",
+    "ConversationID": "AG_20241221_201024e187039ad976d3",
+    "TransactionID": "SLL0000000",
+    "ReferenceData": {
+      "ReferenceItem": {
+        "Key": "Occasion",
+        "Value": "OK"
+      }
+    }
+  }
+]

@@ -1,11 +1,28 @@
 import { NextApiRequest, NextApiResponse } from "next";
+import fs from "fs";
+import path from "path";
+
+// Function to store validation data in a JSON file
+const storeValidation = (validationData: any) => {
+    const filePath = path.join(
+        process.cwd(),
+        "pages/api/safaricom/c2b/payment/data/validations.json"
+    );
+    let validations = [];
+
+    if (fs.existsSync(filePath)) {
+        const fileData = fs.readFileSync(filePath, "utf8");
+        validations = JSON.parse(fileData);
+    }
+
+    validations.push(validationData);
+
+    fs.writeFileSync(filePath, JSON.stringify(validations, null, 2));
+};
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === "POST") {
         const validationData = req.body;
-
-        // Log the incoming request
-        console.log("Received validation request:", validationData);
 
         // Check if required fields are defined
         if (
@@ -24,8 +41,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
             !validationData.MiddleName ||
             !validationData.LastName
         ) {
-            // Log the validation data
-            console.log("Invalid Validation Data:", validationData);
+            // Store the invalid validation data
+            storeValidation({ status: "invalid", data: validationData });
 
             // Return a rejection response to mpesa
             return res.json({
@@ -34,11 +51,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
             });
         }
 
-        // Log the validation data
-        console.log("Validation Data:", validationData);
-
-        // Save the variables to a file or database, etc.
-        // ...
+        // Store the valid validation data
+        storeValidation({ status: "valid", data: validationData });
 
         // Return a success response to mpesa
         return res.json({
