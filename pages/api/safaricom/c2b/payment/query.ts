@@ -76,12 +76,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         partyA = shortCode,
     } = req.body;
 
-    if (!originatorConversationID) {
-        return res.status(400).json({
-            error: "OriginatorConversationID is required",
-        });
-    }
-
     try {
         const accessToken = await getAccessToken();
         const statusResponse = await checkTransactionStatus(
