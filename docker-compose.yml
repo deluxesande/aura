@@ -1,0 +1,76 @@
+version: "3.8"
+
+services:
+    mongo1:
+        image: mongo:latest
+        container_name: mongo1
+        ports:
+            - "27017:27017"
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: delsean
+            MONGO_INITDB_ROOT_PASSWORD: delsean123
+        command: mongod --replSet myReplicaSet --bind_ip localhost,mongo1 --keyFile /etc/mongo-keyfile
+        volumes:
+            - ./mongo-keyfile:/etc/mongo-keyfile
+        networks:
+            - mongoCluster
+
+    mongo2:
+        image: mongo:latest
+        container_name: mongo2
+        ports:
+            - "27018:27017"
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: delsean
+            MONGO_INITDB_ROOT_PASSWORD: delsean123
+        command: mongod --replSet myReplicaSet --bind_ip localhost,mongo2 --keyFile /etc/mongo-keyfile
+        volumes:
+            - ./mongo-keyfile:/etc/mongo-keyfile
+        networks:
+            - mongoCluster
+
+    mongo3:
+        image: mongo:latest
+        container_name: mongo3
+        ports:
+            - "27019:27017"
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: delsean
+            MONGO_INITDB_ROOT_PASSWORD: delsean123
+        command: mongod --replSet myReplicaSet --bind_ip localhost,mongo3 --keyFile /etc/mongo-keyfile
+        volumes:
+            - ./mongo-keyfile:/etc/mongo-keyfile
+        networks:
+            - mongoCluster
+
+    mongo-init-replica:
+        image: mongo:latest
+        depends_on:
+            - mongo1
+            - mongo2
+            - mongo3
+        entrypoint: >
+            bash -c "
+            sleep 10;
+            echo 'Initializing replica set';
+            mongosh --host mongo1 --eval '
+              rs.initiate({
+                _id: \"myReplicaSet\",
+                members: [
+                  { _id: 0, host: \"mongo1:27017\" },
+                  { _id: 1, host: \"mongo2:27017\" },
+                  { _id: 2, host: \"mongo3:27017\" }
+                ]
+              });
+              db.getSiblingDB(\"admin\").createUser({
+                user: \"delsean\",
+                pwd: \"delsean123\",
+                roles: [ { role: \"root\", db: \"admin\" } ]
+              });
+            ';
+            "
+        networks:
+            - mongoCluster
+
+networks:
+    mongoCluster:
