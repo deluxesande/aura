@@ -6,12 +6,12 @@ generator client {
 }
 
 datasource db {
-  provider  = "mongodb"
+  provider  = "postgresql"
   url       = env("DATABASE_URL")
 }
 
 model Product {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id          String   @id @default(uuid()) @map("_id") @db.Uuid
   name        String
   description String
   price       Float
@@ -19,7 +19,7 @@ model Product {
   quantity    Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  categoryId  String @db.ObjectId
+  categoryId  String @db.Uuid
   Category    Category @relation(fields: [categoryId], references: [id])
   inStock     Boolean @default(false)
   invoiceItems InvoiceItem[]
@@ -28,7 +28,7 @@ model Product {
 }
 
 model Category {
-  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  id          String       @id @default(uuid()) @map("_id") @db.Uuid
   name        String    @unique
   description String?
   products    Product[]
@@ -36,10 +36,10 @@ model Category {
 }
 
 model Invoice {
-  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  id          String           @id @default(uuid()) @map("_id") @db.Uuid
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
-  customerId  String?      @db.ObjectId
+  customerId  String?      @db.Uuid
   Customer    Customer?      @relation(fields: [customerId], references: [id])
   invoiceItems InvoiceItem[]
   totalAmount Float
@@ -47,18 +47,18 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  id         String      @id @default(uuid()) @map("_id") @db.Uuid
   quantity   Int
   price      Float
-  productId  String   @db.ObjectId
+  productId  String   @db.Uuid
   Product    Product  @relation(fields: [productId], references: [id])
-  invoiceId  String?  @db.ObjectId
+  invoiceId  String?  @db.Uuid
   Invoice    Invoice?  @relation(fields: [invoiceId], references: [id])
   createdBy  String?   
 }
 
 model Customer {
-  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  id          String       @id @default(uuid()) @map("_id") @db.Uuid
   firstName   String?      @unique
   lastName    String?      @unique
   email       String?      @unique
