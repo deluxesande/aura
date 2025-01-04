@@ -7,8 +7,8 @@ services:
         ports:
             - "27017:27017"
         environment:
-            MONGO_INITDB_ROOT_USERNAME: delsean
-            MONGO_INITDB_ROOT_PASSWORD: delsean123
+            MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+            MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
         command: mongod --replSet myReplicaSet --bind_ip localhost,mongo1 --keyFile /etc/mongo-keyfile
         volumes:
             - ./mongo-keyfile:/etc/mongo-keyfile
@@ -21,8 +21,8 @@ services:
         ports:
             - "27018:27017"
         environment:
-            MONGO_INITDB_ROOT_USERNAME: delsean
-            MONGO_INITDB_ROOT_PASSWORD: delsean123
+            MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+            MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
         command: mongod --replSet myReplicaSet --bind_ip localhost,mongo2 --keyFile /etc/mongo-keyfile
         volumes:
             - ./mongo-keyfile:/etc/mongo-keyfile
@@ -35,8 +35,8 @@ services:
         ports:
             - "27019:27017"
         environment:
-            MONGO_INITDB_ROOT_USERNAME: delsean
-            MONGO_INITDB_ROOT_PASSWORD: delsean123
+            MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+            MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
         command: mongod --replSet myReplicaSet --bind_ip localhost,mongo3 --keyFile /etc/mongo-keyfile
         volumes:
             - ./mongo-keyfile:/etc/mongo-keyfile
@@ -63,8 +63,8 @@ services:
                 ]
               });
               db.getSiblingDB(\"admin\").createUser({
-                user: \"delsean\",
-                pwd: \"delsean123\",
+                user: \"${MONGO_INITDB_ROOT_USERNAME}\",
+                pwd: \"${MONGO_INITDB_ROOT_PASSWORD}\",
                 roles: [ { role: \"root\", db: \"admin\" } ]
               });
             ';
