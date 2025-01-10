@@ -11,7 +11,7 @@ import { usePathname, useRouter } from "next/navigation";
 import React from "react";
 import { useDispatch } from "react-redux";
 import Sidebar from "./Sidebar";
-import { SignedIn, UserButton } from "@clerk/nextjs";
+import { SignedIn } from "@clerk/nextjs";
 import CustomUserButton from "../CustomUserButton";
 
 export default function Navbar({ children }: { children: React.ReactNode }) {

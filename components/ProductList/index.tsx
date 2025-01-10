@@ -7,8 +7,16 @@ import {
     Trash,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function ProductList({ products }: { products: Product[] }) {
+    const router = useRouter();
+
+    const handleEditClick = (productId: string) => {
+        router.prefetch(`/products/edit/${productId}`);
+        router.push(`/products/edit/${productId}`);
+    };
+
     return (
         <div className="p-4 card bg-white shadow-lg rounded-lg mt-4">
             <div className="flex justify-between items-center mb-6">
@@ -70,7 +78,12 @@ export default function ProductList({ products }: { products: Product[] }) {
                                         ${product.price}
                                     </td>
                                     <td className="py-2 px-4 border-b border-gray-100 flex items-center">
-                                        <button className="btn btn-sm btn-ghost text-black cursor-not-allowed">
+                                        <button
+                                            className="btn btn-sm btn-ghost text-black"
+                                            onClick={() =>
+                                                handleEditClick(product.id)
+                                            }
+                                        >
                                             <Edit className="w-4 h-4" />
                                         </button>
                                         <div className="border-l border-gray-300 h-4 mx-1"></div>
