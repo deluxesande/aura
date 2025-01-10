@@ -39,8 +39,12 @@ export default function Page() {
     const [products, setProducts] = useState<Product[]>([]);
 
     const handleAddToCart = (product: Product) => {
-        dispatch(addItem(product));
-        dispatch(show());
+        if (product.quantity > 0) {
+            dispatch(addItem(product));
+            dispatch(show());
+        } else {
+            toast.warning("Product cannot be added to the cart.");
+        }
     };
 
     const handleOrder = async () => {

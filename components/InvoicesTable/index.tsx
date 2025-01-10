@@ -18,7 +18,7 @@ export default function InvoicesTable({
 }) {
     const router = useRouter();
 
-    const handleRowClick = (invoiceId: number) => {
+    const handleRowClick = (invoiceId: string) => {
         router.push(`/invoice?id=${invoiceId}`);
     };
 
@@ -56,7 +56,7 @@ export default function InvoicesTable({
                                     key={index}
                                     className="hover:bg-gray-100 cursor-pointer"
                                     onClick={() =>
-                                        handleRowClick(Number(invoice.id))
+                                        handleRowClick(String(invoice.id))
                                     }
                                 >
                                     <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
