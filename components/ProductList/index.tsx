@@ -10,7 +10,7 @@ import Link from "next/link";
 
 export default function ProductList({ products }: { products: Product[] }) {
     return (
-        <div className="p-4 card bg-white shadow-lg rounded-lg">
+        <div className="p-4 card bg-white shadow-lg rounded-lg mt-4">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-gray-400">
                     All Products
@@ -18,7 +18,7 @@ export default function ProductList({ products }: { products: Product[] }) {
                 <Link href="/products/create">
                     <button className="btn btn-sm btn-ghost text-black flex items-center bg-green-400 w-full mt-8">
                         <PlusCircle className="w-4 h-4" />
-                        Add
+                        Add Product
                     </button>
                 </Link>
             </div>

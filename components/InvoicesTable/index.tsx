@@ -23,7 +23,7 @@ export default function InvoicesTable({
     };
 
     return (
-        <div className="p-4 card bg-white shadow-lg rounded-lg">
+        <div className="p-4 card bg-white shadow-lg rounded-lg mt-4">
             <h1 className="text-2xl font-bold mb-6 text-gray-400">{title}</h1>
             <div className="overflow-hidden">
                 <div className="overflow-x-auto">
