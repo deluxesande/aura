@@ -1,5 +1,11 @@
 import { Product } from "@/utils/typesDefinitions";
-import { ChevronLeft, ChevronRight, Edit, Plus, Trash } from "lucide-react";
+import {
+    ChevronLeft,
+    ChevronRight,
+    Edit,
+    PlusCircle,
+    Trash,
+} from "lucide-react";
 import Link from "next/link";
 
 export default function ProductList({ products }: { products: Product[] }) {
@@ -11,7 +17,7 @@ export default function ProductList({ products }: { products: Product[] }) {
                 </h1>
                 <Link href="/products/create">
                     <button className="btn btn-sm btn-ghost text-black flex items-center bg-green-400 w-full mt-8">
-                        <Plus className="w-4 h-4" />
+                        <PlusCircle className="w-4 h-4" />
                         Add
                     </button>
                 </Link>

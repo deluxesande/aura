@@ -1,13 +1,35 @@
 "use client";
+import CreateCategoryModal from "@/components/CreateCategoryModal";
 import Navbar from "@/components/Navbar";
 import { Category } from "@/utils/typesDefinitions";
 import axios from "axios";
+import { PlusCircle } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export default function Page() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const handleCreateNewCategory = async (categoryName: string) => {
+        const promise = async () => {
+            try {
+                const response = await axios.post("/api/category", {
+                    name: categoryName,
+                });
+                setCategories([...categories, response.data]);
+            } catch (error) {
+                console.error("Error creating category:", error);
+            }
+        };
+
+        toast.promise(promise(), {
+            loading: "Loading...",
+            success: "Category created.",
+            error: "Error creating category.",
+        });
+    };
 
     const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -98,9 +120,18 @@ export default function Page() {
         <Navbar>
             <div className="flex w-auto justify-between">
                 <div className="px-6 py-4 rounded-lg gap-4 bg-white flex-1">
-                    <h1 className="text-2xl font-bold mb-6 text-gray-400">
-                        Create Product
-                    </h1>
+                    <div className="flex justify-between items-center mb-6">
+                        <h1 className="text-2xl font-bold mb-6 text-gray-400">
+                            Create Product
+                        </h1>
+                        <button
+                            className="btn btn-sm btn-ghost text-black flex items-center bg-green-400"
+                            onClick={() => setIsModalOpen(true)}
+                        >
+                            <PlusCircle className="w-4 h-4" />
+                            Create Category
+                        </button>
+                    </div>
 
                     <form>
                         <div className="flex justify-between gap-4">
@@ -241,6 +272,11 @@ export default function Page() {
                     </form>
                 </div>
             </div>
+            <CreateCategoryModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSubmit={handleCreateNewCategory}
+            />
         </Navbar>
     );
 }
