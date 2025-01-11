@@ -24,7 +24,7 @@ const Sidebar = () => {
     ];
 
     return (
-        <div className="w-20 h-screen bg-white shadow-sm p-6 flex flex-col items-center justify-between">
+        <div className="w-20 h-screen bg-white shadow-sm p-6 hidden lg:flex flex-col items-center justify-between">
             <div className="flex flex-col items-center">
                 <Link href="/">
                     <Image
