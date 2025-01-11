@@ -12,9 +12,11 @@ interface ExtendedInvoice extends Invoice {
 export default function InvoicesTable({
     title,
     invoices,
+    handleDelete,
 }: {
     title: string;
     invoices: ExtendedInvoice[];
+    handleDelete: (invoiceId: string) => void;
 }) {
     const router = useRouter();
 
@@ -55,9 +57,6 @@ export default function InvoicesTable({
                                 <tr
                                     key={index}
                                     className="hover:bg-gray-100 cursor-pointer"
-                                    onClick={() =>
-                                        handleRowClick(String(invoice.id))
-                                    }
                                 >
                                     <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
                                         INV-{index + 1}
@@ -75,11 +74,23 @@ export default function InvoicesTable({
                                         ${invoice.totalAmount}
                                     </td>
                                     <td className="py-2 px-4 border-b border-gray-100 flex items-center">
-                                        <button className="btn btn-sm btn-ghost text-black cursor-not-allowed">
+                                        <button
+                                            className="btn btn-sm btn-ghost text-black"
+                                            onClick={() =>
+                                                handleRowClick(
+                                                    String(invoice.id)
+                                                )
+                                            }
+                                        >
                                             <Edit className="w-4 h-4" />
                                         </button>
                                         <div className="border-l border-gray-300 h-4 mx-1"></div>
-                                        <button className="btn btn-sm btn-ghost text-black cursor-not-allowed">
+                                        <button
+                                            className="btn btn-sm btn-ghost text-black"
+                                            onClick={() =>
+                                                handleDelete(String(invoice.id))
+                                            }
+                                        >
                                             <Trash className="w-4 h-4" />
                                         </button>
                                     </td>

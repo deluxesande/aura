@@ -12,12 +12,16 @@ export default function Page() {
 
     const handleDelete = async (productId: string) => {
         const promise = async () => {
-            await axios.delete(`/api/product/${productId}`);
+            try {
+                await axios.delete(`/api/product/${productId}`);
 
-            // Update the products state after deletion
-            setProducts((prevProducts) =>
-                prevProducts.filter((product) => product.id !== productId)
-            );
+                // Update the products state after deletion
+                setProducts((prevProducts) =>
+                    prevProducts.filter((product) => product.id !== productId)
+                );
+            } catch (error) {
+                throw new Error("Error deleting product");
+            }
         };
 
         toast.promise(promise(), {
