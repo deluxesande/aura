@@ -2,7 +2,13 @@ import React from "react";
 import Image from "next/image";
 import { Product } from "@/utils/typesDefinitions";
 
-export default function TopProducts({ product }: { product: Product }) {
+export default function TopProducts({
+    product,
+    quantity,
+}: {
+    product: Product;
+    quantity: number;
+}) {
     return (
         <div className="w-full h-16 p-2 bg-slate-50 shadow-sm rounded-md flex items-center justify-between my-4">
             <div className="flex items-center">
@@ -24,7 +30,7 @@ export default function TopProducts({ product }: { product: Product }) {
             </div>
             <div className="relative flex items-center h-full">
                 <div className="flex flex-col items-center mr-2">
-                    <p className="text-black">25</p>
+                    <p className="text-black">{quantity}</p>
                 </div>
             </div>
         </div>

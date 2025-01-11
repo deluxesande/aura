@@ -9,7 +9,9 @@ import axios from "axios";
 const InvoicePage: React.FC = () => {
     const searchParams = useSearchParams();
     const id = searchParams ? searchParams.get("id") : null;
-    const [products, setProducts] = useState<Product[]>([]);
+    const [invoiceItems, setInvoiceItems] = useState<
+        { Product: Product; quantity: number }[]
+    >([]);
     const [invoice, setInvoice] = useState<Invoice>();
 
     // Example status, you can replace this with actual status from your data
@@ -36,15 +38,14 @@ const InvoicePage: React.FC = () => {
             try {
                 const response = await axios.get(`/api/invoice/${id}`);
                 const invoiceData = response.data;
+
                 // Convert createdAt and updatedAt to Date objects
                 invoiceData.createdAt = new Date(invoiceData.createdAt);
                 invoiceData.updatedAt = new Date(invoiceData.updatedAt);
+
                 setInvoice(invoiceData);
 
-                const productData = response.data.invoiceItems.map(
-                    (item: any) => item.Product
-                );
-                setProducts(productData);
+                setInvoiceItems(response.data.invoiceItems);
             } catch (error) {
                 console.error("Error fetching invoice:", error);
             }
@@ -111,8 +112,12 @@ const InvoicePage: React.FC = () => {
                     <div className="flex justify-between">
                         <p className="text-gray-600 font-light">Items</p>
                     </div>
-                    {products.map((product, index) => (
-                        <TopProducts key={index} product={product} />
+                    {invoiceItems.map((invoiceItem, index) => (
+                        <TopProducts
+                            key={index}
+                            product={invoiceItem.Product}
+                            quantity={invoiceItem.quantity}
+                        />
                     ))}
                 </div>
             </div>
