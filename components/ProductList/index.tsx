@@ -9,7 +9,13 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-export default function ProductList({ products }: { products: Product[] }) {
+export default function ProductList({
+    products,
+    handleDelete,
+}: {
+    products: Product[];
+    handleDelete: (productId: string) => void;
+}) {
     const router = useRouter();
 
     const handleEditClick = (productId: string) => {
@@ -86,7 +92,12 @@ export default function ProductList({ products }: { products: Product[] }) {
                                             <Edit className="w-4 h-4" />
                                         </button>
                                         <div className="border-l border-gray-300 h-4 mx-1"></div>
-                                        <button className="btn btn-sm btn-ghost text-black cursor-not-allowed">
+                                        <button
+                                            className="btn btn-sm btn-ghost text-black"
+                                            onClick={() => {
+                                                handleDelete(product.id);
+                                            }}
+                                        >
                                             <Trash className="w-4 h-4" />
                                         </button>
                                     </td>

@@ -5,9 +5,27 @@ import ProductList from "@/components/ProductList";
 import { Product } from "@/utils/typesDefinitions";
 import axios from "axios";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function Page() {
     const [products, setProducts] = useState<Product[]>([]);
+
+    const handleDelete = async (productId: string) => {
+        const promise = async () => {
+            await axios.delete(`/api/product/${productId}`);
+
+            // Update the products state after deletion
+            setProducts((prevProducts) =>
+                prevProducts.filter((product) => product.id !== productId)
+            );
+        };
+
+        toast.promise(promise(), {
+            loading: "Deleting product...",
+            success: "Product deleted successfully",
+            error: "Error deleting product",
+        });
+    };
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -29,7 +47,7 @@ export default function Page() {
 
     return (
         <Navbar>
-            <ProductList products={products} />
+            <ProductList products={products} handleDelete={handleDelete} />
         </Navbar>
     );
 }

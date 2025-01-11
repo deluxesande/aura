@@ -7,7 +7,7 @@ export const deleteProduct = async (
     req: NextApiRequest,
     res: NextApiResponse
 ) => {
-    const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
+    const id = req.query.id as string;
 
     try {
         await prisma.product.delete({
