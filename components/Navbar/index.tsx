@@ -3,9 +3,11 @@
 import { show } from "@/store/slices/visibilitySlice";
 import {
     Bell,
+    CheckCheck,
     Search as SearchIcon,
     ShoppingCart,
     SlidersHorizontal,
+    Trash2,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useState } from "react";
@@ -20,9 +22,36 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const dispatch = useDispatch();
     const [showPopup, setShowPopup] = useState(false);
+    const [notifications, setNotifications] = useState([
+        { id: 1, isRead: false },
+        { id: 2, isRead: true },
+    ]);
 
     const togglePopup = () => {
         setShowPopup(!showPopup);
+    };
+
+    const markAsRead = (id: number) => {
+        setNotifications((prevNotifications) =>
+            prevNotifications.map((notification) =>
+                notification.id === id
+                    ? { ...notification, isRead: true }
+                    : notification
+            )
+        );
+    };
+
+    const markAllAsRead = () => {
+        setNotifications((prevNotifications) =>
+            prevNotifications.map((notification) => ({
+                ...notification,
+                isRead: true,
+            }))
+        );
+    };
+
+    const deleteAllNotifications = () => {
+        setNotifications([]);
     };
 
     const toggleSidebar = () => {
@@ -71,15 +100,46 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                                     <Bell size={25} />
                                 </div>
                                 {showPopup && (
-                                    <div className="absolute top-full right-0 bg-white border border-gray-300 rounded-lg shadow-lg p-4 whitespace-nowrap overflow-hidden text-ellipsis">
-                                        <p className="text-stone-400 hidden mb-4">
-                                            No new notifications
-                                        </p>
-                                        <p className="text-stone-400 mb-4">
-                                            New notifications
-                                        </p>
-                                        <NotificationCard isRead={false} />
-                                        <NotificationCard isRead={true} />
+                                    <div className="absolute min-w-[400px] top-full right-0 bg-white border border-gray-300 rounded-lg shadow-lg p-4 whitespace-nowrap overflow-hidden text-ellipsis">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h3 className="text-lg font-semibold">
+                                                Notifications
+                                            </h3>
+                                            <div className="flex space-x-2">
+                                                <CheckCheck
+                                                    size={20}
+                                                    className="cursor-pointer"
+                                                    onClick={markAllAsRead}
+                                                />
+                                                <Trash2
+                                                    size={20}
+                                                    className=" cursor-pointer"
+                                                    onClick={
+                                                        deleteAllNotifications
+                                                    }
+                                                />
+                                            </div>
+                                        </div>
+                                        {notifications.length === 0 ? (
+                                            <p className="text-stone-400 mb-4">
+                                                No new notifications
+                                            </p>
+                                        ) : (
+                                            notifications.map(
+                                                (notification) => (
+                                                    <NotificationCard
+                                                        key={notification.id}
+                                                        isRead={
+                                                            notification.isRead
+                                                        }
+                                                        notification={
+                                                            notification
+                                                        }
+                                                        markAsRead={markAsRead}
+                                                    />
+                                                )
+                                            )
+                                        )}
                                     </div>
                                 )}
                             </div>
