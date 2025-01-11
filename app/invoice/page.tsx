@@ -56,7 +56,7 @@ const InvoicePage: React.FC = () => {
 
     return (
         <Navbar>
-            <div className="flex flex-row flex-wrap gap-10 justify-between p-4 card bg-white shadow-lg rounded-lg">
+            <div className="flex flex-row flex-wrap gap-10 justify-between p-4 card bg-white shadow-lg rounded-lg mt-4">
                 <div className="w-full">
                     <div className="flex justify-between">
                         <p className="text-gray-600">OOOP-1</p>

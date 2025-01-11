@@ -8,16 +8,22 @@ import {
     SlidersHorizontal,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import React from "react";
+import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import Sidebar from "./Sidebar";
 import { SignedIn } from "@clerk/nextjs";
 import CustomUserButton from "../CustomUserButton";
+import NotificationCard from "../NotificationCard";
 
 export default function Navbar({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
     const dispatch = useDispatch();
+    const [showPopup, setShowPopup] = useState(false);
+
+    const togglePopup = () => {
+        setShowPopup(!showPopup);
+    };
 
     const toggleSidebar = () => {
         if (pathname !== "/products") {
@@ -57,8 +63,25 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                         </div>
 
                         <div className="flex items-center">
-                            <div className="p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center">
-                                <Bell size={25} />
+                            <div className="relative">
+                                <div
+                                    className="p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
+                                    onClick={togglePopup}
+                                >
+                                    <Bell size={25} />
+                                </div>
+                                {showPopup && (
+                                    <div className="absolute top-full right-0 bg-white border border-gray-300 rounded-lg shadow-lg p-4 whitespace-nowrap overflow-hidden text-ellipsis">
+                                        <p className="text-stone-400 hidden mb-4">
+                                            No new notifications
+                                        </p>
+                                        <p className="text-stone-400 mb-4">
+                                            New notifications
+                                        </p>
+                                        <NotificationCard isRead={false} />
+                                        <NotificationCard isRead={true} />
+                                    </div>
+                                )}
                             </div>
 
                             <div className="p-2 text-black rounded-lg flex items-center gap-4 cursor-pointer">
