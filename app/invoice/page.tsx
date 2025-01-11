@@ -5,6 +5,8 @@ import React, { useEffect, useState } from "react";
 import TopProducts from "@/components/TopProducts";
 import { Invoice, Product } from "@/utils/typesDefinitions";
 import axios from "axios";
+import { format } from "date-fns";
+import { Copy } from "lucide-react";
 
 const InvoicePage: React.FC = () => {
     const searchParams = useSearchParams();
@@ -33,15 +35,27 @@ const InvoicePage: React.FC = () => {
         }
     };
 
+    const copyToClipboard = (text: string | undefined) => {
+        if (text) {
+            navigator.clipboard.writeText(text);
+        }
+    };
+
     useEffect(() => {
         const fetchInvoice = async () => {
             try {
                 const response = await axios.get(`/api/invoice/${id}`);
                 const invoiceData = response.data;
 
-                // Convert createdAt and updatedAt to Date objects
-                invoiceData.createdAt = new Date(invoiceData.createdAt);
-                invoiceData.updatedAt = new Date(invoiceData.updatedAt);
+                // Convert createdAt and updatedAt to formatted strings
+                invoiceData.createdAt = format(
+                    new Date(invoiceData.createdAt),
+                    "MMM dd, yyyy hh:mm a"
+                );
+                invoiceData.updatedAt = format(
+                    new Date(invoiceData.updatedAt),
+                    "MMM dd, yyyy hh:mm a"
+                );
 
                 setInvoice(invoiceData);
 
@@ -74,14 +88,21 @@ const InvoicePage: React.FC = () => {
                             <p className="text-black font-semibold">
                                 Invoice No:
                             </p>
-                            <p className="text-black font-semibold">
-                                {invoice?.id}
-                            </p>
+                            <div className="flex items-center">
+                                <p className="text-black font-semibold mr-2 truncate w-32">
+                                    {invoice?.id}
+                                </p>
+                                <Copy
+                                    size={18}
+                                    className="text-gray-600 cursor-pointer"
+                                    onClick={() => copyToClipboard(invoice?.id)}
+                                />
+                            </div>
                         </div>
                         <div className="flex justify-between">
                             <p className="text-black font-semibold">Created:</p>
                             <p className="text-black font-semibold">
-                                {invoice?.createdAt?.toLocaleDateString()}
+                                {invoice?.createdAt?.toString()}
                             </p>
                         </div>
 
