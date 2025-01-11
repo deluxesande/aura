@@ -13,8 +13,7 @@ export default function ProductList({ products }: { products: Product[] }) {
     const router = useRouter();
 
     const handleEditClick = (productId: string) => {
-        router.prefetch(`/products/edit/${productId}`);
-        router.push(`/products/edit/${productId}`);
+        router.push(`/products/${productId}/edit`);
     };
 
     return (

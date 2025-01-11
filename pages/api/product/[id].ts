@@ -6,7 +6,7 @@ import { updateProduct } from "./update";
 const prisma = new PrismaClient();
 
 async function getProductById(req: NextApiRequest, res: NextApiResponse) {
-    const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
+    const id = req.query.id as string;
 
     try {
         const product = await prisma.product.findUnique({

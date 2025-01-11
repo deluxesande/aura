@@ -11,6 +11,7 @@ export default function Page() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleCreateNewCategory = async (categoryName: string) => {
         const promise = async () => {
@@ -44,6 +45,7 @@ export default function Page() {
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
+        setIsLoading(true);
 
         const productName = (
             document.getElementById("productName") as HTMLInputElement
@@ -69,6 +71,7 @@ export default function Page() {
 
         if (productCategory === "") {
             toast.error("Please select a category.");
+            setIsLoading(false);
             return;
         }
 
@@ -93,6 +96,8 @@ export default function Page() {
                 return response.data;
             } catch (error) {
                 throw error;
+            } finally {
+                setIsLoading(false);
             }
         };
 
@@ -266,8 +271,11 @@ export default function Page() {
                             type="submit"
                             className="btn btn-md btn-ghost text-black flex items-center bg-green-400 w-full mt-8"
                             onClick={handleSubmit}
+                            disabled={isLoading}
                         >
-                            <span className="ml-2">Add Product</span>
+                            <span className="ml-2">
+                                {isLoading ? "Creating..." : "Add Product"}
+                            </span>
                         </button>
                     </form>
                 </div>

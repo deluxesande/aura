@@ -4,57 +4,115 @@ import { Category, Product } from "@/utils/typesDefinitions";
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function EditProductPage() {
-    const searchParams = useSearchParams();
-    const id = searchParams ? searchParams.get("id") : null;
+    const params = useParams();
+    const router = useRouter();
+    const id = params?.id as string;
     const [categories, setCategories] = useState<Category[]>([]);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
-    const [product, setProduct] = useState<Product | null>(null);
+    const [formData, setFormData] = useState<Product>({
+        id: "",
+        name: "",
+        description: "",
+        price: 0,
+        quantity: 0,
+        categoryId: "",
+        image: "",
+        inStock: false,
+        sku: "",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        Category: {
+            id: "",
+            name: "",
+            products: [],
+        },
+        invoiceItems: [],
+    });
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    // Handle input changes
+    const handleChange = (
+        e: React.ChangeEvent<
+            HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+        >
+    ) => {
+        const { id, value } = e.target;
+        const fieldName = id.replace("product", "").toLowerCase();
+
+        setFormData((prev) => ({
+            ...prev,
+            [fieldName]:
+                fieldName === "price" || fieldName === "quantity"
+                    ? parseInt(value, 10)
+                    : value,
+        }));
+    };
+
+    // Handle checkbox change
+    const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData((prev) => ({
+            ...prev,
+            inStock: e.target.checked,
+        }));
+    };
+
+    const handleImageChange = async (
+        event: React.ChangeEvent<HTMLInputElement>
+    ) => {
         const file = event.target.files?.[0];
         if (file) {
             const reader = new FileReader();
             reader.onloadend = () => {
                 setImagePreview(reader.result as string);
+                setFormData((prev) => ({
+                    ...prev,
+                    image: reader.result as string,
+                }));
             };
             reader.readAsDataURL(file);
         }
     };
 
-    const handleSubmit = () => {
-        console.log("Form submitted");
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setIsLoading(true);
+
+        try {
+            await axios.put(`/api/product/${id}`, formData);
+            toast.success("Product updated successfully");
+            router.push("/products/list");
+        } catch (error) {
+            toast.error("Error updating product");
+            console.error("Error updating product:", error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
+    // Fetch product data once
     useEffect(() => {
         const fetchProduct = async () => {
             try {
-                const response = await axios.get(`/api/product/${id}`);
-                setProduct(response.data);
-                setImagePreview(response.data.image);
+                const [productRes, categoriesRes] = await Promise.all([
+                    axios.get(`/api/product/${id}`),
+                    axios.get("/api/category"),
+                ]);
+
+                setFormData(productRes.data);
+                setImagePreview(productRes.data.image);
+                setCategories(categoriesRes.data);
             } catch (error) {
-                console.error("Error fetching product:", error);
+                toast.error("Error fetching product data");
+                console.error("Error fetching data:", error);
             }
         };
+
         fetchProduct();
     }, [id]);
-
-    useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                const response = await axios.get("/api/category");
-                setCategories(response.data);
-            } catch (error) {
-                console.error("Error fetching categories:", error);
-            }
-        };
-
-        fetchCategories();
-    }, []);
-
-    console.log("Product:", product);
 
     return (
         <Navbar>
@@ -62,7 +120,7 @@ export default function EditProductPage() {
                 <h1 className="text-2xl font-bold text-gray-400 mb-6">
                     Edit Product
                 </h1>
-                <form>
+                <form onSubmit={handleSubmit}>
                     <div className="flex justify-between gap-4">
                         <div className="w-1/2">
                             {/* Product Name */}
@@ -72,7 +130,8 @@ export default function EditProductPage() {
                                     id="productName"
                                     type="text"
                                     className="px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
-                                    value={product?.name}
+                                    value={formData.name}
+                                    onChange={handleChange}
                                     required
                                 />
                             </div>
@@ -85,7 +144,8 @@ export default function EditProductPage() {
                                 <textarea
                                     id="productDescription"
                                     className="px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
-                                    value={product?.description}
+                                    value={formData.description}
+                                    onChange={handleChange}
                                     required
                                 />
                             </div>
@@ -97,7 +157,8 @@ export default function EditProductPage() {
                                     id="productPrice"
                                     type="number"
                                     className="no-spinner px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
-                                    value={product?.price}
+                                    value={formData.price}
+                                    onChange={handleChange}
                                     required
                                 />
                             </div>
@@ -111,7 +172,8 @@ export default function EditProductPage() {
                                     id="productQuantity"
                                     type="number"
                                     className="no-spinner px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
-                                    value={product?.quantity}
+                                    value={formData.quantity}
+                                    onChange={handleChange}
                                     required
                                 />
                             </div>
@@ -124,14 +186,18 @@ export default function EditProductPage() {
                                 <select
                                     id="productCategory"
                                     className="px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
+                                    value={formData.categoryId}
+                                    onChange={handleChange}
                                     required
-                                    value={product?.categoryId}
                                 >
                                     <option value="" disabled>
                                         Select Category
                                     </option>
-                                    {categories.map((category, index) => (
-                                        <option key={index} value={category.id}>
+                                    {categories.map((category) => (
+                                        <option
+                                            key={category.id}
+                                            value={category.id}
+                                        >
                                             {category.name}
                                         </option>
                                     ))}
@@ -150,11 +216,11 @@ export default function EditProductPage() {
                                 </label>
                                 <div className="relative w-72 h-72 border-2 border-dashed border-gray-400 rounded-lg flex text-center items-center justify-center bg-slate-50">
                                     {imagePreview ? (
-                                        // eslint-disable-next-line @next/next/no-img-element
-                                        <img
+                                        <Image
                                             src={imagePreview}
                                             alt="Preview"
                                             className="object-cover w-full h-full rounded-lg"
+                                            layout="fill"
                                         />
                                     ) : (
                                         <span className="text-gray-500">
@@ -167,7 +233,6 @@ export default function EditProductPage() {
                                         accept="image/png"
                                         className="absolute inset-0 opacity-0 cursor-pointer"
                                         onChange={handleImageChange}
-                                        required
                                     />
                                 </div>
                             </div>
@@ -182,7 +247,8 @@ export default function EditProductPage() {
                                         id="productInStock"
                                         type="checkbox"
                                         className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                        required
+                                        checked={formData.inStock}
+                                        onChange={handleCheckboxChange}
                                     />
                                     <span className="text-gray-700">
                                         Instock
@@ -195,9 +261,11 @@ export default function EditProductPage() {
                     <button
                         type="submit"
                         className="btn btn-md btn-ghost text-black flex items-center bg-green-400 w-full mt-8"
-                        onClick={handleSubmit}
+                        disabled={isLoading}
                     >
-                        <span className="ml-2">Add Product</span>
+                        <span className="ml-2">
+                            {isLoading ? "Updating..." : "Update Product"}
+                        </span>
                     </button>
                 </form>
             </div>
