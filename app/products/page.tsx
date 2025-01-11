@@ -163,7 +163,7 @@ export default function Page() {
             >
                 <Navbar>
                     {/* Category buttons */}
-                    <div className="flex overflow-hidden gap-6 mt-4">
+                    <div className="flex overflow-auto gap-6 mt-4 scrollbar-hide">
                         {categories.map((category) => (
                             <CategoryBox
                                 key={category.category}

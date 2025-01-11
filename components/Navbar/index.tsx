@@ -1,32 +1,30 @@
 "use client";
 
+import logo from "@/assets/Icon.png";
 import { show } from "@/store/slices/visibilitySlice";
 import { SignedIn } from "@clerk/nextjs";
 import {
     Bell,
-    CheckCheck,
     Menu,
     Search as SearchIcon,
     ShoppingCart,
     SlidersHorizontal,
-    Trash2,
     X,
 } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useState } from "react";
-import Image from "next/image";
-import logo from "@/assets/Icon.png";
 import { useDispatch } from "react-redux";
 import CustomUserButton from "../CustomUserButton";
-import NotificationCard from "../NotificationCard";
+import NotificationOverlay from "../NotificationOverlay";
 import Sidebar from "./Sidebar";
-import Link from "next/link";
 
 const links = [
     { href: "/dashboard", text: "Dashboard" },
     { href: "/products", text: "Products" },
     { href: "/invoices", text: "Invoices" },
-    { href: "/products/list", text: "Product List" },
+    { href: "/products/list", text: "Product Management" },
     { href: "/settings", text: "Settings" },
 ];
 
@@ -118,47 +116,14 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                                     <Bell size={25} />
                                 </div>
                                 {showPopup && (
-                                    <div className="absolute min-w-[400px] top-full right-0 bg-white border border-gray-300 rounded-lg shadow-lg p-4 whitespace-nowrap overflow-hidden text-ellipsis">
-                                        <div className="flex justify-between items-center mb-4">
-                                            <h3 className="text-lg font-semibold">
-                                                Notifications
-                                            </h3>
-                                            <div className="flex space-x-2">
-                                                <CheckCheck
-                                                    size={20}
-                                                    className="cursor-pointer"
-                                                    onClick={markAllAsRead}
-                                                />
-                                                <Trash2
-                                                    size={20}
-                                                    className=" cursor-pointer"
-                                                    onClick={
-                                                        deleteAllNotifications
-                                                    }
-                                                />
-                                            </div>
-                                        </div>
-                                        {notifications.length === 0 ? (
-                                            <p className="text-stone-400 mb-4">
-                                                No new notifications
-                                            </p>
-                                        ) : (
-                                            notifications.map(
-                                                (notification) => (
-                                                    <NotificationCard
-                                                        key={notification.id}
-                                                        isRead={
-                                                            notification.isRead
-                                                        }
-                                                        notification={
-                                                            notification
-                                                        }
-                                                        markAsRead={markAsRead}
-                                                    />
-                                                )
-                                            )
-                                        )}
-                                    </div>
+                                    <NotificationOverlay
+                                        markAllAsRead={markAllAsRead}
+                                        markAsRead={markAsRead}
+                                        notifications={notifications}
+                                        deleteAllNotifications={
+                                            deleteAllNotifications
+                                        }
+                                    />
                                 )}
                             </div>
 
@@ -198,40 +163,21 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                                 <Bell size={25} />
                             </div>
                             {showPopup && (
-                                <div className="absolute min-w-[300px] top-full right-0 bg-white border border-gray-300 rounded-lg shadow-lg p-4 whitespace-nowrap overflow-hidden text-ellipsis">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h3 className="text-lg font-semibold">
-                                            Notifications
-                                        </h3>
-                                        <div className="flex space-x-2">
-                                            <CheckCheck
-                                                size={20}
-                                                className="cursor-pointer"
-                                                onClick={markAllAsRead}
-                                            />
-                                            <Trash2
-                                                size={20}
-                                                className=" cursor-pointer"
-                                                onClick={deleteAllNotifications}
-                                            />
-                                        </div>
-                                    </div>
-                                    {notifications.length === 0 ? (
-                                        <p className="text-stone-400 mb-4">
-                                            No new notifications
-                                        </p>
-                                    ) : (
-                                        notifications.map((notification) => (
-                                            <NotificationCard
-                                                key={notification.id}
-                                                isRead={notification.isRead}
-                                                notification={notification}
-                                                markAsRead={markAsRead}
-                                            />
-                                        ))
-                                    )}
-                                </div>
+                                <NotificationOverlay
+                                    markAllAsRead={markAllAsRead}
+                                    markAsRead={markAsRead}
+                                    notifications={notifications}
+                                    deleteAllNotifications={
+                                        deleteAllNotifications
+                                    }
+                                />
                             )}
+                        </div>
+                        <div
+                            className="p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
+                            onClick={toggleSidebar}
+                        >
+                            <ShoppingCart size={25} />
                         </div>
                         <button
                             className="p-2 text-black rounded-lg cursor-pointer"
@@ -284,7 +230,7 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                 </div>
 
                 {/* Body content goes here */}
-                <div className="flex-grow px-10 py-1 overflow-y-auto">
+                <div className="flex-grow px-6 lg:px-10 py-1 overflow-y-auto">
                     {children}
                 </div>
             </div>
