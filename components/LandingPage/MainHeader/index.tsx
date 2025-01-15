@@ -16,12 +16,12 @@ export default function MainHeader() {
                     Seamlessly manage your sales with integrated M-Pesa payments
                     and KRA compliance. Built for Kenyan businesses.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4 mb-16">
-                    <button className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center">
+                <div className="flex flex-col w-full justify-center sm:flex-row gap-4 mb-16">
+                    <button className="w-full md:w-auto lg:w-auto bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center">
                         Start Free Trial{" "}
                         <ChevronRight color="#fff" className="ml-2" size={18} />
                     </button>
-                    <button className="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center">
+                    <button className="w-full md:w-auto lg:w-auto border border-gray-300 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center">
                         Learn more
                     </button>
                 </div>
