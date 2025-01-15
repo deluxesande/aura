@@ -76,12 +76,20 @@ export default function Page() {
                     </h1>
 
                     {products.map((product, index) => (
-                        <TopProducts key={index} product={product} />
+                        <TopProducts
+                            key={index}
+                            product={product}
+                            quantity={0}
+                        />
                     ))}
                 </div>
             </div>
 
-            <InvoicesTable title="Recent Invoices" invoices={invoices} />
+            <InvoicesTable
+                title="Recent Invoices"
+                invoices={invoices}
+                handleDelete={() => {}}
+            />
         </Navbar>
     );
 }

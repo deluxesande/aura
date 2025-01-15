@@ -16,7 +16,7 @@ export default function NotificationOverlay({
     notifications,
 }: NotificationOverlayProps) {
     return (
-        <div className="absolute min-w-[300px] top-full right-0 bg-white border border-gray-300 rounded-lg shadow-lg p-4 whitespace-nowrap overflow-hidden text-ellipsis">
+        <div className="fixed inset-0 top-[88px] lg:absolute lg:top-full lg:right-0 lg:min-w-[300px] bg-white lg:border lg:border-gray-300 rounded-lg shadow-lg p-4 whitespace-nowrap overflow-hidden text-ellipsis z-50">
             <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">Notifications</h3>
                 <div className="flex space-x-2">
