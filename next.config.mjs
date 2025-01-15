@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     images: {
+        dangerouslyAllowSVG: true,
         remotePatterns: [
             {
                 protocol: "https",
@@ -9,6 +10,10 @@ const nextConfig = {
             {
                 protocol: "http",
                 hostname: "localhost",
+            },
+            {
+                protocol: "https",
+                hostname: "placehold.co",
             },
         ],
     },

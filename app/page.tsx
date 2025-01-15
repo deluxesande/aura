@@ -1,5 +1,6 @@
 "use client";
 import Footer from "@/components/LandingPage/Footer";
+import MainHeader from "@/components/LandingPage/MainHeader";
 import Navbar from "@/components/LandingPage/Navbar";
 import {
     ArrowRight,
@@ -17,40 +18,8 @@ export default function App() {
         <div className="w-full min-h-screen bg-white">
             <Navbar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
-            <section className="pt-32 pb-40 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative">
-                <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
-                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-                        Streamline Your Sales with
-                        <span className="text-green-600">
-                            {" "}
-                            Kenyan Solutions
-                        </span>
-                    </h1>
-                    <p className="text-xl text-gray-600 mb-8 max-w-2xl">
-                        Seamlessly manage your sales with integrated M-Pesa
-                        payments and KRA compliance. Built for Kenyan
-                        businesses.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 mb-16">
-                        <button className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center">
-                            Start Free Trial{" "}
-                            <ChevronRight className="ml-2" size={20} />
-                        </button>
-                        <button className="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center">
-                            Book Demo <Phone className="ml-2" size={20} />
-                        </button>
-                    </div>
-                    <div className="relative w-full max-w-3xl mx-auto">
-                        <div className="rounded-t-2xl shadow-2xl overflow-hidden">
-                            <img
-                                src="https://placehold.co/1200x800/e5e7eb/475569?text=Dashboard+Preview"
-                                alt="SaleSense Dashboard Preview"
-                                className="w-full h-auto"
-                            />
-                        </div>
-                    </div>
-                </div>
-            </section>
+            <MainHeader />
+
             <section className="py-20 bg-gray-50 -mt-20">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">

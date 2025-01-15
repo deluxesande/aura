@@ -19,6 +19,14 @@ export default function Navbar({
                             width={160}
                             height={160}
                             alt="Logo"
+                            className="hidden sm:block"
+                        />
+                        <Image
+                            src="/logos/salesense-vertical.png"
+                            width={65}
+                            height={65}
+                            alt="Logo"
+                            className="block sm:hidden"
                         />
                     </div>
                     <div className="hidden md:flex items-center space-x-8">
