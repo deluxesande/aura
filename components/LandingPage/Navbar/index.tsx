@@ -1,4 +1,5 @@
 import { X, Menu } from "lucide-react";
+import Image from "next/image";
 import React from "react";
 
 export default function Navbar({
@@ -13,10 +14,12 @@ export default function Navbar({
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                     <div className="flex items-center">
-                        <span className="text-2xl font-bold text-gray-900">
-                            Sale
-                            <span className="text-green-600">Sense</span>
-                        </span>
+                        <Image
+                            src="/logos/salesense-horizontal.png"
+                            width={160}
+                            height={160}
+                            alt="Logo"
+                        />
                     </div>
                     <div className="hidden md:flex items-center space-x-8">
                         <a
