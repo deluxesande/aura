@@ -7,7 +7,7 @@ export default function CTABanner() {
             <div className="bg-green-600 max-w-7xl rounded-md mx-10 py-16 px-4 sm:px-6 lg:px-8">
                 <div className="text-center">
                     <h2 className="text-3xl font-bold text-white">
-                        Ready to Transform Your Sales?
+                        Ready to grow your business?
                     </h2>
                     <p className="mt-4 text-white">
                         Join thousands of Kenyan businesses already using

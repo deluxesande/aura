@@ -1,5 +1,6 @@
 import { X, Menu } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import React from "react";
 
 export default function Navbar({
@@ -13,7 +14,7 @@ export default function Navbar({
         <nav className="fixed w-full bg-white/80 backdrop-blur-sm z-50 border-b">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
-                    <div className="flex items-center">
+                    <Link href="/" className="flex items-center">
                         <Image
                             src="/logos/salesense-horizontal.png"
                             width={160}
@@ -28,10 +29,10 @@ export default function Navbar({
                             alt="Logo"
                             className="block sm:hidden"
                         />
-                    </div>
+                    </Link>
                     <div className="hidden md:flex items-center space-x-8">
                         <a
-                            href="#features"
+                            href="features"
                             className="text-gray-600 hover:text-gray-900"
                         >
                             Features

@@ -9,6 +9,7 @@ import Testimonials from "@/components/LandingPage/Testimonials";
 import TrustedBy from "@/components/LandingPage/TrustedBy";
 import WhySalesense from "@/components/LandingPage/WhySalesense";
 import { useState } from "react";
+
 export default function App() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     return (
