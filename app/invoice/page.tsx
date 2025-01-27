@@ -1,7 +1,7 @@
 "use client";
 import Navbar from "@/components/Navbar";
 import { useSearchParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import TopProducts from "@/components/TopProducts";
 import { Invoice, Product } from "@/utils/typesDefinitions";
 import axios from "axios";
@@ -69,80 +69,91 @@ const InvoicePage: React.FC = () => {
     }, [id]);
 
     return (
-        <Navbar>
-            <div className="flex flex-row flex-wrap gap-10 justify-between p-4 card bg-white shadow-lg rounded-lg mt-4">
-                <div className="w-full">
-                    <div className="flex justify-between">
-                        <p className="text-gray-600">OOOP-1</p>
-                        <span
-                            className={`px-2 py-1 rounded-lg ${getStatusColor(
-                                status
-                            )}`}
-                        >
-                            {status.charAt(0).toUpperCase() + status.slice(1)}
-                        </span>
-                    </div>
+        <Suspense fallback={<div>Loading...</div>}>
+            <Navbar>
+                <div className="flex flex-row flex-wrap gap-10 justify-between p-4 card bg-white shadow-lg rounded-lg mt-4">
+                    <div className="w-full">
+                        <div className="flex justify-between">
+                            <p className="text-gray-600">OOOP-1</p>
+                            <span
+                                className={`px-2 py-1 rounded-lg ${getStatusColor(
+                                    status
+                                )}`}
+                            >
+                                {status.charAt(0).toUpperCase() +
+                                    status.slice(1)}
+                            </span>
+                        </div>
 
-                    <div className="flex flex-col w-full gap-2">
-                        <div className="flex justify-between mt-10">
-                            <p className="text-black font-semibold">
-                                Invoice No:
-                            </p>
-                            <div className="flex items-center">
-                                <p className="text-black font-semibold mr-2 truncate w-32">
-                                    {invoice?.id}
+                        <div className="flex flex-col w-full gap-2">
+                            <div className="flex justify-between mt-10">
+                                <p className="text-black font-semibold">
+                                    Invoice No:
                                 </p>
-                                <Copy
-                                    size={18}
-                                    className="text-gray-600 cursor-pointer"
-                                    onClick={() => copyToClipboard(invoice?.id)}
-                                />
+                                <div className="flex items-center">
+                                    <p className="text-black font-semibold mr-2 truncate w-32">
+                                        {invoice?.id}
+                                    </p>
+                                    <Copy
+                                        size={18}
+                                        className="text-gray-600 cursor-pointer"
+                                        onClick={() =>
+                                            copyToClipboard(invoice?.id)
+                                        }
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex justify-between">
+                                <p className="text-black font-semibold">
+                                    Created:
+                                </p>
+                                <p className="text-black font-semibold">
+                                    {invoice?.createdAt?.toString()}
+                                </p>
+                            </div>
+
+                            <div className="flex justify-between mt-10">
+                                <p className="text-gray-600 font-light">
+                                    Payment Type
+                                </p>
+                                <p className="text-gray-600 font-light">
+                                    Client Name
+                                </p>
+                            </div>
+                            <div className="flex justify-between">
+                                <p className="text-black font-semibold">
+                                    MPESA
+                                </p>
+                                <p className="text-black font-semibold">
+                                    John Doe
+                                </p>
+                            </div>
+
+                            <div className="bg-green-600 h-28 w-full rounded-lg mt-8 flex flex-col items-center justify-center gap-2">
+                                <p className="text-white text-xl font-semibold">
+                                    Amount
+                                </p>
+                                <p className="text-white text-xl font-light">
+                                    ${invoice?.totalAmount}
+                                </p>
                             </div>
                         </div>
+                    </div>
+                    <div className="w-full">
                         <div className="flex justify-between">
-                            <p className="text-black font-semibold">Created:</p>
-                            <p className="text-black font-semibold">
-                                {invoice?.createdAt?.toString()}
-                            </p>
+                            <p className="text-gray-600 font-light">Items</p>
                         </div>
-
-                        <div className="flex justify-between mt-10">
-                            <p className="text-gray-600 font-light">
-                                Payment Type
-                            </p>
-                            <p className="text-gray-600 font-light">
-                                Client Name
-                            </p>
-                        </div>
-                        <div className="flex justify-between">
-                            <p className="text-black font-semibold">MPESA</p>
-                            <p className="text-black font-semibold">John Doe</p>
-                        </div>
-
-                        <div className="bg-green-600 h-28 w-full rounded-lg mt-8 flex flex-col items-center justify-center gap-2">
-                            <p className="text-white text-xl font-semibold">
-                                Amount
-                            </p>
-                            <p className="text-white text-xl font-light">
-                                ${invoice?.totalAmount}
-                            </p>
-                        </div>
+                        {invoiceItems.map((invoiceItem, index) => (
+                            <TopProducts
+                                key={index}
+                                product={invoiceItem.Product}
+                                quantity={invoiceItem.quantity}
+                            />
+                        ))}
                     </div>
                 </div>
-                <div className="w-full">
-                    <div className="flex justify-between">
-                        <p className="text-gray-600 font-light">Items</p>
-                    </div>
-                    {invoiceItems.map((invoiceItem, index) => (
-                        <TopProducts
-                            key={index}
-                            product={invoiceItem.Product}
-                            quantity={invoiceItem.quantity}
-                        />
-                    ))}
-                </div>
-            </div>
-        </Navbar>
+            </Navbar>
+        </Suspense>
     );
 };
 
