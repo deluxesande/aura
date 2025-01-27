@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 
 export default function TrustedBy() {
     return (
@@ -14,28 +15,28 @@ export default function TrustedBy() {
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12 mb-20">
                     <div className="flex items-center justify-center p-4 grayscale hover:grayscale-0 transition-all">
-                        <img
+                        <Image
                             src="https://placehold.co/200x80/e5e7eb/475569?text=Naivas"
                             alt="Naivas"
                             className="max-h-12"
                         />
                     </div>
                     <div className="flex items-center justify-center p-4 grayscale hover:grayscale-0 transition-all">
-                        <img
+                        <Image
                             src="https://placehold.co/200x80/e5e7eb/475569?text=Quickmart"
                             alt="Quickmart"
                             className="max-h-12"
                         />
                     </div>
                     <div className="flex items-center justify-center p-4 grayscale hover:grayscale-0 transition-all">
-                        <img
+                        <Image
                             src="https://placehold.co/200x80/e5e7eb/475569?text=Artcaffe"
                             alt="Artcaffe"
                             className="max-h-12"
                         />
                     </div>
                     <div className="flex items-center justify-center p-4 grayscale hover:grayscale-0 transition-all">
-                        <img
+                        <Image
                             src="https://placehold.co/200x80/e5e7eb/475569?text=Java+House"
                             alt="Java House"
                             className="max-h-12"

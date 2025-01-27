@@ -19,7 +19,7 @@ export default function FAQ() {
                         </h3>
                         <p className="text-gray-600">
                             Simply connect your Till or Paybill number, and
-                            we'll automatically track all transactions in
+                            we&apos;ll automatically track all transactions in
                             real-time.
                         </p>
                     </div>
@@ -46,8 +46,8 @@ export default function FAQ() {
                             Do you offer training?
                         </h3>
                         <p className="text-gray-600">
-                            Yes, we provide free onboarding and training
-                            sessions for all new customers.
+                            Yes, we provide comprehensive training to help you
+                            get the most out of our platform.
                         </p>
                     </div>
                 </div>

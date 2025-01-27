@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 
 export default function Testimonials() {
     return (
@@ -15,7 +16,7 @@ export default function Testimonials() {
                 <div className="grid md:grid-cols-3 gap-8">
                     <div className="bg-white p-6 rounded-xl shadow-sm">
                         <div className="flex items-center mb-4">
-                            <img
+                            <Image
                                 src="https://placehold.co/100/475569/ffffff?text=JM"
                                 alt="John Mwangi"
                                 className="w-12 h-12 rounded-full"
@@ -28,13 +29,14 @@ export default function Testimonials() {
                             </div>
                         </div>
                         <p className="text-gray-600">
-                            "SaleSense has transformed how we handle our daily
-                            sales. The M-Pesa integration is seamless!"
+                            &quot;SaleSense has transformed how we handle our
+                            daily sales. The M-Pesa integration is
+                            seamless!&quot;
                         </p>
                     </div>
                     <div className="bg-white p-6 rounded-xl shadow-sm">
                         <div className="flex items-center mb-4">
-                            <img
+                            <Image
                                 src="https://placehold.co/100/475569/ffffff?text=SK"
                                 alt="Sarah Kamau"
                                 className="w-12 h-12 rounded-full"
@@ -47,13 +49,13 @@ export default function Testimonials() {
                             </div>
                         </div>
                         <p className="text-gray-600">
-                            "The KRA compliance features save us so much time.
-                            Highly recommended!"
+                            &quot;The KRA compliance features save us so much
+                            time. Highly recommended!&quot;
                         </p>
                     </div>
                     <div className="bg-white p-6 rounded-xl shadow-sm">
                         <div className="flex items-center mb-4">
-                            <img
+                            <Image
                                 src="https://placehold.co/100/475569/ffffff?text=DO"
                                 alt="David Ochieng"
                                 className="w-12 h-12 rounded-full"
@@ -68,8 +70,8 @@ export default function Testimonials() {
                             </div>
                         </div>
                         <p className="text-gray-600">
-                            "The analytics help us make better business
-                            decisions. Great customer support too!"
+                            &quot;The analytics help us make better business
+                            decisions. Great customer support too!&quot;
                         </p>
                     </div>
                 </div>

@@ -38,13 +38,13 @@ export default function Navbar({
                             Features
                         </a>
                         <a
-                            href="#integration"
+                            href="integration"
                             className="text-gray-600 hover:text-gray-900"
                         >
                             Integration
                         </a>
                         <a
-                            href="#pricing"
+                            href="pricing"
                             className="text-gray-600 hover:text-gray-900"
                         >
                             Pricing
@@ -67,19 +67,19 @@ export default function Navbar({
                 <div className="md:hidden bg-white border-b">
                     <div className="px-2 pt-2 pb-3 space-y-1">
                         <a
-                            href="#features"
+                            href="features"
                             className="block px-3 py-2 text-gray-600 hover:text-gray-900"
                         >
                             Features
                         </a>
                         <a
-                            href="#integration"
+                            href="integration"
                             className="block px-3 py-2 text-gray-600 hover:text-gray-900"
                         >
                             Integration
                         </a>
                         <a
-                            href="#pricing"
+                            href="pricing"
                             className="block px-3 py-2 text-gray-600 hover:text-gray-900"
                         >
                             Pricing
