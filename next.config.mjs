@@ -1,10 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    experimental: {
+        missingSuspenseWithCSRBailout: false,
+    },
     images: {
         dangerouslyAllowSVG: true,
-        experimental: {
-            missingSuspenseWithCSRBailout: false,
-        },
         remotePatterns: [
             {
                 protocol: "https",
