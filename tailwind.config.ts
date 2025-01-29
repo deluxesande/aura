@@ -14,8 +14,23 @@ const config: Config = {
                 "gradient-conic":
                     "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
             },
+            clipPath: {
+                half: "polygon(0 0, 100% 0, 100% 50%, 0 50%)",
+            },
         },
     },
-    plugins: [daisyui],
+    plugins: [
+        daisyui,
+        function (utilities: {
+            addUtilities: (utilities: Record<string, any>) => void;
+        }) {
+            const { addUtilities } = utilities;
+            addUtilities({
+                ".clip-half": {
+                    "clip-path": "polygon(0 0, 100% 0, 100% 85%, 0 85%)",
+                },
+            });
+        },
+    ],
 };
 export default config;

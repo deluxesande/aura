@@ -25,7 +25,7 @@ export default function HowItWorks() {
                                 and KRA PIN
                             </p>
                         </div>
-                        <div className="hidden md:block absolute right-[-28px] top-1/2 transform translate-y-1/2 z-10">
+                        <div className="hidden md:block absolute right-[-28px] top-[40%] transform translate-y-1/2 z-10">
                             <ArrowRight color="#16a34a" size={24} />
                         </div>
                     </div>
@@ -41,7 +41,7 @@ export default function HowItWorks() {
                                 Link your M-Pesa Till or Paybill number
                             </p>
                         </div>
-                        <div className="hidden md:block absolute right-[-28px] top-1/2 transform translate-y-1/2 z-10">
+                        <div className="hidden md:block absolute right-[-28px] top-[40%] transform translate-y-1/2 z-10">
                             <ArrowRight color="#16a34a" size={24} />
                         </div>
                     </div>

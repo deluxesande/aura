@@ -19,6 +19,8 @@ export default function TrustedBy() {
                             src="https://placehold.co/200x80/e5e7eb/475569?text=Naivas"
                             alt="Naivas"
                             className="max-h-12"
+                            width={200}
+                            height={80}
                         />
                     </div>
                     <div className="flex items-center justify-center p-4 grayscale hover:grayscale-0 transition-all">
@@ -26,6 +28,8 @@ export default function TrustedBy() {
                             src="https://placehold.co/200x80/e5e7eb/475569?text=Quickmart"
                             alt="Quickmart"
                             className="max-h-12"
+                            width={200}
+                            height={80}
                         />
                     </div>
                     <div className="flex items-center justify-center p-4 grayscale hover:grayscale-0 transition-all">
@@ -33,6 +37,8 @@ export default function TrustedBy() {
                             src="https://placehold.co/200x80/e5e7eb/475569?text=Artcaffe"
                             alt="Artcaffe"
                             className="max-h-12"
+                            width={200}
+                            height={80}
                         />
                     </div>
                     <div className="flex items-center justify-center p-4 grayscale hover:grayscale-0 transition-all">
@@ -40,6 +46,8 @@ export default function TrustedBy() {
                             src="https://placehold.co/200x80/e5e7eb/475569?text=Java+House"
                             alt="Java House"
                             className="max-h-12"
+                            width={200}
+                            height={80}
                         />
                     </div>
                 </div>

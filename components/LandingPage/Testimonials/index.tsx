@@ -20,6 +20,8 @@ export default function Testimonials() {
                                 src="https://placehold.co/100/475569/ffffff?text=JM"
                                 alt="John Mwangi"
                                 className="w-12 h-12 rounded-full"
+                                width={200}
+                                height={80}
                             />
                             <div className="ml-4">
                                 <div className="font-semibold">John Mwangi</div>
@@ -40,6 +42,8 @@ export default function Testimonials() {
                                 src="https://placehold.co/100/475569/ffffff?text=SK"
                                 alt="Sarah Kamau"
                                 className="w-12 h-12 rounded-full"
+                                width={200}
+                                height={80}
                             />
                             <div className="ml-4">
                                 <div className="font-semibold">Sarah Kamau</div>
@@ -59,6 +63,8 @@ export default function Testimonials() {
                                 src="https://placehold.co/100/475569/ffffff?text=DO"
                                 alt="David Ochieng"
                                 className="w-12 h-12 rounded-full"
+                                width={200}
+                                height={80}
                             />
                             <div className="ml-4">
                                 <div className="font-semibold">

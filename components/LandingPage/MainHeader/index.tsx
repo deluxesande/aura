@@ -27,11 +27,11 @@ export default function MainHeader() {
                 </div>
                 <div className="relative w-full max-w-3xl mx-auto">
                     <Image
-                        src="https://placehold.co/1200x800/e5e7eb/475569?text=Dashboard+Preview"
+                        src="/ProductsPage.jpg"
                         alt="SaleSense Dashboard Preview"
                         width={1200}
                         height={800}
-                        className="w-full h-auto"
+                        className="w-full h-auto clip-half"
                     />
                 </div>
             </div>
