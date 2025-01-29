@@ -17,7 +17,7 @@ export default function Testimonials() {
                     <div className="bg-white p-6 rounded-xl shadow-sm">
                         <div className="flex items-center mb-4">
                             <Image
-                                src="https://placehold.co/100/475569/ffffff?text=JM"
+                                src="https://randomuser.me/api/portraits/men/50.jpg"
                                 alt="John Mwangi"
                                 className="w-12 h-12 rounded-full"
                                 width={200}
@@ -39,7 +39,7 @@ export default function Testimonials() {
                     <div className="bg-white p-6 rounded-xl shadow-sm">
                         <div className="flex items-center mb-4">
                             <Image
-                                src="https://placehold.co/100/475569/ffffff?text=SK"
+                                src="https://randomuser.me/api/portraits/women/89.jpg"
                                 alt="Sarah Kamau"
                                 className="w-12 h-12 rounded-full"
                                 width={200}
@@ -60,7 +60,7 @@ export default function Testimonials() {
                     <div className="bg-white p-6 rounded-xl shadow-sm">
                         <div className="flex items-center mb-4">
                             <Image
-                                src="https://placehold.co/100/475569/ffffff?text=DO"
+                                src="https://randomuser.me/api/portraits/men/25.jpg"
                                 alt="David Ochieng"
                                 className="w-12 h-12 rounded-full"
                                 width={200}
