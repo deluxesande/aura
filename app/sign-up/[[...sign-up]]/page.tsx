@@ -63,6 +63,19 @@ export default function SignupPage() {
         }
     };
 
+    const handleGoogleSignIn = async () => {
+        if (!isLoaded) return;
+        try {
+            await signUp.authenticateWithRedirect({
+                strategy: "oauth_google",
+                redirectUrl: "/sign-in",
+                redirectUrlComplete: "/dashboard",
+            });
+        } catch (err: any) {
+            toast.error("Failed to sign in with Google. Please try again.");
+        }
+    };
+
     return (
         <AuthLayout
             title="Create your account"
@@ -71,6 +84,7 @@ export default function SignupPage() {
             {/* Google Auth Button */}
             <button
                 type="button"
+                onClick={handleGoogleSignIn}
                 className="w-full flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
                 <Image
