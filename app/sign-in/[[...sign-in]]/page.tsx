@@ -1,19 +1,39 @@
-// import { SignIn } from "@clerk/nextjs";
-
-// export default function SignInPage() {
-//     return (
-//         <div className="flex justify-center items-center min-h-screen">
-//             <SignIn />
-//         </div>
-//     );
-// }
-
-import React from "react";
+"use client";
+import React, { useState } from "react";
 import Link from "next/link";
 import AuthLayout from "@components/auth/AuthLayout";
 import Image from "next/image";
+import { useSignIn } from "@clerk/nextjs";
+import { toast } from "sonner";
 
 export default function LoginPage() {
+    const { isLoaded, signIn, setActive } = useSignIn();
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!isLoaded) return;
+        try {
+            const result = await signIn.create({
+                identifier: email,
+                password,
+            });
+
+            if (result.status === "complete") {
+                await setActive({ session: result.createdSessionId });
+            }
+        } catch (err: any) {
+            if (err.errors) {
+                err.errors.forEach((error: any) => {
+                    toast.error(error.long_message || error.message);
+                });
+            } else {
+                toast.error("Failed to sign in. Please try again.");
+            }
+        }
+    };
+
     return (
         <AuthLayout
             title="Welcome back"
@@ -43,7 +63,7 @@ export default function LoginPage() {
                     </span>
                 </div>
             </div>
-            <form className="mt-6 space-y-6">
+            <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
                 <div>
                     <label
                         htmlFor="email"
@@ -57,6 +77,8 @@ export default function LoginPage() {
                             name="email"
                             type="email"
                             autoComplete="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             required
                             className="outline-none bg-slate-50 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
                         />
@@ -75,6 +97,8 @@ export default function LoginPage() {
                             name="password"
                             type="password"
                             autoComplete="current-password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                             required
                             className="outline-none bg-slate-50 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
                         />

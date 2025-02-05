@@ -1,19 +1,13 @@
-// import { SignUp } from "@clerk/nextjs";
-
-// export default async function SignUpPage() {
-//     return (
-//         <div className="flex justify-center items-center min-h-screen">
-//             <SignUp />
-//         </div>
-//     );
-// }
-
+"use client";
 import React from "react";
 import Link from "next/link";
 import AuthLayout from "@components/auth/AuthLayout";
 import Image from "next/image";
+import { useSignUp } from "@clerk/nextjs";
 
 export default function SignupPage() {
+    const { isLoaded, signUp, setActive } = useSignUp();
+
     return (
         <AuthLayout
             title="Create your account"
