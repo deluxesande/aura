@@ -22,6 +22,10 @@ const nextConfig = {
                 protocol: "https",
                 hostname: "randomuser.me",
             },
+            {
+                protocol: "https",
+                hostname: "www.svgrepo.com",
+            },
         ],
     },
 };
