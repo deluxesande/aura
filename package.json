@@ -5,6 +5,7 @@
     "scripts": {
         "dev": "next dev",
         "build": "prisma generate && next build",
+        "postbuild": "prisma migrate deploy",
         "start": "next start",
         "lint": "next lint",
         "list-routes": "node -e \"const fs = require('fs'); const path = require('path'); const getRoutes = (dir, baseRoute = '') => { const files = fs.readdirSync(dir); let routes = []; files.forEach(file => { const filePath = path.join(dir, file); const stat = fs.statSync(filePath); if (stat.isDirectory()) { routes = routes.concat(getRoutes(filePath, path.join(baseRoute, file))); } else if (file !== '_app.js' && file !== '_document.js' && file !== '_error.js') { const route = path.join(baseRoute, file.replace(/\\.(js|jsx|ts|tsx)$/, '')).replace(/\\/index$/, '') || '/'; routes.push(route); } }); return routes; }; const pagesDir = path.join(__dirname, 'pages'); const appDir = path.join(__dirname, 'app'); const routes = getRoutes(pagesDir).concat(getRoutes(appDir)); console.log('Routes:'); routes.forEach(route => console.log(route));\""
