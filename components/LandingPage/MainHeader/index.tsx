@@ -24,9 +24,12 @@ export default function MainHeader() {
                         Start Free Trial{" "}
                         <ChevronRight color="#fff" className="ml-2" size={18} />
                     </a>
-                    <button className="w-full md:w-auto lg:w-auto border border-gray-300 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center">
+                    <a
+                        href="/features"
+                        className="w-full md:w-auto lg:w-auto border border-gray-300 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center"
+                    >
                         Learn more
-                    </button>
+                    </a>
                 </div>
                 <div className="relative w-full max-w-3xl mx-auto">
                     <Image
