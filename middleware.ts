@@ -14,18 +14,6 @@ export default clerkMiddleware(async (auth, request) => {
     if (isPrivateRoute(request)) {
         await auth.protect();
     }
-
-    const { userId } = await auth();
-
-    if (userId && isAuthPage(request)) {
-        // Redirect authenticated users away from sign-in and sign-up pages
-        return new Response(null, {
-            status: 302,
-            headers: {
-                Location: "/dashboard",
-            },
-        });
-    }
 });
 
 export const config = {
