@@ -5,11 +5,14 @@ import AuthLayout from "@components/auth/AuthLayout";
 import Image from "next/image";
 import { useSignIn } from "@clerk/nextjs";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
     const { isLoaded, signIn, setActive } = useSignIn();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+
+    const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -22,15 +25,10 @@ export default function LoginPage() {
 
             if (result.status === "complete") {
                 await setActive({ session: result.createdSessionId });
+                router.push("/dashboard");
             }
         } catch (err: any) {
-            if (err.errors) {
-                err.errors.forEach((error: any) => {
-                    toast.error(error.long_message || error.message);
-                });
-            } else {
-                toast.error("Failed to sign in. Please try again.");
-            }
+            toast.error(err.errors[0].longMessage);
         }
     };
 

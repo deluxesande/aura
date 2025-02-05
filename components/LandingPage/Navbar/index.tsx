@@ -49,9 +49,12 @@ export default function Navbar({
                         >
                             Pricing
                         </a>
-                        <button className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        <a
+                            href="/sign-up"
+                            className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                        >
                             Get Started
-                        </button>
+                        </a>
                     </div>
                     <div className="md:hidden">
                         <button
