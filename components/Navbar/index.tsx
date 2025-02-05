@@ -89,8 +89,8 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                 style={{ width: "calc(100% - 5rem)" }}
             >
                 {/* Top navbar */}
-                <div className="p-6 sticky top-0 right-0 z-10 bg-white shadow-sm lg:flex hidden">
-                    <div className="flex items-center justify-between gap-4">
+                <div className="p-6 sticky top-0 right-0 z-10 bg-white shadow-sm lg:flex hidden w-full">
+                    <div className="flex items-center justify-between gap-4 w-full">
                         <div className="flex items-center w-full">
                             <div className="flex items-center mx-4 bg-gray-100 rounded-lg shadow-sm flex-grow">
                                 <input
