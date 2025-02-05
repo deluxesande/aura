@@ -8,8 +8,6 @@ import {
 import React from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-
-import logo from "@/assets/Icon.png";
 import Link from "next/link";
 
 const Sidebar = () => {
@@ -28,9 +26,11 @@ const Sidebar = () => {
             <div className="flex flex-col items-center">
                 <Link href="/">
                     <Image
-                        src={logo}
+                        src="/logos/salesense-vertical.png"
                         alt="Logo"
-                        className="mt-3 mb-12 rounded-full cursor-pointer"
+                        width={100}
+                        height={100}
+                        className="mt-3 mb-12 cursor-pointer"
                     />
                 </Link>
                 <ul className="flex flex-col items-center">

@@ -148,9 +148,11 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                     <div className="flex items-center">
                         <Link href="/">
                             <Image
-                                src={logo}
+                                src="/logos/salesense-vertical.png"
                                 alt="Logo"
-                                className="w-10 rounded-full cursor-pointer"
+                                width={55}
+                                height={55}
+                                className="w-10 cursor-pointer"
                             />
                         </Link>
                     </div>

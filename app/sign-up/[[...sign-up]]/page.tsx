@@ -6,6 +6,8 @@ import Image from "next/image";
 import { useSignUp } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
+import { signIn as signInAction } from "@/store/slices/authSlice";
 
 export default function SignupPage() {
     const { isLoaded, signUp, setActive } = useSignUp();
@@ -18,6 +20,7 @@ export default function SignupPage() {
     const [code, setCode] = useState("");
 
     const router = useRouter();
+    const dispatch = useDispatch();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -50,6 +53,7 @@ export default function SignupPage() {
 
             if (result.status === "complete") {
                 await setActive({ session: result.createdSessionId });
+                dispatch(signInAction());
                 router.push("/dashboard");
             }
         } catch (err: any) {
@@ -71,6 +75,7 @@ export default function SignupPage() {
                 redirectUrl: "/sign-in",
                 redirectUrlComplete: "/dashboard",
             });
+            dispatch(signInAction());
         } catch (err: any) {
             toast.error("Failed to sign in with Google. Please try again.");
         }
