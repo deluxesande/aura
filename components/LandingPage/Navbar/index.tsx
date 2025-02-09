@@ -118,7 +118,7 @@ export default function Navbar({
                         {!isSignedIn && (
                             <a
                                 href="/sign-in"
-                                className="text-green-600 hover:text-gray-900"
+                                className="block px-3 py-2 text-green-600 hover:text-gray-900"
                             >
                                 Sign in
                             </a>
@@ -126,9 +126,14 @@ export default function Navbar({
                         {isSignedIn ? (
                             <a
                                 href="/dashboard"
-                                className="block px-3 py-2 text-gray-600 hover:text-gray-900"
+                                className="px-3 py-2 text-green-600 flex items-center"
                             >
                                 Dashboard
+                                <ChevronRight
+                                    color="#16a34a"
+                                    size={16}
+                                    className="ml-1"
+                                />
                             </a>
                         ) : (
                             <button className="w-full mt-2 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
