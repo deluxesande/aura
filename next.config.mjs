@@ -26,6 +26,12 @@ const nextConfig = {
                 protocol: "https",
                 hostname: "www.svgrepo.com",
             },
+            {
+                protocol: "http",
+                hostname: process.env.MINIO_PUBLIC_IP,
+                port: "9000",
+                pathname: "/salesense-bucket/**",
+            },
         ],
     },
 };
