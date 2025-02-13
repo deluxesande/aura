@@ -1,5 +1,6 @@
 "use client";
 import CreateCategoryModal from "@/components/CreateCategoryModal";
+import Image from "@/components/Image";
 import Navbar from "@/components/Navbar";
 import { Category } from "@/utils/typesDefinitions";
 import axios from "axios";
@@ -225,9 +226,8 @@ export default function Page() {
                                     </label>
                                     <div className="relative w-72 h-72 border-2 border-dashed border-gray-400 rounded-lg flex text-center items-center justify-center bg-slate-50">
                                         {imagePreview ? (
-                                            // eslint-disable-next-line @next/next/no-img-element
-                                            <img
-                                                src={imagePreview}
+                                            <Image
+                                                path={imagePreview}
                                                 alt="Preview"
                                                 className="object-cover w-full h-full rounded-lg"
                                             />
