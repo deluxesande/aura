@@ -85,7 +85,7 @@ const UpdatePasswordForm: React.FC = () => {
                         type="submit"
                         className="btn btn-md btn-ghost text-black flex items-center bg-green-400 w-full mt-8"
                     >
-                        Save
+                        Change Password
                     </button>
 
                     {status === "password-updated" && (

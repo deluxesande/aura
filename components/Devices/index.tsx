@@ -69,7 +69,7 @@ const Devices: React.FC = () => {
                                         {device.name}
                                     </p>
                                     {device.isActive && (
-                                        <span className="ml-2 px-2 py-[2px] text-xs font-semibold text-green-500 bg-green-50 border border-green-500 rounded-full">
+                                        <span className="ml-2 px-2 py-[2px] text-[10px] font-semibold text-green-500 bg-green-50 border border-green-500 rounded-full">
                                             Active
                                         </span>
                                     )}

@@ -9,6 +9,7 @@ import React from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 
 const Sidebar = () => {
     const pathname = usePathname();
@@ -20,6 +21,8 @@ const Sidebar = () => {
         { href: "/products/list", icon: <PackageSearch size={22} /> },
         { href: "/settings", icon: <Settings size={22} /> },
     ];
+
+    const { user } = useUser();
 
     return (
         <div className="w-20 h-screen bg-white shadow-sm p-6 hidden lg:flex flex-col items-center justify-between">
@@ -51,7 +54,20 @@ const Sidebar = () => {
                     ))}
                 </ul>
             </div>
-            <div className="w-10 h-10 rounded-full bg-red-500 mt-auto mb-4 flex items-center justify-center"></div>
+            <Link href="/profile">
+                <div className="w-10 h-10 rounded-full mt-auto mb-4 flex items-center justify-center">
+                    {user && user.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                            src={user.imageUrl}
+                            alt="User Profile"
+                            className="w-full h-full rounded-full object-cover"
+                        />
+                    ) : (
+                        <div className="w-full h-full rounded-full bg-gray-300"></div>
+                    )}
+                </div>
+            </Link>
         </div>
     );
 };

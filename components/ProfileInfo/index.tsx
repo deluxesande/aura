@@ -1,8 +1,12 @@
+import { useUser } from "@clerk/nextjs";
 import React, { useState } from "react";
 
 const ProfileInfo: React.FC = () => {
-    const [name, setName] = useState("John Doe");
-    const [email, setEmail] = useState("john.doe@example.com");
+    const { user } = useUser();
+    const [name, setName] = useState(user?.firstName || "John Doe");
+    const [email, setEmail] = useState(
+        user?.emailAddresses[0]?.emailAddress || "john.doe@example.com"
+    );
     const [status, setStatus] = useState("");
 
     const handleSubmit = (event: React.FormEvent) => {
@@ -16,6 +20,14 @@ const ProfileInfo: React.FC = () => {
         event.preventDefault();
         // Add send verification logic here
         alert("Verification email sent");
+    };
+
+    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            // Add logic to upload the image and update the user's profile image
+            alert("Profile image uploaded");
+        }
     };
 
     return (
@@ -39,60 +51,94 @@ const ProfileInfo: React.FC = () => {
             </form>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-6">
-                <div>
-                    <label htmlFor="name" className="flex items-center gap-2">
-                        Name
-                    </label>
-                    <input
-                        id="name"
-                        name="name"
-                        type="text"
-                        className="w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                        autoFocus
-                        autoComplete="name"
-                    />
-                </div>
-
-                <div>
-                    <label htmlFor="email" className="flex items-center gap-2">
-                        Email
-                    </label>
-                    <input
-                        id="email"
-                        name="email"
-                        type="email"
-                        className="w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        autoComplete="username"
-                    />
-                    <div>
-                        <p className="text-sm mt-2 text-gray-800">
-                            Your email address is unverified.
-                            <button
-                                form="send-verification"
-                                className="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                            >
-                                Click here to re-send the verification email.
-                            </button>
-                        </p>
-                        {status === "verification-link-sent" && (
-                            <p className="mt-2 font-medium text-sm text-green-600">
-                                A new verification link has been sent to your
-                                email address.
-                            </p>
+                <div className="flex items-center space-x-6">
+                    <div className="flex flex-col items-center mx-10">
+                        {user && user.imageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                                src={user.imageUrl}
+                                alt="User Profile"
+                                className="w-24 h-24 rounded-full object-cover mb-4"
+                            />
+                        ) : (
+                            <div className="w-24 h-24 rounded-full bg-gray-300 mb-4"></div>
                         )}
+                        <label
+                            htmlFor="profileImage"
+                            className="cursor-pointer btn btn-sm btn-ghost text-black flex items-center bg-green-400 px-4 py-2 rounded-lg"
+                        >
+                            Upload Profile
+                        </label>
+                        <input
+                            id="profileImage"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                        />
+                    </div>
+                    <div className="flex-1 space-y-4">
+                        <div>
+                            <label
+                                htmlFor="name"
+                                className="block text-sm font-medium text-gray-700"
+                            >
+                                Name
+                            </label>
+                            <input
+                                id="name"
+                                name="name"
+                                type="text"
+                                className="mt-1 block w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                required
+                                autoFocus
+                                autoComplete="name"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                htmlFor="email"
+                                className="block text-sm font-medium text-gray-700"
+                            >
+                                Email
+                            </label>
+                            <input
+                                id="email"
+                                name="email"
+                                type="email"
+                                className="mt-1 block w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                autoComplete="username"
+                            />
+                            <div>
+                                <p className="text-sm mt-2 text-gray-800">
+                                    Your email address is unverified.
+                                    <button
+                                        form="send-verification"
+                                        className="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                    >
+                                        Click here to re-send the verification
+                                        email.
+                                    </button>
+                                </p>
+                                {status === "verification-link-sent" && (
+                                    <p className="mt-2 font-medium text-sm text-green-600">
+                                        A new verification link has been sent to
+                                        your email address.
+                                    </p>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-                <div className="flex items-center gap-4">
+                <div className="flex justify-end gap-4">
                     <button
                         type="submit"
-                        className="btn btn-md btn-ghost text-black flex items-center bg-green-400 w-full mt-8"
+                        className="btn btn-md btn-ghost text-black flex items-center bg-green-400 px-4 py-2 rounded-lg"
                     >
                         Save
                     </button>
