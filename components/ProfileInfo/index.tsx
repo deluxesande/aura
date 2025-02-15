@@ -3,11 +3,13 @@ import React, { useState } from "react";
 
 const ProfileInfo: React.FC = () => {
     const { user } = useUser();
-    const [name, setName] = useState(user?.firstName || "John Doe");
+    const [name, setName] = useState(user?.fullName || "John Doe");
     const [email, setEmail] = useState(
         user?.emailAddresses[0]?.emailAddress || "john.doe@example.com"
     );
     const [status, setStatus] = useState("");
+
+    console.log(user);
 
     const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault();
@@ -51,31 +53,33 @@ const ProfileInfo: React.FC = () => {
             </form>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-6">
-                <div className="flex items-center space-x-6">
-                    <div className="flex flex-col items-center mx-10">
-                        {user && user.imageUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                                src={user.imageUrl}
-                                alt="User Profile"
-                                className="w-24 h-24 rounded-full object-cover mb-4"
+                <div className="flex flex-col lg:flex-row items-center space-x-6">
+                    <div className="flex lg:flex-col items-center mx-10">
+                        <div className="flex flex-col items-center">
+                            {user && user.imageUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                    src={user.imageUrl}
+                                    alt="User Profile"
+                                    className="w-24 h-24 rounded-full object-cover mb-4"
+                                />
+                            ) : (
+                                <div className="w-24 h-24 rounded-full bg-gray-300 mb-4"></div>
+                            )}
+                            <label
+                                htmlFor="profileImage"
+                                className="cursor-pointer btn btn-sm btn-ghost text-black flex items-center bg-green-400 px-4 py-2 rounded-lg"
+                            >
+                                Upload Profile
+                            </label>
+                            <input
+                                id="profileImage"
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                className="hidden"
                             />
-                        ) : (
-                            <div className="w-24 h-24 rounded-full bg-gray-300 mb-4"></div>
-                        )}
-                        <label
-                            htmlFor="profileImage"
-                            className="cursor-pointer btn btn-sm btn-ghost text-black flex items-center bg-green-400 px-4 py-2 rounded-lg"
-                        >
-                            Upload Profile
-                        </label>
-                        <input
-                            id="profileImage"
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="hidden"
-                        />
+                        </div>
                     </div>
                     <div className="flex-1 space-y-4">
                         <div>
@@ -138,7 +142,7 @@ const ProfileInfo: React.FC = () => {
                 <div className="flex justify-end gap-4">
                     <button
                         type="submit"
-                        className="btn btn-md btn-ghost text-black flex items-center bg-green-400 px-4 py-2 rounded-lg"
+                        className="w-full lg:w-auto btn btn-md btn-ghost text-black flex items-center bg-green-400 px-4 py-2 rounded-lg"
                     >
                         Save
                     </button>
