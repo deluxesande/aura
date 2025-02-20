@@ -1,62 +1,63 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
+import { format } from "date-fns";
+import { toast } from "sonner";
 
 interface Device {
     id: string;
-    name: string;
-    lastConnected: string;
-    imageUrl: string;
-    isActive: boolean;
+    status: string;
+    browser: string;
+    browserVersion: string;
+    os: string;
+    lastActive: string;
     location: string;
+    imageUrl: string;
 }
 
-const devices: Device[] = [
-    {
-        id: "1",
-        name: "iPhone 12",
-        lastConnected: "2025-02-12",
-        imageUrl: "/images/iphone.png",
-        isActive: true,
-        location: "New York, USA",
-    },
-    {
-        id: "2",
-        name: "MacBook Pro",
-        lastConnected: "2025-02-10",
-        imageUrl: "/images/apple.png",
-        isActive: false,
-        location: "San Francisco, USA",
-    },
-    {
-        id: "3",
-        name: "Windows PC",
-        lastConnected: "2025-02-10",
-        imageUrl: "/images/window.png",
-        isActive: false,
-        location: "Los Angeles, USA",
-    },
-];
+const osImageMap: { [key: string]: string } = {
+    Windows: "/images/window.png",
+    "Mac OS": "/images/apple.png",
+    Linux: "/images/linux.png",
+    Android: "/images/android.png",
+    iOS: "/images/iphone.png",
+};
 
 const Devices: React.FC = () => {
     const { user } = useUser();
-    // const [devices, setDevices] = useState<Device[]>([]);
+    const [devices, setDevices] = useState<Device[]>([]);
 
-    // useEffect(() => {
-    //     const fetchDevices = async () => {
-    //         if (user) {
-    //             const response = await fetch(
-    //                 `/api/clerk/devices?userId=${user.id}`
-    //             );
+    useEffect(() => {
+        const fetchDevices = async () => {
+            if (!user) return;
 
-    //             console.log(response);
-    //             const data = await response.json();
-    //             setDevices(data.devices);
-    //         }
-    //     };
+            try {
+                const sessions = await user.getSessions();
 
-    //     fetchDevices();
-    // }, [user]);
+                const devicesList = sessions.map((session: any) => ({
+                    id: session.id,
+                    status: session.status,
+                    browser: session.latestActivity.browserName,
+                    browserVersion: session.latestActivity.browserVersion,
+                    os: session.latestActivity.deviceType,
+                    lastActive: format(new Date(session.lastActiveAt), "PPpp"),
+                    location: `${session.latestActivity.city}, ${session.latestActivity.country}`,
+                    imageUrl:
+                        osImageMap[session.os_name] || "/images/window.png",
+                }));
+
+                setDevices(devicesList);
+            } catch (err) {
+                if (err instanceof Error) {
+                    toast.error(err.message);
+                } else {
+                    toast.error("An unknown error occurred");
+                }
+            }
+        };
+
+        fetchDevices();
+    }, [user]);
 
     return (
         <section>
@@ -78,31 +79,36 @@ const Devices: React.FC = () => {
                         <div className="flex items-center">
                             <Image
                                 src={device.imageUrl}
-                                alt={device.name}
+                                alt={device.browser}
                                 width={20}
                                 height={20}
                                 className="w-6 h-6 mr-4"
                             />
                             <div className="space-y-1">
                                 <div className="flex items-center">
-                                    <p className="text-sm font-medium text-gray-700">
-                                        {device.name}
-                                    </p>
-                                    {device.isActive && (
+                                    <div className="flex flex-col">
+                                        <p className="text-sm font-medium text-gray-700">
+                                            {device.browser}
+                                        </p>
+                                        <p className="text-sm text-gray-700">
+                                            {device.browserVersion}
+                                        </p>
+                                    </div>
+                                    {device.status && (
                                         <span className="ml-2 px-2 py-[2px] text-[10px] font-semibold text-green-500 bg-green-50 border border-green-500 rounded-full">
                                             Active
                                         </span>
                                     )}
                                 </div>
-                                <p className="text-sm text-gray-600">
-                                    Last Connected: {device.lastConnected}
+                                <p className="text-md text-gray-600">
+                                    {device.location}
                                 </p>
                             </div>
                         </div>
 
-                        <div className="ml-auto flex flex-col items-end space-x-1">
+                        <div className="ml-auto flex flex-col items-end space-y-3">
                             <p className="text-xs text-gray-600">
-                                {device.location}
+                                {device.lastActive}
                             </p>
                             <button className="text-sm text-red-500">
                                 Remove
