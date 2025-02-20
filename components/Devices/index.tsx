@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
+import { useUser } from "@clerk/nextjs";
 
 interface Device {
     id: string;
@@ -38,6 +39,25 @@ const devices: Device[] = [
 ];
 
 const Devices: React.FC = () => {
+    const { user } = useUser();
+    // const [devices, setDevices] = useState<Device[]>([]);
+
+    // useEffect(() => {
+    //     const fetchDevices = async () => {
+    //         if (user) {
+    //             const response = await fetch(
+    //                 `/api/clerk/devices?userId=${user.id}`
+    //             );
+
+    //             console.log(response);
+    //             const data = await response.json();
+    //             setDevices(data.devices);
+    //         }
+    //     };
+
+    //     fetchDevices();
+    // }, [user]);
+
     return (
         <section>
             <header>

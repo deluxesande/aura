@@ -1,16 +1,67 @@
 import React, { useState } from "react";
+import { useUser } from "@clerk/nextjs";
+import { toast } from "sonner";
 
 const UpdatePasswordForm: React.FC = () => {
+    const { user } = useUser();
     const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    const [status, setStatus] = useState("");
 
-    const handleSubmit = (event: React.FormEvent) => {
+    const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
-        // Add update password logic here
-        setStatus("password-updated");
-        setTimeout(() => setStatus(""), 2000);
+
+        // Password Regex
+        if (newPassword.length < 8) {
+            toast.warning("Password must be at least 8 characters long.");
+            return;
+        }
+        if (!/[A-Z]/.test(newPassword)) {
+            toast.warning(
+                "Password must contain at least one uppercase letter."
+            );
+            return;
+        }
+        if (!/[a-z]/.test(newPassword)) {
+            toast.warning(
+                "Password must contain at least one lowercase letter."
+            );
+            return;
+        }
+        if (!/\d/.test(newPassword)) {
+            toast.warning("Password must contain at least one number.");
+            return;
+        }
+        if (!/[@$!%*?&]/.test(newPassword)) {
+            toast.warning(
+                "Password must contain at least one special character."
+            );
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            toast.warning("Passwords do not match");
+            return;
+        }
+
+        if (!user) {
+            toast.error("User not found");
+            return;
+        }
+
+        try {
+            await user.updatePassword({
+                currentPassword,
+                newPassword,
+            });
+            toast.success("Password updated successfully");
+        } catch (error) {
+            if (error instanceof Error) {
+                toast.error(error.message);
+            } else {
+                toast.error("An unknown error occurred");
+            }
+        }
     };
 
     return (
@@ -87,10 +138,6 @@ const UpdatePasswordForm: React.FC = () => {
                     >
                         Change Password
                     </button>
-
-                    {status === "password-updated" && (
-                        <p className="text-sm text-gray-600">Saved.</p>
-                    )}
                 </div>
             </form>
         </section>

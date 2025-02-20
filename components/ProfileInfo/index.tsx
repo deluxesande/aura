@@ -9,8 +9,6 @@ const ProfileInfo: React.FC = () => {
     );
     const [status, setStatus] = useState("");
 
-    console.log(user);
-
     const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault();
         // Add update profile logic here
