@@ -1,6 +1,6 @@
 "use client";
 import CreateCategoryModal from "@/components/CreateCategoryModal";
-import Image from "@/components/Image";
+import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import { Category } from "@/utils/typesDefinitions";
 import axios from "axios";
@@ -227,8 +227,10 @@ export default function Page() {
                                     <div className="relative w-72 h-72 border-2 border-dashed border-gray-400 rounded-lg flex text-center items-center justify-center bg-slate-50">
                                         {imagePreview ? (
                                             <Image
-                                                path={imagePreview}
+                                                src={imagePreview}
                                                 alt="Preview"
+                                                width={288}
+                                                height={288}
                                                 className="object-cover w-full h-full rounded-lg"
                                             />
                                         ) : (
