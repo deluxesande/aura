@@ -25,9 +25,7 @@ export default function Page() {
             try {
                 const response = await axios.get("/api/invoice");
                 setInvoices(response.data);
-            } catch (error) {
-                console.error("Error fetching invoices:", error);
-            }
+            } catch (error) {}
         };
 
         fetchInvoices();
@@ -39,9 +37,7 @@ export default function Page() {
                 const response = await axios.get("/api/product");
                 const limitedProducts = response.data.slice(0, 5);
                 setProducts(limitedProducts);
-            } catch (error) {
-                console.error("Error fetching products:", error);
-            }
+            } catch (error) {}
         };
 
         fetchProducts();
@@ -61,8 +57,8 @@ export default function Page() {
                 ))}
             </div>
 
-            <div className="flex gap-4 my-4">
-                <div className="px-6 py-4 h-fit rounded-lg gap-4 bg-white flex-1 w-[40%]">
+            <div className="flex flex-wrap gap-4 my-4">
+                <div className="px-6 py-4 h-fit rounded-lg gap-4 bg-white flex-1 w-full lg:w-[40%]">
                     <h1 className="text-2xl font-bold mb-6 text-gray-400">
                         Monthly Sales
                     </h1>
@@ -70,7 +66,7 @@ export default function Page() {
                     <LineChart />
                 </div>
 
-                <div className="px-6 py-4 rounded-lg gap-4 bg-white w-[60%]">
+                <div className="px-6 py-4 rounded-lg gap-4 bg-white w-full lg:w-[60%]">
                     <h1 className="text-2xl font-bold mb-6 text-gray-400">
                         Top Products
                     </h1>
