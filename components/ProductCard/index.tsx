@@ -1,5 +1,6 @@
 import React from "react";
 import Image from "next/image";
+// import Image from "../Image";
 
 export default function ProductCard({
     image,
@@ -16,6 +17,7 @@ export default function ProductCard({
         >
             <div className="relative w-full h-48">
                 <Image src={image} alt={name} layout="fill" objectFit="cover" />
+                {/* <Image path={image} alt={name} /> */}
             </div>
             <div className="p-4">
                 <div className="flex justify-between items-center">
