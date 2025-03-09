@@ -246,6 +246,9 @@ export default function Page() {
                                     .toFixed(2)}
                             </p>
                         </div>
+                        <button className="px-4 py-2 mt-4 border border-[#159A9C] text-[#159A9C] w-full bg-white rounded-md">
+                            Prompt User
+                        </button>
                         <button
                             className="px-4 py-2 mt-4 bg-[#159A9C] w-full text-white rounded-md"
                             onClick={handleOrder}
