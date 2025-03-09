@@ -2,6 +2,9 @@ import { NextApiRequest, NextApiResponse } from "next";
 import axios from "axios";
 import fs from "fs";
 import path from "path";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 const consumerKey = process.env.CONSUMER_KEY || "";
 const consumerSecret = process.env.CONSUMER_SECRET || "";
@@ -25,6 +28,29 @@ const storeResponse = (response: any) => {
     responses.push(response);
 
     fs.writeFileSync(filePath, JSON.stringify(responses, null, 2));
+};
+
+const storeResponseInDb = async (response: any) => {
+    await prisma.resultResponse.create({
+        data: {
+            resultType: response.resultType,
+            resultCode: response.resultCode,
+            resultDesc: response.resultDesc,
+            originatorConversationID: response.originatorConversationID,
+            conversationID: response.conversationID,
+            transactionID: response.transactionID,
+            referenceData: {
+                create: {
+                    referenceItem: {
+                        create: {
+                            key: response.referenceData.referenceItem.key,
+                            value: response.referenceData.referenceItem.value,
+                        },
+                    },
+                },
+            },
+        },
+    });
 };
 
 // Function to get an access token from the endpoint
@@ -114,7 +140,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             transactionType
         );
 
-        storeResponse(paymentResponse);
+        // storeResponse(paymentResponse);
+
+        // Store in db
+        storeResponseInDb(paymentResponse)
+            .catch((e) => {
+                throw e;
+            })
+            .finally(async () => {
+                await prisma.$disconnect();
+            });
         res.status(200).json(paymentResponse);
     } catch (error) {
         res.status(500).json({ error: "Failed to prompt user for payment" });

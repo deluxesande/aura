@@ -62,6 +62,11 @@ export default function ProductList({
                             </tr>
                         </thead>
                         <tbody>
+                            {products.length === 0 && (
+                                <p className="p-4 text-black text-lg">
+                                    No Products
+                                </p>
+                            )}
                             {products?.map((product, index) => (
                                 <tr
                                     key={index}

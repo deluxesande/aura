@@ -3,11 +3,12 @@ import React, { useEffect, useState } from "react";
 import Navbar from "@components/Navbar";
 import InvoicesTable from "@/components/InvoicesTable";
 import InfoCard from "@/components/InfoCard";
-import { ReceiptText, BadgeDollarSign } from "lucide-react";
+import { ReceiptText, BadgeDollarSign, PlusCircle } from "lucide-react";
 import TopProducts from "@/components/TopProducts";
 import { Product } from "@/utils/typesDefinitions";
 import axios from "axios";
 import LineChart from "@/components/LineChart";
+import Link from "next/link";
 
 const infoCards = [
     { title: "Invoices", number: 10, icon: ReceiptText },
@@ -70,6 +71,20 @@ export default function Page() {
                     <h1 className="text-2xl font-bold mb-6 text-gray-400">
                         Top Products
                     </h1>
+
+                    {products.length === 0 && (
+                        <div className="w-full m-auto mt-20 flex flex-col items-center justify-center">
+                            <h1 className="text-2xl font-bold mb-6 text-black">
+                                No Products
+                            </h1>
+                            <Link href="/products/create">
+                                <button className="btn btn-sm btn-ghost text-black flex items-center bg-green-400 w-full">
+                                    <PlusCircle className="w-4 h-4" />
+                                    Add Product
+                                </button>
+                            </Link>
+                        </div>
+                    )}
 
                     {products.map((product, index) => (
                         <TopProducts

@@ -12,6 +12,7 @@ import {
     Paperclip,
     Popcorn,
     Ellipsis,
+    PlusCircle,
 } from "lucide-react";
 import OrderCard from "@/components/OrderCard";
 import { useDispatch, useSelector } from "react-redux";
@@ -23,6 +24,7 @@ import axios from "axios";
 import { toast } from "sonner";
 import { SignedIn, UserButton } from "@clerk/nextjs";
 import CustomUserButton from "@/components/CustomUserButton";
+import Link from "next/link";
 
 const categories = [
     { category: "All", itemCount: 200, icon: Store, active: true },
@@ -177,6 +179,19 @@ export default function Page() {
 
                     {/* Products */}
                     <div className="flex flex-wrap gap-4 mt-10">
+                        {products.length === 0 && (
+                            <div className="w-full m-auto mt-20 flex flex-col items-center justify-center">
+                                <h1 className="text-2xl font-bold mb-6 text-black">
+                                    No Products
+                                </h1>
+                                <Link href="/products/create">
+                                    <button className="btn btn-sm btn-ghost text-black flex items-center bg-green-400 w-full">
+                                        <PlusCircle className="w-4 h-4" />
+                                        Add Product
+                                    </button>
+                                </Link>
+                            </div>
+                        )}
                         {products?.map((product) => (
                             <ProductCard
                                 key={product.name}

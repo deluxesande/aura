@@ -47,13 +47,13 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id         String      @id @default(uuid()) @map("_id") @db.Uuid
+  id         String       @id @default(uuid()) @map("_id") @db.Uuid
   quantity   Int
   price      Float
-  productId  String   @db.Uuid
-  Product    Product  @relation(fields: [productId], references: [id])
-  invoiceId  String?  @db.Uuid
-  Invoice    Invoice?  @relation(fields: [invoiceId], references: [id])
+  productId  String       @db.Uuid
+  Product    Product      @relation(fields: [productId], references: [id])
+  invoiceId  String?      @db.Uuid
+  Invoice    Invoice?    @relation(fields: [invoiceId], references: [id])
   createdBy  String?   
 }
 
@@ -65,4 +65,47 @@ model Customer {
   phoneNumber String       @unique
   invoices    Invoice[]
   createdBy   String?   
+}
+
+model FailedCallback {
+  id                  Int       @id @default(autoincrement())
+  merchantRequestId   String
+  checkoutRequestId   String
+  resultCode          Int
+  resultDesc          String
+}
+
+model Response {
+  id                  Int       @id @default(autoincrement())
+  merchantRequestId   String
+  checkoutRequestId   String
+  responseCode        String
+  responseDescription String
+  customerMessage     String
+}
+
+model ResultResponse {
+  id                        Int       @id @default(autoincrement())
+  resultType                Int
+  resultCode                Int
+  resultDesc                String
+  originatorConversationID  String
+  conversationID            String
+  transactionID             String
+  referenceDataId           Int       
+  referenceData             ReferenceData @relation(fields: [referenceDataId], references: [id])
+}
+
+model ReferenceData {
+  id             Int          @id @default(autoincrement())
+  referenceItemId Int      
+  referenceItem  ReferenceItem @relation(fields: [referenceItemId], references: [id])
+  resultResponse ResultResponse[]
+}
+
+model ReferenceItem {
+  id             Int          @id @default(autoincrement())
+  key            String
+  value          String
+  referenceData  ReferenceData[]
 }
