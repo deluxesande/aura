@@ -53,6 +53,11 @@ export default function InvoicesTable({
                             </tr>
                         </thead>
                         <tbody>
+                            {invoices.length === 0 && (
+                                <p className="p-4 text-black text-lg">
+                                    No Invoices
+                                </p>
+                            )}
                             {invoices?.map((invoice, index) => (
                                 <tr
                                     key={index}
