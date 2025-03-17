@@ -53,54 +53,62 @@ export default function InvoicesTable({
                             </tr>
                         </thead>
                         <tbody>
-                            {invoices.length === 0 && (
-                                <p className="p-4 text-black text-lg">
-                                    No Invoices
-                                </p>
-                            )}
-                            {invoices?.map((invoice, index) => (
-                                <tr
-                                    key={index}
-                                    className="hover:bg-gray-100 cursor-pointer"
-                                >
-                                    <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
-                                        INV-{index + 1}
-                                    </td>
-                                    <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
-                                        <p>{invoice.itemName}</p>
-                                    </td>
-                                    <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
-                                        OOOP-{index + 1}
-                                    </td>
-                                    <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
-                                        {invoice.totalQuantity}
-                                    </td>
-                                    <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
-                                        ${invoice.totalAmount}
-                                    </td>
-                                    <td className="py-2 px-4 border-b border-gray-100 flex items-center">
-                                        <button
-                                            className="btn btn-sm btn-ghost text-black"
-                                            onClick={() =>
-                                                handleRowClick(
-                                                    String(invoice.id)
-                                                )
-                                            }
-                                        >
-                                            <Edit className="w-4 h-4" />
-                                        </button>
-                                        <div className="border-l border-gray-300 h-4 mx-1"></div>
-                                        <button
-                                            className="btn btn-sm btn-ghost text-black"
-                                            onClick={() =>
-                                                handleDelete(String(invoice.id))
-                                            }
-                                        >
-                                            <Trash className="w-4 h-4" />
-                                        </button>
+                            {invoices.length === 0 ? (
+                                <tr>
+                                    <td
+                                        colSpan={6}
+                                        className="py-2 px-4  text-black text-lg text-center"
+                                    >
+                                        No Invoices
                                     </td>
                                 </tr>
-                            ))}
+                            ) : (
+                                invoices?.map((invoice, index) => (
+                                    <tr
+                                        key={index}
+                                        className="hover:bg-gray-100 cursor-pointer"
+                                    >
+                                        <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
+                                            INV-{index + 1}
+                                        </td>
+                                        <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
+                                            <p>{invoice.itemName}</p>
+                                        </td>
+                                        <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
+                                            OOOP-{index + 1}
+                                        </td>
+                                        <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
+                                            {invoice.totalQuantity}
+                                        </td>
+                                        <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
+                                            ${invoice.totalAmount}
+                                        </td>
+                                        <td className="py-2 px-4 border-b border-gray-100 flex items-center">
+                                            <button
+                                                className="btn btn-sm btn-ghost text-black"
+                                                onClick={() =>
+                                                    handleRowClick(
+                                                        String(invoice.id)
+                                                    )
+                                                }
+                                            >
+                                                <Edit className="w-4 h-4" />
+                                            </button>
+                                            <div className="border-l border-gray-300 h-4 mx-1"></div>
+                                            <button
+                                                className="btn btn-sm btn-ghost text-black"
+                                                onClick={() =>
+                                                    handleDelete(
+                                                        String(invoice.id)
+                                                    )
+                                                }
+                                            >
+                                                <Trash className="w-4 h-4" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
