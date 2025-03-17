@@ -28,5 +28,15 @@
         "ResultDesc": "Request cancelled by user"
       }
     }
+  },
+  {
+    "Body": {
+      "stkCallback": {
+        "MerchantRequestID": "b54f-471d-93d9-f7f3bf3f7c0e3416312",
+        "CheckoutRequestID": "ws_CO_17032025190551808742210044",
+        "ResultCode": 1032,
+        "ResultDesc": "Request cancelled by user"
+      }
+    }
   }
 ]
