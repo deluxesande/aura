@@ -107,6 +107,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             });
         res.status(200).json(paymentResponse);
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: "Failed to prompt user for payment" });
     }
 };

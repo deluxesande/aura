@@ -39,6 +39,9 @@ export default function Page() {
     const dispatch = useDispatch();
     const cartItems = useSelector((state: AppState) => state.cart.items);
     const [products, setProducts] = useState<Product[]>([]);
+    const [isInputVisible, setIsInputVisible] = useState(false);
+    const [buttonText, setButtonText] = useState("Mpesa");
+    const [mpesaNumber, setMpesaNumber] = useState("");
 
     const handleAddToCart = (product: Product) => {
         if (product.quantity > 0) {
@@ -138,28 +141,75 @@ export default function Page() {
         });
     };
 
-    const handleMpesaPromt = async () => {
-        const promise = async () => {
-            try {
-                const response = await axios.post(
-                    "/api/safaricom/c2b/payment/lipa",
-                    {
-                        phoneNumber: "254742210044",
-                        amount: 100,
-                        transactionType: "CustomerBuyGoodsOnline",
-                    }
-                );
-                return response.data;
-            } catch (error) {
-                throw Error("Failed to prompt user for payment");
-            }
-        };
+    const formatPhoneNumber = (phoneNumber: string): string | null => {
+        // Remove any non-digit characters
+        phoneNumber = phoneNumber.replace(/\D/g, "");
 
-        toast.promise(promise(), {
-            loading: "Prompting user...",
-            success: "User has been prompted successfully",
-            error: "Error prompting user",
-        });
+        // Define regex patterns for different formats
+        const regex07 = /^07\d{8}$/;
+        const regex2547 = /^2547\d{8}$/;
+        const regexPlus2547 = /^\+2547\d{8}$/;
+
+        if (regex07.test(phoneNumber)) {
+            return phoneNumber.replace(/^07/, "2547");
+        } else if (regex2547.test(phoneNumber)) {
+            return phoneNumber;
+        } else if (regexPlus2547.test(phoneNumber)) {
+            return phoneNumber.replace(/^\+/, "");
+        }
+
+        return null;
+    };
+
+    const handleMpesaPrompt = async (event: React.FormEvent) => {
+        event.preventDefault();
+        const amount = parseFloat(
+            cartItems
+                .reduce(
+                    (total, item) => total + item.price * item.cartQuantity,
+                    0
+                )
+                .toFixed(2)
+        );
+
+        // If the input is visible, prompt the user for payment
+        if (isInputVisible) {
+            const formattedNumber = formatPhoneNumber(mpesaNumber);
+            if (formattedNumber) {
+                // Initiate payment logic here with mpesaNumber
+                const promise = async () => {
+                    try {
+                        console.log({
+                            phoneNumber: formattedNumber,
+                            amount,
+                            transactionType: "CustomerPayBillOnline",
+                        });
+                        const response = await axios.post(
+                            "/api/safaricom/c2b/payment/lipa",
+                            {
+                                phoneNumber: formattedNumber,
+                                amount: amount,
+                                transactionType: "CustomerPayBillOnline",
+                            }
+                        );
+                        return response.data;
+                    } catch (error) {
+                        throw Error("Failed to prompt user for payment");
+                    }
+                };
+
+                toast.promise(promise(), {
+                    loading: "Prompting user...",
+                    success: "User prompted successfully",
+                    error: "Error prompting user",
+                });
+            } else {
+                toast.error("Invalid phone number");
+            }
+        } else {
+            setIsInputVisible(true);
+            setButtonText("Prompt User");
+        }
     };
 
     useEffect(() => {
@@ -270,12 +320,25 @@ export default function Page() {
                                     .toFixed(2)}
                             </p>
                         </div>
-                        <button
-                            className="px-4 py-2 mt-4 border border-[#159A9C] text-[#159A9C] w-full bg-white rounded-md"
-                            onClick={handleMpesaPromt}
-                        >
-                            Prompt User
-                        </button>
+                        <form onSubmit={handleMpesaPrompt}>
+                            {isInputVisible && (
+                                <input
+                                    type="number"
+                                    className="mt-4 w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2 no-spinner"
+                                    placeholder="Enter M-pesa number"
+                                    value={mpesaNumber}
+                                    onChange={(e) =>
+                                        setMpesaNumber(e.target.value)
+                                    }
+                                />
+                            )}
+                            <button
+                                type="submit"
+                                className="px-4 py-2 mt-4 border border-[#159A9C] text-[#159A9C] w-full bg-white rounded-md"
+                            >
+                                {buttonText}
+                            </button>
+                        </form>
                         <button
                             className="px-4 py-2 mt-4 bg-[#159A9C] w-full text-white rounded-md"
                             onClick={handleOrder}
