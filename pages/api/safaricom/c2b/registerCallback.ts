@@ -43,7 +43,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     ResponseType: "Completed",
                     ConfirmationURL: confirmationURL,
                     ValidationURL: validationURL,
-                    CallBackURL: callbackURL,
+                    // CallBackURL: callbackURL,
                 },
                 {
                     headers: {

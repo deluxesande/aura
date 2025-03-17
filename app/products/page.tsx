@@ -138,6 +138,30 @@ export default function Page() {
         });
     };
 
+    const handleMpesaPromt = async () => {
+        const promise = async () => {
+            try {
+                const response = await axios.post(
+                    "/api/safaricom/c2b/payment/lipa",
+                    {
+                        phoneNumber: "254742210044",
+                        amount: 100,
+                        transactionType: "CustomerBuyGoodsOnline",
+                    }
+                );
+                return response.data;
+            } catch (error) {
+                throw Error("Failed to prompt user for payment");
+            }
+        };
+
+        toast.promise(promise(), {
+            loading: "Prompting user...",
+            success: "User has been prompted successfully",
+            error: "Error prompting user",
+        });
+    };
+
     useEffect(() => {
         const fetchProducts = async () => {
             try {
@@ -246,7 +270,10 @@ export default function Page() {
                                     .toFixed(2)}
                             </p>
                         </div>
-                        <button className="px-4 py-2 mt-4 border border-[#159A9C] text-[#159A9C] w-full bg-white rounded-md">
+                        <button
+                            className="px-4 py-2 mt-4 border border-[#159A9C] text-[#159A9C] w-full bg-white rounded-md"
+                            onClick={handleMpesaPromt}
+                        >
                             Prompt User
                         </button>
                         <button

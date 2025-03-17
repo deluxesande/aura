@@ -109,7 +109,6 @@ const initiatePayment = async (
         });
         return response.data;
     } catch (error) {
-        console.error("Error initiating payment:", error);
         throw new Error("Failed to initiate payment");
     }
 };
@@ -140,16 +139,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             transactionType
         );
 
-        // storeResponse(paymentResponse);
+        storeResponse(paymentResponse);
 
         // Store in db
-        storeResponseInDb(paymentResponse)
-            .catch((e) => {
-                throw e;
-            })
-            .finally(async () => {
-                await prisma.$disconnect();
-            });
+        // storeResponseInDb(paymentResponse)
+        //     .catch((e) => {
+        //         throw e;
+        //     })
+        //     .finally(async () => {
+        //         await prisma.$disconnect();
+        //     });
         res.status(200).json(paymentResponse);
     } catch (error) {
         res.status(500).json({ error: "Failed to prompt user for payment" });
