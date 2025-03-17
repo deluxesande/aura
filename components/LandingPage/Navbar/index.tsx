@@ -1,10 +1,8 @@
-import { useAuth } from "@clerk/nextjs";
-import { X, Menu, ChevronRight } from "lucide-react";
+import { RootState } from "@/store/rootReducer";
+import { ChevronRight, Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import React from "react";
 import { useSelector } from "react-redux";
-import { RootState } from "@/store/rootReducer";
 
 export default function Navbar({
     isMenuOpen,
@@ -13,7 +11,6 @@ export default function Navbar({
     isMenuOpen: boolean;
     setIsMenuOpen: (value: boolean) => void;
 }) {
-    // const { isSignedIn } = useAuth();
     const isSignedIn = useSelector((state: RootState) => state.auth.isSignedIn);
 
     return (
