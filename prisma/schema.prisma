@@ -64,7 +64,8 @@ model Customer {
   email       String?      @unique
   phoneNumber String       @unique
   invoices    Invoice[]
-  createdBy   String?   
+  createdBy   String?
+  createdAt   DateTime     @default(now())
 }
 
 model FailedCallback {
@@ -73,6 +74,7 @@ model FailedCallback {
   checkoutRequestId   String
   resultCode          Int
   resultDesc          String
+  createdAt           DateTime  @default(now())
 }
 
 model Response {
@@ -82,6 +84,7 @@ model Response {
   responseCode        String
   responseDescription String
   customerMessage     String
+  createdAt           DateTime  @default(now())
 }
 
 model ResultResponse {
@@ -94,6 +97,7 @@ model ResultResponse {
   transactionID             String
   referenceDataId           Int       
   referenceData             ReferenceData @relation(fields: [referenceDataId], references: [id])
+  createdAt           DateTime  @default(now())
 }
 
 model ReferenceData {
@@ -101,6 +105,7 @@ model ReferenceData {
   referenceItemId Int      
   referenceItem  ReferenceItem @relation(fields: [referenceItemId], references: [id])
   resultResponse ResultResponse[]
+  createdAt           DateTime  @default(now())
 }
 
 model ReferenceItem {
@@ -108,4 +113,18 @@ model ReferenceItem {
   key            String
   value          String
   referenceData  ReferenceData[]
+  createdAt           DateTime  @default(now())
+}
+
+model SuccessfulCallback {
+  id                  Int      @id @default(autoincrement())
+  merchantRequestId   String
+  checkoutRequestId   String
+  resultCode          Int
+  resultDesc          String
+  amount              Float
+  mpesaReceiptNumber  String
+  transactionDate     BigInt
+  phoneNumber         BigInt
+  createdAt           DateTime @default(now())
 }

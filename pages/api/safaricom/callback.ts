@@ -1,6 +1,10 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
+import {
+    storeFailedCallbackInDb,
+    storeSuccessfulCallbackInDb,
+} from "@/utils/storeInDb";
 
 // Function to store callbacks in a JSON file
 const storeCallback = (callbackData: any, fileName: string) => {
@@ -38,12 +42,12 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
                 ResultCode: resultCode,
                 ResultDesc: errorMessage,
             };
-            storeCallback(callbackData, "failedCallbacks.json");
+            storeFailedCallbackInDb(callbackData);
             return res.json(responseData);
         }
 
         // Store the successful callback data
-        storeCallback(callbackData, "successfulCallbacks.json");
+        storeSuccessfulCallbackInDb(callbackData);
 
         // Return a success response to mpesa
         return res.json("success");
