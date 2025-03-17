@@ -1,28 +1,8 @@
-import { NextApiRequest, NextApiResponse } from "next";
-import fs from "fs";
-import path from "path";
 import {
     storeFailedCallbackInDb,
     storeSuccessfulCallbackInDb,
 } from "@/utils/storeInDb";
-
-// Function to store callbacks in a JSON file
-const storeCallback = (callbackData: any, fileName: string) => {
-    const filePath = path.join(
-        process.cwd(),
-        `pages/api/safaricom/c2b/payment/data/${fileName}`
-    );
-    let callbacks = [];
-
-    if (fs.existsSync(filePath)) {
-        const fileData = fs.readFileSync(filePath, "utf8");
-        callbacks = JSON.parse(fileData);
-    }
-
-    callbacks.push(callbackData);
-
-    fs.writeFileSync(filePath, JSON.stringify(callbacks, null, 2));
-};
+import { NextApiRequest, NextApiResponse } from "next";
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === "POST") {

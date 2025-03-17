@@ -1,9 +1,7 @@
-import { NextApiRequest, NextApiResponse } from "next";
-import axios from "axios";
-import fs from "fs";
-import path from "path";
-import { PrismaClient } from "@prisma/client";
 import { storeResponseInDb } from "@/utils/storeInDb";
+import { PrismaClient } from "@prisma/client";
+import axios from "axios";
+import { NextApiRequest, NextApiResponse } from "next";
 
 const prisma = new PrismaClient();
 
@@ -12,24 +10,6 @@ const consumerSecret = process.env.CONSUMER_SECRET || "";
 const callbackUrl = process.env.CALLBACK_URL || "";
 const shortCode = process.env.SHORTCODE || "";
 const passkey = process.env.PASS_KEY || "";
-
-// Function to store responses in a JSON file
-const storeResponse = (response: any) => {
-    const filePath = path.join(
-        process.cwd(),
-        "pages/api/safaricom/c2b/payment/data/responses.json"
-    );
-    let responses = [];
-
-    if (fs.existsSync(filePath)) {
-        const fileData = fs.readFileSync(filePath, "utf8");
-        responses = JSON.parse(fileData);
-    }
-
-    responses.push(response);
-
-    fs.writeFileSync(filePath, JSON.stringify(responses, null, 2));
-};
 
 // Function to get an access token from the endpoint
 const getAccessToken = async () => {
@@ -116,8 +96,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             amount,
             transactionType
         );
-
-        // storeResponse(paymentResponse);
 
         // Store in db
         storeResponseInDb(paymentResponse)
