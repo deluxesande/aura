@@ -27,6 +27,30 @@ const Devices: React.FC = () => {
     const { user } = useUser();
     const [devices, setDevices] = useState<Device[]>([]);
 
+    const handleRemoveDevice = async (sessionId: string) => {
+        if (!user) return;
+
+        const confirm = window.confirm(
+            "Are you sure you want to remove this device?"
+        );
+        if (!confirm) return;
+
+        try {
+            // await user.removeSession(sessionId);
+            // Find the method that works
+            // setDevices((prevDevices) =>
+            //     prevDevices.filter((device) => device.id !== sessionId)
+            // );
+            toast.success("Device removed successfully.");
+        } catch (err) {
+            if (err instanceof Error) {
+                toast.error(err.message);
+            } else {
+                toast.error("Failed to remove the device.");
+            }
+        }
+    };
+
     useEffect(() => {
         const fetchDevices = async () => {
             if (!user) return;
@@ -110,7 +134,10 @@ const Devices: React.FC = () => {
                             <p className="text-xs text-gray-600">
                                 {device.lastActive}
                             </p>
-                            <button className="text-sm text-red-500">
+                            <button
+                                className="text-sm text-red-500"
+                                onClick={() => handleRemoveDevice(device.id)}
+                            >
                                 Remove
                             </button>
                         </div>

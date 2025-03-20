@@ -26,6 +26,7 @@ const links = [
     { href: "/invoices", text: "Invoices" },
     { href: "/products/list", text: "Product Management" },
     { href: "/settings", text: "Settings" },
+    { href: "/profile", text: "Profile" },
 ];
 
 export default function Navbar({ children }: { children: React.ReactNode }) {

@@ -3,10 +3,18 @@ import React, { useState } from "react";
 
 const ProfileInfo: React.FC = () => {
     const { user } = useUser();
-    const [name, setName] = useState(user?.fullName || "John Doe");
-    const [email, setEmail] = useState(
-        user?.emailAddresses[0]?.emailAddress || "john.doe@example.com"
-    );
+    const [name, setName] = useState<string | undefined>(undefined);
+    const [email, setEmail] = useState<string | undefined>(undefined);
+
+    React.useEffect(() => {
+        if (user) {
+            setName(user.fullName || "John Doe");
+            setEmail(
+                user.emailAddresses[0]?.emailAddress || "johndoe@gmail.com"
+            );
+        }
+    }, [user]); // Runs whenever `user` changes
+
     const [status, setStatus] = useState("");
 
     const handleSubmit = (event: React.FormEvent) => {
