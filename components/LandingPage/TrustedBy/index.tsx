@@ -16,35 +16,35 @@ export default function TrustedBy() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12 mb-20">
                     <div className="flex items-center justify-center p-4 grayscale hover:grayscale-0 transition-all">
                         <Image
-                            src="https://placehold.co/200x80/e5e7eb/475569?text=Naivas"
-                            alt="Naivas"
-                            className="max-h-12"
+                            src="/images/SAF-MAIN-LOGO.png"
+                            alt="Safaricom"
+                            className="min-h-12"
                             width={200}
                             height={80}
                         />
                     </div>
                     <div className="flex items-center justify-center p-4 grayscale hover:grayscale-0 transition-all">
                         <Image
-                            src="https://placehold.co/200x80/e5e7eb/475569?text=Quickmart"
-                            alt="Quickmart"
-                            className="max-h-12"
+                            src="/images/M-PESA-logo-2.png"
+                            alt="Mpesa"
+                            className="min-h-12"
                             width={200}
                             height={80}
                         />
                     </div>
                     <div className="flex items-center justify-center p-4 grayscale hover:grayscale-0 transition-all">
                         <Image
-                            src="https://placehold.co/200x80/e5e7eb/475569?text=Artcaffe"
-                            alt="Artcaffe"
-                            className="max-h-12"
+                            src="/images/kra-seeklogo.png"
+                            alt="KRA"
+                            className="min-h-12"
                             width={200}
                             height={80}
                         />
                     </div>
                     <div className="flex items-center justify-center p-4 grayscale hover:grayscale-0 transition-all">
                         <Image
-                            src="https://placehold.co/200x80/e5e7eb/475569?text=Java+House"
-                            alt="Java House"
+                            src="/logos/salesense-horizontal.png"
+                            alt="Salesense"
                             className="max-h-12"
                             width={200}
                             height={80}
