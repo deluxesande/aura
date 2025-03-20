@@ -1,3 +1,4 @@
+"use client";
 import "@/app/styles/globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
@@ -5,30 +6,43 @@ import { Inter } from "next/font/google";
 import ReduxProvider from "@/components/ReduxProvider";
 import ToastProvider from "@/components/ToastProvider";
 import { ClerkProvider } from "@clerk/nextjs";
+import { AnimatePresence, motion } from "framer-motion";
+import { usePathname } from "next/navigation";
+
+import { metadata } from "./metadata";
 
 const inter = Inter({ subsets: ["latin"] });
-
-export const metadata: Metadata = {
-    title: "Salesense",
-    description:
-        "Seamlessly integrates ERP with M-Pesa and KRA for efficient business management",
-};
 
 export default function RootLayout({
     children,
 }: Readonly<{
     children: React.ReactNode;
 }>) {
+    const pathName = usePathname();
     return (
         <ClerkProvider>
             <html lang="en">
                 <head>
+                    <meta
+                        name="description"
+                        content={metadata.description ?? ""}
+                    />
                     <link rel="icon" href="/logos/salesense-vertical.png" />
                 </head>
                 <body className={`${inter.className} bg-[#f4f4f4]`}>
-                    <ReduxProvider>
-                        <ToastProvider>{children}</ToastProvider>
-                    </ReduxProvider>
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={pathName}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.5 }}
+                        >
+                            <ReduxProvider>
+                                <ToastProvider>{children}</ToastProvider>
+                            </ReduxProvider>
+                        </motion.div>
+                    </AnimatePresence>
                 </body>
             </html>
         </ClerkProvider>
