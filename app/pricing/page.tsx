@@ -2,34 +2,81 @@
 import Footer from "@/components/LandingPage/Footer";
 import Navbar from "@/components/LandingPage/Navbar";
 import { Check } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { motion, useInView } from "framer-motion";
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.2, // Stagger animations for child elements
+        },
+    },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 }, // Start slightly below and invisible
+    visible: {
+        opacity: 1,
+        y: 0, // Slide up into place
+        transition: { duration: 0.6, ease: "easeOut" },
+    },
+};
 
 export default function PricingPage() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    // Refs for sections
+    const heroRef = useRef(null);
+    const pricingRef = useRef(null);
+
+    // Track visibility
+    const isHeroInView = useInView(heroRef, { once: true });
+    const isPricingInView = useInView(pricingRef, { once: true });
+
     return (
-        <div className="">
+        <div>
             <Navbar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
             {/* Hero Section */}
-            <section className="bg-gray-50 py-20">
+            <motion.section
+                ref={heroRef}
+                className="bg-gray-50 py-20"
+                initial="hidden"
+                animate={isHeroInView ? "visible" : "hidden"}
+                variants={containerVariants}
+            >
                 <div className="max-w-7xl mx-auto pt-16 px-4 sm:px-6 lg:px-8">
-                    <div className="text-center">
+                    <motion.div className="text-center" variants={itemVariants}>
                         <h1 className="text-4xl font-bold text-gray-900 mb-6">
                             Simple, Transparent Pricing
                         </h1>
                         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
                             Choose the perfect plan for your business needs
                         </p>
-                    </div>
+                    </motion.div>
                 </div>
-            </section>
+            </motion.section>
 
             {/* Pricing Cards */}
-            <section className="py-20">
+            <motion.section
+                ref={pricingRef}
+                className="py-20"
+                initial="hidden"
+                animate={isPricingInView ? "visible" : "hidden"}
+                variants={containerVariants}
+            >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid md:grid-cols-3 gap-8">
+                    <motion.div
+                        className="grid md:grid-cols-3 gap-8"
+                        variants={containerVariants}
+                    >
                         {/* Starter Plan */}
-                        <div className="border border-gray-100 rounded-2xl p-8 hover:border-green-200 transition-colors">
+                        <motion.div
+                            className="border border-gray-100 rounded-2xl p-8 hover:border-green-200 transition-colors"
+                            variants={itemVariants}
+                        >
                             <div className="text-center mb-8">
                                 <h3 className="text-xl font-semibold mb-2">
                                     Starter
@@ -80,10 +127,13 @@ export default function PricingPage() {
                             >
                                 Get Started
                             </a>
-                        </div>
+                        </motion.div>
 
                         {/* Professional Plan */}
-                        <div className="border-2 border-green-600 rounded-2xl p-8 relative bg-white shadow-lg">
+                        <motion.div
+                            className="border-2 border-green-600 rounded-2xl p-8 relative bg-white shadow-lg"
+                            variants={itemVariants}
+                        >
                             <div className="absolute top-0 right-4 bg-green-600 text-white px-4 py-1 rounded-b-lg text-sm">
                                 Popular
                             </div>
@@ -144,10 +194,13 @@ export default function PricingPage() {
                             >
                                 Get Started
                             </a>
-                        </div>
+                        </motion.div>
 
                         {/* Enterprise Plan */}
-                        <div className="border border-gray-100 rounded-2xl p-8 hover:border-green-200 transition-colors">
+                        <motion.div
+                            className="border border-gray-100 rounded-2xl p-8 hover:border-green-200 transition-colors"
+                            variants={itemVariants}
+                        >
                             <div className="text-center mb-8">
                                 <h3 className="text-xl font-semibold mb-2">
                                     Enterprise
@@ -202,10 +255,10 @@ export default function PricingPage() {
                             >
                                 Contact Sales
                             </a>
-                        </div>
-                    </div>
+                        </motion.div>
+                    </motion.div>
                 </div>
-            </section>
+            </motion.section>
 
             <Footer />
         </div>
