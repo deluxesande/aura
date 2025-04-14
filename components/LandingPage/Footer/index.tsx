@@ -132,7 +132,7 @@ export default function Footer() {
                 </div>
                 <div className="mt-12 pt-8 border-t border-green-800">
                     <p className="text-green-200 text-center">
-                        © 2023 SaleSense. All rights reserved.
+                        © 2025 SaleSense. All rights reserved.
                     </p>
                 </div>
             </div>

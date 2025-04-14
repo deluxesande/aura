@@ -22,10 +22,24 @@ const itemVariants = {
     },
 };
 
+const arrowVariants = {
+    hidden: { opacity: 0, x: 40 }, // Start slightly off-screen to the right
+    visible: {
+        opacity: 1,
+        x: 0, // Slide into place
+        transition: {
+            duration: 0.6,
+            ease: "easeOut",
+            repeat: Infinity, // Make it bounce
+            repeatType: "reverse" as const, // Reverse the animation on repeat
+        },
+    },
+};
+
 export default function MainHeader() {
     return (
         <motion.section
-            className="pt-32 pb-40 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative"
+            className="pt-32 pb-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative"
             initial="hidden"
             animate="visible"
             variants={containerVariants}
@@ -60,7 +74,13 @@ export default function MainHeader() {
                         className="w-full md:w-auto lg:w-auto bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center"
                     >
                         Start Free Trial{" "}
-                        <ChevronRight color="#fff" className="ml-2" size={18} />
+                        <motion.span variants={arrowVariants}>
+                            <ChevronRight
+                                color="#fff"
+                                className="ml-2"
+                                size={18}
+                            />
+                        </motion.span>
                     </a>
                     <a
                         href="/features"
@@ -70,7 +90,7 @@ export default function MainHeader() {
                     </a>
                 </motion.div>
                 <motion.div
-                    className="relative w-full max-w-3xl mx-auto"
+                    className="relative w-full max-w-7xl mx-auto"
                     variants={itemVariants}
                 >
                     <Image
@@ -80,6 +100,10 @@ export default function MainHeader() {
                         height={800}
                         className="w-full h-auto clip-half"
                     />
+                    {/* <video autoPlay loop muted>
+                        <source src="/videos/Main.mp4"></source>
+                        <source src="/videos/Main.webm"></source>
+                    </video> */}
                 </motion.div>
             </motion.div>
         </motion.section>

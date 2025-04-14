@@ -85,11 +85,11 @@ export default function IntegrationPage() {
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-gray-100 rounded-2xl p-6">
+                        <div className="bg-white rounded-2xl p-6 shadow-sm flex items-center justify-center">
                             <img
-                                src="https://placehold.co/600x400/e5e7eb/475569?text=M-Pesa+Integration"
+                                src="/images/M-PESA-logo-2.png"
                                 alt="M-Pesa Integration"
-                                className="w-full rounded-xl"
+                                className="max-w-[240px] lg:max-w-xl p-6 lg:p-32 rounded-xl"
                             />
                         </div>
                     </div>
@@ -100,11 +100,11 @@ export default function IntegrationPage() {
             <section className="py-20 bg-gray-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid md:grid-cols-2 gap-12 items-center">
-                        <div className="order-2 md:order-1 bg-white rounded-2xl p-6 shadow-sm">
+                        <div className="order-2 md:order-1 bg-white rounded-2xl p-6 shadow-sm flex items-center justify-center">
                             <img
-                                src="https://placehold.co/600x400/ffffff/475569?text=KRA+Integration"
+                                src="/images/kra-seeklogo.png"
                                 alt="KRA Integration"
-                                className="w-full rounded-xl"
+                                className="max-w-[240px] lg:max-w-xl p-6 lg:p-32 rounded-xl"
                             />
                         </div>
                         <div className="order-1 md:order-2">
