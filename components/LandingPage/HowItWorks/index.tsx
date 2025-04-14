@@ -7,7 +7,7 @@ const containerVariants = {
     visible: {
         opacity: 1,
         transition: {
-            staggerChildren: 0.8,
+            staggerChildren: 0.4,
             ease: "easeIn",
         },
     },
@@ -18,7 +18,7 @@ const itemVariants = {
     visible: {
         opacity: 1,
         x: 0, // Slide into place
-        transition: { duration: 1 },
+        transition: { duration: 0.6 },
     },
 };
 
@@ -28,7 +28,7 @@ const arrowVariants = {
         opacity: 1,
         x: 0, // Slide into place
         transition: {
-            duration: 0.9,
+            duration: 0.6,
             ease: "easeOut",
             repeat: Infinity, // Make it bounce
             repeatType: "reverse" as const, // Reverse the animation on repeat

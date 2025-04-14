@@ -13,8 +13,8 @@ export default function TrustedBy() {
                         Join the growing community of businesses using SaleSense
                     </p>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12 mb-20">
-                    <div className="flex items-center justify-center p-4 grayscale hover:grayscale-0 transition-all">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12 mb-20 items-center">
+                    <div className="p-4 grayscale hover:grayscale-0 transition-all">
                         <Image
                             src="/images/SAF-MAIN-LOGO.png"
                             alt="Safaricom"
@@ -23,7 +23,7 @@ export default function TrustedBy() {
                             height={80}
                         />
                     </div>
-                    <div className="flex items-center justify-center p-4 grayscale hover:grayscale-0 transition-all">
+                    <div className="p-4 grayscale hover:grayscale-0 transition-all">
                         <Image
                             src="/images/M-PESA-logo-2.png"
                             alt="Mpesa"
@@ -32,7 +32,7 @@ export default function TrustedBy() {
                             height={80}
                         />
                     </div>
-                    <div className="flex items-center justify-center p-4 grayscale hover:grayscale-0 transition-all">
+                    <div className="p-4 grayscale hover:grayscale-0 transition-all">
                         <Image
                             src="/images/kra-seeklogo.png"
                             alt="KRA"
@@ -41,15 +41,33 @@ export default function TrustedBy() {
                             height={80}
                         />
                     </div>
-                    <div className="flex items-center justify-center p-4 grayscale hover:grayscale-0 transition-all">
+                    <div className="p-4 grayscale hover:grayscale-0 transition-all">
+                        <Image
+                            src="/images/MDS.png"
+                            alt="Media Documents Supplies"
+                            className=""
+                            width={200}
+                            height={80}
+                        />
+                    </div>
+                    {/* <div className="p-4 grayscale hover:grayscale-0 transition-all">
+                        <Image
+                            src="/images/Deluxe.png"
+                            alt="Deluxe"
+                            className=""
+                            width={200}
+                            height={80}
+                        />
+                    </div>
+                    <div className="p-4 grayscale hover:grayscale-0 transition-all">
                         <Image
                             src="/logos/salesense-horizontal.png"
                             alt="Salesense"
                             className="max-h-12"
                             width={200}
                             height={80}
-                        />
-                    </div>
+                        /> 
+                    </div> */}
                 </div>
             </div>
         </section>
