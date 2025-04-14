@@ -9,18 +9,55 @@ import {
     Smartphone,
     Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { motion, useInView } from "framer-motion";
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.2, // Stagger animations for child elements
+        },
+    },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 }, // Start slightly below and invisible
+    visible: {
+        opacity: 1,
+        y: 0, // Slide up into place
+        transition: { duration: 0.6, ease: "easeOut" },
+    },
+};
 
 export default function FeaturesPage() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    // Refs for sections
+    const heroRef = useRef(null);
+    const featuresRef = useRef(null);
+    const ctaRef = useRef(null);
+
+    // Track visibility
+    const isHeroInView = useInView(heroRef, { once: true });
+    const isFeaturesInView = useInView(featuresRef, { once: true });
+    const isCtaInView = useInView(ctaRef, { once: true });
+
     return (
-        <div className="">
+        <div>
             <Navbar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
             {/* Hero Section */}
-            <section className="bg-gray-50 py-20">
+            <motion.section
+                ref={heroRef}
+                className="bg-gray-50 py-20"
+                initial="hidden"
+                animate={isHeroInView ? "visible" : "hidden"}
+                variants={containerVariants}
+            >
                 <div className="max-w-7xl mx-auto pt-16 px-4 sm:px-6 lg:px-8">
-                    <div className="text-center">
+                    <motion.div className="text-center" variants={itemVariants}>
                         <h1 className="text-4xl font-bold text-gray-900 mb-6">
                             Powerful Features for Your Business
                         </h1>
@@ -29,95 +66,94 @@ export default function FeaturesPage() {
                             effectively with integrated M-Pesa payments and KRA
                             compliance
                         </p>
-                    </div>
+                    </motion.div>
                 </div>
-            </section>
+            </motion.section>
 
             {/* Features Grid */}
-            <section className="py-20 bg-white">
+            <motion.section
+                ref={featuresRef}
+                className="py-20 bg-white"
+                initial="hidden"
+                animate={isFeaturesInView ? "visible" : "hidden"}
+                variants={containerVariants}
+            >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        <div className="p-6 rounded-xl border border-gray-100 hover:border-green-200 transition-colors">
-                            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                                <Receipt color="#16a34a" size={24} />
-                            </div>
-                            <h3 className="text-xl font-semibold mb-2">
-                                M-Pesa Integration
-                            </h3>
-                            <p className="text-gray-600">
-                                Seamless payment processing with real-time
-                                transaction tracking and automated
-                                reconciliation.
-                            </p>
-                        </div>
-                        <div className="p-6 rounded-xl border border-gray-100 hover:border-green-200 transition-colors">
-                            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                                <Shield color="#16a34a" size={24} />
-                            </div>
-                            <h3 className="text-xl font-semibold mb-2">
-                                KRA Compliance
-                            </h3>
-                            <p className="text-gray-600">
-                                Automated tax calculations, reporting, and
-                                compliance management for your business.
-                            </p>
-                        </div>
-                        <div className="p-6 rounded-xl border border-gray-100 hover:border-green-200 transition-colors">
-                            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                                <BarChart3 color="#16a34a" size={24} />
-                            </div>
-                            <h3 className="text-xl font-semibold mb-2">
-                                Sales Analytics
-                            </h3>
-                            <p className="text-gray-600">
-                                Comprehensive analytics and reporting tools to
-                                track your business performance.
-                            </p>
-                        </div>
-                        <div className="p-6 rounded-xl border border-gray-100 hover:border-green-200 transition-colors">
-                            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                                <Users color="#16a34a" size={24} />
-                            </div>
-                            <h3 className="text-xl font-semibold mb-2">
-                                Customer Management
-                            </h3>
-                            <p className="text-gray-600">
-                                Track customer information, purchase history,
-                                and manage relationships effectively.
-                            </p>
-                        </div>
-                        <div className="p-6 rounded-xl border border-gray-100 hover:border-green-200 transition-colors">
-                            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                                <Smartphone color="#16a34a" size={24} />
-                            </div>
-                            <h3 className="text-xl font-semibold mb-2">
-                                Mobile App
-                            </h3>
-                            <p className="text-gray-600">
-                                Manage your business on the go with our powerful
-                                mobile application.
-                            </p>
-                        </div>
-                        <div className="p-6 rounded-xl border border-gray-100 hover:border-green-200 transition-colors">
-                            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                                <Bell color="#16a34a" size={24} />
-                            </div>
-                            <h3 className="text-xl font-semibold mb-2">
-                                Smart Notifications
-                            </h3>
-                            <p className="text-gray-600">
-                                Stay updated with real-time alerts for
-                                transactions, compliance deadlines, and more.
-                            </p>
-                        </div>
-                    </div>
+                    <motion.div
+                        className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+                        variants={containerVariants}
+                    >
+                        {[
+                            {
+                                icon: <Receipt color="#16a34a" size={24} />,
+                                title: "M-Pesa Integration",
+                                description:
+                                    "Seamless payment processing with real-time transaction tracking and automated reconciliation.",
+                            },
+                            {
+                                icon: <Shield color="#16a34a" size={24} />,
+                                title: "KRA Compliance",
+                                description:
+                                    "Automated tax calculations, reporting, and compliance management for your business.",
+                            },
+                            {
+                                icon: <BarChart3 color="#16a34a" size={24} />,
+                                title: "Sales Analytics",
+                                description:
+                                    "Comprehensive analytics and reporting tools to track your business performance.",
+                            },
+                            {
+                                icon: <Users color="#16a34a" size={24} />,
+                                title: "Customer Management",
+                                description:
+                                    "Track customer information, purchase history, and manage relationships effectively.",
+                            },
+                            {
+                                icon: <Smartphone color="#16a34a" size={24} />,
+                                title: "Mobile App",
+                                description:
+                                    "Manage your business on the go with our powerful mobile application.",
+                            },
+                            {
+                                icon: <Bell color="#16a34a" size={24} />,
+                                title: "Smart Notifications",
+                                description:
+                                    "Stay updated with real-time alerts for transactions, compliance deadlines, and more.",
+                            },
+                        ].map((feature, index) => (
+                            <motion.div
+                                key={index}
+                                className="p-6 rounded-xl border border-gray-100 hover:border-green-200 transition-colors"
+                                variants={itemVariants}
+                            >
+                                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                                    {feature.icon}
+                                </div>
+                                <h3 className="text-xl font-semibold mb-2">
+                                    {feature.title}
+                                </h3>
+                                <p className="text-gray-600">
+                                    {feature.description}
+                                </p>
+                            </motion.div>
+                        ))}
+                    </motion.div>
                 </div>
-            </section>
+            </motion.section>
 
             {/* CTA Section */}
-            <section className="bg-gray-50 py-20">
+            <motion.section
+                ref={ctaRef}
+                className="bg-gray-50 py-20"
+                initial="hidden"
+                animate={isCtaInView ? "visible" : "hidden"}
+                variants={containerVariants}
+            >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="bg-white rounded-2xl p-8 md:p-12 shadow-sm border border-gray-100">
+                    <motion.div
+                        className="bg-white rounded-2xl p-8 md:p-12 shadow-sm border border-gray-100"
+                        variants={itemVariants}
+                    >
                         <div className="text-center max-w-3xl mx-auto">
                             <h2 className="text-3xl font-bold text-gray-900 mb-4">
                                 Ready to grow your business?
@@ -133,9 +169,9 @@ export default function FeaturesPage() {
                                 Get Started Now
                             </a>
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
-            </section>
+            </motion.section>
 
             <Footer />
         </div>
