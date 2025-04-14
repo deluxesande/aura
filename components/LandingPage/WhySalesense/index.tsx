@@ -1,11 +1,44 @@
 import { Receipt, Shield, BarChart3 } from "lucide-react";
-import React from "react";
+import React, { useRef } from "react";
+import { motion, useInView } from "framer-motion";
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.2,
+            duration: 0.6,
+        },
+    },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: { duration: 0.6, staggerChildren: 0.2 },
+    },
+};
 
 export default function WhySalesense() {
+    const ref = useRef(null);
+    const isInView = useInView(ref, { once: true });
+
     return (
-        <section className="py-20 bg-gray-50">
+        <motion.section
+            ref={ref}
+            className="py-20 bg-gray-50"
+            initial="hidden"
+            animate={isInView ? "visible" : "hidden"}
+            variants={containerVariants}
+        >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="text-center mb-16">
+                <motion.div
+                    className="text-center mb-16"
+                    variants={itemVariants}
+                >
                     <h2 className="text-3xl font-bold text-gray-900 mb-4">
                         Why Choose SaleSense?
                     </h2>
@@ -13,9 +46,15 @@ export default function WhySalesense() {
                         Everything you need to run your business efficiently in
                         one platform
                     </p>
-                </div>
-                <div className="grid md:grid-cols-3 gap-8">
-                    <div className="text-center p-6">
+                </motion.div>
+                <motion.div
+                    className="grid md:grid-cols-3 gap-8"
+                    variants={containerVariants}
+                >
+                    <motion.div
+                        className="text-center p-6"
+                        variants={itemVariants}
+                    >
                         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                             <Receipt color="#16a34a" size={32} />
                         </div>
@@ -26,8 +65,11 @@ export default function WhySalesense() {
                             Seamless payment processing with automatic
                             reconciliation and real-time tracking
                         </p>
-                    </div>
-                    <div className="text-center p-6">
+                    </motion.div>
+                    <motion.div
+                        className="text-center p-6"
+                        variants={itemVariants}
+                    >
                         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                             <Shield color="#16a34a" size={32} />
                         </div>
@@ -35,24 +77,27 @@ export default function WhySalesense() {
                             KRA Compliance
                         </h3>
                         <p className="text-gray-600">
-                            Stay compliant with automated tax calculations and
-                            reporting
+                            Simplify tax compliance with automated VAT and
+                            income tax calculations
                         </p>
-                    </div>
-                    <div className="text-center p-6">
+                    </motion.div>
+                    <motion.div
+                        className="text-center p-6"
+                        variants={itemVariants}
+                    >
                         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                             <BarChart3 color="#16a34a" size={32} />
                         </div>
                         <h3 className="text-xl font-semibold mb-4">
-                            Business Analytics
+                            Business Insights
                         </h3>
                         <p className="text-gray-600">
-                            Make data-driven decisions with powerful insights
-                            and reporting
+                            Gain valuable insights into your sales and
+                            performance with detailed analytics
                         </p>
-                    </div>
-                </div>
+                    </motion.div>
+                </motion.div>
             </div>
-        </section>
+        </motion.section>
     );
 }

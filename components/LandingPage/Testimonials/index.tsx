@@ -1,9 +1,38 @@
-import React from "react";
+import React, { useRef } from "react";
 import Image from "next/image";
+import { motion, useInView } from "framer-motion";
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.3, // Stagger the animation of child elements
+        },
+    },
+};
+
+const cardVariants = {
+    hidden: { opacity: 0, y: 50 }, // Start slightly below and invisible
+    visible: {
+        opacity: 1,
+        y: 0, // Slide up into place
+        transition: { duration: 0.6, ease: "easeOut" },
+    },
+};
 
 export default function Testimonials() {
+    const ref = useRef(null);
+    const isInView = useInView(ref, { once: true });
+
     return (
-        <section className="py-20 bg-gray-50">
+        <motion.section
+            ref={ref}
+            className="py-20 bg-gray-50"
+            initial="hidden"
+            animate={isInView ? "visible" : "hidden"}
+            variants={containerVariants}
+        >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-16">
                     <h2 className="text-3xl font-bold text-gray-900">
@@ -13,8 +42,14 @@ export default function Testimonials() {
                         Real experiences from real businesses
                     </p>
                 </div>
-                <div className="grid md:grid-cols-3 gap-8">
-                    <div className="bg-white p-6 rounded-xl shadow-sm">
+                <motion.div
+                    className="grid md:grid-cols-3 gap-8"
+                    variants={containerVariants}
+                >
+                    <motion.div
+                        className="bg-white p-6 rounded-xl shadow-sm"
+                        variants={cardVariants}
+                    >
                         <div className="flex items-center mb-4">
                             <Image
                                 src="https://randomuser.me/api/portraits/men/50.jpg"
@@ -35,8 +70,11 @@ export default function Testimonials() {
                             daily sales. The M-Pesa integration is
                             seamless!&quot;
                         </p>
-                    </div>
-                    <div className="bg-white p-6 rounded-xl shadow-sm">
+                    </motion.div>
+                    <motion.div
+                        className="bg-white p-6 rounded-xl shadow-sm"
+                        variants={cardVariants}
+                    >
                         <div className="flex items-center mb-4">
                             <Image
                                 src="https://randomuser.me/api/portraits/women/89.jpg"
@@ -56,8 +94,11 @@ export default function Testimonials() {
                             &quot;The KRA compliance features save us so much
                             time. Highly recommended!&quot;
                         </p>
-                    </div>
-                    <div className="bg-white p-6 rounded-xl shadow-sm">
+                    </motion.div>
+                    <motion.div
+                        className="bg-white p-6 rounded-xl shadow-sm"
+                        variants={cardVariants}
+                    >
                         <div className="flex items-center mb-4">
                             <Image
                                 src="https://randomuser.me/api/portraits/men/25.jpg"
@@ -79,9 +120,9 @@ export default function Testimonials() {
                             &quot;The analytics help us make better business
                             decisions. Great customer support too!&quot;
                         </p>
-                    </div>
-                </div>
+                    </motion.div>
+                </motion.div>
             </div>
-        </section>
+        </motion.section>
     );
 }
