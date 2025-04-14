@@ -1,22 +1,60 @@
 import { ChevronRight } from "lucide-react";
 import Image from "next/image";
+import { motion } from "framer-motion";
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.2,
+            duration: 0.6,
+        },
+    },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: { duration: 0.8, staggerChildren: 0.2 },
+    },
+};
 
 export default function MainHeader() {
     return (
-        <section className="pt-32 pb-40 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative">
-            <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
-                <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+        <motion.section
+            className="pt-32 pb-40 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative"
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+        >
+            <motion.div
+                className="flex flex-col items-center text-center max-w-4xl mx-auto"
+                variants={itemVariants}
+            >
+                <motion.h1
+                    className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 mb-6"
+                    variants={itemVariants}
+                >
                     Streamline Your Sales with
                     <br />
                     <span className="text-green-600 text-4xl sm:text-5xl md:text-6xl font-bold">
                         Kenyan Solutions
                     </span>
-                </h1>
-                <p className="text-xl text-gray-600 mb-8 max-w-2xl">
+                </motion.h1>
+                <motion.p
+                    className="text-xl text-gray-600 mb-8 max-w-2xl"
+                    variants={itemVariants}
+                >
                     Seamlessly manage your sales with integrated M-Pesa payments
                     and KRA compliance. Built for Kenyan businesses.
-                </p>
-                <div className="flex flex-col w-full justify-center sm:flex-row gap-4 mb-16">
+                </motion.p>
+                <motion.div
+                    className="flex flex-col w-full justify-center sm:flex-row gap-4 mb-16"
+                    variants={itemVariants}
+                >
                     <a
                         href="/sign-up"
                         className="w-full md:w-auto lg:w-auto bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center"
@@ -30,8 +68,11 @@ export default function MainHeader() {
                     >
                         Learn more
                     </a>
-                </div>
-                <div className="relative w-full max-w-3xl mx-auto">
+                </motion.div>
+                <motion.div
+                    className="relative w-full max-w-3xl mx-auto"
+                    variants={itemVariants}
+                >
                     <Image
                         src="/ProductsPage.jpg"
                         alt="SaleSense Dashboard Preview"
@@ -39,8 +80,8 @@ export default function MainHeader() {
                         height={800}
                         className="w-full h-auto clip-half"
                     />
-                </div>
-            </div>
-        </section>
+                </motion.div>
+            </motion.div>
+        </motion.section>
     );
 }

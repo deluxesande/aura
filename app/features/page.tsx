@@ -126,9 +126,12 @@ export default function FeaturesPage() {
                                 Join thousands of Kenyan businesses using
                                 SaleSense to manage their operations.
                             </p>
-                            <button className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                            <a
+                                href="/sign-up"
+                                className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors"
+                            >
                                 Get Started Now
-                            </button>
+                            </a>
                         </div>
                     </div>
                 </div>

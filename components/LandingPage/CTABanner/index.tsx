@@ -11,9 +11,12 @@ export default function CTABanner() {
                             Join thousands of Kenyan businesses using SaleSense
                             to manage their operations.
                         </p>
-                        <button className="bg-gray-50 text-green-600 px-8 py-3 rounded-lg hover:text-gray-50 hover:bg-green-700 transition-colors">
+                        <a
+                            href="/sign-up"
+                            className="bg-gray-50 text-green-600 px-8 py-3 rounded-lg hover:text-gray-50 hover:bg-green-700 transition-colors"
+                        >
                             Get Started Now
-                        </button>
+                        </a>
                     </div>
                 </div>
             </div>

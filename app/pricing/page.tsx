@@ -74,9 +74,12 @@ export default function PricingPage() {
                                     Email support
                                 </li>
                             </ul>
-                            <button className="w-full py-3 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors">
+                            <a
+                                href="/sign-up"
+                                className="w-full py-3 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors"
+                            >
                                 Get Started
-                            </button>
+                            </a>
                         </div>
 
                         {/* Professional Plan */}
@@ -135,9 +138,12 @@ export default function PricingPage() {
                                     Advanced analytics
                                 </li>
                             </ul>
-                            <button className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            <a
+                                href="/sign-up"
+                                className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                            >
                                 Get Started
-                            </button>
+                            </a>
                         </div>
 
                         {/* Enterprise Plan */}
@@ -190,9 +196,12 @@ export default function PricingPage() {
                                     Custom reporting
                                 </li>
                             </ul>
-                            <button className="w-full py-3 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors">
+                            <a
+                                href="/sign-up"
+                                className="w-full py-3 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors"
+                            >
                                 Contact Sales
-                            </button>
+                            </a>
                         </div>
                     </div>
                 </div>
