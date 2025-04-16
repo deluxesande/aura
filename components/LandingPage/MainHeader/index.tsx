@@ -39,7 +39,7 @@ const arrowVariants = {
 export default function MainHeader() {
     return (
         <motion.section
-            className="pt-32 pb-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative"
+            className="pt-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative"
             initial="hidden"
             animate="visible"
             variants={containerVariants}
@@ -93,17 +93,15 @@ export default function MainHeader() {
                     className="relative w-full max-w-7xl mx-auto"
                     variants={itemVariants}
                 >
-                    <Image
-                        src="/ProductsPage.jpg"
-                        alt="SaleSense Dashboard Preview"
-                        width={1200}
-                        height={800}
-                        className="w-full h-auto clip-half"
-                    />
-                    {/* <video autoPlay loop muted>
-                        <source src="/videos/Main.mp4"></source>
-                        <source src="/videos/Main.webm"></source>
-                    </video> */}
+                    <div className="relative w-full h-auto clip-half">
+                        <Image
+                            src="/ProductsPage.jpg"
+                            alt="SaleSense Dashboard Preview"
+                            width={1200}
+                            height={800}
+                            className="w-full h-auto clip-half"
+                        />
+                    </div>
                 </motion.div>
             </motion.div>
         </motion.section>

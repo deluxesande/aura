@@ -1,4 +1,5 @@
 "use client";
+import ContactForm from "@/components/LandingPage/ContactForm";
 import CTABanner from "@/components/LandingPage/CTABanner";
 import FAQ from "@/components/LandingPage/FAQ";
 import Footer from "@/components/LandingPage/Footer";
@@ -27,6 +28,8 @@ export default function App() {
             <TrustedBy />
 
             <Testimonials />
+
+            <ContactForm />
 
             <FAQ />
 
