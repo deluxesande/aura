@@ -94,9 +94,9 @@ export default function AboutPage() {
                                 with a passion for turning bold ideas into
                                 meaningful experiences. With a strong background
                                 in product design, development, and user
-                                behavior, Deluxe TM combines tech and creativity
-                                to build solutions that don’t just work — they
-                                feel right.
+                                behavior, Deluxe<sup>TM</sup> combines tech and
+                                creativity to build solutions that don’t just
+                                work — they feel right.
                             </p>
                         </motion.div>
                     </motion.div>
@@ -277,7 +277,7 @@ export default function AboutPage() {
                             {
                                 name: "Deluxe Sande",
                                 role: "CEO & Founder",
-                                image: "https://randomuser.me/api/portraits/men/70.jpg",
+                                image: "https://img.clerk.com/eyJ0eXBlIjoicHJveHkiLCJzcmMiOiJodHRwczovL2ltYWdlcy5jbGVyay5kZXYvb2F1dGhfZ29vZ2xlL2ltZ18ycVU4VE10b0piUVgzd3ZldlpZZUsxQmpveTUifQ",
                             },
                         ].map((member, index) => (
                             <motion.div
