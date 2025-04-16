@@ -1,20 +1,52 @@
 import React from "react";
+import { motion } from "framer-motion";
 
 export default function ContactForm() {
     return (
-        <div className="my-20 sm:mx-auto sm:w-full sm:max-w-4xl">
+        <motion.div
+            className="my-20 sm:mx-auto sm:w-full sm:max-w-4xl"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+        >
             <div className="text-center mb-16">
-                <h2 className="text-3xl font-bold text-gray-900">Contact Us</h2>
-                <p className="mt-4 text-gray-600">
+                <motion.h2
+                    className="text-3xl font-bold text-gray-900"
+                    initial={{ opacity: 0, y: -20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                >
+                    Contact Us
+                </motion.h2>
+                <motion.p
+                    className="mt-4 text-gray-600"
+                    initial={{ opacity: 0, y: -20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+                >
                     We&apos;d love to hear from you! Let&apos;s build something
                     great together.
-                </p>
+                </motion.p>
             </div>
-            <div className="py-8 px-4 shadow sm:rounded-lg sm:px-10">
+            <motion.div
+                className="py-8 px-4 shadow sm:rounded-lg sm:px-10"
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+            >
                 <form className="space-y-6" onSubmit={() => {}}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         {/* Left Column */}
-                        <div className="space-y-6">
+                        <motion.div
+                            className="space-y-6"
+                            initial={{ opacity: 0, x: -50 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.8, ease: "easeOut" }}
+                        >
                             <div>
                                 <label
                                     htmlFor="name"
@@ -49,9 +81,14 @@ export default function ContactForm() {
                                     />
                                 </div>
                             </div>
-                        </div>
+                        </motion.div>
                         {/* Right Column */}
-                        <div>
+                        <motion.div
+                            initial={{ opacity: 0, x: 50 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.8, ease: "easeOut" }}
+                        >
                             <label
                                 htmlFor="message"
                                 className="block text-sm font-medium text-gray-700"
@@ -67,18 +104,23 @@ export default function ContactForm() {
                                     className="outline-none bg-slate-50 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
                                 />
                             </div>
-                        </div>
+                        </motion.div>
                     </div>
-                    <div>
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                    >
                         <button
                             type="submit"
                             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                         >
                             Send Message
                         </button>
-                    </div>
+                    </motion.div>
                 </form>
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     );
 }
