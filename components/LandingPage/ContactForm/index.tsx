@@ -1,7 +1,33 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
+import axios from "axios";
 
 export default function ContactForm() {
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [message, setMessage] = useState("");
+
+    const handleFormSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        const form = { name, email, message };
+
+        const promise = async () => {
+            try {
+                await axios.post("/api/contact", form);
+            } catch (error) {
+                console.log("An error occured");
+            }
+        };
+
+        toast.promise(promise(), {
+            loading: "Loading...",
+            success: "Message sent.",
+            error: "Message not sent.",
+        });
+    };
+
     return (
         <motion.div
             className="my-20 sm:mx-auto sm:w-full sm:max-w-4xl"
@@ -37,7 +63,7 @@ export default function ContactForm() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
             >
-                <form className="space-y-6" onSubmit={() => {}}>
+                <form className="space-y-6" onSubmit={handleFormSubmit}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         {/* Left Column */}
                         <motion.div
@@ -59,6 +85,10 @@ export default function ContactForm() {
                                         id="name"
                                         name="name"
                                         type="text"
+                                        value={name}
+                                        onChange={(e) =>
+                                            setName(e.target.value)
+                                        }
                                         required
                                         className="outline-none bg-slate-50 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
                                     />
@@ -76,6 +106,10 @@ export default function ContactForm() {
                                         id="email"
                                         name="email"
                                         type="email"
+                                        value={email}
+                                        onChange={(e) =>
+                                            setEmail(e.target.value)
+                                        }
                                         required
                                         className="outline-none bg-slate-50 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
                                     />
@@ -101,6 +135,8 @@ export default function ContactForm() {
                                     name="message"
                                     rows={5}
                                     required
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
                                     className="outline-none bg-slate-50 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
                                 />
                             </div>

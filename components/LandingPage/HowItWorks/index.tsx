@@ -59,7 +59,10 @@ export default function HowItWorks() {
                     className="grid md:grid-cols-3 gap-20"
                     variants={containerVariants}
                 >
-                    <motion.div className="relative" variants={itemVariants}>
+                    <motion.div
+                        className="relative rounded-xl border border-gray-100 hover:border-green-200 transition-colors"
+                        variants={itemVariants}
+                    >
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
                                 <Building2 color="#16a34a" size={24} />
@@ -79,7 +82,10 @@ export default function HowItWorks() {
                             <ArrowRight color="#16a34a" size={24} />
                         </motion.div>
                     </motion.div>
-                    <motion.div className="relative" variants={itemVariants}>
+                    <motion.div
+                        className="relative rounded-xl border border-gray-100 hover:border-green-200 transition-colors"
+                        variants={itemVariants}
+                    >
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full">
                             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
                                 <Receipt color="#16a34a" size={24} />
@@ -99,7 +105,7 @@ export default function HowItWorks() {
                         </motion.div>
                     </motion.div>
                     <motion.div
-                        className="bg-white p-6 rounded-xl shadow-sm border border-gray-100"
+                        className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:border-green-200 transition-colors"
                         variants={itemVariants}
                     >
                         <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">

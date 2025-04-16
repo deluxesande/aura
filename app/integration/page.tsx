@@ -85,7 +85,7 @@ export default function IntegrationPage() {
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-white rounded-2xl p-6 shadow-sm flex items-center justify-center">
+                        <div className="bg-white rounded-2xl border border-gray-100 hover:border-green-200 transition-colors p-6 shadow-sm flex items-center justify-center">
                             <img
                                 src="/images/M-PESA-logo-2.png"
                                 alt="M-Pesa Integration"
@@ -100,7 +100,7 @@ export default function IntegrationPage() {
             <section className="py-20 bg-gray-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid md:grid-cols-2 gap-12 items-center">
-                        <div className="order-2 md:order-1 bg-white rounded-2xl p-6 shadow-sm flex items-center justify-center">
+                        <div className="order-2 md:order-1 bg-white rounded-2xl border border-gray-100 hover:border-green-200 transition-colors p-6 shadow-sm flex items-center justify-center">
                             <img
                                 src="/images/kra-seeklogo.png"
                                 alt="KRA Integration"

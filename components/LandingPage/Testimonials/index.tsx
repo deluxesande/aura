@@ -47,7 +47,7 @@ export default function Testimonials() {
                     variants={containerVariants}
                 >
                     <motion.div
-                        className="bg-white p-6 rounded-xl shadow-sm"
+                        className="bg-white p-6 rounded-xl border border-gray-100 hover:border-green-200 transition-colors shadow-sm"
                         variants={cardVariants}
                     >
                         <div className="flex items-center mb-4">
@@ -72,7 +72,7 @@ export default function Testimonials() {
                         </p>
                     </motion.div>
                     <motion.div
-                        className="bg-white p-6 rounded-xl shadow-sm"
+                        className="bg-white p-6 rounded-xl border border-gray-100 hover:border-green-200 transition-colors shadow-sm"
                         variants={cardVariants}
                     >
                         <div className="flex items-center mb-4">
@@ -96,7 +96,7 @@ export default function Testimonials() {
                         </p>
                     </motion.div>
                     <motion.div
-                        className="bg-white p-6 rounded-xl shadow-sm"
+                        className="bg-white p-6 rounded-xl border border-gray-100 hover:border-green-200 transition-colors shadow-sm"
                         variants={cardVariants}
                     >
                         <div className="flex items-center mb-4">
