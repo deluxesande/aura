@@ -52,6 +52,12 @@ export default function Navbar({
                         >
                             Pricing
                         </a>
+                        <a
+                            href="/about"
+                            className="text-gray-600 hover:text-gray-900"
+                        >
+                            About
+                        </a>
                         {!isSignedIn && (
                             <a
                                 href="/sign-in"
@@ -111,6 +117,12 @@ export default function Navbar({
                             className="block px-3 py-2 text-gray-600 hover:text-gray-900"
                         >
                             Pricing
+                        </a>
+                        <a
+                            href="/about"
+                            className="block px-3 py-2 text-gray-600 hover:text-gray-900"
+                        >
+                            About
                         </a>
                         {!isSignedIn && (
                             <a

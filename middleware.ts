@@ -6,6 +6,7 @@ const isPrivateRoute = createRouteMatcher([
     "/invoice(.*)",
     "/invoices(.*)",
     "/customer(.*)",
+    "/profile(.*)",
 ]);
 
 const isAuthPage = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
