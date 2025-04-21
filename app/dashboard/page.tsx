@@ -67,7 +67,7 @@ export default function Page() {
                     <LineChart />
                 </div>
 
-                <div className="px-6 py-4 rounded-lg gap-4 bg-white w-full lg:w-[60%]">
+                <div className="px-6 py-4 rounded-lg gap-4 bg-white w-full">
                     <h1 className="text-2xl font-bold mb-6 text-gray-400">
                         Top Products
                     </h1>
