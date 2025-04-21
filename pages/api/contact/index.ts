@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import { error } from "console";
 import { NextApiRequest, NextApiResponse } from "next";
 
 const prisma = new PrismaClient();
@@ -15,8 +14,16 @@ export default async function ContactFormSubmission(
     try {
         const { name, email, message } = req.body;
 
-        res.status(201).json(name);
+        const contactMessage = prisma.contactFormMessage.create({
+            data: {
+                name,
+                email,
+                message,
+            },
+        });
+
+        res.status(201).json(contactMessage);
     } catch (error) {
-        res.status(500).json({ error: "Failed to send message" });
+        res.status(400).json({ error: "Failed to send message" });
     }
 }

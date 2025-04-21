@@ -128,3 +128,10 @@ model SuccessfulCallback {
   phoneNumber         BigInt
   createdAt           DateTime @default(now())
 }
+
+model ContactFormMessage {
+  id              Int          @id @default(autoincrement())
+  name            String
+  email           String       
+  message         String
+}

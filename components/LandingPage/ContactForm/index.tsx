@@ -17,7 +17,7 @@ export default function ContactForm() {
             try {
                 await axios.post("/api/contact", form);
             } catch (error) {
-                console.log("An error occured");
+                // console.log("An error occurred");
             }
         };
 
