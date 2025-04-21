@@ -70,6 +70,37 @@ export default function Page() {
             document.getElementById("productImage") as HTMLInputElement
         ).files?.[0];
 
+        // Validation checks
+        if (!productName) {
+            toast.error("Product name is required.");
+            setIsLoading(false);
+            return;
+        }
+        if (!productDescription) {
+            toast.error("Product description is required.");
+            setIsLoading(false);
+            return;
+        }
+        if (!productPrice || isNaN(Number(productPrice))) {
+            toast.error("Valid product price is required.");
+            setIsLoading(false);
+            return;
+        }
+        if (!productQuantity || isNaN(Number(productQuantity))) {
+            toast.error("Valid product quantity is required.");
+            setIsLoading(false);
+            return;
+        }
+        if (!productCategory) {
+            toast.error("Please select a category.");
+            setIsLoading(false);
+            return;
+        }
+        if (!productImage) {
+            toast.error("Product image is required.");
+            setIsLoading(false);
+            return;
+        }
         if (productCategory === "") {
             toast.error("Please select a category.");
             setIsLoading(false);
