@@ -199,7 +199,7 @@ export default function PrivacyPolicyModal({
                     </h3>
                     <p>
                         Sometimes we link to other websites. If you click on a
-                        third-party link, you're subject to their privacy
+                        third-party link, you&#39;re subject to their privacy
                         policy. We recommend reviewing their terms before
                         engaging.
                     </p>

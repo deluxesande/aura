@@ -82,8 +82,8 @@ export default function TermsModal({
                         4. Use of the Platform
                     </h3>
                     <p>
-                        You're responsible for how you use SaleSense. You agree
-                        not to:
+                        You&apos;re responsible for how you use SaleSense. You
+                        agree not to:
                     </p>
                     <ul className="list-disc pl-5">
                         <li>
@@ -139,7 +139,8 @@ export default function TermsModal({
                         SaleSense and its creators (including Deluxe
                         <sup>TM</sup>) will not be liable for any damages
                         arising from your use or inability to use the platform.
-                        All services are provided "as is" without warranties.
+                        All services are provided &quot;as is&quot; without
+                        warranties.
                     </p>
 
                     <h3 className="text-lg font-semibold text-gray-900 mt-6">
