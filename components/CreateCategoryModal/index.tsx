@@ -24,8 +24,10 @@ const CreateCategoryModal: React.FC<ModalProps> = ({
 
     return (
         <div className="fixed z-20 inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
-            <div className="bg-white p-6 rounded-lg shadow-lg">
-                <h2 className="text-xl mb-4">Create New Category</h2>
+            <div className="bg-white p-6 rounded-lg shadow-lg w-5/6">
+                <h1 className="text-2xl font-bold mb-6 text-gray-400">
+                    Create New Category
+                </h1>
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
                         <label
@@ -39,23 +41,23 @@ const CreateCategoryModal: React.FC<ModalProps> = ({
                             type="text"
                             value={categoryName}
                             onChange={(e) => setCategoryName(e.target.value)}
-                            className="px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
+                            className="w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
                             required
                         />
                     </div>
-                    <div className="space-y-4">
-                        <button
-                            type="submit"
-                            className="w-full btn btn-md btn-ghost text-black flex items-center bg-green-400"
-                        >
-                            Create
-                        </button>
+                    <div className="space-x-4 flex items-center">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="w-full btn btn-md btn-ghost text-white flex items-center bg-red-400"
+                            className="flex-grow btn btn-md btn-ghost text-white flex items-center bg-red-400"
                         >
                             Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="flex-grow btn btn-md btn-ghost text-black flex items-center bg-green-400"
+                        >
+                            Create
                         </button>
                     </div>
                 </form>

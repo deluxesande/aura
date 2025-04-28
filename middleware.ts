@@ -1,13 +1,15 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-const isPrivateRoute = createRouteMatcher([
-    "/dashboard(.*)",
-    "/products(.*)",
-    "/invoice(.*)",
-    "/invoices(.*)",
-    "/customer(.*)",
-    "/profile(.*)",
-]);
+// const isPrivateRoute = createRouteMatcher([
+//     "/dashboard(.*)",
+//     "/products(.*)",
+//     "/invoice(.*)",
+//     "/invoices(.*)",
+//     "/customer(.*)",
+//     "/profile(.*)",
+// ]);
+
+const isPrivateRoute = createRouteMatcher([]);
 
 const isAuthPage = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
 
