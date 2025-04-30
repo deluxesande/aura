@@ -19,6 +19,7 @@ import { useDispatch } from "react-redux";
 import CustomUserButton from "../CustomUserButton";
 import NotificationOverlay from "../NotificationOverlay";
 import Sidebar from "./Sidebar";
+import FilterOverlay from "../FilterOverlay";
 
 const links = [
     { href: "/dashboard", text: "Dashboard" },
@@ -34,6 +35,7 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const dispatch = useDispatch();
     const [showPopup, setShowPopup] = useState(false);
+    const [filterPopUp, setFilterPopUp] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [notifications, setNotifications] = useState([
         { id: 1, isRead: false },
@@ -41,7 +43,13 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
     ]);
 
     const togglePopup = () => {
+        filterPopUp ? setFilterPopUp(!filterPopUp) : filterPopUp;
         setShowPopup(!showPopup);
+    };
+
+    const toggleFilterPopUp = () => {
+        showPopup ? setShowPopup(!showPopup) : showPopup;
+        setFilterPopUp(!filterPopUp);
     };
 
     const markAsRead = (id: number) => {
@@ -104,18 +112,26 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                                 </div>
                             </div>
                             <div className="p-2 hover:bg-slate-100 text-black rounded-lg cursor-pointer flex items-center justify-center">
-                                <SlidersHorizontal size={25} />
+                                <div className="relative">
+                                    <button
+                                        className="p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
+                                        onClick={toggleFilterPopUp}
+                                    >
+                                        <SlidersHorizontal size={25} />
+                                    </button>
+                                    {filterPopUp && <FilterOverlay />}
+                                </div>
                             </div>
                         </div>
 
                         <div className="flex items-center">
                             <div className="relative">
-                                <div
+                                <button
                                     className="p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
                                     onClick={togglePopup}
                                 >
                                     <Bell size={25} />
-                                </div>
+                                </button>
                                 {showPopup && (
                                     <NotificationOverlay
                                         markAllAsRead={markAllAsRead}

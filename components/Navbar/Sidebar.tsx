@@ -15,11 +15,27 @@ const Sidebar = () => {
     const pathname = usePathname();
 
     const links = [
-        { href: "/dashboard", icon: <LayoutDashboard size={22} /> },
-        { href: "/products", icon: <ShoppingBasket size={22} /> },
-        { href: "/invoices", icon: <HistoryIcon size={22} /> },
-        { href: "/products/list", icon: <PackageSearch size={22} /> },
-        { href: "/settings", icon: <Settings size={22} /> },
+        {
+            href: "/dashboard",
+            icon: <LayoutDashboard size={22} />,
+            label: "Dashboard",
+        },
+        {
+            href: "/products",
+            icon: <ShoppingBasket size={22} />,
+            label: "Products",
+        },
+        {
+            href: "/invoices",
+            icon: <HistoryIcon size={22} />,
+            label: "Invoices",
+        },
+        {
+            href: "/products/list",
+            icon: <PackageSearch size={22} />,
+            label: "Product Management",
+        },
+        { href: "/settings", icon: <Settings size={22} />, label: "Settings" },
     ];
 
     const { user } = useUser();
