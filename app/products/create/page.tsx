@@ -157,12 +157,12 @@ export default function Page() {
         <Navbar>
             <div className="flex w-auto justify-between">
                 <div className="px-6 py-4 rounded-lg gap-4 bg-white flex-1">
-                    <div className="flex justify-between items-center mb-6">
+                    <div className="flex flex-wrap justify-between items-center mb-6">
                         <h1 className="text-2xl font-bold mb-6 text-gray-400">
                             Create Product
                         </h1>
                         <button
-                            className="btn btn-sm btn-ghost text-black flex items-center bg-green-400"
+                            className="btn btn-sm btn-ghost w-full lg:w-auto text-black flex items-center bg-green-400"
                             onClick={() => setIsModalOpen(true)}
                         >
                             <PlusCircle className="w-4 h-4" />
@@ -171,8 +171,8 @@ export default function Page() {
                     </div>
 
                     <form>
-                        <div className="flex justify-between gap-4">
-                            <div className="w-1/2">
+                        <div className="flex flex-wrap flex-col-reverse lg:flex-row lg:flex-nowrap justify-between gap-4">
+                            <div className="w-full lg:w-1/2">
                                 {/* Product Name */}
                                 <div className="flex flex-col gap-2">
                                     <label htmlFor="productName">Name:</label>
@@ -246,7 +246,7 @@ export default function Page() {
                                 </div>
                             </div>
 
-                            <div className="w-1/2">
+                            <div className="w-full lg:w-1/2">
                                 {/* Product Image */}
                                 <div className="flex flex-col gap-2">
                                     <label
@@ -255,7 +255,7 @@ export default function Page() {
                                     >
                                         Image:
                                     </label>
-                                    <div className="relative w-72 h-72 border-2 border-dashed border-gray-400 rounded-lg flex text-center items-center justify-center bg-slate-50">
+                                    <div className="relative w-full lg:w-72 h-72 border-2 border-dashed border-gray-400 rounded-lg flex text-center items-center justify-center bg-slate-50">
                                         {imagePreview ? (
                                             <Image
                                                 src={imagePreview}
