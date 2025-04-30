@@ -119,7 +119,12 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                                     >
                                         <SlidersHorizontal size={25} />
                                     </button>
-                                    {filterPopUp && <FilterOverlay />}
+                                    {filterPopUp && (
+                                        <FilterOverlay
+                                            filterPopUp={filterPopUp}
+                                            setFilterPopUp={setFilterPopUp}
+                                        />
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -225,6 +230,24 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                                     />
                                     <div className="py-2 px-4 text-black">
                                         <SearchIcon size={25} />
+                                    </div>
+                                    <div className="p-2 hover:bg-slate-100 text-black rounded-lg cursor-pointer flex items-center justify-center">
+                                        <div className="relative">
+                                            <button
+                                                className="p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
+                                                onClick={toggleFilterPopUp}
+                                            >
+                                                <SlidersHorizontal size={25} />
+                                            </button>
+                                            {filterPopUp && (
+                                                <FilterOverlay
+                                                    filterPopUp={filterPopUp}
+                                                    setFilterPopUp={
+                                                        setFilterPopUp
+                                                    }
+                                                />
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="flex flex-col space-y-4">
