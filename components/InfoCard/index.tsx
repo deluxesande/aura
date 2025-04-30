@@ -2,10 +2,10 @@ import React from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
 export default function InfoCard({ title, number, icon: Icon }: InfoCard) {
-    const isTrendingUp = true;
+    const isTrendingUp = false;
 
     return (
-        <div className="px-6 py-4 rounded-lg gap-4 bg-white">
+        <div className="px-6 py-4 flex-grow rounded-lg gap-2 lg:gap-4 bg-white">
             <div className="flex items-start justify-between ">
                 <div>
                     <p className="font-light text-lg text-gray-400">{title}</p>
