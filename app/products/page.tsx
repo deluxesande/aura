@@ -1,30 +1,31 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
 import CategoryBox from "@/components/CategoryBox";
-import Navbar from "@/components/Navbar";
-import ProductCard from "@/components/ProductCard";
 import CreateOrder from "@/components/CreateOrder"; // Import the CreateOrder component
-import {
-    Store,
-    LibraryBig,
-    PencilRuler,
-    Paperclip,
-    Popcorn,
-    Ellipsis,
-    PlusCircle,
-} from "lucide-react";
+import CustomUserButton from "@/components/CustomUserButton";
+import MobileProductCard from "@/components/MobileProductCard";
+import Navbar from "@/components/Navbar";
 import OrderCard from "@/components/OrderCard";
-import { useDispatch, useSelector } from "react-redux";
+import ProductCard from "@/components/ProductCard";
 import { AppState } from "@/store";
 import { addItem, clearCart } from "@/store/slices/cartSlice";
-import { Product } from "@/utils/typesDefinitions";
 import { show } from "@/store/slices/visibilitySlice";
+import { Product } from "@/utils/typesDefinitions";
+import { SignedIn } from "@clerk/nextjs";
 import axios from "axios";
-import { toast } from "sonner";
-import { SignedIn, UserButton } from "@clerk/nextjs";
-import CustomUserButton from "@/components/CustomUserButton";
+import {
+    Ellipsis,
+    LibraryBig,
+    Paperclip,
+    PencilRuler,
+    PlusCircle,
+    Popcorn,
+    Store,
+} from "lucide-react";
 import Link from "next/link";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "sonner";
 
 const categories = [
     { category: "All", itemCount: 200, icon: Store, active: true },
@@ -267,15 +268,35 @@ export default function Page() {
                             </div>
                         )}
                         {products?.map((product) => (
-                            <ProductCard
-                                key={product.name}
-                                image={product.image}
-                                name={product.name}
-                                quantity={product.quantity}
-                                price={product.price}
-                                inStock={product.inStock}
-                                onAddToCart={() => handleAddToCart(product)}
-                            />
+                            <div key={product.name}>
+                                {/* Product Card for PC */}
+                                <div className="hidden lg:block">
+                                    <ProductCard
+                                        image={product.image}
+                                        name={product.name}
+                                        quantity={product.quantity}
+                                        price={product.price}
+                                        inStock={product.inStock}
+                                        onAddToCart={() =>
+                                            handleAddToCart(product)
+                                        }
+                                    />
+                                </div>
+
+                                {/* Mobile Product Card */}
+                                <div className="block lg:hidden">
+                                    <MobileProductCard
+                                        image={product.image}
+                                        name={product.name}
+                                        quantity={product.quantity}
+                                        price={product.price}
+                                        inStock={product.inStock}
+                                        onAddToCart={() =>
+                                            handleAddToCart(product)
+                                        }
+                                    />
+                                </div>
+                            </div>
                         ))}
                     </div>
                 </Navbar>
