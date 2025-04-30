@@ -157,7 +157,7 @@ export default function Page() {
         <Navbar>
             <div className="flex w-auto justify-between">
                 <div className="px-6 py-4 rounded-lg gap-4 bg-white flex-1">
-                    <div className="flex flex-wrap justify-between items-center mb-6">
+                    <div className="flex flex-wrap space-y-4 lg:space-y-0 justify-between items-center mb-6">
                         <h1 className="text-2xl font-bold mb-6 text-gray-400">
                             Create Product
                         </h1>

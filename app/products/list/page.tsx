@@ -1,5 +1,6 @@
 "use client";
 
+import MobileProductList from "@/components/MobileProductList";
 import Navbar from "@/components/Navbar";
 import ProductList from "@/components/ProductList";
 import { Product } from "@/utils/typesDefinitions";
@@ -51,7 +52,15 @@ export default function Page() {
 
     return (
         <Navbar>
-            <ProductList products={products} handleDelete={handleDelete} />
+            <div className="hidden lg:block">
+                <ProductList products={products} handleDelete={handleDelete} />
+            </div>
+            <div className="block lg:hidden">
+                <MobileProductList
+                    products={products}
+                    handleDelete={handleDelete}
+                />
+            </div>
         </Navbar>
     );
 }
