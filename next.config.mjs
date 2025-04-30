@@ -32,6 +32,12 @@ const nextConfig = {
                 port: "9000",
                 pathname: "/salesense-bucket/**",
             },
+            {
+                protocol: "http",
+                hostname: "34.35.78.131", // Explicitly add the IP address
+                port: "9000",
+                pathname: "/salesense-bucket/**",
+            },
         ],
     },
 };
