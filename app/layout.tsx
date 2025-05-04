@@ -1,6 +1,5 @@
 "use client";
 import "@/app/styles/globals.css";
-import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
 import ReduxProvider from "@/components/ReduxProvider";
@@ -8,6 +7,7 @@ import ToastProvider from "@/components/ToastProvider";
 import { ClerkProvider } from "@clerk/nextjs";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePathname } from "next/navigation";
+import { Analytics } from "@vercel/analytics/react";
 
 import { metadata } from "./metadata";
 
@@ -39,7 +39,10 @@ export default function RootLayout({
                             transition={{ duration: 0.5 }}
                         >
                             <ReduxProvider>
-                                <ToastProvider>{children}</ToastProvider>
+                                <ToastProvider>
+                                    {children}
+                                    <Analytics />
+                                </ToastProvider>
                             </ReduxProvider>
                         </motion.div>
                     </AnimatePresence>
