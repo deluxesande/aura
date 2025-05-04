@@ -23,6 +23,11 @@ export default function InvoicesTable({
         router.push(`/invoice?id=${invoiceId}`);
     };
 
+    // Figure this out
+    let paginationLength = 2;
+
+    window.outerWidth > 568 ? (paginationLength = 3) : 2;
+
     return (
         <div className="p-4 card bg-white shadow-lg rounded-lg mt-4">
             <h1 className="text-2xl font-bold mb-6 text-gray-400">{title}</h1>
@@ -181,18 +186,20 @@ export default function InvoicesTable({
                     <span className="ml-2">Back</span>
                 </button>
                 <div className="flex space-x-2">
-                    {Array.from({ length: 5 }).map((_, index) => (
-                        <button
-                            key={index}
-                            className={`btn btn-sm ${
-                                index === 0
-                                    ? "bg-black text-white"
-                                    : "btn-ghost"
-                            } text-black`}
-                        >
-                            {index + 1}
-                        </button>
-                    ))}
+                    {Array.from({ length: paginationLength }).map(
+                        (_, index) => (
+                            <button
+                                key={index}
+                                className={`btn btn-sm ${
+                                    index === 0
+                                        ? "bg-black text-white"
+                                        : "btn-ghost"
+                                } text-black`}
+                            >
+                                {index + 1}
+                            </button>
+                        )
+                    )}
                 </div>
                 <button className="btn btn-sm btn-ghost text-black flex items-center bg-gray-100">
                     <span className="mr-2">Next</span>

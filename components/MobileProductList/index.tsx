@@ -89,7 +89,7 @@ export default function MobileProductList({
                     <span className="ml-2">Back</span>
                 </button>
                 <div className="flex space-x-2">
-                    {Array.from({ length: 5 }).map((_, index) => (
+                    {Array.from({ length: 2 }).map((_, index) => (
                         <button
                             key={index}
                             className={`btn btn-sm ${

@@ -71,7 +71,7 @@ export default function FilterOverlay({
                                 priceRange[1],
                             ])
                         }
-                        className="w-full"
+                        className="w-full outline-none appearance-none bg-slate-50  block border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
                     />
                     <input
                         type="range"
@@ -84,7 +84,7 @@ export default function FilterOverlay({
                                 Number(e.target.value),
                             ])
                         }
-                        className="w-full"
+                        className="w-full outline-none appearance-none bg-slate-50  block border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
                     />
                     <div className="flex justify-between text-sm text-gray-600">
                         <span>Min: ${priceRange[0]}</span>

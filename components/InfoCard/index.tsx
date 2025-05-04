@@ -2,7 +2,7 @@ import React from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
 export default function InfoCard({ title, number, icon: Icon }: InfoCard) {
-    const isTrendingUp = false;
+    const isTrendingUp = true;
 
     return (
         <div className="px-6 py-4 flex-grow rounded-lg gap-2 lg:gap-4 bg-white">
@@ -18,11 +18,11 @@ export default function InfoCard({ title, number, icon: Icon }: InfoCard) {
 
             <p className="flex items-center mt-2 whitespace-nowrap">
                 {isTrendingUp ? (
-                    <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+                    <TrendingUp color="#22c55e" className="w-4 h-4 mr-1" />
                 ) : (
-                    <TrendingDown className="w-4 h-4 text-red-500 mr-1" />
+                    <TrendingDown color="#ef4444" className="w-4 h-4 mr-1" />
                 )}
-                +6.35% Yesterday
+                <span className="text-green-500 mr-2">+6.35%</span> Yesterday
             </p>
         </div>
     );
