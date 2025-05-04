@@ -16,7 +16,10 @@ const MobileProductCard = ({
     onAddToCart: () => void;
 }) => {
     return (
-        <div className="w-screen pr-12" onClick={onAddToCart}>
+        <div
+            className="w-screen pr-12 bg-white shadow-md cursor-pointer"
+            onClick={onAddToCart}
+        >
             <div className="w-full p-3 rounded-md bg-white shadow-sm border border-gray-200 flex items-center gap-4">
                 {/* Image */}
                 <div className="w-16 h-16 rounded-md bg-gray-100 overflow-hidden flex-shrink-0">
