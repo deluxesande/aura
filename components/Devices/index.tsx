@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { useUser } from "@clerk/nextjs";
+import { useClerk, useUser } from "@clerk/nextjs";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -26,27 +26,26 @@ const osImageMap: { [key: string]: string } = {
 const Devices: React.FC = () => {
     const { user } = useUser();
     const [devices, setDevices] = useState<Device[]>([]);
+    const clerk = useClerk();
 
     const handleRemoveDevice = async (sessionId: string) => {
-        if (!user) return;
-
-        const confirm = window.confirm(
-            "Are you sure you want to remove this device?"
-        );
-        if (!confirm) return;
-
         try {
-            // await user.removeSession(sessionId);
-            // Find the method that works
-            // setDevices((prevDevices) =>
-            //     prevDevices.filter((device) => device.id !== sessionId)
-            // );
-            toast.success("Device removed successfully.");
+            // End the session by ID
+            const session = clerk.client.sessions.find(
+                (s) => s.id === sessionId
+            );
+            if (session) await session.remove();
+
+            // Update the local state to remove the device
+            setDevices((prevDevices) =>
+                prevDevices.filter((device) => device.id !== sessionId)
+            );
+            toast.success("Device removed successfully");
         } catch (err) {
             if (err instanceof Error) {
                 toast.error(err.message);
             } else {
-                toast.error("Failed to remove the device.");
+                toast.error("An unknown error occurred");
             }
         }
     };
