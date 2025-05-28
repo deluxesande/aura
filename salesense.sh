@@ -21,8 +21,8 @@ echo "Docker volume 'salesense-volume' created."
 docker run -d --name minio \
   -p 9000:9000 \
   -p 9001:9001 \
-  -e "MINIO_ROOT_USER=***" \
-  -e "MINIO_ROOT_PASSWORD=***" \
+  -e MINIO_ROOT_USER=*** \
+  -e MINIO_ROOT_PASSWORD=*** \
   -v salesense-volume:/data \
   minio/minio server /data --console-address ":9001"
 
