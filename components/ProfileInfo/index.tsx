@@ -1,5 +1,6 @@
 import { useUser } from "@clerk/nextjs";
 import React, { useState } from "react";
+import { toast } from "sonner";
 
 const ProfileInfo: React.FC = () => {
     const { user } = useUser();
@@ -27,14 +28,14 @@ const ProfileInfo: React.FC = () => {
     const handleSendVerification = (event: React.FormEvent) => {
         event.preventDefault();
         // Add send verification logic here
-        alert("Verification email sent");
+        toast.success("Verification email sent");
     };
 
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
             // Add logic to upload the image and update the user's profile image
-            alert("Profile image uploaded");
+            toast.success("Profile image uploaded");
         }
     };
 

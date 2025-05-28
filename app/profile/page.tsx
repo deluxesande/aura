@@ -5,6 +5,7 @@ import UpdatePasswordForm from "@/components/UpdatePasswordForm";
 import DeleteUserForm from "@/components/DeleteUserForm";
 import Devices from "@/components/Devices";
 import Navbar from "@/components/Navbar";
+import ConnectedAccounts from "@/components/ConnectedAccounts";
 
 const ProfilePage: React.FC = () => {
     return (
@@ -16,6 +17,14 @@ const ProfilePage: React.FC = () => {
                             <div className="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                                 <div className="w-full">
                                     <UpdateProfileInformationForm />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="w-full mb-6">
+                            <div className="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                                <div className="w-full">
+                                    <ConnectedAccounts />
                                 </div>
                             </div>
                         </div>

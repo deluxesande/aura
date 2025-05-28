@@ -1,5 +1,5 @@
 import React from "react";
-import { Edit, Trash, ChevronLeft, ChevronRight } from "lucide-react";
+import { Edit, Trash, ChevronLeft, ChevronRight, Copy } from "lucide-react";
 import { Invoice } from "@/utils/typesDefinitions";
 import { useRouter } from "next/navigation";
 
@@ -22,6 +22,12 @@ export default function InvoicesTable({
         router.push(`/invoice?id=${invoiceId}`);
     };
 
+    const copyToClipboard = (text: string | undefined) => {
+        if (text) {
+            navigator.clipboard.writeText(text);
+        }
+    };
+
     // Figure this out
     let paginationLength = 2;
 
@@ -40,7 +46,7 @@ export default function InvoicesTable({
                                         ID
                                     </th>
                                     <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-400">
-                                        Product Name
+                                        Invoice Name
                                     </th>
                                     <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-400">
                                         M-pesa Ref.
@@ -73,9 +79,20 @@ export default function InvoicesTable({
                                             className="hover:bg-gray-100 cursor-pointer"
                                         >
                                             <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
-                                                <p className="truncate w-20">
-                                                    {invoice.id}
-                                                </p>
+                                                <div className="flex items-center">
+                                                    <p className="text-black font-semibold mr-2 truncate w-36">
+                                                        {invoice?.id}
+                                                    </p>
+                                                    <Copy
+                                                        size={18}
+                                                        className="text-gray-600 cursor-pointer"
+                                                        onClick={() =>
+                                                            copyToClipboard(
+                                                                invoice?.id
+                                                            )
+                                                        }
+                                                    />
+                                                </div>
                                             </td>
                                             <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
                                                 <p>{invoice.invoiceName}</p>

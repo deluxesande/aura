@@ -73,7 +73,9 @@ export default function ProductList({
                                     className="hover:bg-gray-100 cursor-pointer"
                                 >
                                     <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
-                                        {product.id}
+                                        <p className="w-32 truncate">
+                                            {product.id}
+                                        </p>
                                     </td>
                                     <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
                                         <p>{product.name}</p>
