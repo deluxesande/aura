@@ -25,7 +25,7 @@ export default function TopProducts({
                     <p className="font-bold text-sm text-black max-w-24 whitespace-nowrap truncate">
                         {product.name}
                     </p>
-                    <p className="mt-2 text-xs ">$ {product.price}</p>
+                    <p className="mt-2 text-xs">$ {product.price}</p>
                 </div>
             </div>
             <div className="relative flex items-center h-full">

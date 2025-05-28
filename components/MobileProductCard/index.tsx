@@ -19,22 +19,22 @@ const MobileProductCard = ({
         <div className="w-screen pr-12 cursor-pointer" onClick={onAddToCart}>
             <div className="w-full p-3 rounded-md bg-white shadow-md border border-gray-200 flex items-center gap-4">
                 {/* Image */}
-                <div className="w-16 h-16 rounded-md bg-gray-100 overflow-hidden flex-shrink-0">
+                <div className="relative h-16 w-16 rounded-md">
                     <Image
-                        src={image}
+                        src={image || "https://via.placeholder.com/150"}
                         alt={name}
-                        width={64}
-                        height={64}
-                        className="rounded-md object-cover"
+                        layout="fill"
+                        objectFit="cover"
+                        className="rounded-md"
                     />
                 </div>
 
                 {/* Info */}
                 <div className="flex-1">
                     <div className="flex justify-between items-start mb-1">
-                        <h2 className="text-base font-semibold line-clamp-1">
+                        <p className="font-bold text-lg text-black max-w-36 whitespace-nowrap truncate">
                             {name}
-                        </h2>
+                        </p>
                         <span className="text-sm text-gray-400">
                             {quantity}
                         </span>
@@ -45,7 +45,7 @@ const MobileProductCard = ({
                             ${price}
                         </p>
                         <p
-                            className={`text-sm font-medium ${
+                            className={`text-sm font-light ${
                                 inStock ? "text-green-600" : "text-red-500"
                             }`}
                         >

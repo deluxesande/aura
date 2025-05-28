@@ -134,7 +134,7 @@ export default function Page() {
         };
 
         toast.promise(promise(), {
-            loading: "Loading...",
+            loading: "Creating product...",
             success: "Product added to inventory.",
             error: "Error adding product.",
         });
