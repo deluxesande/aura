@@ -17,6 +17,23 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             return res.status(400).json({ error: "Invalid productId" });
         }
 
+        // Check if the product has enough quantity
+        if (product.quantity < quantity) {
+            return res
+                .status(400)
+                .json({ error: "Insufficient product quantity" });
+        }
+
+        // Reduce the product quantity
+        await prisma.product.update({
+            where: { id: productId },
+            data: {
+                quantity: {
+                    decrement: quantity, // Decrease the quantity
+                },
+            },
+        });
+
         const invoiceItem = await prisma.invoiceItem.create({
             data: {
                 invoiceId,

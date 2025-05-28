@@ -7,6 +7,7 @@ import { Product } from "@/utils/typesDefinitions";
 import { useSelector, useDispatch } from "react-redux";
 import { AppState } from "@/store";
 import { addItem, removeItem, decrementItem } from "@/store/slices/cartSlice";
+import { toast } from "sonner";
 
 export default function OrderCard({ product }: { product: Product }) {
     const dispatch = useDispatch();
@@ -15,7 +16,14 @@ export default function OrderCard({ product }: { product: Product }) {
     );
 
     const handleIncrement = () => {
-        dispatch(addItem(product));
+        if (
+            product.quantity &&
+            product.quantity > (cartItem?.cartQuantity || 0)
+        ) {
+            dispatch(addItem(product));
+        } else {
+            toast.warning("Insufficient product quantity available.");
+        }
     };
 
     const handleDecrement = () => {

@@ -41,7 +41,7 @@ const MobileProductCard = ({
                     </div>
 
                     <div className="flex justify-between items-center">
-                        <p className="text-green-600 font-medium text-sm">
+                        <p className="text-green-600 font-light text-md">
                             ${price}
                         </p>
                         <p

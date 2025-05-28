@@ -45,9 +45,17 @@ export default function Page() {
     const [mpesaNumber, setMpesaNumber] = useState("");
 
     const handleAddToCart = (product: Product) => {
+        const cartItem = cartItems.find((item) => item.id === product.id);
         if (product.quantity > 0) {
-            dispatch(addItem(product));
-            dispatch(show());
+            if (
+                product.quantity &&
+                product.quantity > (cartItem?.cartQuantity || 0)
+            ) {
+                dispatch(addItem(product));
+                dispatch(show());
+            } else {
+                toast.warning("Insufficient product quantity available.");
+            }
         } else {
             toast.warning("Product cannot be added to the cart.");
         }

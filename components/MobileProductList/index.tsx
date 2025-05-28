@@ -46,18 +46,18 @@ export default function MobileProductList({
                             className="p-4 border rounded-lg shadow-sm bg-gray-50"
                         >
                             <div className="flex justify-between items-start">
-                                <h3 className="text-lg font-semibold">
+                                <h3 className="font-bold text-lg text-black max-w-36 whitespace-nowrap truncate">
                                     {product.name}
                                 </h3>
-                                <span className="text-sm text-gray-600">
-                                    Qty: {product.quantity}
+                                <span className="text-sm text-gray-400 mr-3">
+                                    {product.quantity}
                                 </span>
                             </div>
                             <p className="text-sm text-gray-400 mt-1">
                                 {product.description}
                             </p>
                             <div className="flex justify-between items-center mt-2">
-                                <p className="text-lg font-bold text-gray-800">
+                                <p className="text-green-600 font-light text-md">
                                     ${product.price}
                                 </p>
                                 <div className="flex space-x-2">

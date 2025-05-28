@@ -43,7 +43,8 @@ model Invoice {
   Customer    Customer?      @relation(fields: [customerId], references: [id])
   invoiceItems InvoiceItem[]
   totalAmount Float
-  createdBy   String?  
+  createdBy   String?
+  invoiceName String            @default("") 
 }
 
 model InvoiceItem {

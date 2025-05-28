@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 
 // Extend the Invoice interface
 interface ExtendedInvoice extends Invoice {
-    itemName?: string;
     totalQuantity?: number;
 }
 export default function InvoicesTable({
@@ -79,7 +78,7 @@ export default function InvoicesTable({
                                                 </p>
                                             </td>
                                             <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
-                                                <p>{invoice.itemName}</p>
+                                                <p>{invoice.invoiceName}</p>
                                             </td>
                                             <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
                                                 OOOP-{index + 1}
@@ -136,10 +135,10 @@ export default function InvoicesTable({
                                 className="p-4 border rounded-lg shadow-sm bg-gray-50"
                             >
                                 <div className="flex justify-between items-start">
-                                    <h3 className="text-lg font-bold">
-                                        {invoice.itemName}
-                                    </h3>
-                                    <span className="text-sm text-gray-600">
+                                    <p className="font-bold text-lg text-black max-w-48 whitespace-nowrap truncate">
+                                        {invoice.invoiceName}
+                                    </p>
+                                    <span className="text-sm text-gray-600 mr-3">
                                         {invoice.totalQuantity}
                                     </span>
                                 </div>
@@ -147,7 +146,7 @@ export default function InvoicesTable({
                                     {invoice.id}
                                 </p>
                                 <div className="flex justify-between items-center mt-2">
-                                    <p className="text-lg  text-gray-800">
+                                    <p className="text-green-600 font-medium text-md">
                                         ${invoice.totalAmount}
                                     </p>
                                     <div className="flex space-x-2">

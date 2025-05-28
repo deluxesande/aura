@@ -8,6 +8,13 @@ const prisma = new PrismaClient();
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const { customerId, invoiceItems, totalAmount } = req.body;
 
+    const currentDate = new Date();
+    const formattedDate = currentDate
+        .toISOString()
+        .replace("T", "-")
+        .split(".")[0]; // Format as YYYY-MM-DD-HH:MM:SS
+    const invoiceName = `Invoice-${formattedDate}`;
+
     try {
         if (customerId) {
             const customerExists = await prisma.customer.findUnique({
@@ -39,6 +46,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
         // Create invoice omit customerId if not provided
         const invoiceData: any = {
+            invoiceName,
             totalAmount,
             invoiceItems: {
                 connect: invoiceItems.map((item: InvoiceItem) => ({
