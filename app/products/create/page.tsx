@@ -22,7 +22,7 @@ export default function Page() {
                 });
                 setCategories([...categories, response.data]);
             } catch (error) {
-                console.error("Error creating category:", error);
+                // Do nothing error is thrown in toast
             }
         };
 

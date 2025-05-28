@@ -74,7 +74,9 @@ const InvoicePage: React.FC = () => {
                 <div className="flex flex-row flex-wrap gap-10 justify-between p-4 card bg-white shadow-lg rounded-lg mt-4">
                     <div className="w-full">
                         <div className="flex justify-between">
-                            <p className="text-gray-600">OOOP-1</p>
+                            <p className="text-gray-600">
+                                {invoice?.invoiceName}
+                            </p>
                             <span
                                 className={`px-2 py-1 rounded-lg ${getStatusColor(
                                     status
@@ -91,7 +93,7 @@ const InvoicePage: React.FC = () => {
                                     Invoice No:
                                 </p>
                                 <div className="flex items-center">
-                                    <p className="text-black font-semibold mr-2 truncate w-32">
+                                    <p className="text-black font-semibold mr-2 truncate w-36">
                                         {invoice?.id}
                                     </p>
                                     <Copy

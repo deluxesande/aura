@@ -26,6 +26,7 @@ export const updateProduct = async (
                 quantity,
                 categoryId,
                 image,
+                inStock: quantity > 0 ? true : false, // Check if quantity is greater than 0
             },
         });
 

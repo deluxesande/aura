@@ -81,16 +81,22 @@ export default function EditProductPage() {
         e.preventDefault();
         setIsLoading(true);
 
-        try {
-            await axios.put(`/api/product/${id}`, formData);
-            toast.success("Product updated successfully");
-            router.push("/products/list");
-        } catch (error) {
-            toast.error("Error updating product");
-            console.error("Error updating product:", error);
-        } finally {
-            setIsLoading(false);
-        }
+        const promise = async () => {
+            try {
+                await axios.put(`/api/product/${id}`, formData);
+                router.push("/products/list");
+            } catch (error) {
+                // Do nothing error is thrown in toast
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        toast.promise(promise(), {
+            loading: "Updating product...",
+            success: "Product updated successfully!",
+            error: "Failed to update product",
+        });
     };
 
     // Fetch product data once
@@ -107,7 +113,6 @@ export default function EditProductPage() {
                 setCategories(categoriesRes.data);
             } catch (error) {
                 toast.error("Error fetching product data");
-                console.error("Error fetching data:", error);
             }
         };
 
@@ -121,8 +126,8 @@ export default function EditProductPage() {
                     Edit Product
                 </h1>
                 <form onSubmit={handleSubmit}>
-                    <div className="flex justify-between gap-4">
-                        <div className="w-1/2">
+                    <div className="flex flex-wrap flex-col-reverse lg:flex-row lg:flex-nowrap justify-between gap-4">
+                        <div className="w-full lg:w-1/2">
                             {/* Product Name */}
                             <div className="flex flex-col gap-2">
                                 <label htmlFor="productName">Name:</label>
@@ -205,7 +210,7 @@ export default function EditProductPage() {
                             </div>
                         </div>
 
-                        <div className="w-1/2">
+                        <div className="w-full lg:w-1/2">
                             {/* Product Image */}
                             <div className="flex flex-col gap-2">
                                 <label
@@ -214,7 +219,7 @@ export default function EditProductPage() {
                                 >
                                     Image:
                                 </label>
-                                <div className="relative w-72 h-72 border-2 border-dashed border-gray-400 rounded-lg flex text-center items-center justify-center bg-slate-50">
+                                <div className="relative w-full lg:w-72 h-72 border-2 border-dashed border-gray-400 rounded-lg flex text-center items-center justify-center bg-slate-50">
                                     {imagePreview ? (
                                         <Image
                                             src={imagePreview}

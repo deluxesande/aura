@@ -24,13 +24,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 .json({ error: "Insufficient product quantity" });
         }
 
-        // Reduce the product quantity
+        // Reduce the product quantity and update inStock if necessary
         await prisma.product.update({
             where: { id: productId },
             data: {
                 quantity: {
                     decrement: quantity, // Decrease the quantity
                 },
+                inStock: product.quantity - quantity === 0 ? false : undefined, // Set inStock to false if the resulting quantity is 0
             },
         });
 

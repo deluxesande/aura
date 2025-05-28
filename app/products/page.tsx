@@ -95,7 +95,6 @@ export default function Page() {
                     );
                     return response.data;
                 } catch (error) {
-                    console.error("Error creating invoice item:", error);
                     return null;
                 }
             });
@@ -124,6 +123,30 @@ export default function Page() {
                     const response = await axios.post(
                         "/api/invoice/",
                         invoiceData
+                    );
+
+                    // Update product quantities in the state
+                    setProducts((prevProducts) =>
+                        prevProducts.map((product) => {
+                            const cartItem = cartItems.find(
+                                (item) => item.id === product.id
+                            );
+                            if (cartItem) {
+                                return {
+                                    ...product,
+                                    quantity:
+                                        product.quantity -
+                                        cartItem.cartQuantity, // Reduce product quantity
+                                    inStock:
+                                        product.quantity -
+                                            cartItem.cartQuantity >
+                                        0
+                                            ? true
+                                            : false, // Update inStock based on new quantity
+                                };
+                            }
+                            return product;
+                        })
                     );
 
                     // Clear cart if invoice is created successfully

@@ -18,7 +18,7 @@ export default function Page() {
                     prevInvoices.filter((invoice) => invoice.id !== invoiceId)
                 );
             } catch (error) {
-                console.error("Error deleting invoice:", error);
+                // Handle error appropriately
             }
         };
 
@@ -35,7 +35,7 @@ export default function Page() {
                 const response = await axios.get("/api/invoice");
                 setInvoices(response.data);
             } catch (error) {
-                console.error("Error fetching invoices:", error);
+                // console.error("Error fetching invoices:", error);
             }
         };
 

@@ -135,7 +135,7 @@ export default function InvoicesTable({
                                 className="p-4 border rounded-lg shadow-sm bg-gray-50"
                             >
                                 <div className="flex justify-between items-start">
-                                    <p className="font-bold text-lg text-black max-w-48 whitespace-nowrap truncate">
+                                    <p className="font-bold text-lg text-black max-w-52 whitespace-nowrap truncate">
                                         {invoice.invoiceName}
                                     </p>
                                     <span className="text-sm text-gray-600 mr-3">
