@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
-import Image from "next/image";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { format } from "date-fns";
+import Image from "next/image";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 interface Device {
@@ -26,15 +26,17 @@ const osImageMap: { [key: string]: string } = {
 const Devices: React.FC = () => {
     const { user } = useUser();
     const [devices, setDevices] = useState<Device[]>([]);
-    const clerk = useClerk();
+    const { client } = useClerk();
 
     const handleRemoveDevice = async (sessionId: string) => {
         try {
             // End the session by ID
-            const session = clerk.client.sessions.find(
-                (s) => s.id === sessionId
+            const session = await client.sessions.find(
+                (session: any) => session.id === sessionId
             );
-            if (session) await session.remove();
+            if (session) {
+                await session.end();
+            }
 
             // Update the local state to remove the device
             setDevices((prevDevices) =>
@@ -65,8 +67,10 @@ const Devices: React.FC = () => {
                     os: session.latestActivity.deviceType,
                     lastActive: format(new Date(session.lastActiveAt), "PPpp"),
                     location: `${session.latestActivity.city}, ${session.latestActivity.country}`,
-                    imageUrl:
-                        osImageMap[session.os_name] || "/images/window.png",
+                    imageUrl: session.latestActivity.isMobile
+                        ? osImageMap["Android"]
+                        : osImageMap[session.latestActivity.deviceType] ||
+                          "/images/window.png",
                 }));
 
                 setDevices(devicesList);
@@ -97,18 +101,18 @@ const Devices: React.FC = () => {
                 {devices.map((device) => (
                     <div
                         key={device.id}
-                        className="p-4 bg-gray-100 rounded-lg shadow-sm flex justify-between items-center"
+                        className="p-4 bg-gray-100 rounded-lg shadow-sm flex flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0"
                     >
-                        <div className="flex items-center">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center w-full sm:w-auto">
                             <Image
                                 src={device.imageUrl}
                                 alt={device.browser}
                                 width={20}
                                 height={20}
-                                className="w-6 h-6 mr-4"
+                                className="w-6 h-6 mr-0 sm:mr-4 mb-2 sm:mb-0"
                             />
-                            <div className="space-y-1">
-                                <div className="flex items-center">
+                            <div className="space-y-1 w-full sm:w-auto">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center">
                                     <div className="flex flex-col">
                                         <p className="text-sm font-medium text-gray-700">
                                             {device.browser}
@@ -117,9 +121,13 @@ const Devices: React.FC = () => {
                                             {device.browserVersion}
                                         </p>
                                     </div>
-                                    {device.status && (
-                                        <span className="ml-2 px-2 py-[2px] text-[10px] font-semibold text-green-500 bg-green-50 border border-green-500 rounded-full">
+                                    {device.status === "active" ? (
+                                        <span className="mt-2 sm:mt-0 sm:ml-2 px-2 py-[2px] text-[10px] font-semibold text-green-500 bg-green-50 border border-green-500 rounded-full">
                                             Active
+                                        </span>
+                                    ) : (
+                                        <span className="mt-2 sm:mt-0 sm:ml-2 px-2 py-[2px] text-[10px] font-semibold text-yellow-500 bg-red-50 border border-yellow-500 rounded-full">
+                                            Inactive
                                         </span>
                                     )}
                                 </div>
@@ -129,7 +137,7 @@ const Devices: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="ml-auto flex flex-col items-end space-y-3">
+                        <div className="ml-0 sm:ml-auto flex flex-col items-start sm:items-end space-y-3 w-full sm:w-auto">
                             <p className="text-xs text-gray-600">
                                 {device.lastActive}
                             </p>

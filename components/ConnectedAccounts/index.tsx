@@ -49,21 +49,25 @@ const ConnectedAccounts: React.FC = () => {
                     accounts.map((account) => (
                         <div
                             key={account.id}
-                            className="flex justify-between items-center p-4 border rounded-lg bg-gray-50"
+                            className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border rounded-lg bg-gray-50 space-y-4 sm:space-y-0"
                         >
-                            <div className="flex items-center space-x-4">
+                            <div className="flex flex-row items-center gap-2">
                                 <Image
                                     src={account.icon}
                                     alt={`${account.provider} Icon`}
-                                    className="w-5 h-5"
-                                    width={20}
-                                    height={20}
+                                    className="w-6 h-6"
+                                    width={24}
+                                    height={24}
                                 />
-                                <div className="flex items-center justify-center">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
                                     <p className="text-md font-medium text-gray-900 capitalize">
                                         {account.provider}
                                     </p>
-                                    <Dot size={28} color="#9ca3af " />
+                                    <Dot
+                                        className="hidden md:block"
+                                        size={28}
+                                        color="#9ca3af"
+                                    />
                                     <p className="text-sm font-light text-gray-600">
                                         {account.emailAddress ||
                                             "No email linked"}

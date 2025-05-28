@@ -1,0 +1,26 @@
+"use client";
+import Navbar from "@/components/Navbar";
+import NotificationPreferencesForm from "@/components/NotificationPreferencesForm";
+import React from "react";
+
+const SettingsPage: React.FC = () => {
+    return (
+        <Navbar>
+            <div className="py-12">
+                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                    <div className="flex flex-col flex-wrap w-full">
+                        <div className="w-full mb-6">
+                            <div className="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                                <div className="w-full">
+                                    <NotificationPreferencesForm />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Navbar>
+    );
+};
+
+export default SettingsPage;
