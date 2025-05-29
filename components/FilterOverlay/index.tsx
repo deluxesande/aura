@@ -1,18 +1,31 @@
+import { AppState } from "@/store";
+import { Product } from "@/utils/typesDefinitions";
 import axios from "axios";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 
 interface FilterOverlayProps {
     setFilterPopUp: React.Dispatch<React.SetStateAction<boolean>>;
     filterPopUp: boolean;
+    setFilteredProducts?: (products: any[]) => void;
 }
+
+const MAX_PRICE = 3000; // Maximum price for the range slider
 
 export default function FilterOverlay({
     setFilterPopUp,
     filterPopUp,
+    setFilteredProducts,
 }: FilterOverlayProps) {
-    const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+    const [priceRange, setPriceRange] = useState<[number, number]>([
+        0,
+        MAX_PRICE,
+    ]);
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+    const originalProducts = useSelector(
+        (state: AppState) => state.product.products
+    );
 
     const [categories, setCategories] = useState<
         { id: string; name: string }[]
@@ -24,6 +37,31 @@ export default function FilterOverlay({
                 ? prev.filter((c) => c !== category)
                 : [...prev, category]
         );
+    };
+
+    const applyFilters = () => {
+        if (!setFilteredProducts) return;
+
+        const filteredProducts = originalProducts.filter((product: Product) => {
+            const inPriceRange =
+                product.price >= priceRange[0] &&
+                product.price <= priceRange[1];
+
+            const inCategory =
+                selectedCategories.length === 0 ||
+                selectedCategories.includes(product.Category.name);
+
+            return inPriceRange && inCategory;
+        });
+
+        setFilteredProducts(filteredProducts);
+    };
+
+    const clearFilters = () => {
+        if (!setFilteredProducts) return;
+        setPriceRange([0, MAX_PRICE]);
+        setSelectedCategories([]);
+        setFilteredProducts(originalProducts);
     };
 
     useEffect(() => {
@@ -71,7 +109,7 @@ export default function FilterOverlay({
                                 priceRange[1],
                             ])
                         }
-                        className="w-full outline-none appearance-none bg-slate-50  block border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                        className="w-full appearance-none bg-green-100 h-2 rounded-full accent-green-500 outline-none"
                     />
                     <input
                         type="range"
@@ -84,7 +122,7 @@ export default function FilterOverlay({
                                 Number(e.target.value),
                             ])
                         }
-                        className="w-full outline-none appearance-none bg-slate-50  block border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                        className="w-full appearance-none bg-green-100 h-2 rounded-full accent-green-500 outline-none"
                     />
                     <div className="flex justify-between text-sm text-gray-600">
                         <span>Min: ${priceRange[0]}</span>
@@ -97,30 +135,50 @@ export default function FilterOverlay({
             <div className="mb-4">
                 <h4 className="text-md font-medium mb-2">Category</h4>
                 <div className="flex flex-col space-y-2">
-                    {categories.map((category) => (
-                        <label
-                            key={category.id}
-                            className="flex items-center space-x-2"
-                        >
-                            <input
-                                type="checkbox"
-                                checked={selectedCategories.includes(
-                                    category.name
-                                )}
-                                onChange={() =>
-                                    handleCategoryChange(category.name)
-                                }
-                                className="form-checkbox"
-                            />
-                            <span className="text-sm text-gray-600">
-                                {category.name}
-                            </span>
-                        </label>
-                    ))}
+                    {categories.length === 0 ? (
+                        <p className="text-sm text-gray-500 italic">
+                            No categories available.
+                        </p>
+                    ) : (
+                        categories.map((category) => (
+                            <label
+                                key={category.id}
+                                className="flex items-center space-x-2"
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={selectedCategories.includes(
+                                        category.name
+                                    )}
+                                    onChange={() =>
+                                        handleCategoryChange(category.name)
+                                    }
+                                    className="form-checkbox h-4 w-4 text-green-500 border-green-300 focus:ring-green-500 rounded"
+                                />
+                                <span className="text-sm text-gray-700">
+                                    {category.name}
+                                </span>
+                            </label>
+                        ))
+                    )}
                 </div>
             </div>
 
-            {/* <p className="text-stone-400 mb-4">No filters</p> */}
+            {/* Apply Filters Button */}
+            <div className="mt-4 space-y-2">
+                <button
+                    onClick={clearFilters}
+                    className="btn btn-md btn-ghost text-black flex items-center bg-slate-50 w-full"
+                >
+                    Clear Filters
+                </button>
+                <button
+                    onClick={applyFilters}
+                    className="btn btn-md btn-ghost text-black flex items-center bg-green-400 w-full"
+                >
+                    Apply
+                </button>
+            </div>
         </div>
     );
 }

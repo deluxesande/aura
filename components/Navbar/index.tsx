@@ -52,9 +52,9 @@ export default function Navbar({
         { id: 2, isRead: true },
     ]);
     const [inputValue, setInputValue] = useState("");
-
-    // Get products from Redux store
-    const products = useSelector((state: AppState) => state.product.products);
+    const originalProducts = useSelector(
+        (state: AppState) => state.product.products
+    );
 
     const togglePopup = () => {
         filterPopUp ? setFilterPopUp(!filterPopUp) : filterPopUp;
@@ -101,10 +101,6 @@ export default function Navbar({
     const toggleMobileMenu = () => {
         setShowMobileMenu(!showMobileMenu);
     };
-
-    const originalProducts = useSelector(
-        (state: AppState) => state.product.products
-    );
 
     const handleInputValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.value.length === 0)
@@ -171,6 +167,9 @@ export default function Navbar({
                                         <FilterOverlay
                                             filterPopUp={filterPopUp}
                                             setFilterPopUp={setFilterPopUp}
+                                            setFilteredProducts={
+                                                setFilteredProducts
+                                            }
                                         />
                                     )}
                                 </div>
@@ -299,6 +298,9 @@ export default function Navbar({
                                                     filterPopUp={filterPopUp}
                                                     setFilterPopUp={
                                                         setFilterPopUp
+                                                    }
+                                                    setFilteredProducts={
+                                                        setFilteredProducts
                                                     }
                                                 />
                                             )}

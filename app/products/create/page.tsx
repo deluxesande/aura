@@ -289,7 +289,7 @@ export default function Page() {
                                         <input
                                             id="productInStock"
                                             type="checkbox"
-                                            className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                            className="form-checkbox h-4 w-4 text-green-600 border-green-300 rounded focus:ring-green-500"
                                             required
                                         />
                                         <span className="text-gray-700">

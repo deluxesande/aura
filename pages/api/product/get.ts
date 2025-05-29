@@ -15,6 +15,9 @@ export const getProducts = async (
             where: {
                 createdBy: userId,
             },
+            include: {
+                Category: true,
+            },
         });
 
         if (products.length === 0) {
