@@ -16,9 +16,11 @@ const DeleteUserForm: React.FC = () => {
         if (!user) return;
 
         if (
-            username === user.emailAddresses[0].emailAddress ||
-            username === user.fullName ||
-            username === user.username
+            username.toLocaleLowerCase() ===
+                user.emailAddresses[0].emailAddress.toLocaleLowerCase() ||
+            username.toLocaleLowerCase() ===
+                user.fullName?.toLocaleLowerCase() ||
+            username.toLocaleLowerCase() === user.username?.toLocaleLowerCase()
         ) {
             const promise = async () => {
                 try {
@@ -88,7 +90,7 @@ const DeleteUserForm: React.FC = () => {
                                     name="username"
                                     type="text"
                                     className="w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
-                                    placeholder="Username"
+                                    placeholder="Username or Email"
                                     value={username}
                                     onChange={(e) =>
                                         setUsername(e.target.value)
@@ -99,7 +101,7 @@ const DeleteUserForm: React.FC = () => {
                             <div className="mt-6 w-full flex justify-end">
                                 <button
                                     type="button"
-                                    className="w-full bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+                                    className="w-full  bg-slate-50 hover:bg-gray-200 text-black px-4 py-2 rounded-md "
                                     onClick={() => setIsModalOpen(false)}
                                 >
                                     Cancel

@@ -25,46 +25,62 @@ export default function SignupPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!isLoaded) return;
-        try {
-            await signUp.create({
-                emailAddress: email,
-                password,
-                firstName,
-                lastName,
-            });
+        const promise = async () => {
+            try {
+                await signUp.create({
+                    emailAddress: email,
+                    password,
+                    firstName,
+                    lastName,
+                });
 
-            await signUp.prepareEmailAddressVerification({
-                strategy: "email_code",
-            });
-            setCodeSent(true);
-            toast.success("Verification email sent. Please check your inbox.");
-        } catch (err: any) {
-            toast.error(err.errors[0].message);
-        }
+                await signUp.prepareEmailAddressVerification({
+                    strategy: "email_code",
+                });
+                setCodeSent(true);
+            } catch (err: any) {
+                // toast.error(err.errors[0].message);
+            }
+        };
+
+        toast.promise(promise(), {
+            loading: "Creating account...",
+            success: "Account created successfully! Please verify your email.",
+            error: "Failed to create account. Please try again.",
+        });
     };
 
     const handleVerify = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!isLoaded) return;
-        try {
-            const result = await signUp.attemptEmailAddressVerification({
-                code,
-            });
 
-            if (result.status === "complete") {
-                await setActive({ session: result.createdSessionId });
-                dispatch(signInAction());
-                router.push("/dashboard");
-            }
-        } catch (err: any) {
-            if (err.errors) {
-                err.errors.forEach((error: any) => {
-                    toast.error(error.long_message || error.message);
+        if (!isLoaded) return;
+        const promise = async () => {
+            try {
+                const result = await signUp.attemptEmailAddressVerification({
+                    code,
                 });
-            } else {
-                toast.error("Failed to verify. Please try again.");
+
+                if (result.status === "complete") {
+                    await setActive({ session: result.createdSessionId });
+                    dispatch(signInAction());
+                    router.push("/dashboard");
+                }
+            } catch (err: any) {
+                if (err.errors) {
+                    err.errors.forEach((error: any) => {
+                        toast.error(error.long_message || error.message);
+                    });
+                } else {
+                    // toast.error("Failed to verify. Please try again.");
+                }
             }
-        }
+        };
+
+        toast.promise(promise(), {
+            loading: "Verifying code...",
+            success: "Code verified successfully! Redirecting...",
+            error: "Verification failed. Please try again.",
+        });
     };
 
     const handleGoogleSignIn = async () => {
@@ -247,6 +263,8 @@ export default function SignupPage() {
                         Create account
                     </button>
                 )}
+                {/* Add the CAPTCHA element */}
+                <div id="clerk-captcha"></div>
             </form>
 
             <p className="mt-6 text-center text-sm text-gray-600">

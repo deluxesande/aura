@@ -4,12 +4,14 @@ import { toast } from "sonner";
 
 const ProfileInfo: React.FC = () => {
     const { user } = useUser();
-    const [name, setName] = useState<string | undefined>(undefined);
+    const [firstName, setFirstName] = useState<string | undefined>(undefined);
+    const [lastName, setLastName] = useState<string | undefined>(undefined);
     const [email, setEmail] = useState<string | undefined>(undefined);
 
     React.useEffect(() => {
         if (user) {
-            setName(user.fullName || "John Doe");
+            setFirstName(user.firstName || "John");
+            setLastName(user.lastName || "Doe");
             setEmail(
                 user.emailAddresses[0]?.emailAddress || "johndoe@gmail.com"
             );
@@ -18,11 +20,25 @@ const ProfileInfo: React.FC = () => {
 
     const [status, setStatus] = useState("");
 
-    const handleSubmit = (event: React.FormEvent) => {
+    const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
-        // Add update profile logic here
-        setStatus("profile-updated");
-        setTimeout(() => setStatus(""), 2000);
+        if (!user) return;
+
+        const promise = async () => {
+            await user.update({
+                firstName,
+                lastName,
+            });
+
+            // If the update was successful, reload the user data
+            await user.reload();
+        };
+
+        toast.promise(promise, {
+            loading: "Saving...",
+            success: "Profile updated successfully!",
+            error: "Failed to update profile. Please try again.",
+        });
     };
 
     const handleSendVerification = (event: React.FormEvent) => {
@@ -31,12 +47,32 @@ const ProfileInfo: React.FC = () => {
         toast.success("Verification email sent");
     };
 
-    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = async (
+        event: React.ChangeEvent<HTMLInputElement>
+    ) => {
         const file = event.target.files?.[0];
-        if (file) {
-            // Add logic to upload the image and update the user's profile image
-            toast.success("Profile image uploaded");
+        if (!user) return; // Ensure user is defined
+
+        if (!file) {
+            toast.error("No file selected.");
+            return;
         }
+
+        const promise = async () => {
+            try {
+                // Update the user's profile image in Clerk
+                await user.setProfileImage({ file });
+            } catch (error) {
+                // toast.error(
+                //     "Failed to upload profile image. Please try again."
+                // );
+            }
+        };
+        toast.promise(promise, {
+            loading: "Uploading image...",
+            success: "Profile image updated successfully!",
+            error: "Failed to upload profile image. Please try again.",
+        });
     };
 
     return (
@@ -50,14 +86,6 @@ const ProfileInfo: React.FC = () => {
                     address.
                 </p>
             </header>
-
-            <form
-                id="send-verification"
-                onSubmit={handleSendVerification}
-                method="post"
-            >
-                {/* Add CSRF token if needed */}
-            </form>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-6">
                 <div className="flex flex-col lg:flex-row items-center space-x-6">
@@ -88,25 +116,49 @@ const ProfileInfo: React.FC = () => {
                             />
                         </div>
                     </div>
-                    <div className="flex-1 space-y-4">
-                        <div>
-                            <label
-                                htmlFor="name"
-                                className="block text-sm font-medium text-gray-700"
-                            >
-                                Name
-                            </label>
-                            <input
-                                id="name"
-                                name="name"
-                                type="text"
-                                className="mt-1 block w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                required
-                                autoFocus
-                                autoComplete="name"
-                            />
+                    <div className="flex-1 space-y-4 mt-6 lg:mt-0">
+                        <div className="flex w-full justify-evenly gap-2 items-center">
+                            <div className="w-full">
+                                <label
+                                    htmlFor="firstname"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    First Name
+                                </label>
+                                <input
+                                    id="firstname"
+                                    name="firstname"
+                                    type="text"
+                                    className="mt-1 block w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
+                                    value={firstName}
+                                    onChange={(e) =>
+                                        setFirstName(e.target.value)
+                                    }
+                                    required
+                                    autoFocus
+                                    autoComplete="given-name"
+                                />
+                            </div>
+                            <div className="w-full">
+                                <label
+                                    htmlFor="lastname"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Last Name
+                                </label>
+                                <input
+                                    id="lastname"
+                                    name="lastname"
+                                    type="text"
+                                    className="mt-1 block w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
+                                    value={lastName}
+                                    onChange={(e) =>
+                                        setLastName(e.target.value)
+                                    }
+                                    required
+                                    autoComplete="family-name"
+                                />
+                            </div>
                         </div>
                         <div>
                             <label
@@ -119,13 +171,12 @@ const ProfileInfo: React.FC = () => {
                                 id="email"
                                 name="email"
                                 type="email"
-                                className="mt-1 block w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
+                                className="mt-1 block w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2 cursor-not-allowed"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                required
-                                autoComplete="username"
+                                disabled
                             />
-                            <div>
+                            <div className="hidden">
                                 <p className="text-sm mt-2 text-gray-800">
                                     Your email address is unverified.
                                     <button
