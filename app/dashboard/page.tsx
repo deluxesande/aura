@@ -9,6 +9,9 @@ import { Product } from "@/utils/typesDefinitions";
 import axios from "axios";
 import LineChart from "@/components/LineChart";
 import Link from "next/link";
+import { useDispatch, useSelector } from "react-redux";
+import { AppState } from "@/store";
+import { setProducts } from "@/store/slices/productSlice";
 
 const infoCards = [
     { title: "Invoices", number: 10, icon: ReceiptText },
@@ -18,14 +21,18 @@ const infoCards = [
 ];
 
 export default function Page() {
-    const [products, setProducts] = useState<Product[]>([]);
+    const [products, setLocalProducts] = useState<Product[]>([]);
     const [invoices, setInvoices] = React.useState([]);
+    const dispatch = useDispatch();
+    const productsData = useSelector(
+        (state: AppState) => state.product.products
+    );
 
     useEffect(() => {
         const fetchInvoices = async () => {
             try {
                 const response = await axios.get("/api/invoice");
-                setInvoices(response.data);
+                setInvoices(response.data.slice(0, 5)); // Limit to 5 invoices
             } catch (error) {}
         };
 
@@ -37,12 +44,19 @@ export default function Page() {
             try {
                 const response = await axios.get("/api/product");
                 const limitedProducts = response.data.slice(0, 5);
-                setProducts(limitedProducts);
+                setLocalProducts(limitedProducts);
+
+                // Dispatch the products to the Redux store
+                dispatch(setProducts(limitedProducts));
             } catch (error) {}
         };
 
-        fetchProducts();
-    }, []);
+        if (productsData.length > 0) {
+            setLocalProducts(productsData.slice(0, 5));
+        } else {
+            fetchProducts();
+        }
+    }, [productsData, dispatch]);
 
     return (
         <Navbar>
@@ -58,7 +72,7 @@ export default function Page() {
                 ))}
             </div>
 
-            <div className="flex flex-wrap gap-4 my-4">
+            <div className="flex flex-wrap lg:flex-nowrap gap-4 my-4">
                 <div className="px-6 py-4 h-fit rounded-lg gap-4 bg-white flex-1 w-full lg:w-[40%]">
                     <h1 className="text-2xl font-bold mb-6 text-gray-400">
                         Monthly Sales

@@ -44,6 +44,9 @@ export default function Page() {
     const [isInputVisible, setIsInputVisible] = useState(false);
     const [buttonText, setButtonText] = useState("Mpesa");
     const [mpesaNumber, setMpesaNumber] = useState("");
+    const productsData = useSelector(
+        (state: AppState) => state.product.products
+    );
 
     const handleAddToCart = (product: Product) => {
         const cartItem = cartItems.find((item) => item.id === product.id);
@@ -268,8 +271,14 @@ export default function Page() {
             }
         };
 
-        fetchProducts();
-    }, [dispatch]);
+        // Check if productsData is already available in the store
+        if (productsData.length > 0) {
+            setLocalProducts(productsData);
+        } else {
+            // Fetch products from the API
+            fetchProducts();
+        }
+    }, [dispatch, productsData]);
 
     return (
         <div className="flex h-screen overflow-hidden">

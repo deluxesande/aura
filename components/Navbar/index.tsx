@@ -1,6 +1,6 @@
 "use client";
 
-import logo from "@/assets/Icon.png";
+import { AppState } from "@/store";
 import { show } from "@/store/slices/visibilitySlice";
 import { SignedIn } from "@clerk/nextjs";
 import {
@@ -16,14 +16,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { toast } from "sonner";
 import CustomUserButton from "../CustomUserButton";
+import FilterOverlay from "../FilterOverlay";
 import NotificationOverlay from "../NotificationOverlay";
 import Sidebar from "./Sidebar";
-import FilterOverlay from "../FilterOverlay";
-import { AppState } from "@/store";
-import { toast } from "sonner";
-import axios from "axios";
-import { setProducts } from "@/store/slices/productSlice";
 
 const links = [
     { href: "/dashboard", text: "Dashboard" },
@@ -51,10 +48,11 @@ export default function Navbar({
         { id: 1, isRead: false },
         { id: 2, isRead: true },
     ]);
-    const [inputValue, setInputValue] = useState("");
     const originalProducts = useSelector(
         (state: AppState) => state.product.products
     );
+
+    const [inputValue, setInputValue] = useState<string>("");
 
     const togglePopup = () => {
         filterPopUp ? setFilterPopUp(!filterPopUp) : filterPopUp;
@@ -109,6 +107,10 @@ export default function Navbar({
     };
 
     const handleSearch = () => {
+        if (pathname !== "/products") {
+            router.push("/products");
+        }
+
         if (!setFilteredProducts) return; // Ensure setFilteredProducts is provided
 
         const searchTerm = inputValue.trim().toLowerCase();
