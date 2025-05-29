@@ -126,7 +126,11 @@ export default function Navbar({
 
         setFilteredProducts(filteredProducts); // Pass filtered products to parent
 
-        toggleMobileMenu(); // Close mobile menu after search
+        const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+        if (isMobile) {
+            toggleMobileMenu(); // Close mobile menu only on mobile
+        }
     };
 
     return (
