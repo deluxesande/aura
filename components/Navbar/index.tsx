@@ -123,6 +123,8 @@ export default function Navbar({
         }
 
         setFilteredProducts(filteredProducts); // Pass filtered products to parent
+
+        toggleMobileMenu(); // Close mobile menu after search
     };
 
     return (
@@ -169,6 +171,9 @@ export default function Navbar({
                                             setFilterPopUp={setFilterPopUp}
                                             setFilteredProducts={
                                                 setFilteredProducts
+                                            }
+                                            toggleFilterPopUp={
+                                                toggleFilterPopUp
                                             }
                                         />
                                     )}
@@ -301,6 +306,9 @@ export default function Navbar({
                                                     }
                                                     setFilteredProducts={
                                                         setFilteredProducts
+                                                    }
+                                                    toggleFilterPopUp={
+                                                        toggleFilterPopUp
                                                     }
                                                 />
                                             )}

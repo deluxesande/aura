@@ -9,6 +9,7 @@ interface FilterOverlayProps {
     setFilterPopUp: React.Dispatch<React.SetStateAction<boolean>>;
     filterPopUp: boolean;
     setFilteredProducts?: (products: any[]) => void;
+    toggleFilterPopUp?: () => void;
 }
 
 const MAX_PRICE = 3000; // Maximum price for the range slider
@@ -17,6 +18,7 @@ export default function FilterOverlay({
     setFilterPopUp,
     filterPopUp,
     setFilteredProducts,
+    toggleFilterPopUp,
 }: FilterOverlayProps) {
     const [priceRange, setPriceRange] = useState<[number, number]>([
         0,
@@ -40,7 +42,7 @@ export default function FilterOverlay({
     };
 
     const applyFilters = () => {
-        if (!setFilteredProducts) return;
+        if (!setFilteredProducts || !toggleFilterPopUp) return;
 
         const filteredProducts = originalProducts.filter((product: Product) => {
             const inPriceRange =
@@ -55,13 +57,16 @@ export default function FilterOverlay({
         });
 
         setFilteredProducts(filteredProducts);
+        toggleFilterPopUp();
     };
 
     const clearFilters = () => {
-        if (!setFilteredProducts) return;
+        if (!setFilteredProducts || !toggleFilterPopUp) return;
+
         setPriceRange([0, MAX_PRICE]);
         setSelectedCategories([]);
         setFilteredProducts(originalProducts);
+        toggleFilterPopUp();
     };
 
     useEffect(() => {
