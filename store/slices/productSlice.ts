@@ -1,12 +1,21 @@
 // store/slices/productSlice.ts
+import { Category, InvoiceItem } from "@/utils/typesDefinitions";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface ProductState {
     products: Array<{
-        image: string;
+        id: string;
         name: string;
+        description: string;
+        price: number;
+        sku: string;
         quantity: number;
-        price: string;
+        createdAt: Date;
+        updatedAt: Date;
+        categoryId: string;
+        Category: Category;
+        invoiceItems: InvoiceItem[];
+        image: string;
         inStock: boolean;
     }>;
 }
@@ -24,6 +33,10 @@ const productSlice = createSlice({
         },
     },
 });
+
+// Selector to get all products
+export const selectProducts = (state: { product: ProductState }) =>
+    state.product.products;
 
 export const { setProducts } = productSlice.actions;
 export default productSlice.reducer;

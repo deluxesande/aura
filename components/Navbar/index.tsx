@@ -15,11 +15,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import CustomUserButton from "../CustomUserButton";
 import NotificationOverlay from "../NotificationOverlay";
 import Sidebar from "./Sidebar";
 import FilterOverlay from "../FilterOverlay";
+import { AppState } from "@/store";
+import { toast } from "sonner";
+import axios from "axios";
+import { setProducts } from "@/store/slices/productSlice";
 
 const links = [
     { href: "/dashboard", text: "Dashboard" },
@@ -30,7 +34,13 @@ const links = [
     { href: "/profile", text: "Profile" },
 ];
 
-export default function Navbar({ children }: { children: React.ReactNode }) {
+export default function Navbar({
+    children,
+    setFilteredProducts,
+}: {
+    children: React.ReactNode;
+    setFilteredProducts?: (products: any[]) => void;
+}) {
     const pathname = usePathname();
     const router = useRouter();
     const dispatch = useDispatch();
@@ -41,6 +51,10 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
         { id: 1, isRead: false },
         { id: 2, isRead: true },
     ]);
+    const [inputValue, setInputValue] = useState("");
+
+    // Get products from Redux store
+    const products = useSelector((state: AppState) => state.product.products);
 
     const togglePopup = () => {
         filterPopUp ? setFilterPopUp(!filterPopUp) : filterPopUp;
@@ -88,6 +102,33 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
         setShowMobileMenu(!showMobileMenu);
     };
 
+    const originalProducts = useSelector(
+        (state: AppState) => state.product.products
+    );
+
+    const handleInputValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.value.length === 0)
+            setFilteredProducts?.(originalProducts); // Reset to original products if input is cleared
+        setInputValue(e.target.value);
+    };
+
+    const handleSearch = () => {
+        if (!setFilteredProducts) return; // Ensure setFilteredProducts is provided
+
+        const searchTerm = inputValue.trim().toLowerCase();
+
+        // Filter products locally without modifying Redux state
+        const filteredProducts = originalProducts.filter((product: any) =>
+            product.name.toLowerCase().includes(searchTerm)
+        );
+
+        if (filteredProducts.length === 0) {
+            toast.error("No products found matching your search.");
+        }
+
+        setFilteredProducts(filteredProducts); // Pass filtered products to parent
+    };
+
     return (
         <div className="flex h-screen overflow-hidden">
             <div className="fixed h-full">
@@ -106,6 +147,13 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                                     type="text"
                                     placeholder="Search..."
                                     className="py-3 px-4 rounded-l-lg bg-transparent outline-none w-full"
+                                    value={inputValue}
+                                    onChange={handleInputValueChange} // Update input value
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                            handleSearch(); // Trigger search on Enter key press
+                                        }
+                                    }}
                                 />
                                 <div className="py-2 px-4 text-black">
                                     <SearchIcon size={25} />
@@ -227,6 +275,13 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                                         type="text"
                                         placeholder="Search..."
                                         className="py-3 px-4 rounded-l-lg bg-transparent outline-none w-full"
+                                        value={inputValue}
+                                        onChange={handleInputValueChange} // Update input value
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                                handleSearch(); // Trigger search on Enter key press
+                                            }
+                                        }}
                                     />
                                     <div className="py-2 px-4 text-black">
                                         <SearchIcon size={25} />

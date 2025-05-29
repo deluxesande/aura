@@ -9,6 +9,7 @@ import OrderCard from "@/components/OrderCard";
 import ProductCard from "@/components/ProductCard";
 import { AppState } from "@/store";
 import { addItem, clearCart } from "@/store/slices/cartSlice";
+import { setProducts } from "@/store/slices/productSlice";
 import { show } from "@/store/slices/visibilitySlice";
 import { Product } from "@/utils/typesDefinitions";
 import { SignedIn } from "@clerk/nextjs";
@@ -39,7 +40,7 @@ const categories = [
 export default function Page() {
     const dispatch = useDispatch();
     const cartItems = useSelector((state: AppState) => state.cart.items);
-    const [products, setProducts] = useState<Product[]>([]);
+    const [products, setLocalProducts] = useState<Product[]>([]);
     const [isInputVisible, setIsInputVisible] = useState(false);
     const [buttonText, setButtonText] = useState("Mpesa");
     const [mpesaNumber, setMpesaNumber] = useState("");
@@ -126,7 +127,7 @@ export default function Page() {
                     );
 
                     // Update product quantities in the state
-                    setProducts((prevProducts) =>
+                    setLocalProducts((prevProducts) =>
                         prevProducts.map((product) => {
                             const cartItem = cartItems.find(
                                 (item) => item.id === product.id
@@ -244,15 +245,23 @@ export default function Page() {
         }
     };
 
+    const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+
+    useEffect(() => {
+        // Filter products
+        setLocalProducts(filteredProducts);
+    }, [filteredProducts]);
+
     useEffect(() => {
         const fetchProducts = async () => {
             try {
                 const response = await axios.get("/api/product");
                 // Ensure productsData is an array
                 if (!Array.isArray(response.data)) {
-                    setProducts([]);
+                    setLocalProducts([]);
                 } else {
-                    setProducts(response.data);
+                    setLocalProducts(response.data);
+                    dispatch(setProducts(response.data));
                 }
             } catch (error) {
                 console.error("Error fetching products:", error);
@@ -260,7 +269,7 @@ export default function Page() {
         };
 
         fetchProducts();
-    }, []);
+    }, [dispatch]);
 
     return (
         <div className="flex h-screen overflow-hidden">
@@ -269,7 +278,7 @@ export default function Page() {
                 className="flex-grow flex flex-col"
                 style={{ width: "calc(100% - 10rem)" }}
             >
-                <Navbar>
+                <Navbar setFilteredProducts={setFilteredProducts}>
                     {/* Category buttons */}
                     <div className="flex overflow-auto gap-6 mt-4 scrollbar-hide">
                         {categories.map((category) => (
