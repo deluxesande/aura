@@ -7,12 +7,20 @@ import axios from "axios";
 import { PlusCircle } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useSelector } from "react-redux";
+import { AppState } from "@/store";
+import { useDispatch } from "react-redux";
+import { setProducts } from "@/store/slices/productSlice";
 
 export default function Page() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const originalProducts = useSelector(
+        (state: AppState) => state.product.products
+    );
+    const dispatch = useDispatch();
 
     const handleCreateNewCategory = async (categoryName: string) => {
         const promise = async () => {
@@ -125,7 +133,8 @@ export default function Page() {
                         "Content-Type": "multipart/form-data",
                     },
                 });
-                return response.data;
+
+                dispatch(setProducts([...originalProducts, response.data]));
             } catch (error) {
                 throw error;
             } finally {
