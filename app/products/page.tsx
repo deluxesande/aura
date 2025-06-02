@@ -488,7 +488,7 @@ export default function Page() {
                             {isInputVisible && (
                                 <input
                                     type="number"
-                                    className="mt-4 w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2 no-spinner"
+                                    className="mt-4 w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-green-200 border-2 no-spinner"
                                     placeholder="Enter M-pesa number"
                                     value={mpesaNumber}
                                     onChange={(e) =>
@@ -498,13 +498,13 @@ export default function Page() {
                             )}
                             <button
                                 type="submit"
-                                className="px-4 py-2 mt-4 border border-[#159A9C] text-[#159A9C] w-full bg-white rounded-md"
+                                className="px-4 py-2 mt-4 border border-green-400 text-green-400 w-full bg-white rounded-md"
                             >
                                 {buttonText}
                             </button>
                         </form>
                         <button
-                            className="px-4 py-2 mt-4 bg-[#159A9C] w-full text-white rounded-md"
+                            className="px-4 py-2 mt-4 bg-green-400 w-full text-white rounded-md"
                             onClick={handleOrder}
                         >
                             Place Order
