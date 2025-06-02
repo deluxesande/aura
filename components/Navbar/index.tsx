@@ -142,7 +142,7 @@ export default function Navbar({
             <div
                 className={`flex-grow ${
                     sideBarState ? "lg:ml-40" : "lg:ml-20"
-                } flex flex-col`}
+                } flex flex-col w-full`}
             >
                 {/* Top navbar */}
                 <div
@@ -230,7 +230,7 @@ export default function Navbar({
                 </div>
 
                 {/* Mobile navbar */}
-                <div className="p-6 sticky top-0 right-0 z-10 bg-white shadow-sm lg:hidden flex justify-between items-center">
+                <div className="p-6 sticky top-0 left-0 z-10 bg-white shadow-sm lg:hidden flex justify-between items-center overflow-hidden">
                     <div className="flex items-center">
                         <Link href="/">
                             <Image
