@@ -77,25 +77,61 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to view the 
 ## Project Structure
 
 ```
-.
-├── app/                # Next.js app directory
-│   ├── customer/       # Customer-related pages
-│   ├── products/       # Product-related pages
-│   ├── invoices/       # Invoice-related pages
-│   ├── layout.tsx      # Global layout
-│   └── page.tsx        # Landing page
-├── components/         # Reusable UI components
-├── pages/              # API routes
-│   ├── api/customer/   # Customer API endpoints
-│   ├── api/product/    # Product API endpoints
-│   ├── api/invoice/    # Invoice API endpoints
-├── prisma/             # Prisma schema and migrations
-├── public/             # Static assets
-├── store/              # Redux store configuration
-├── utils/              # Utility functions
-├── tailwind.config.ts  # Tailwind CSS configuration
-└── README.md           # Project documentation
+aura/
+├── .next/               # Next.js build output
+├── .vscode/             # VS Code configuration
+├── app/                 # App Router components and routes
+├── assets/              # Static assets
+├── components/          # Reusable UI components
+├── node_modules/        # Dependencies
+├── pages/               # Pages Router components and routes
+│   ├── api/             # API routes
+│   └── ...
+├── prisma/              # Prisma schema and migrations
+├── public/              # Public static files
+├── store/               # Redux store configuration
+├── utils/               # Utility functions
+├── .env                 # Environment variables
+├── .eslintrc.json       # ESLint configuration
+├── .gitignore           # Git ignore file
+├── middleware.ts        # Next.js middleware
+├── next.config.mjs      # Next.js configuration
+├── package.json         # Project dependencies and scripts
+├── postcss.config.mjs   # PostCSS configuration
+├── tailwind.config.ts   # Tailwind CSS configuration
+└── tsconfig.json        # TypeScript configuration
 ```
+
+## Available Scripts
+
+-   **dev**: Starts the development server
+
+    ```bash
+    npm run dev
+    ```
+
+-   **build**: Builds the application for production
+
+    ```bash
+    npm run build
+    ```
+
+-   **start**: Starts the production server
+
+    ```bash
+    npm run start
+    ```
+
+-   **lint**: Lints the codebase
+
+    ```bash
+    npm run lint
+    ```
+
+-   **list-routes**: Lists all available routes in the application
+    ```bash
+    npm run list-routes
+    ```
 
 ## API Endpoints
 
@@ -114,6 +150,58 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to view the 
 ### Invoice Item API
 
 -   **POST** `/api/invoiceItem/post`: Add an item to an invoice.
+
+## Authentication
+
+Authentication is handled by Clerk, which provides:
+
+-   User sign-up and login
+-   Social authentication
+-   Session management
+-   User profile management
+
+Implementation details:
+
+-   Clerk is integrated with Next.js via the `@clerk/nextjs` package
+-   Protected routes are handled by middleware
+-   User data can be accessed through Clerk hooks and components
+
+## Database
+
+The project uses Prisma ORM to interact with the database:
+
+-   **Schema**: Defined in `prisma/schema.prisma`
+-   **Migrations**: Managed by Prisma Migrate
+-   **Client**: Generated TypeScript client for type-safe database querie
+
+## State Management
+
+Redux Toolkit is used for global state management:
+
+-   **Store**: Configured in the `store/` directory
+-   **Slices**: Feature-based state slices with reducers and actions
+-   **Persistence**: Redux Persist for storing state in localStorage
+-   **Next.js Integration**: Using next-redux-wrapper for server-side rendering
+
+Example usage:
+
+```typescript
+// Accessing state in a component
+import { useSelector, useDispatch } from "react-redux";
+import { increment } from "../store/counterSlice";
+
+function Counter() {
+    const count = useSelector((state) => state.counter.value);
+    const dispatch = useDispatch();
+
+    return (
+        <div>
+            <button onClick={() => dispatch(increment())}>Increment</button>
+            <span>{count}</span>
+        </div>
+    );
+}
+```
 
 ## Deployment
 

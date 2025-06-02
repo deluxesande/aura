@@ -127,7 +127,7 @@ export default function EditProductPage() {
                 </h1>
                 <form onSubmit={handleSubmit}>
                     <div className="flex flex-wrap flex-col-reverse lg:flex-row lg:flex-nowrap justify-between gap-4">
-                        <div className="w-full lg:w-1/2">
+                        <div className="w-full lg:w-1/2 space-y-4">
                             {/* Product Name */}
                             <div className="flex flex-col gap-2">
                                 <label htmlFor="productName">Name:</label>

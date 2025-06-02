@@ -30,7 +30,7 @@ export default function Page() {
                 });
                 setCategories([...categories, response.data]);
             } catch (error) {
-                // Do nothing error is thrown in toast
+                throw error;
             }
         };
 
@@ -180,8 +180,8 @@ export default function Page() {
                     </div>
 
                     <form>
-                        <div className="flex flex-wrap flex-col-reverse lg:flex-row lg:flex-nowrap justify-between gap-4">
-                            <div className="w-full lg:w-1/2">
+                        <div className="flex flex-wrap flex-col-reverse lg:flex-row lg:flex-nowrap justify-between">
+                            <div className="w-full lg:w-1/2 space-y-4">
                                 {/* Product Name */}
                                 <div className="flex flex-col gap-2">
                                     <label htmlFor="productName">Name:</label>

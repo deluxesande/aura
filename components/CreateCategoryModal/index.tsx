@@ -49,7 +49,7 @@ const CreateCategoryModal: React.FC<ModalProps> = ({
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-grow w-full lg:w-1/2 btn btn-md btn-ghost text-white flex items-center bg-red-400"
+                            className="flex-grow w-full lg:w-1/2 btn btn-md btn-ghost text-white flex items-center bg-red-300"
                         >
                             Cancel
                         </button>
