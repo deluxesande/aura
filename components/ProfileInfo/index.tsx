@@ -1,4 +1,5 @@
 import { useUser } from "@clerk/nextjs";
+import Image from "next/image";
 import React, { useState } from "react";
 import { toast } from "sonner";
 
@@ -19,6 +20,9 @@ const ProfileInfo: React.FC = () => {
     }, [user]); // Runs whenever `user` changes
 
     const [status, setStatus] = useState("");
+    const profileImage = user?.hasImage
+        ? user?.imageUrl
+        : "https://www.svgrepo.com/show/535711/user.svg";
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -63,9 +67,7 @@ const ProfileInfo: React.FC = () => {
                 // Update the user's profile image in Clerk
                 await user.setProfileImage({ file });
             } catch (error) {
-                // toast.error(
-                //     "Failed to upload profile image. Please try again."
-                // );
+                throw error; // Rethrow error to be caught by toast
             }
         };
         toast.promise(promise, {
@@ -91,16 +93,15 @@ const ProfileInfo: React.FC = () => {
                 <div className="flex flex-col lg:flex-row items-center space-x-6">
                     <div className="flex lg:flex-col items-center mx-10">
                         <div className="flex flex-col items-center">
-                            {user && user.imageUrl ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                    src={user.imageUrl}
+                            <div className="w-24 h-24 rounded-full mb-4 overflow-hidden">
+                                <Image
+                                    src={profileImage}
                                     alt="User Profile"
-                                    className="w-24 h-24 rounded-full object-cover mb-4"
+                                    width={96}
+                                    height={96}
+                                    className="object-cover w-full h-full"
                                 />
-                            ) : (
-                                <div className="w-24 h-24 rounded-full bg-gray-300 mb-4"></div>
-                            )}
+                            </div>
                             <label
                                 htmlFor="profileImage"
                                 className="cursor-pointer btn btn-sm btn-ghost text-black flex items-center bg-green-400 px-4 py-2 rounded-lg"

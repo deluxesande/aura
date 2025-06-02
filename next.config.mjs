@@ -7,10 +7,6 @@ const nextConfig = {
         dangerouslyAllowSVG: true,
         remotePatterns: [
             {
-                protocol: "https",
-                hostname: "via.placeholder.com",
-            },
-            {
                 protocol: "http",
                 hostname: "localhost",
             },
@@ -27,14 +23,12 @@ const nextConfig = {
                 hostname: "www.svgrepo.com",
             },
             {
-                protocol: "http",
-                hostname: process.env.MINIO_PUBLIC_IP,
-                port: "9000",
-                pathname: "/salesense-bucket/**",
+                protocol: "https",
+                hostname: "img.clerk.com",
             },
             {
                 protocol: "http",
-                hostname: "34.35.78.131", // Explicitly add the IP address
+                hostname: process.env.MINIO_PUBLIC_IP,
                 port: "9000",
                 pathname: "/salesense-bucket/**",
             },
