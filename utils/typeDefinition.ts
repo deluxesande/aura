@@ -1,8 +1,9 @@
 interface CategoryBox {
+    id: string;
     category: string;
-    itemCount: number;
     icon: React.ElementType;
     active?: boolean;
+    onCategoryClick: (categoryId: string) => void;
 }
 
 interface InfoCard {

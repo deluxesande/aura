@@ -15,12 +15,12 @@ import { Product } from "@/utils/typesDefinitions";
 import { SignedIn } from "@clerk/nextjs";
 import axios from "axios";
 import {
-    Ellipsis,
-    LibraryBig,
-    Paperclip,
-    PencilRuler,
+    Book,
+    Briefcase,
+    FileText,
+    Pencil,
     PlusCircle,
-    Popcorn,
+    ShoppingCart,
     Store,
 } from "lucide-react";
 import Link from "next/link";
@@ -28,25 +28,90 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 
-const categories = [
-    { category: "All", itemCount: 200, icon: Store, active: true },
-    { category: "Books", itemCount: 200, icon: LibraryBig },
-    { category: "Pens", itemCount: 200, icon: PencilRuler },
-    { category: "Paper", itemCount: 200, icon: Paperclip },
-    { category: "Snacks", itemCount: 200, icon: Popcorn },
-    { category: "Other", itemCount: 2000, icon: Ellipsis },
-];
+interface Category {
+    id: string;
+    name: string;
+    description?: string;
+    active?: boolean;
+    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+}
+
+// Function to dynamically assign icons based on category name
+const getCategoryIcon = (
+    categoryName: string
+): React.ComponentType<React.SVGProps<SVGSVGElement>> => {
+    const iconMap: Record<
+        string,
+        React.ComponentType<React.SVGProps<SVGSVGElement>>
+    > = {
+        Stationery: Pencil,
+        Books: Book,
+        Shopping: ShoppingCart,
+        Business: Briefcase,
+        Documents: FileText,
+    };
+
+    // Return the icon if found, otherwise a default icon
+    return iconMap[categoryName] || FileText; // Default icon
+};
 
 export default function Page() {
     const dispatch = useDispatch();
     const cartItems = useSelector((state: AppState) => state.cart.items);
     const [products, setLocalProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<Category[]>([
+        {
+            name: "All",
+            description: "All products",
+            icon: Store,
+            active: true,
+            id: "",
+        },
+    ]);
     const [isInputVisible, setIsInputVisible] = useState(false);
     const [buttonText, setButtonText] = useState("Mpesa");
     const [mpesaNumber, setMpesaNumber] = useState("");
     const productsData = useSelector(
         (state: AppState) => state.product.products
     );
+
+    // Function to map API data to the `Category` interface
+    const mapCategories = React.useCallback((apiData: any[]): Category[] => {
+        return apiData.map((category) => ({
+            id: category.id,
+            name: category.name,
+            description: category.description || "",
+            active: false,
+            icon: getCategoryIcon(category.name),
+        }));
+    }, []);
+
+    const toggleActiveCategory = (categoryId: string) => {
+        setCategories((prevCategories) =>
+            prevCategories.map((category) => ({
+                ...category,
+                active: category.id === categoryId, // Set active to true for the clicked category, false for others
+            }))
+        );
+    };
+
+    useEffect(() => {
+        setFilteredProducts(() => {
+            const activeCategory = categories.find(
+                (category) => category.active
+            );
+
+            // If the active category is "All", return all products
+            if (activeCategory?.name === "All") {
+                return productsData;
+            }
+
+            // Otherwise, filter products by the active category's ID
+            return productsData.filter(
+                (product) => product.categoryId === activeCategory?.id
+            );
+        });
+    }, [categories, productsData]);
 
     const handleAddToCart = (product: Product) => {
         const cartItem = cartItems.find((item) => item.id === product.id);
@@ -251,6 +316,34 @@ export default function Page() {
     const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
 
     useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await axios.get("/api/category");
+                const categoriesData = mapCategories(response.data);
+                setCategories((prevCategories) => {
+                    const mergedCategories = [
+                        ...prevCategories,
+                        ...categoriesData,
+                    ];
+
+                    // Filter out duplicates based on the `id` property
+                    const uniqueCategories = mergedCategories.filter(
+                        (category, index, self) =>
+                            index ===
+                            self.findIndex((c) => c.id === category.id)
+                    );
+
+                    return uniqueCategories;
+                });
+            } catch (error) {
+                // console.error("Error fetching categories:", error);
+            }
+        };
+
+        fetchCategories();
+    }, [mapCategories]);
+
+    useEffect(() => {
         // Filter products
         setLocalProducts(filteredProducts);
     }, [filteredProducts]);
@@ -267,7 +360,7 @@ export default function Page() {
                     dispatch(setProducts(response.data));
                 }
             } catch (error) {
-                console.error("Error fetching products:", error);
+                // console.error("Error fetching products:", error);
             }
         };
 
@@ -292,11 +385,12 @@ export default function Page() {
                     <div className="flex overflow-auto gap-6 mt-4 scrollbar-hide">
                         {categories.map((category) => (
                             <CategoryBox
-                                key={category.category}
-                                category={category.category}
-                                itemCount={category.itemCount}
+                                key={category.id}
+                                id={category.id}
+                                category={category.name}
                                 icon={category.icon}
                                 active={category.active}
+                                onCategoryClick={toggleActiveCategory}
                             />
                         ))}
                     </div>

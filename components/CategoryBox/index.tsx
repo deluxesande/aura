@@ -1,27 +1,25 @@
 export default function CategoryBox({
+    id,
     category,
-    itemCount,
     icon: Icon,
     active,
+    onCategoryClick,
 }: CategoryBox) {
     return (
         <div
-            className={`px-6 py-4 rounded-lg flex items-center justify-center gap-4 cursor-pointer ${
-                active ? "bg-[#deefe7]" : "bg-white"
+            className={`px-4 py-2 rounded-lg flex items-center justify-center gap-4 cursor-pointer ${
+                active ? "bg-green-500" : "bg-white"
             }`}
+            onClick={() => onCategoryClick(id)}
         >
-            <div className="w-14 h-14 rounded-lg flex items-center justify-center">
-                <Icon
-                    size={45}
-                    className={active ? "text-black" : "text-[#159A9C]"}
-                />
-            </div>
-            <div>
-                <p className="font-bold text-lg text-black">{category}</p>
-                <p className="font-semibold text-sm text-black">
-                    {itemCount} Items
-                </p>
-            </div>
+            <Icon size={20} color={active ? "white" : "#6b7280"} />
+            <p
+                className={`font-medium text-lg ${
+                    active ? "text-white" : "text-gray-500"
+                }`}
+            >
+                {category}
+            </p>
         </div>
     );
 }
