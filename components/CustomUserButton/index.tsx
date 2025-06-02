@@ -23,7 +23,7 @@ const CustomUserButton = () => {
         : "https://www.svgrepo.com/show/535711/user.svg";
 
     return (
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2">
             <Link href="/profile">
                 <div
                     className={`h-8 w-8 flex items-center justify-center rounded-full overflow-hidden cursor-pointer ${
@@ -40,7 +40,7 @@ const CustomUserButton = () => {
             </Link>
             <button
                 onClick={signOut}
-                className="px-4 py-2 text-sm lg:text-base text-red-500 hover:text-red-700 transition-colors duration-200"
+                className="px-4 py-2 text-sm truncate text-red-500 hover:text-red-700 transition-colors duration-200"
             >
                 Sign Out
             </button>

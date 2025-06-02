@@ -51,6 +51,7 @@ export default function Navbar({
     const originalProducts = useSelector(
         (state: AppState) => state.product.products
     );
+    const sideBarState = useSelector((state: AppState) => state.sidebar.isOpen);
 
     const [inputValue, setInputValue] = useState<string>("");
 
@@ -139,11 +140,16 @@ export default function Navbar({
                 <Sidebar />
             </div>
             <div
-                className="flex-grow lg:ml-20 flex flex-col"
-                style={{ width: "calc(100% - 5rem)" }}
+                className={`flex-grow ${
+                    sideBarState ? "lg:ml-40" : "lg:ml-20"
+                } flex flex-col`}
             >
                 {/* Top navbar */}
-                <div className="p-6 sticky top-0 right-0 z-10 bg-white shadow-sm lg:flex hidden w-full">
+                <div
+                    className={`p-6 ${
+                        sideBarState ? "ml-4" : "ml-0"
+                    } sticky top-0 left-0 bg-white shadow-sm lg:flex hidden w-full`}
+                >
                     <div className="flex items-center justify-between gap-4 w-full">
                         <div className="flex items-center w-full">
                             <div className="flex items-center mx-4 bg-gray-100 rounded-lg shadow-sm flex-grow">
@@ -207,17 +213,17 @@ export default function Navbar({
                                 )}
                             </div>
 
-                            <div className="p-2 text-black rounded-lg flex items-center gap-4 cursor-pointer">
-                                <SignedIn>
-                                    <CustomUserButton />
-                                </SignedIn>
-                            </div>
-
                             <div
                                 className="p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
                                 onClick={toggleSidebar}
                             >
                                 <ShoppingCart size={25} />
+                            </div>
+
+                            <div className="p-2 text-black rounded-lg flex items-center gap-4 cursor-pointer">
+                                <SignedIn>
+                                    <CustomUserButton />
+                                </SignedIn>
                             </div>
                         </div>
                     </div>

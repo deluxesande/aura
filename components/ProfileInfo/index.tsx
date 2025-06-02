@@ -93,13 +93,12 @@ const ProfileInfo: React.FC = () => {
                 <div className="flex flex-col lg:flex-row items-center space-x-6">
                     <div className="flex lg:flex-col items-center mx-10">
                         <div className="flex flex-col items-center">
-                            <div className="w-24 h-24 rounded-full mb-4 overflow-hidden">
+                            <div className="w-24 h-24 rounded-full mb-4 overflow-hidden flex items-center justify-center">
                                 <Image
                                     src={profileImage}
-                                    alt="User Profile"
-                                    width={96}
-                                    height={96}
-                                    className="object-cover w-full h-full"
+                                    width={90}
+                                    height={90}
+                                    alt={`${user?.firstName} Profile Image`}
                                 />
                             </div>
                             <label
