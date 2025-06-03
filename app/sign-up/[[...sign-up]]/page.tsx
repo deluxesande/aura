@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import AuthLayout from "@components/auth/AuthLayout";
 import Image from "next/image";
-import { useSignUp } from "@clerk/nextjs";
+import { useAuth, useSignUp } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
@@ -18,9 +18,13 @@ export default function SignupPage() {
     const [businessName, setBusinessName] = useState("");
     const [codeSent, setCodeSent] = useState(false);
     const [code, setCode] = useState("");
+    const { isSignedIn } = useAuth();
 
     const router = useRouter();
     const dispatch = useDispatch();
+
+    // Check if the user is already signed in
+    if (isSignedIn) router.push("/dashboard");
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
