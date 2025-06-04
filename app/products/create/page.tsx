@@ -180,7 +180,7 @@ export default function Page() {
                     </div>
 
                     <form>
-                        <div className="flex flex-wrap flex-col-reverse lg:flex-row lg:flex-nowrap justify-between">
+                        <div className="flex flex-wrap flex-col-reverse lg:flex-row lg:flex-nowrap justify-between lg:space-x-8">
                             <div className="w-full lg:w-1/2 space-y-4">
                                 {/* Product Name */}
                                 <div className="flex flex-col gap-2">
@@ -200,6 +200,7 @@ export default function Page() {
                                     </label>
                                     <textarea
                                         id="productDescription"
+                                        rows={5}
                                         className="px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
                                         required
                                     />
@@ -269,9 +270,9 @@ export default function Page() {
                                             <Image
                                                 src={imagePreview}
                                                 alt="Preview"
-                                                width={288}
+                                                width={400}
                                                 height={288}
-                                                className="object-cover w-full h-full rounded-lg"
+                                                className="object-cover rounded-lg"
                                             />
                                         ) : (
                                             <span className="text-gray-500">
@@ -305,6 +306,25 @@ export default function Page() {
                                             Instock
                                         </span>
                                     </label>
+                                </div>
+
+                                {/* Info Section */}
+                                <div className="my-4 p-4 border border-green-200 rounded-lg">
+                                    <h2 className="text-lg font-semibold text-green-600">
+                                        How to Create a Product
+                                    </h2>
+                                    <p className="text-sm mt-2">
+                                        To create a new product, fill in all the
+                                        required fields, including the product
+                                        name, description, price, quantity, and
+                                        category. Upload an image of the product
+                                        and indicate whether it is in stock.
+                                    </p>
+                                    <p className="text-sm font-bold mt-2">
+                                        If you have no categories, click the
+                                        &quot;Create Category&quot; button at
+                                        the top of the page.
+                                    </p>
                                 </div>
                             </div>
                         </div>
