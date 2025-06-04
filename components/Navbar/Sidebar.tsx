@@ -21,25 +21,54 @@ import CustomUserButton from "../CustomUserButton";
 const links = [
     {
         href: "/dashboard",
-        icon: <LayoutDashboard size={22} />,
+        icon: (isActive: boolean) => (
+            <LayoutDashboard
+                size={22}
+                className={isActive ? "stroke-green-400" : "stroke-black"}
+            />
+        ),
         label: "Dashboard",
     },
     {
         href: "/products",
-        icon: <ShoppingBasket size={22} />,
+        icon: (isActive: boolean) => (
+            <ShoppingBasket
+                size={22}
+                className={isActive ? "stroke-white" : "stroke-black"}
+            />
+        ),
         label: "Products",
     },
     {
         href: "/invoices",
-        icon: <HistoryIcon size={22} />,
+        icon: (isActive: boolean) => (
+            <HistoryIcon
+                size={22}
+                className={isActive ? "stroke-white" : "stroke-black"}
+            />
+        ),
         label: "Invoices",
     },
     {
         href: "/products/list",
-        icon: <PackageSearch size={22} />,
+        icon: (isActive: boolean) => (
+            <PackageSearch
+                size={22}
+                className={isActive ? "stroke-white" : "stroke-black"}
+            />
+        ),
         label: "Inventory",
     },
-    { href: "/settings", icon: <Settings size={22} />, label: "Settings" },
+    {
+        href: "/settings",
+        icon: (isActive: boolean) => (
+            <Settings
+                size={22}
+                className={isActive ? "stroke-white" : "stroke-black"}
+            />
+        ),
+        label: "Settings",
+    },
 ];
 
 const Sidebar = () => {
@@ -90,35 +119,39 @@ const Sidebar = () => {
                     )}
                 </Link>
                 <ul className="flex flex-col items-start justify-center mt-4">
-                    {links.map((link) => (
-                        <li key={link.href} className="mb-4">
-                            <Link
-                                href={link.href}
-                                className="flex items-center justify-start gap-2"
-                            >
-                                <div
-                                    className={`cursor-pointer w-8 h-8 rounded-lg flex text-black items-center justify-center ${
-                                        pathname === link.href
-                                            ? "bg-[#deefe7]"
-                                            : "bg-[#fafafa]"
-                                    }`}
+                    {links.map((link) => {
+                        const isActive = pathname === link.href;
+
+                        return (
+                            <li key={link.href} className="mb-4">
+                                <Link
+                                    href={link.href}
+                                    className="flex items-center justify-start gap-2"
                                 >
-                                    {link.icon}
-                                </div>
-                                {toggleSideBar && (
-                                    <span
-                                        className={`${
+                                    <div
+                                        className={`cursor-pointer w-8 h-8 rounded-lg flex text-black items-center justify-center ${
                                             pathname === link.href
-                                                ? "text-green-500"
-                                                : "text-black"
-                                        } text-sm`}
+                                                ? "bg-[#22c55e] stroke-green-400"
+                                                : "bg-[#fafafa]"
+                                        }`}
                                     >
-                                        {link.label}
-                                    </span>
-                                )}
-                            </Link>
-                        </li>
-                    ))}
+                                        {link.icon(isActive)}
+                                    </div>
+                                    {toggleSideBar && (
+                                        <span
+                                            className={`${
+                                                pathname === link.href
+                                                    ? "text-green-500"
+                                                    : "text-black"
+                                            } text-sm`}
+                                        >
+                                            {link.label}
+                                        </span>
+                                    )}
+                                </Link>
+                            </li>
+                        );
+                    })}
                 </ul>
             </div>
             {sideBarState ? (

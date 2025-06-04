@@ -61,6 +61,9 @@ export default function Navbar({
     };
 
     const toggleFilterPopUp = () => {
+        if (pathname !== "/products") {
+            router.push("/products");
+        }
         showPopup ? setShowPopup(!showPopup) : showPopup;
         setFilterPopUp(!filterPopUp);
     };
@@ -169,7 +172,7 @@ export default function Navbar({
                                     <SearchIcon size={25} />
                                 </div>
                             </div>
-                            <div className="p-2 hover:bg-slate-100 text-black rounded-lg cursor-pointer flex items-center justify-center">
+                            <div className="flex items-center">
                                 <div className="relative">
                                     <button
                                         className="p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"

@@ -15,9 +15,8 @@ export default function ProductCard({
             className="bg-white shadow-md rounded-lg overflow-hidden w-56 cursor-pointer"
             onClick={onAddToCart}
         >
-            <div className="relative w-full h-48">
-                <Image src={image} alt={name} layout="fill" objectFit="cover" />
-                {/* <Image path={image} alt={name} /> */}
+            <div className="w-56 h-56">
+                <Image src={image} alt={name} width={300} height={300} />
             </div>
             <div className="p-4">
                 <div className="flex justify-between items-center">
