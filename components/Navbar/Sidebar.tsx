@@ -24,7 +24,7 @@ const links = [
         icon: (isActive: boolean) => (
             <LayoutDashboard
                 size={22}
-                className={isActive ? "stroke-green-400" : "stroke-black"}
+                className={isActive ? "stroke-white" : "stroke-black"}
             />
         ),
         label: "Dashboard",

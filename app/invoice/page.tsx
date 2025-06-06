@@ -7,6 +7,7 @@ import { Invoice, Product } from "@/utils/typesDefinitions";
 import axios from "axios";
 import { format } from "date-fns";
 import { Copy } from "lucide-react";
+import { toast } from "sonner";
 
 const InvoicePage: React.FC = () => {
     const searchParams = useSearchParams();
@@ -15,9 +16,6 @@ const InvoicePage: React.FC = () => {
         { Product: Product; quantity: number }[]
     >([]);
     const [invoice, setInvoice] = useState<Invoice>();
-
-    // Example status, you can replace this with actual status from your data
-    const status = "pending"; // This can be "pending", "active", etc.
 
     // Function to get the color based on status
     const getStatusColor = (status: string) => {
@@ -47,6 +45,8 @@ const InvoicePage: React.FC = () => {
                 const response = await axios.get(`/api/invoice/${id}`);
                 const invoiceData = response.data;
 
+                console.log(invoiceData);
+
                 // Convert createdAt and updatedAt to formatted strings
                 invoiceData.createdAt = format(
                     new Date(invoiceData.createdAt),
@@ -61,7 +61,7 @@ const InvoicePage: React.FC = () => {
 
                 setInvoiceItems(response.data.invoiceItems);
             } catch (error) {
-                console.error("Error fetching invoice:", error);
+                toast.error("Error fetching invoice:");
             }
         };
 
@@ -79,11 +79,13 @@ const InvoicePage: React.FC = () => {
                             </p>
                             <span
                                 className={`px-2 py-1 rounded-lg ${getStatusColor(
-                                    status
+                                    invoice?.status.toLowerCase() ?? "pending"
                                 )}`}
                             >
-                                {status.charAt(0).toUpperCase() +
-                                    status.slice(1)}
+                                {invoice?.status
+                                    ? invoice.status.charAt(0).toUpperCase() +
+                                      invoice.status.slice(1)
+                                    : "pending"}
                             </span>
                         </div>
 
@@ -124,10 +126,10 @@ const InvoicePage: React.FC = () => {
                             </div>
                             <div className="flex justify-between">
                                 <p className="text-black font-semibold">
-                                    MPESA
+                                    {invoice?.paymentType}
                                 </p>
                                 <p className="text-black font-semibold">
-                                    John Doe
+                                    {invoice?.Customer?.firstName || "N/A"}
                                 </p>
                             </div>
 

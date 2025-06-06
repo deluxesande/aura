@@ -74,6 +74,7 @@ export default function Page() {
     const productsData = useSelector(
         (state: AppState) => state.product.products
     );
+    const [paymentType, setPaymentType] = useState("CASH");
 
     // Function to map API data to the `Category` interface
     const mapCategories = React.useCallback((apiData: any[]): Category[] => {
@@ -187,7 +188,10 @@ export default function Page() {
                     const invoiceData = {
                         invoiceItems: invoiceItems,
                         totalAmount: totalAmount,
+                        paymentType: paymentType,
                     };
+
+                    console.log(invoiceData);
 
                     const response = await axios.post(
                         "/api/invoice/",
@@ -225,7 +229,6 @@ export default function Page() {
 
                     return response.data;
                 } catch (error) {
-                    toast.error("Error creating invoice:" + error);
                     throw error;
                 }
             } else {
@@ -277,14 +280,8 @@ export default function Page() {
         if (isInputVisible) {
             const formattedNumber = formatPhoneNumber(mpesaNumber);
             if (formattedNumber) {
-                // Initiate payment logic here with mpesaNumber
                 const promise = async () => {
                     try {
-                        console.log({
-                            phoneNumber: formattedNumber,
-                            amount,
-                            transactionType: "CustomerPayBillOnline",
-                        });
                         const response = await axios.post(
                             "/api/safaricom/c2b/payment/lipa",
                             {
@@ -293,7 +290,12 @@ export default function Page() {
                                 transactionType: "CustomerPayBillOnline",
                             }
                         );
-                        return response.data;
+
+                        if (response.status === 200) {
+                            setPaymentType("MPESA");
+                            // Place the order after prompting for payment
+                            await handleOrder();
+                        }
                     } catch (error) {
                         throw Error("Failed to prompt user for payment");
                     }

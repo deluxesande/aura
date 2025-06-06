@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Invoice" ADD COLUMN     "paymentType" TEXT NOT NULL DEFAULT 'CASH',
+ADD COLUMN     "status" TEXT NOT NULL DEFAULT 'PENDING';

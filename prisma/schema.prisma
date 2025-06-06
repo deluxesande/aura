@@ -43,6 +43,8 @@ model Invoice {
   Customer    Customer?      @relation(fields: [customerId], references: [id])
   invoiceItems InvoiceItem[]
   totalAmount Float
+  paymentType String         @default("CASH")// e.g., "CASH", "MPESA", "CARD"
+  status      String         @default("PENDING") // PENDING, PAID, CANCELLED
   createdBy   String?
   invoiceName String            @default("") 
 }

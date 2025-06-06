@@ -29,6 +29,8 @@ export interface Invoice {
     Customer?: Customer;
     invoiceItems: InvoiceItem[];
     totalAmount: number;
+    paymentType: string;
+    status: string; // e.g., "pending", "active", "completed", "cancelled"
     invoiceName: string;
 }
 
@@ -44,7 +46,8 @@ export interface InvoiceItem {
 
 export interface Customer {
     id: string;
-    name?: string;
+    firstName?: string;
+    lastName?: string;
     email?: string;
     phoneNumber: string;
     invoices: Invoice[];

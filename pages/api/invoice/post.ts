@@ -53,6 +53,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     id: item.id,
                 })),
             },
+            paymentType: req.body.paymentType,
+            status: req.body.status ?? "PENDING",
             createdBy: req.body.createdBy,
         };
 
