@@ -54,6 +54,7 @@ export default function Navbar({
     const sideBarState = useSelector((state: AppState) => state.sidebar.isOpen);
 
     const [inputValue, setInputValue] = useState<string>("");
+    const isProductsPage = pathname === "/products";
 
     const togglePopup = () => {
         filterPopUp ? setFilterPopUp(!filterPopUp) : filterPopUp;
@@ -155,45 +156,51 @@ export default function Navbar({
                 >
                     <div className="flex items-center justify-between gap-4 w-full">
                         <div className="flex items-center w-full">
-                            <div className="flex items-center mx-4 bg-gray-100 rounded-lg shadow-sm flex-grow">
-                                <input
-                                    type="text"
-                                    placeholder="Search..."
-                                    className="py-3 px-4 rounded-l-lg bg-transparent outline-none w-full"
-                                    value={inputValue}
-                                    onChange={handleInputValueChange} // Update input value
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                            handleSearch(); // Trigger search on Enter key press
-                                        }
-                                    }}
-                                />
-                                <div className="py-2 px-4 text-black">
-                                    <SearchIcon size={25} />
-                                </div>
-                            </div>
-                            <div className="flex items-center">
-                                <div className="relative">
-                                    <button
-                                        className="p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
-                                        onClick={toggleFilterPopUp}
-                                    >
-                                        <SlidersHorizontal size={25} />
-                                    </button>
-                                    {filterPopUp && (
-                                        <FilterOverlay
-                                            filterPopUp={filterPopUp}
-                                            setFilterPopUp={setFilterPopUp}
-                                            setFilteredProducts={
-                                                setFilteredProducts
-                                            }
-                                            toggleFilterPopUp={
-                                                toggleFilterPopUp
-                                            }
+                            {isProductsPage && (
+                                <>
+                                    <div className="flex items-center mx-4 bg-gray-100 rounded-lg shadow-sm flex-grow">
+                                        <input
+                                            type="text"
+                                            placeholder="Search..."
+                                            className="py-3 px-4 rounded-l-lg bg-transparent outline-none w-full"
+                                            value={inputValue}
+                                            onChange={handleInputValueChange} // Update input value
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter") {
+                                                    handleSearch(); // Trigger search on Enter key press
+                                                }
+                                            }}
                                         />
-                                    )}
-                                </div>
-                            </div>
+                                        <div className="py-2 px-4 text-black">
+                                            <SearchIcon size={25} />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <div className="relative">
+                                            <button
+                                                className="p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
+                                                onClick={toggleFilterPopUp}
+                                            >
+                                                <SlidersHorizontal size={25} />
+                                            </button>
+                                            {filterPopUp && (
+                                                <FilterOverlay
+                                                    filterPopUp={filterPopUp}
+                                                    setFilterPopUp={
+                                                        setFilterPopUp
+                                                    }
+                                                    setFilteredProducts={
+                                                        setFilteredProducts
+                                                    }
+                                                    toggleFilterPopUp={
+                                                        toggleFilterPopUp
+                                                    }
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         <div className="flex items-center">
