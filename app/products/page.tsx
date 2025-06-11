@@ -12,7 +12,7 @@ import { addItem, clearCart } from "@/store/slices/cartSlice";
 import { setProducts } from "@/store/slices/productSlice";
 import { show } from "@/store/slices/visibilitySlice";
 import { Product } from "@/utils/typesDefinitions";
-import { SignedIn } from "@clerk/nextjs";
+import { SignedIn, useUser } from "@clerk/nextjs";
 import axios from "axios";
 import {
     Book,
@@ -27,6 +27,7 @@ import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
+import Image from "next/image";
 
 interface Category {
     id: string;
@@ -75,6 +76,10 @@ export default function Page() {
         (state: AppState) => state.product.products
     );
     const [paymentType, setPaymentType] = useState("CASH");
+    const { user } = useUser();
+    const profileImage = user?.hasImage
+        ? user?.imageUrl
+        : "https://www.svgrepo.com/show/535711/user.svg";
 
     // Function to map API data to the `Category` interface
     const mapCategories = React.useCallback((apiData: any[]): Category[] => {
@@ -131,7 +136,7 @@ export default function Page() {
         }
     };
 
-    const handleOrder = async () => {
+    const handleOrder = async (paymentTypeOverride?: string) => {
         /**
          * Create invoice items for each cart item
          *
@@ -188,7 +193,7 @@ export default function Page() {
                     const invoiceData = {
                         invoiceItems: invoiceItems,
                         totalAmount: totalAmount,
-                        paymentType: paymentType,
+                        paymentType: paymentTypeOverride || paymentType,
                     };
 
                     console.log(invoiceData);
@@ -240,7 +245,31 @@ export default function Page() {
 
         toast.promise(promise(), {
             loading: "Processing order...",
-            success: "Order has been successfully processed",
+            success: () => {
+                dispatch(
+                    setProducts(
+                        products.map((product) => {
+                            const cartItem = cartItems.find(
+                                (item) => item.id === product.id
+                            );
+                            if (cartItem) {
+                                return {
+                                    ...product,
+                                    quantity:
+                                        product.quantity -
+                                        cartItem.cartQuantity,
+                                    inStock:
+                                        product.quantity -
+                                            cartItem.cartQuantity >
+                                        0,
+                                };
+                            }
+                            return product;
+                        })
+                    )
+                );
+                return "Order has been successfully processed";
+            },
             error: "Error processing order",
         });
     };
@@ -294,7 +323,7 @@ export default function Page() {
                         if (response.status === 200) {
                             setPaymentType("MPESA");
                             // Place the order after prompting for payment
-                            await handleOrder();
+                            await handleOrder("MPESA");
                         }
                     } catch (error) {
                         throw Error("Failed to prompt user for payment");
@@ -450,7 +479,23 @@ export default function Page() {
             <CreateOrder>
                 <div className="p-2 mt-2 text-black rounded-lg flex items-center gap-4 cursor-pointer">
                     <SignedIn>
-                        <CustomUserButton />
+                        <Link
+                            className="w-full flex items-center space-x-2"
+                            href="/profile"
+                        >
+                            <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center">
+                                <Image
+                                    src={profileImage}
+                                    width={40}
+                                    height={40}
+                                    alt={`${user?.firstName} Profile Image`}
+                                    className="object-cover"
+                                />
+                            </div>
+                            <p className="text-sm font-medium whitespace-nowrap ml-2">
+                                {user?.firstName} {user?.lastName}
+                            </p>
+                        </Link>
                     </SignedIn>
                 </div>
 
@@ -507,7 +552,7 @@ export default function Page() {
                         </form>
                         <button
                             className="px-4 py-2 mt-4 bg-green-400 w-full text-white rounded-md"
-                            onClick={handleOrder}
+                            onClick={() => handleOrder()}
                         >
                             Place Order
                         </button>

@@ -69,7 +69,7 @@ export default function Page() {
             // Fetch products from the API
             fetchProducts();
         }
-    }, [originalProducts]);
+    }, [products, originalProducts]);
 
     return (
         <Navbar>

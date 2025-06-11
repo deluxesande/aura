@@ -16,7 +16,6 @@ import { useSelector } from "react-redux";
 import { AppState } from "@/store";
 import { useDispatch } from "react-redux";
 import { toggleSideBarState } from "@/store/slices/sideBarSlice";
-import CustomUserButton from "../CustomUserButton";
 
 const links = [
     {
@@ -155,7 +154,23 @@ const Sidebar = () => {
                 </ul>
             </div>
             {sideBarState ? (
-                <CustomUserButton />
+                <Link
+                    className="w-full flex items-center space-x-2 px-2 py-2"
+                    href="/profile"
+                >
+                    <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center">
+                        <Image
+                            src={profileImage}
+                            width={40}
+                            height={40}
+                            alt={`${user?.firstName} Profile Image`}
+                            className="object-cover"
+                        />
+                    </div>
+                    <p className="text-sm font-medium whitespace-nowrap ml-2">
+                        {user?.firstName} {user?.lastName}
+                    </p>
+                </Link>
             ) : (
                 <Link href="/profile">
                     <div className="w-10 h-10 rounded-full mt-auto mb-4 flex items-center justify-center">
