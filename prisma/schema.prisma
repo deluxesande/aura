@@ -138,3 +138,44 @@ model ContactFormMessage {
   email           String       
   message         String
 }
+
+model User {
+  id                String    @id @default(uuid()) @map("_id") @db.Uuid
+  clerkId           String    @unique  // All users have Clerk IDs
+  email             String    @unique
+  firstName         String?
+  lastName          String?
+  role              String    @default("user") // "admin", "manager", "user"
+  status            String    @default("active") // "active", "inactive"
+  businessId        String?   @db.Uuid
+  Business          Business? @relation(fields: [businessId], references: [id])
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  lastLogin         DateTime?
+}
+
+model Business {
+  id                    String    @id @default(uuid()) @map("_id") @db.Uuid
+  name                  String
+  logo                  String?   // URL to logo file
+  ownerId               String    @unique  // This is the Clerk user ID directly
+  users                 User[]
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  invitations           UserInvitation[]
+}
+
+
+model UserInvitation {
+  id            String    @id @default(uuid()) @map("_id") @db.Uuid
+  email         String
+  role          String    @default("user")
+  businessId    String    @db.Uuid
+  Business      Business  @relation(fields: [businessId], references: [id])
+  invitedBy     String    @db.Uuid
+  status        String    @default("pending") // "pending", "accepted", "expired"
+  token         String    @unique
+  expiresAt     DateTime
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
