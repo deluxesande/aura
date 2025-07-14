@@ -126,7 +126,7 @@ const UserManagement: React.FC = () => {
 
     return (
         <section>
-            <header className="flex items-center justify-between">
+            <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h2 className="text-lg font-medium text-gray-900">
                         User Management
@@ -138,9 +138,9 @@ const UserManagement: React.FC = () => {
                 </div>
                 <button
                     onClick={() => setShowInviteModal(true)}
-                    className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 w-full sm:w-auto"
                 >
-                    + Invite User
+                    + Invite
                 </button>
             </header>
 
@@ -149,10 +149,10 @@ const UserManagement: React.FC = () => {
                 {users.map((user) => (
                     <div
                         key={user.id}
-                        className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm"
+                        className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm gap-4"
                     >
-                        <div className="flex items-center space-x-4">
-                            <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                        <div className="flex items-center space-x-4 flex-1">
+                            <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
                                 <span className="text-sm font-medium text-gray-600">
                                     {user.name
                                         .split(" ")
@@ -160,20 +160,20 @@ const UserManagement: React.FC = () => {
                                         .join("")}
                                 </span>
                             </div>
-                            <div>
-                                <div className="flex items-center space-x-2">
-                                    <h3 className="text-sm font-medium text-gray-900">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 gap-1">
+                                    <h3 className="text-sm font-medium text-gray-900 truncate">
                                         {user.name}
                                     </h3>
                                     <span
                                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
                                             user.status
-                                        )}`}
+                                        )} w-fit`}
                                     >
                                         {user.status}
                                     </span>
                                 </div>
-                                <p className="text-sm text-gray-600">
+                                <p className="text-sm text-gray-600 truncate">
                                     {user.email}
                                 </p>
                                 <p className="text-xs text-gray-500">
@@ -182,43 +182,50 @@ const UserManagement: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="flex items-center space-x-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
                             <span
                                 className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(
                                     user.role
-                                )}`}
+                                )} w-fit`}
                             >
                                 {user.role}
                             </span>
-                            <button
-                                onClick={() => handleToggleUserStatus(user.id)}
-                                className={`px-3 py-1 text-xs font-medium rounded-md border ${
-                                    user.status === "active"
-                                        ? "text-red-600 border-red-300 hover:bg-red-50"
-                                        : "text-green-600 border-green-300 hover:bg-green-50"
-                                }`}
-                            >
-                                {user.status === "active"
-                                    ? "Disable"
-                                    : "Enable"}
-                            </button>
-                            <select
-                                value={user.role}
-                                onChange={(e) =>
-                                    handleRoleChange(user.id, e.target.value)
-                                }
-                                className="outline-none bg-slate-50 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
-                            >
-                                <option value="user">User</option>
-                                <option value="manager">Manager</option>
-                                <option value="admin">Admin</option>
-                            </select>
-                            <button
-                                onClick={() => handleDeleteUser(user)}
-                                className="px-3 py-1 outline-none"
-                            >
-                                <Trash className="w-4 h-4 stroke-red-500" />
-                            </button>
+                            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                                <button
+                                    onClick={() =>
+                                        handleToggleUserStatus(user.id)
+                                    }
+                                    className={`px-3 py-1 text-xs font-medium rounded-md border ${
+                                        user.status === "active"
+                                            ? "text-red-600 border-red-300 hover:bg-red-50"
+                                            : "text-green-600 border-green-300 hover:bg-green-50"
+                                    } w-full sm:w-auto`}
+                                >
+                                    {user.status === "active"
+                                        ? "Disable"
+                                        : "Enable"}
+                                </button>
+                                <select
+                                    value={user.role}
+                                    onChange={(e) =>
+                                        handleRoleChange(
+                                            user.id,
+                                            e.target.value
+                                        )
+                                    }
+                                    className="outline-none bg-slate-50 block w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 text-xs"
+                                >
+                                    <option value="user">User</option>
+                                    <option value="manager">Manager</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                                <button
+                                    onClick={() => handleDeleteUser(user)}
+                                    className="px-3 py-1 outline-none flex items-center justify-center sm:justify-start"
+                                >
+                                    <Trash className="w-4 h-4 stroke-red-500" />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -226,7 +233,7 @@ const UserManagement: React.FC = () => {
 
             {/* Invite User Modal */}
             {showInviteModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg p-6 w-full max-w-md">
                         <h3 className="text-lg font-medium text-gray-900 mb-4">
                             Invite New User
@@ -266,17 +273,17 @@ const UserManagement: React.FC = () => {
                                 </select>
                             </div>
 
-                            <div className="flex justify-end space-x-3 mt-6">
+                            <div className="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-3 mt-6">
                                 <button
                                     type="button"
                                     onClick={() => setShowInviteModal(false)}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 w-full sm:w-auto"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600"
+                                    className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 w-full sm:w-auto"
                                 >
                                     Send Invitation
                                 </button>
@@ -288,7 +295,7 @@ const UserManagement: React.FC = () => {
 
             {/* Delete User Confirmation Modal */}
             {showDeleteModal && userToDelete && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg p-6 w-full max-w-md">
                         <h3 className="text-lg font-medium text-gray-900 mb-4">
                             Delete User
@@ -301,19 +308,19 @@ const UserManagement: React.FC = () => {
                             user from your system.
                         </p>
 
-                        <div className="flex justify-end space-x-3">
+                        <div className="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-3">
                             <button
                                 onClick={() => {
                                     setShowDeleteModal(false);
                                     setUserToDelete(null);
                                 }}
-                                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+                                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 w-full sm:w-auto"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={confirmDeleteUser}
-                                className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+                                className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 w-full sm:w-auto"
                             >
                                 Delete User
                             </button>

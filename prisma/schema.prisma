@@ -158,11 +158,11 @@ model Business {
   id                    String    @id @default(uuid()) @map("_id") @db.Uuid
   name                  String
   logo                  String?   // URL to logo file
-  ownerId               String    @unique  // This is the Clerk user ID directly
   users                 User[]
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   invitations           UserInvitation[]
+  createdBy   String?   @unique 
 }
 
 
