@@ -67,7 +67,7 @@ export default function SignupPage() {
                 if (result.status === "complete") {
                     await setActive({ session: result.createdSessionId });
                     dispatch(signInAction());
-                    router.push("/dashboard");
+                    router.push("/settings");
                 }
             } catch (err: any) {
                 if (err.errors) {
@@ -93,7 +93,7 @@ export default function SignupPage() {
             await signUp.authenticateWithRedirect({
                 strategy: "oauth_google",
                 redirectUrl: "/sign-in",
-                redirectUrlComplete: "/dashboard",
+                redirectUrlComplete: "/settings",
             });
             dispatch(signInAction());
         } catch (err: any) {
