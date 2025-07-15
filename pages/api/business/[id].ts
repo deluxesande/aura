@@ -1,9 +1,7 @@
-import { PrismaClient } from "@prisma/client";
 import { NextApiRequest, NextApiResponse } from "next";
 import { updateBusiness } from "./update";
 import { deleteBusiness } from "./delete";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/utils/lib/client";
 
 async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
     const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;

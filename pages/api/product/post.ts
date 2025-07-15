@@ -1,4 +1,3 @@
-import { PrismaClient } from "@prisma/client";
 import { NextApiRequest, NextApiResponse } from "next";
 import { generateSKU } from "@/utils/generateSKU";
 import formidable from "formidable";
@@ -6,8 +5,7 @@ import * as Minio from "minio";
 import { v4 as uuidv4 } from "uuid";
 import { generatePresignedUrl } from "@/utils/minio/generatePresignedUrl";
 import { addCreatedBy } from "../middleware";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/utils/lib/client";
 
 const minioClient = new Minio.Client({
     endPoint: process.env.MINIO_PUBLIC_IP || "",

@@ -1,9 +1,7 @@
-import { PrismaClient } from "@prisma/client";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { updateInvoiceItem } from "./update";
 import { deleteInvoiceItem } from "./delete";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/utils/lib/client";
 
 async function getInvoiceItemById(req: NextApiRequest, res: NextApiResponse) {
     const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;

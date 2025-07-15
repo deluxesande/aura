@@ -1,9 +1,7 @@
-import { PrismaClient } from "@prisma/client";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { deleteProduct } from "./delete";
 import { updateProduct } from "./update";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/utils/lib/client";
 
 async function getProductById(req: NextApiRequest, res: NextApiResponse) {
     const id = req.query.id as string;

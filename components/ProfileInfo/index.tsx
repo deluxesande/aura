@@ -99,6 +99,7 @@ const ProfileInfo: React.FC = () => {
                                     width={90}
                                     height={90}
                                     alt={`${user?.firstName} Profile Image`}
+                                    className="rounded-full"
                                 />
                             </div>
                             <label

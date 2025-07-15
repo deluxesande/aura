@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client";
 import type { NextApiRequest, NextApiResponse } from "next";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/utils/lib/client";
 
 export const deleteCategory = async (
     req: NextApiRequest,
@@ -18,5 +16,5 @@ export const deleteCategory = async (
         res.status(204).end();
     } catch (error) {
         res.status(404).json({ error: "Failed to delete category" });
-    } 
+    }
 };

@@ -1,9 +1,7 @@
 import { getAuth } from "@clerk/nextjs/server";
-import { PrismaClient } from "@prisma/client";
 import { NextApiRequest, NextApiResponse } from "next";
 import { addCreatedBy } from "../middleware";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/utils/lib/client";
 
 const addCustomerHandler = async (
     req: NextApiRequest,

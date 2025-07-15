@@ -265,14 +265,14 @@ export default function Page() {
                                     >
                                         Image:
                                     </label>
-                                    <div className="relative w-full lg:w-72 h-64 border-2 border-dashed border-gray-300 rounded-lg flex text-center items-center justify-center bg-slate-50 hover:border-green-400 transition-colors cursor-pointer">
+                                    <div className="relative w-full lg:w-72 h-64 border-2 border-dashed border-gray-300 rounded-lg flex text-center items-center justify-center bg-slate-50 hover:border-green-400 transition-colors cursor-pointer overflow-hidden">
                                         {imagePreview ? (
                                             <Image
                                                 src={imagePreview}
                                                 alt="Preview"
-                                                width={400}
-                                                height={288}
+                                                fill
                                                 className="object-cover rounded-lg"
+                                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                             />
                                         ) : (
                                             <div className="flex flex-col items-center justify-center text-center space-y-2">

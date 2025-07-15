@@ -40,23 +40,30 @@ export default function Page() {
     }, []);
 
     useEffect(() => {
+        // Immediately use products from Redux store if available
+        if (productsData.length > 0) {
+            setLocalProducts(productsData.slice(0, 5));
+        }
+
+        // Always fetch fresh data in the background
         const fetchProducts = async () => {
             try {
                 const response = await axios.get("/api/product");
-                const limitedProducts = response.data.slice(0, 5);
-                setLocalProducts(limitedProducts);
+                const freshProducts = response.data;
 
-                // Dispatch the products to the Redux store
-                dispatch(setProducts(limitedProducts));
-            } catch (error) {}
+                // Update Redux store with fresh data
+                dispatch(setProducts(freshProducts));
+
+                // Update local state with limited products for display
+                setLocalProducts(freshProducts.slice(0, 5));
+            } catch (error) {
+                console.error("Error fetching products:", error);
+            }
         };
 
-        if (productsData.length > 0) {
-            setLocalProducts(productsData.slice(0, 5));
-        } else {
-            fetchProducts();
-        }
-    }, [productsData, dispatch]);
+        // Fetch fresh data in the background
+        fetchProducts();
+    }, [dispatch, productsData]);
 
     return (
         <Navbar>

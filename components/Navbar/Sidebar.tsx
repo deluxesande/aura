@@ -164,7 +164,7 @@ const Sidebar = () => {
                             width={40}
                             height={40}
                             alt={`${user?.firstName} Profile Image`}
-                            className="object-cover"
+                            className="object-cover rounded-full"
                         />
                     </div>
                     <p className="text-sm font-medium whitespace-nowrap ml-2">
@@ -179,6 +179,7 @@ const Sidebar = () => {
                             width={30}
                             height={30}
                             alt={`${user?.firstName} Profile Image`}
+                            className="rounded-full"
                         />
                     </div>
                 </Link>

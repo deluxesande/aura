@@ -1,9 +1,7 @@
-import { PrismaClient } from "@prisma/client";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { updateCategory } from "./update";
 import { deleteCategory } from "./delete";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/utils/lib/client";
 
 async function getCategoryById(req: NextApiRequest, res: NextApiResponse) {
     const id = req.query.id as string;

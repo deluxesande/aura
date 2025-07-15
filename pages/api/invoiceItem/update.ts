@@ -1,8 +1,6 @@
 import { InvoiceItem } from "@/utils/typesDefinitions";
-import { PrismaClient } from "@prisma/client";
 import { NextApiRequest, NextApiResponse } from "next";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/utils/lib/client";
 
 export const updateInvoiceItem = async (
     req: NextApiRequest,

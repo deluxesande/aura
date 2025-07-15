@@ -1,5 +1,4 @@
 import { getAuth } from "@clerk/nextjs/server";
-import { PrismaClient } from "@prisma/client";
 import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/utils/lib/client";
 

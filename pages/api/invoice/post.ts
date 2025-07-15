@@ -1,9 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { PrismaClient } from "@prisma/client";
 import { InvoiceItem } from "@/utils/typesDefinitions";
 import { addCreatedBy } from "../middleware";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/utils/lib/client";
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const { customerId, invoiceItems, totalAmount } = req.body;
