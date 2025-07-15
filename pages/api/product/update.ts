@@ -1,7 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { NextApiRequest, NextApiResponse } from "next";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/utils/lib/client";
 
 export const updateProduct = async (
     req: NextApiRequest,

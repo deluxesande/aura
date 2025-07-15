@@ -16,12 +16,14 @@ const BusinessSettingsForm: React.FC = () => {
     const [originalBusiness, setOriginalBusiness] = useState<string>("");
     const [originalLogoUrl, setOriginalLogoUrl] = useState<string>("");
 
-    const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = (e) => {
-                setLogoPreview(e.target?.result as string);
+            reader.onloadend = () => {
+                setLogoPreview(reader.result as string);
+                // Store the base64 string for API submission
+                setLogoUrl(reader.result as string);
             };
             reader.readAsDataURL(file);
         }
@@ -35,30 +37,12 @@ const BusinessSettingsForm: React.FC = () => {
         });
     };
 
-    const updateBusiness = async (formData: FormData) => {
-        // Check if formData has files
-        const hasFiles = formData.get("logo") !== null;
-
-        if (hasFiles) {
-            // Send as multipart/form-data when files are present
-            await axios.put(`/api/business/${businessId}`, formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-            });
-        } else {
-            // Send as JSON when only updating name
-            const name = formData.get("name");
-            await axios.put(
-                `/api/business/${businessId}`,
-                { name },
-                {
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
-        }
+    const updateBusiness = async (data: { name?: string; logo?: string }) => {
+        await axios.put(`/api/business/${businessId}`, data, {
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -66,13 +50,8 @@ const BusinessSettingsForm: React.FC = () => {
 
         // Check for changes first before starting the promise
         if (hasExistingBusiness) {
-            const form = e.currentTarget as HTMLFormElement;
-            const businessLogo =
-                (form.elements.namedItem("businessLogo") as HTMLInputElement)
-                    .files?.[0] || null;
-
             const hasNameChanged = business !== originalBusiness;
-            const hasLogoChanged = businessLogo !== null;
+            const hasLogoChanged = logoPreview !== "";
 
             if (!hasNameChanged && !hasLogoChanged) {
                 toast.info("No changes detected");
@@ -81,33 +60,29 @@ const BusinessSettingsForm: React.FC = () => {
         }
 
         const promise = async () => {
-            const form = e.currentTarget as HTMLFormElement;
-            const businessLogo =
-                (form.elements.namedItem("businessLogo") as HTMLInputElement)
-                    .files?.[0] || null;
-
-            const formData = new FormData();
-
             if (hasExistingBusiness) {
                 // Only send changed fields for update
                 const hasNameChanged = business !== originalBusiness;
-                const hasLogoChanged = businessLogo !== null;
+                const hasLogoChanged = logoPreview !== "";
 
-                // Only append changed fields
+                const updateData: { name?: string; logo?: string } = {};
+
                 if (hasNameChanged) {
-                    formData.append("name", business);
+                    updateData.name = business;
                 }
                 if (hasLogoChanged) {
-                    formData.append("logo", businessLogo);
+                    updateData.logo = logoPreview; // Send base64 string
                 }
 
-                await updateBusiness(formData);
+                await updateBusiness(updateData);
             } else {
-                // For create, send all required fields
+                // For create, send all required fields using FormData
+                const formData = new FormData();
                 formData.append("name", business);
-                if (businessLogo) {
-                    formData.append("logo", businessLogo);
+                if (logoPreview) {
+                    formData.append("logo", logoPreview); // Send base64 string
                 }
+
                 await createBusiness(formData);
             }
         };
@@ -185,7 +160,7 @@ const BusinessSettingsForm: React.FC = () => {
                                 }}
                             />
                         ) : (
-                            <div className="flex flex-col items-center justify-center text-center space-y-2 py-4">
+                            <div className="flex flex-col items-center justify-center text-center space-y-2">
                                 <CloudUpload
                                     size={25}
                                     className="stroke-green-500"
