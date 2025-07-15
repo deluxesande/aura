@@ -6,6 +6,10 @@ import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
+import { useDispatch } from "react-redux";
+import { setProducts } from "@/store/slices/productSlice";
+import { useSelector } from "react-redux";
+import { AppState } from "@/store";
 
 export default function EditProductPage() {
     const params = useParams();
@@ -33,6 +37,10 @@ export default function EditProductPage() {
         invoiceItems: [],
     });
     const [isLoading, setIsLoading] = useState(false);
+    const originalProducts = useSelector(
+        (state: AppState) => state.product.products
+    );
+    const dispatch = useDispatch();
 
     // Handle input changes
     const handleChange = (
@@ -83,7 +91,18 @@ export default function EditProductPage() {
 
         const promise = async () => {
             try {
-                await axios.put(`/api/product/${id}`, formData);
+                const response = await axios.put(
+                    `/api/product/${id}`,
+                    formData
+                );
+
+                // Update the specific product in the Redux store
+                const updatedProducts = originalProducts.map((product) =>
+                    product.id === id ? response.data : product
+                );
+
+                dispatch(setProducts(updatedProducts));
+
                 router.push("/products/list");
             } catch (error) {
                 // Do nothing error is thrown in toast
@@ -99,25 +118,52 @@ export default function EditProductPage() {
         });
     };
 
-    // Fetch product data once
+    // Optimized data fetching using Redux store first
     useEffect(() => {
-        const fetchProduct = async () => {
+        const fetchData = async () => {
             try {
-                const [productRes, categoriesRes] = await Promise.all([
-                    axios.get(`/api/product/${id}`),
-                    axios.get("/api/category"),
-                ]);
+                // First, check if product exists in Redux store
+                const productFromStore = originalProducts.find(
+                    (product) => product.id === id
+                );
 
-                setFormData(productRes.data);
-                setImagePreview(productRes.data.image);
-                setCategories(categoriesRes.data);
+                if (productFromStore) {
+                    // Use product from Redux store - no API call needed
+                    setFormData(productFromStore);
+                    setImagePreview(productFromStore.image);
+
+                    // Still need to fetch categories if not cached
+                    // You could also cache categories in Redux to avoid this call
+                    const categoriesRes = await axios.get("/api/category");
+                    setCategories(categoriesRes.data);
+                } else {
+                    // Product not in store, fetch from API
+                    const [productRes, categoriesRes] = await Promise.all([
+                        axios.get(`/api/product/${id}`),
+                        axios.get("/api/category"),
+                    ]);
+
+                    setFormData(productRes.data);
+                    setImagePreview(productRes.data.image);
+                    setCategories(categoriesRes.data);
+
+                    // Optionally, add the fetched product to Redux store
+                    // This helps if user navigates back to edit this product again
+                    const updatedProducts = [
+                        ...originalProducts,
+                        productRes.data,
+                    ];
+                    dispatch(setProducts(updatedProducts));
+                }
             } catch (error) {
                 toast.error("Error fetching product data");
             }
         };
 
-        fetchProduct();
-    }, [id]);
+        if (id) {
+            fetchData();
+        }
+    }, [id, originalProducts, dispatch]);
 
     return (
         <Navbar>
