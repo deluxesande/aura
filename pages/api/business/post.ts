@@ -28,6 +28,23 @@ const addBusinessHandler = async (
             return res.status(401).json({ error: "Unauthorized" });
         }
 
+        // Check if user already owns a business
+        const existingBusiness = await prisma.business.findUnique({
+            where: {
+                createdBy: user.userId,
+            },
+        });
+
+        if (existingBusiness) {
+            return res.status(409).json({
+                error: "User already has a business associated with their account",
+                existingBusiness: {
+                    id: existingBusiness.id,
+                    name: existingBusiness.name,
+                },
+            });
+        }
+
         const form = formidable({ multiples: true });
 
         const { fields, files } = await new Promise<{

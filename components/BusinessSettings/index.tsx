@@ -1,8 +1,11 @@
 import axios from "axios";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const BusinessSettingsForm: React.FC = () => {
+    const [business, setBusiness] = useState<string>("");
+    const [logoUrl, setLogoUrl] = useState<string>("");
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -22,7 +25,7 @@ const BusinessSettingsForm: React.FC = () => {
                 formData.append("logo", businessLogo);
             }
 
-            const response = await axios.post("/api/business", formData, {
+            await axios.post("/api/business", formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                 },
@@ -35,6 +38,23 @@ const BusinessSettingsForm: React.FC = () => {
             error: "Failed to create business",
         });
     };
+
+    useEffect(() => {
+        const fetchBusiness = async () => {
+            try {
+                const response = await axios.get("/api/business");
+
+                if (response.status == 200) {
+                    setBusiness(response.data[0].name);
+                    setLogoUrl(response.data[0].logo);
+                }
+            } catch (error) {
+                toast.error("Failed to fetch business data");
+            }
+        };
+
+        fetchBusiness();
+    }, []);
 
     return (
         <section>
@@ -59,6 +79,8 @@ const BusinessSettingsForm: React.FC = () => {
                     <input
                         type="text"
                         id="businessName"
+                        value={business}
+                        onChange={(e) => setBusiness(e.target.value)}
                         required
                         className="outline-none bg-slate-50 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
                         placeholder="Enter your business name"
@@ -75,6 +97,19 @@ const BusinessSettingsForm: React.FC = () => {
                     >
                         Business Logo
                     </label>
+                    {/* Display current logo if it exists */}
+                    {logoUrl && (
+                        <div className="mt-2 mb-4">
+                            <p className="text-sm text-gray-600 mb-2">
+                                Current Logo:
+                            </p>
+                            <img
+                                src={logoUrl}
+                                alt="Business Logo"
+                                className="h-16 w-16 object-cover rounded-md border border-gray-300"
+                            />
+                        </div>
+                    )}
                     <input
                         type="file"
                         id="businessLogo"
@@ -82,7 +117,9 @@ const BusinessSettingsForm: React.FC = () => {
                         className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-500 hover:file:bg-green-100"
                     />
                     <p className="mt-1 text-xs text-gray-500">
-                        Upload a logo for your documents and invoices
+                        {logoUrl
+                            ? "Upload a new logo to replace the current one"
+                            : "Upload a logo for your documents and invoices"}
                     </p>
                 </div>
 
