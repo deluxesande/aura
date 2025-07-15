@@ -4,7 +4,7 @@ import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import { Category } from "@/utils/typesDefinitions";
 import axios from "axios";
-import { PlusCircle } from "lucide-react";
+import { CloudUpload, PlusCircle } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useSelector } from "react-redux";
@@ -265,7 +265,7 @@ export default function Page() {
                                     >
                                         Image:
                                     </label>
-                                    <div className="relative w-full lg:w-72 h-72 border-2 border-dashed border-gray-400 rounded-lg flex text-center items-center justify-center bg-slate-50">
+                                    <div className="relative w-full lg:w-72 h-64 border-2 border-dashed border-gray-300 rounded-lg flex text-center items-center justify-center bg-slate-50 hover:border-green-400 transition-colors cursor-pointer">
                                         {imagePreview ? (
                                             <Image
                                                 src={imagePreview}
@@ -275,9 +275,18 @@ export default function Page() {
                                                 className="object-cover rounded-lg"
                                             />
                                         ) : (
-                                            <span className="text-gray-500">
-                                                No image selected
-                                            </span>
+                                            <div className="flex flex-col items-center justify-center text-center space-y-2">
+                                                <CloudUpload
+                                                    size={25}
+                                                    className="stroke-green-500"
+                                                />
+                                                <p className="font-medium text-gray-600">
+                                                    Upload file
+                                                </p>
+                                                <p className="text-sm text-gray-400">
+                                                    PNG are Allowed.
+                                                </p>
+                                            </div>
                                         )}
                                         <input
                                             id="productImage"

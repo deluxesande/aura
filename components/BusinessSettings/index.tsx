@@ -1,26 +1,37 @@
 import axios from "axios";
+import { CloudUpload } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
+import Image from "next/image";
 
 const BusinessSettingsForm: React.FC = () => {
     const [business, setBusiness] = useState<string>("");
     const [logoUrl, setLogoUrl] = useState<string>("");
+    const [logoPreview, setLogoPreview] = useState<string>("");
+
+    const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setLogoPreview(e.target?.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
         const promise = async () => {
             const form = e.currentTarget as HTMLFormElement;
-            const businessName = (
-                form.elements.namedItem("businessName") as HTMLInputElement
-            ).value;
             const businessLogo =
                 (form.elements.namedItem("businessLogo") as HTMLInputElement)
                     .files?.[0] || null;
 
             // When creating a business with logo
             const formData = new FormData();
-            formData.append("name", businessName);
+            formData.append("name", business);
             if (businessLogo) {
                 formData.append("logo", businessLogo);
             }
@@ -33,9 +44,9 @@ const BusinessSettingsForm: React.FC = () => {
         };
 
         toast.promise(promise(), {
-            loading: "Creating business...",
-            success: "Business created successfully!",
-            error: "Failed to create business",
+            loading: "Updating business...",
+            success: "Business updated successfully!",
+            error: "Failed to update business",
         });
     };
 
@@ -71,6 +82,57 @@ const BusinessSettingsForm: React.FC = () => {
             <form onSubmit={handleSubmit} className="mt-6 space-y-6">
                 <div>
                     <label
+                        htmlFor="businessLogo"
+                        className="block text-sm font-medium text-gray-900"
+                    >
+                        Business Logo
+                    </label>
+
+                    <div className="relative mt-2 w-full border-2 border-dashed border-gray-300 rounded-lg flex text-center items-center justify-center bg-slate-50 hover:border-green-400 transition-colors cursor-pointer">
+                        {logoPreview || logoUrl ? (
+                            <Image
+                                src={logoPreview || logoUrl}
+                                alt="Business Logo"
+                                className="w-full h-60 object-cover rounded-lg"
+                                width={256}
+                                height={256}
+                                style={{
+                                    objectFit: "cover",
+                                    borderRadius: "0.5rem",
+                                }}
+                            />
+                        ) : (
+                            <div className="flex flex-col items-center justify-center text-center space-y-2">
+                                <CloudUpload
+                                    size={25}
+                                    className="stroke-green-500"
+                                />
+                                <p className="font-medium text-gray-600">
+                                    Upload file
+                                </p>
+                                <p className="text-sm text-gray-400">
+                                    PNG are Allowed.
+                                </p>
+                            </div>
+                        )}
+                        <input
+                            type="file"
+                            id="businessLogo"
+                            accept="image/png"
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                            onChange={handleLogoChange}
+                        />
+                    </div>
+
+                    <p className="mt-1 text-xs text-gray-500">
+                        {logoUrl || logoPreview
+                            ? "Upload a new logo to replace the current one"
+                            : "Upload a logo for your documents and invoices"}
+                    </p>
+                </div>
+
+                <div>
+                    <label
                         htmlFor="businessName"
                         className="block text-sm font-medium text-gray-900"
                     >
@@ -87,39 +149,6 @@ const BusinessSettingsForm: React.FC = () => {
                     />
                     <p className="mt-1 text-xs text-gray-500">
                         This name will appear on all invoices and documents
-                    </p>
-                </div>
-
-                <div>
-                    <label
-                        htmlFor="businessLogo"
-                        className="block text-sm font-medium text-gray-900"
-                    >
-                        Business Logo
-                    </label>
-                    {/* Display current logo if it exists */}
-                    {logoUrl && (
-                        <div className="mt-2 mb-4">
-                            <p className="text-sm text-gray-600 mb-2">
-                                Current Logo:
-                            </p>
-                            <img
-                                src={logoUrl}
-                                alt="Business Logo"
-                                className="h-16 w-16 object-cover rounded-md border border-gray-300"
-                            />
-                        </div>
-                    )}
-                    <input
-                        type="file"
-                        id="businessLogo"
-                        accept="image/png"
-                        className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-500 hover:file:bg-green-100"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                        {logoUrl
-                            ? "Upload a new logo to replace the current one"
-                            : "Upload a logo for your documents and invoices"}
                     </p>
                 </div>
 

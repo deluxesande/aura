@@ -24,8 +24,8 @@ const CreateCategoryModal: React.FC<ModalProps> = ({
 
     return (
         <div className="fixed z-20 inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-5/6 lg:w-4/6 xl:w-3/6">
-                <h1 className="text-2xl font-bold mb-6 text-gray-400">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+                <h1 className="text-2xl font-bold mb-6 text-gray-900">
                     Create New Category
                 </h1>
                 <form onSubmit={handleSubmit}>
@@ -45,17 +45,17 @@ const CreateCategoryModal: React.FC<ModalProps> = ({
                             required
                         />
                     </div>
-                    <div className="space-x-0 space-y-4 lg:space-y-0 lg:space-x-4 flex flex-wrap lg:flex-nowrap justify-center items-center">
+                    <div className="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-3 mt-6">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-grow w-full lg:w-1/2 btn btn-md btn-ghost text-white flex items-center bg-red-300"
+                            className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 w-full sm:w-auto"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            className="flex-grow w-full lg:w-1/2 btn btn-md btn-ghost text-black flex items-center bg-green-400"
+                            className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 w-full sm:w-auto"
                         >
                             Create
                         </button>
