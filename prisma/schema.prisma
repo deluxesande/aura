@@ -29,10 +29,12 @@ model Product {
 
 model Category {
   id          String       @id @default(uuid()) @map("_id") @db.Uuid
-  name        String    @unique
+  name        String       
   description String?
   products    Product[]
   createdBy   String?   
+  
+  @@unique([name, createdBy])  // unique per user
 }
 
 model Invoice {

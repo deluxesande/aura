@@ -8,6 +8,13 @@ const BusinessSettingsForm: React.FC = () => {
     const [business, setBusiness] = useState<string>("");
     const [logoUrl, setLogoUrl] = useState<string>("");
     const [logoPreview, setLogoPreview] = useState<string>("");
+    const [businessId, setBusinessId] = useState<string>("");
+    const [hasExistingBusiness, setHasExistingBusiness] =
+        useState<boolean>(false);
+
+    // Track original values to detect changes
+    const [originalBusiness, setOriginalBusiness] = useState<string>("");
+    const [originalLogoUrl, setOriginalLogoUrl] = useState<string>("");
 
     const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -20,8 +27,58 @@ const BusinessSettingsForm: React.FC = () => {
         }
     };
 
+    const createBusiness = async (formData: FormData) => {
+        await axios.post("/api/business", formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        });
+    };
+
+    const updateBusiness = async (formData: FormData) => {
+        // Check if formData has files
+        const hasFiles = formData.get("logo") !== null;
+
+        if (hasFiles) {
+            // Send as multipart/form-data when files are present
+            await axios.put(`/api/business/${businessId}`, formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            });
+        } else {
+            // Send as JSON when only updating name
+            const name = formData.get("name");
+            await axios.put(
+                `/api/business/${businessId}`,
+                { name },
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+        }
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Check for changes first before starting the promise
+        if (hasExistingBusiness) {
+            const form = e.currentTarget as HTMLFormElement;
+            const businessLogo =
+                (form.elements.namedItem("businessLogo") as HTMLInputElement)
+                    .files?.[0] || null;
+
+            const hasNameChanged = business !== originalBusiness;
+            const hasLogoChanged = businessLogo !== null;
+
+            if (!hasNameChanged && !hasLogoChanged) {
+                toast.info("No changes detected");
+                return; // Exit early without showing promise toast
+            }
+        }
 
         const promise = async () => {
             const form = e.currentTarget as HTMLFormElement;
@@ -29,24 +86,42 @@ const BusinessSettingsForm: React.FC = () => {
                 (form.elements.namedItem("businessLogo") as HTMLInputElement)
                     .files?.[0] || null;
 
-            // When creating a business with logo
             const formData = new FormData();
-            formData.append("name", business);
-            if (businessLogo) {
-                formData.append("logo", businessLogo);
-            }
 
-            await axios.post("/api/business", formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-            });
+            if (hasExistingBusiness) {
+                // Only send changed fields for update
+                const hasNameChanged = business !== originalBusiness;
+                const hasLogoChanged = businessLogo !== null;
+
+                // Only append changed fields
+                if (hasNameChanged) {
+                    formData.append("name", business);
+                }
+                if (hasLogoChanged) {
+                    formData.append("logo", businessLogo);
+                }
+
+                await updateBusiness(formData);
+            } else {
+                // For create, send all required fields
+                formData.append("name", business);
+                if (businessLogo) {
+                    formData.append("logo", businessLogo);
+                }
+                await createBusiness(formData);
+            }
         };
 
         toast.promise(promise(), {
-            loading: "Updating business...",
-            success: "Business updated successfully!",
-            error: "Failed to update business",
+            loading: hasExistingBusiness
+                ? "Updating business..."
+                : "Creating business...",
+            success: hasExistingBusiness
+                ? "Business updated successfully!"
+                : "Business created successfully!",
+            error: hasExistingBusiness
+                ? "Failed to update business"
+                : "Failed to create business",
         });
     };
 
@@ -55,9 +130,17 @@ const BusinessSettingsForm: React.FC = () => {
             try {
                 const response = await axios.get("/api/business");
 
-                if (response.status == 200) {
-                    setBusiness(response.data[0].name);
-                    setLogoUrl(response.data[0].logo);
+                if (response.status == 200 && response.data.length > 0) {
+                    const businessData = response.data[0];
+
+                    setBusiness(businessData.name);
+                    setLogoUrl(businessData.logo);
+                    setBusinessId(businessData.id);
+                    setHasExistingBusiness(true);
+
+                    // Store original values for comparison
+                    setOriginalBusiness(businessData.name);
+                    setOriginalLogoUrl(businessData.logo);
                 }
             } catch (error) {
                 toast.error("Failed to fetch business data");
@@ -102,7 +185,7 @@ const BusinessSettingsForm: React.FC = () => {
                                 }}
                             />
                         ) : (
-                            <div className="flex flex-col items-center justify-center text-center space-y-2">
+                            <div className="flex flex-col items-center justify-center text-center space-y-2 py-4">
                                 <CloudUpload
                                     size={25}
                                     className="stroke-green-500"
@@ -156,7 +239,9 @@ const BusinessSettingsForm: React.FC = () => {
                     type="submit"
                     className="btn btn-md btn-ghost text-black flex items-center bg-green-400 w-full mt-8"
                 >
-                    Save
+                    {hasExistingBusiness
+                        ? "Update Business"
+                        : "Create Business"}
                 </button>
             </form>
         </section>
