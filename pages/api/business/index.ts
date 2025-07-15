@@ -3,6 +3,12 @@ import { getBusiness } from "./get";
 import { addBusiness } from "./post";
 import { getAuth } from "@clerk/nextjs/server";
 
+export const config = {
+    api: {
+        bodyParser: false,
+    },
+};
+
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const { userId } = getAuth(req);
 

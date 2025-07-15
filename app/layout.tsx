@@ -27,7 +27,7 @@ export default function RootLayout({
                         name="description"
                         content={metadata.description ?? ""}
                     />
-                    <link rel="icon" href="/logos/salesense-vertical.png" />
+                    <link rel="icon" href="/logos/salesense-icon.png" />
                 </head>
                 <body className={`${inter.className} bg-[#f4f4f4]`}>
                     <AnimatePresence mode="wait">
