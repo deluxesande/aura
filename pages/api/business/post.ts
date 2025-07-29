@@ -1,4 +1,4 @@
-import { getAuth } from "@clerk/nextjs/server";
+import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
 import { addCreatedBy } from "../middleware";
 import * as Minio from "minio";
@@ -43,6 +43,25 @@ const addBusinessHandler = async (
             });
         }
 
+        // Get full user details from Clerk
+        const clerk = await clerkClient();
+        const clerkUser = await clerk.users.getUser(user.userId);
+
+        // Check if user already exists in database
+        const existingUser = await prisma.user.findUnique({
+            where: { clerkId: user.userId },
+        });
+
+        if (existingUser) {
+            return res.status(409).json({
+                error: "User already exists in the system",
+                user: {
+                    id: existingUser.id,
+                    email: existingUser.email,
+                },
+            });
+        }
+
         const form = formidable({ multiples: true });
 
         const { fields, files } = await new Promise<{
@@ -69,6 +88,8 @@ const addBusinessHandler = async (
 
         // Handle logo upload if file is provided
         if (files.logo && files.logo[0]) {
+            console.log("Logo file found:", files.logo[0].originalFilename);
+
             const file = files.logo[0];
             const filePath = file.filepath;
             const objectName = `${uuidv4()}-business-logo.png`;
@@ -79,28 +100,55 @@ const addBusinessHandler = async (
 
             const bucketName = "salesense-bucket";
 
-            // Upload logo to MinIO and get presigned URL
-            logoUrl = await generatePresignedUrl(
-                minioClient,
-                bucketName,
-                objectName,
-                filePath,
-                metaData
-            );
+            try {
+                // Upload logo to MinIO and get presigned URL
+                logoUrl = await generatePresignedUrl(
+                    minioClient,
+                    bucketName,
+                    objectName,
+                    filePath,
+                    metaData
+                );
+            } catch (uploadError) {
+                // Continue without logo rather than failing the entire request
+                logoUrl = null;
+            }
+        } else {
+            // console.log("No logo file provided in request");
         }
 
-        // Create business with Clerk user ID as owner
-        const newBusiness = await prisma.business.create({
-            data: {
-                name,
-                logo: logoUrl,
-                createdBy: req.body.createdBy,
-            },
+        // Use database transaction to create both business and user
+        const result = await prisma.$transaction(async (tx) => {
+            // Create business with Clerk user ID as owner
+            const newBusiness = await tx.business.create({
+                data: {
+                    name,
+                    logo: logoUrl,
+                    createdBy: user.userId,
+                },
+            });
+
+            // Create user record for the business creator
+            const newUser = await tx.user.create({
+                data: {
+                    clerkId: user.userId,
+                    email: clerkUser.emailAddresses[0]?.emailAddress || "",
+                    firstName: clerkUser.firstName || "",
+                    lastName: clerkUser.lastName || "",
+                    role: "admin", // Business creators are admins
+                    businessId: newBusiness.id,
+                },
+            });
+
+            return { business: newBusiness, user: newUser };
         });
 
-        res.status(201).json(newBusiness);
+        res.status(201).json({
+            business: result.business,
+            user: result.user,
+            message: "Business and user created successfully",
+        });
     } catch (error) {
-        console.error("Error creating business:", error);
         res.status(500).json({ error: "Failed to create business" });
     }
 };

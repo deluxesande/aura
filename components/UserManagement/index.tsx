@@ -1,44 +1,25 @@
+import axios from "axios";
 import { Trash } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 interface User {
     id: string;
-    name: string;
     email: string;
     role: string;
-    status: "active" | "inactive";
-    lastLogin: string;
-    avatar?: string;
+    status: "pending" | "accepted" | "declined" | "expired";
+    businessId: string;
+    invitedBy: string;
+    createdAt: string;
+    updatedAt: string;
+    expiresAt: string;
+    Business: {
+        name: string;
+    };
 }
 
 const UserManagement: React.FC = () => {
-    const [users, setUsers] = useState<User[]>([
-        {
-            id: "1",
-            name: "John Doe",
-            email: "john@example.com",
-            role: "admin",
-            status: "active",
-            lastLogin: "2 hours ago",
-        },
-        {
-            id: "2",
-            name: "Jane Smith",
-            email: "jane@example.com",
-            role: "manager",
-            status: "active",
-            lastLogin: "1 day ago",
-        },
-        {
-            id: "3",
-            name: "Mike Johnson",
-            email: "mike@example.com",
-            role: "user",
-            status: "inactive",
-            lastLogin: "5 days ago",
-        },
-    ]);
+    const [users, setUsers] = useState<User[]>([]);
 
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -53,40 +34,30 @@ const UserManagement: React.FC = () => {
             return;
         }
 
-        toast.success(`Invitation sent to ${inviteEmail}`);
+        const sendInvitation = async () => {
+            const response = await axios.post("/api/auth/invite/post", {
+                email: inviteEmail,
+                role: inviteRole,
+            });
+
+            if (response.status === 200) {
+                console.log(response.data);
+                toast.success("Invitation sent successfully");
+            }
+        };
+
+        sendInvitation();
         setInviteEmail("");
         setInviteRole("user");
         setShowInviteModal(false);
     };
 
     const handleToggleUserStatus = (userId: string) => {
-        setUsers((prev) =>
-            prev.map((user) =>
-                user.id === userId
-                    ? {
-                          ...user,
-                          status:
-                              user.status === "active" ? "inactive" : "active",
-                      }
-                    : user
-            )
-        );
-
-        const user = users.find((u) => u.id === userId);
-        toast.success(
-            `User ${
-                user?.status === "active" ? "disabled" : "enabled"
-            } successfully`
-        );
+        //    Call the API to toggle user status
     };
 
     const handleRoleChange = (userId: string, newRole: string) => {
-        setUsers((prev) =>
-            prev.map((user) =>
-                user.id === userId ? { ...user, role: newRole } : user
-            )
-        );
-        toast.success("User role updated successfully");
+        // Call the API to update user role
     };
 
     const handleDeleteUser = (user: User) => {
@@ -95,16 +66,7 @@ const UserManagement: React.FC = () => {
     };
 
     const confirmDeleteUser = () => {
-        if (userToDelete) {
-            setUsers((prev) =>
-                prev.filter((user) => user.id !== userToDelete.id)
-            );
-            toast.success(
-                `User ${userToDelete.name} has been deleted successfully`
-            );
-            setShowDeleteModal(false);
-            setUserToDelete(null);
-        }
+        // Call the API to delete user
     };
 
     const getRoleColor = (role: string) => {
@@ -119,10 +81,34 @@ const UserManagement: React.FC = () => {
     };
 
     const getStatusColor = (status: string) => {
-        return status === "active"
+        return status === "accepted"
             ? "bg-green-100 text-green-800"
             : "bg-red-100 text-red-800";
     };
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const response = await axios.get("/api/auth/invite/get");
+                if (response.data.invitations) {
+                    setUsers(response.data.invitations);
+                }
+
+                if (response.status === 404) {
+                    toast.warning("No Invitations sent by you yet.");
+                }
+            } catch (error) {
+                if (
+                    axios.isAxiosError(error) &&
+                    error.response?.status !== 404
+                ) {
+                    toast.error("Failed to fetch Invitations.");
+                }
+            }
+        };
+
+        fetchUsers();
+    }, []);
 
     return (
         <section>
@@ -146,6 +132,11 @@ const UserManagement: React.FC = () => {
 
             {/* Users List */}
             <div className="mt-6 space-y-4">
+                {users.length === 0 && (
+                    <div className="text-gray-500">
+                        No users found. Invite new users to get started.
+                    </div>
+                )}
                 {users.map((user) => (
                     <div
                         key={user.id}
@@ -154,7 +145,7 @@ const UserManagement: React.FC = () => {
                         <div className="flex items-center space-x-4 flex-1">
                             <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
                                 <span className="text-sm font-medium text-gray-600">
-                                    {user.name
+                                    {user.email
                                         .split(" ")
                                         .map((n) => n[0])
                                         .join("")}
@@ -163,7 +154,7 @@ const UserManagement: React.FC = () => {
                             <div className="flex-1 min-w-0">
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 gap-1">
                                     <h3 className="text-sm font-medium text-gray-900 truncate">
-                                        {user.name}
+                                        {user.email}
                                     </h3>
                                     <span
                                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
@@ -173,11 +164,9 @@ const UserManagement: React.FC = () => {
                                         {user.status}
                                     </span>
                                 </div>
-                                <p className="text-sm text-gray-600 truncate">
-                                    {user.email}
-                                </p>
+
                                 <p className="text-xs text-gray-500">
-                                    Last login: {user.lastLogin}
+                                    Invited by: {user.invitedBy}
                                 </p>
                             </div>
                         </div>
@@ -196,12 +185,12 @@ const UserManagement: React.FC = () => {
                                         handleToggleUserStatus(user.id)
                                     }
                                     className={`px-3 py-1 text-xs font-medium rounded-md border ${
-                                        user.status === "active"
+                                        user.status === "accepted"
                                             ? "text-red-600 border-red-300 hover:bg-red-50"
                                             : "text-green-600 border-green-300 hover:bg-green-50"
                                     } w-full sm:w-auto`}
                                 >
-                                    {user.status === "active"
+                                    {user.status === "accepted"
                                         ? "Disable"
                                         : "Enable"}
                                 </button>
@@ -303,7 +292,7 @@ const UserManagement: React.FC = () => {
 
                         <p className="text-sm text-gray-600 mb-6">
                             Are you sure you want to delete{" "}
-                            <strong>{userToDelete.name}</strong>? This action
+                            <strong>{userToDelete.email}</strong>? This action
                             cannot be undone and will permanently remove the
                             user from your system.
                         </p>

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
 import { z } from "zod";
@@ -8,18 +8,22 @@ import crypto from "crypto";
 const inviteSchema = z.object({
     email: z.string().email("Invalid email address"),
     role: z.enum(["admin", "manager", "user"]).default("user"),
-    businessId: z.string().uuid("Invalid business ID"),
+    businessId: z.string().uuid("Invalid business ID").optional(),
 });
 
-export async function POST(request: NextRequest) {
+export default async function handler(
+    req: NextApiRequest,
+    res: NextApiResponse
+) {
+    if (req.method !== "POST") {
+        return res.status(405).json({ error: "Method not allowed" });
+    }
+
     try {
         // Check authentication
-        const { userId } = getAuth(request);
+        const { userId } = getAuth(req);
         if (!userId) {
-            return NextResponse.json(
-                { error: "Unauthorized" },
-                { status: 401 }
-            );
+            return res.status(401).json({ error: "Unauthorized" });
         }
 
         // Get current user from database
@@ -29,32 +33,35 @@ export async function POST(request: NextRequest) {
         });
 
         if (!currentUser) {
-            return NextResponse.json(
-                { error: "User not found" },
-                { status: 404 }
-            );
+            return res.status(404).json({ error: "User not found" });
         }
 
         // Parse request body
-        const body = await request.json();
-        const validatedData = inviteSchema.parse(body);
-        const { email, role, businessId } = validatedData;
+        const validatedData = inviteSchema.parse(req.body);
+        const { email, role } = validatedData;
+
+        // Use provided businessId or fallback to current user's businessId
+        const businessId = validatedData.businessId || currentUser.businessId;
+
+        if (!businessId) {
+            return res.status(400).json({ error: "Business ID is required" });
+        }
 
         // Check if user has permission to invite to this business
         if (currentUser.businessId !== businessId) {
-            return NextResponse.json(
-                { error: "Forbidden: Cannot invite to this business" },
-                { status: 403 }
-            );
+            return res
+                .status(403)
+                .json({ error: "Forbidden: Cannot invite to this business" });
         }
 
         // Check if user has permission to invite (only admin/manager can invite)
         if (!["admin", "manager"].includes(currentUser.role)) {
-            return NextResponse.json(
-                { error: "Forbidden: Insufficient permissions" },
-                { status: 403 }
-            );
+            return res
+                .status(403)
+                .json({ error: "Forbidden: Insufficient permissions" });
         }
+
+        console.log(businessId);
 
         // Check if business exists
         const business = await prisma.business.findUnique({
@@ -62,10 +69,7 @@ export async function POST(request: NextRequest) {
         });
 
         if (!business) {
-            return NextResponse.json(
-                { error: "Business not found" },
-                { status: 404 }
-            );
+            return res.status(404).json({ error: "Business not found" });
         }
 
         // Check if user is already registered
@@ -74,10 +78,7 @@ export async function POST(request: NextRequest) {
         });
 
         if (existingUser) {
-            return NextResponse.json(
-                { error: "User already exists" },
-                { status: 409 }
-            );
+            return res.status(409).json({ error: "User already exists" });
         }
 
         // Check if invitation already exists
@@ -90,10 +91,7 @@ export async function POST(request: NextRequest) {
         });
 
         if (existingInvitation) {
-            return NextResponse.json(
-                { error: "Invitation already sent" },
-                { status: 409 }
-            );
+            return res.status(409).json({ error: "Invitation already sent" });
         }
 
         // Generate unique token
@@ -133,20 +131,17 @@ export async function POST(request: NextRequest) {
                 },
             });
 
-            return NextResponse.json(
-                {
-                    message: "Invitation sent successfully",
-                    invitation: {
-                        id: invitation.id,
-                        email: invitation.email,
-                        role: invitation.role,
-                        businessName: invitation.Business.name,
-                        expiresAt: invitation.expiresAt,
-                        status: invitation.status,
-                    },
+            return res.status(201).json({
+                message: "Invitation sent successfully",
+                invitation: {
+                    id: invitation.id,
+                    email: invitation.email,
+                    role: invitation.role,
+                    businessName: invitation.Business.name,
+                    expiresAt: invitation.expiresAt,
+                    status: invitation.status,
                 },
-                { status: 201 }
-            );
+            });
         } catch (clerkError) {
             // If Clerk invitation fails, delete the database record
             await prisma.userInvitation.delete({
@@ -154,31 +149,22 @@ export async function POST(request: NextRequest) {
             });
 
             console.error("Clerk invitation error:", clerkError);
-            return NextResponse.json(
-                {
-                    error: "Failed to send invitation email",
-                },
-                { status: 500 }
-            );
+            return res.status(500).json({
+                error: "Failed to send invitation email",
+            });
         }
     } catch (error) {
         console.error("Invitation error:", error);
 
         if (error instanceof z.ZodError) {
-            return NextResponse.json(
-                {
-                    error: "Validation failed",
-                    details: error.issues,
-                },
-                { status: 400 }
-            );
+            return res.status(400).json({
+                error: "Validation failed",
+                details: error.issues,
+            });
         }
 
-        return NextResponse.json(
-            {
-                error: "Internal server error",
-            },
-            { status: 500 }
-        );
+        return res.status(500).json({
+            error: "Internal server error",
+        });
     }
 }

@@ -7,6 +7,7 @@ const isPrivateRoute = createRouteMatcher([
     "/invoices(.*)",
     "/customer(.*)",
     "/profile(.*)",
+    "/settings(.*)",
 ]);
 
 // const isPrivateRoute = createRouteMatcher([]);

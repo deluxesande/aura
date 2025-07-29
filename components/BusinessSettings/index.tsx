@@ -76,11 +76,15 @@ const BusinessSettingsForm: React.FC = () => {
 
                 await updateBusiness(updateData);
             } else {
-                // For create, send all required fields using FormData
+                // For create, get the actual file from the input element
+                const logoFile = (
+                    document.getElementById("businessLogo") as HTMLInputElement
+                ).files?.[0];
+
                 const formData = new FormData();
                 formData.append("name", business);
-                if (logoPreview) {
-                    formData.append("logo", logoPreview); // Send base64 string
+                if (logoFile) {
+                    formData.append("logo", logoFile); // Send actual file
                 }
 
                 await createBusiness(formData);
