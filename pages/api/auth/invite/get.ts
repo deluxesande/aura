@@ -54,9 +54,8 @@ export default async function handler(
                 let inviterDetails = null;
                 if (invitation.invitedBy) {
                     const inviter = await prisma.user.findUnique({
-                        where: { clerkId: invitation.invitedBy },
+                        where: { id: invitation.invitedBy },
                         select: {
-                            email: true,
                             firstName: true,
                             lastName: true,
                         },
@@ -71,7 +70,6 @@ export default async function handler(
             })
         );
 
-        console.log(sanitizedInvitations);
         return res.status(200).json({ invitations: sanitizedInvitations });
     } catch (error) {
         console.error("Get invitations error:", error);

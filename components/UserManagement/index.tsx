@@ -1,6 +1,10 @@
+import { AppState } from "@/store";
+import { setInvitations } from "@/store/slices/invitationSlice";
 import axios from "axios";
 import { Trash } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { toast } from "sonner";
 
 interface User {
@@ -16,16 +20,23 @@ interface User {
     Business: {
         name: string;
     };
+    inviter: {
+        firstName: string;
+        lastName: string;
+    };
 }
 
 const UserManagement: React.FC = () => {
-    const [users, setUsers] = useState<User[]>([]);
-
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteRole, setInviteRole] = useState("user");
+
+    const dispatch = useDispatch();
+    const invitations = useSelector(
+        (state: AppState) => state.invitations.invitations
+    );
 
     const handleInviteUser = (e: React.FormEvent) => {
         e.preventDefault();
@@ -35,18 +46,25 @@ const UserManagement: React.FC = () => {
         }
 
         const sendInvitation = async () => {
-            const response = await axios.post("/api/auth/invite/post", {
-                email: inviteEmail,
-                role: inviteRole,
-            });
-
-            if (response.status === 200) {
-                console.log(response.data);
-                toast.success("Invitation sent successfully");
+            try {
+                const response = await axios.post("/api/auth/invite/post", {
+                    email: inviteEmail,
+                    role: inviteRole,
+                });
+                dispatch(
+                    setInvitations([...invitations, response.data.invitation])
+                );
+            } catch (error) {
+                throw error;
             }
         };
 
-        sendInvitation();
+        toast.promise(sendInvitation(), {
+            loading: "Sending Invitation.",
+            success: "Invitation sent.",
+            error: "Sending Invitation Failed.",
+        });
+
         setInviteEmail("");
         setInviteRole("user");
         setShowInviteModal(false);
@@ -91,7 +109,7 @@ const UserManagement: React.FC = () => {
             try {
                 const response = await axios.get("/api/auth/invite/get");
                 if (response.data.invitations) {
-                    setUsers(response.data.invitations);
+                    dispatch(setInvitations(response.data.invitations));
                 }
 
                 if (response.status === 404) {
@@ -108,7 +126,7 @@ const UserManagement: React.FC = () => {
         };
 
         fetchUsers();
-    }, []);
+    }, [dispatch]);
 
     return (
         <section>
@@ -132,12 +150,12 @@ const UserManagement: React.FC = () => {
 
             {/* Users List */}
             <div className="mt-6 space-y-4">
-                {users.length === 0 && (
+                {invitations.length === 0 && (
                     <div className="text-gray-500">
                         No users found. Invite new users to get started.
                     </div>
                 )}
-                {users.map((user) => (
+                {(invitations as User[]).map((user) => (
                     <div
                         key={user.id}
                         className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm gap-4"
@@ -166,7 +184,7 @@ const UserManagement: React.FC = () => {
                                 </div>
 
                                 <p className="text-xs text-gray-500">
-                                    Invited by: {user.invitedBy}
+                                    Invited by: {user.inviter?.firstName}
                                 </p>
                             </div>
                         </div>
