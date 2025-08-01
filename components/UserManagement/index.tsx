@@ -84,7 +84,27 @@ const UserManagement: React.FC = () => {
     };
 
     const confirmDeleteUser = () => {
-        // Call the API to delete user
+        const deleteInvitation = async () => {
+            const response = await axios.delete("api/auth/invite/delete", {
+                data: { invitationId: userToDelete?.id },
+            });
+
+            if (response.status === 204) {
+                dispatch(
+                    setInvitations(
+                        invitations.filter((inv) => inv.id !== userToDelete?.id)
+                    )
+                );
+            }
+        };
+
+        toast.promise(deleteInvitation(), {
+            loading: "Deleting Invitation.",
+            success: "Invitation deleted successfully.",
+            error: "Error deleting Invitation.",
+        });
+
+        setShowDeleteModal(false);
     };
 
     const getRoleColor = (role: string) => {
