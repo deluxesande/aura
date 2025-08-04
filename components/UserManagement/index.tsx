@@ -75,7 +75,30 @@ const UserManagement: React.FC = () => {
     };
 
     const handleRoleChange = (userId: string, newRole: string) => {
-        // Call the API to update user role
+        const updateRole = async () => {
+            const response = await axios.put("/api/auth/invite/update", {
+                userId,
+                role: newRole,
+            });
+
+            if (response.status === 200) {
+                dispatch(
+                    setInvitations(
+                        invitations.map((user) =>
+                            user.id === userId
+                                ? { ...user, role: newRole }
+                                : user
+                        )
+                    )
+                );
+            }
+        };
+
+        toast.promise(updateRole(), {
+            loading: "Updating role.",
+            success: "Role updated successfully.",
+            error: "Error updating role.",
+        });
     };
 
     const handleDeleteUser = (user: User) => {
@@ -218,20 +241,6 @@ const UserManagement: React.FC = () => {
                                 {user.role}
                             </span>
                             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                                <button
-                                    onClick={() =>
-                                        handleToggleUserStatus(user.id)
-                                    }
-                                    className={`px-3 py-1 text-xs font-medium rounded-md border ${
-                                        user.status === "accepted"
-                                            ? "text-red-600 border-red-300 hover:bg-red-50"
-                                            : "text-green-600 border-green-300 hover:bg-green-50"
-                                    } w-full sm:w-auto`}
-                                >
-                                    {user.status === "accepted"
-                                        ? "Disable"
-                                        : "Enable"}
-                                </button>
                                 <select
                                     value={user.role}
                                     onChange={(e) =>
