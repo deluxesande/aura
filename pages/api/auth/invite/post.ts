@@ -3,6 +3,7 @@ import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
 import { z } from "zod";
 import crypto from "crypto";
+import axios from "axios";
 
 // Validation schema
 const inviteSchema = z.object({
@@ -61,8 +62,6 @@ export default async function handler(
                 .json({ error: "Forbidden: Insufficient permissions" });
         }
 
-        console.log(businessId);
-
         // Check if business exists
         const business = await prisma.business.findUnique({
             where: { id: businessId },
@@ -116,18 +115,36 @@ export default async function handler(
 
         // Create invitation in Clerk
         try {
-            // Clerk Node SDK does not support invitations directly; use the REST API or send an email manually.
-            // Example: Send a custom email with the invitation link.
-            // You may use a transactional email service here.
-            // For demonstration, we'll just simulate the invitation creation.
-            const clerkInvitation = { id: "simulated-clerk-invitation-id" };
+            const clerkOptions = {
+                method: "POST",
+                url: "https://api.clerk.com/v1/invitations",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}`,
+                },
+                data: {
+                    email_address: email,
+                    public_metadata: {
+                        role: role,
+                        businessId: businessId,
+                        businessName: business.name,
+                        invitationToken: token,
+                    },
+                    redirect_url: `${process.env.NEXT_PUBLIC_APP_URL}/auth/accept-invitation?token=${token}`,
+                    notify: true,
+                    ignore_existing: false,
+                    expires_in_days: 7,
+                    template_slug: "invitation",
+                },
+            };
 
-            // Update invitation with Clerk invitation ID if needed
+            const { data: clerkInvitation } = await axios.request(clerkOptions);
+
+            // Update invitation with Clerk invitation ID
             await prisma.userInvitation.update({
                 where: { id: invitation.id },
                 data: {
-                    // You can store clerk invitation ID if needed
-                    // clerkInvitationId: clerkInvitation.id
+                    clerkInvitationId: clerkInvitation.id,
                 },
             });
 
@@ -140,6 +157,7 @@ export default async function handler(
                     businessName: invitation.Business.name,
                     expiresAt: invitation.expiresAt,
                     status: invitation.status,
+                    clerkInvitationId: clerkInvitation.id,
                 },
             });
         } catch (clerkError) {
@@ -149,6 +167,7 @@ export default async function handler(
             });
 
             console.error("Clerk invitation error:", clerkError);
+
             return res.status(500).json({
                 error: "Failed to send invitation email",
             });
