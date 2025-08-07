@@ -6,6 +6,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
+import Image from "next/image";
 
 interface User {
     id: string;
@@ -17,6 +18,7 @@ interface User {
     createdAt: string;
     updatedAt: string;
     expiresAt: string;
+    clerkInvitationId: string;
     Business: {
         name: string;
     };
@@ -26,17 +28,22 @@ interface User {
     };
 }
 
+interface Invitation extends User {
+    imageUrl?: string;
+}
+
 const UserManagement: React.FC = () => {
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteRole, setInviteRole] = useState("user");
+    const [userInvitations, setUserInvitations] = useState<Invitation[]>([]);
 
     const dispatch = useDispatch();
     const invitations = useSelector(
         (state: AppState) => state.invitations.invitations
-    );
+    ) as User[];
 
     const handleInviteUser = (e: React.FormEvent) => {
         e.preventDefault();
@@ -68,10 +75,6 @@ const UserManagement: React.FC = () => {
         setInviteEmail("");
         setInviteRole("user");
         setShowInviteModal(false);
-    };
-
-    const handleToggleUserStatus = (userId: string) => {
-        //    Call the API to toggle user status
     };
 
     const handleRoleChange = (userId: string, newRole: string) => {
@@ -147,12 +150,43 @@ const UserManagement: React.FC = () => {
             : "bg-red-100 text-red-800";
     };
 
+    // Remove the current attachProfileImage function and the forEach loop
+    // Replace with this improved logic:
+
     useEffect(() => {
         const fetchUsers = async () => {
             try {
                 const response = await axios.get("/api/auth/invite/get");
                 if (response.data.invitations) {
                     dispatch(setInvitations(response.data.invitations));
+
+                    // Fetch profile images for all users
+                    const usersWithImages = await Promise.all(
+                        response.data.invitations.map(async (user: User) => {
+                            try {
+                                const imageResponse = await axios.get(
+                                    "/api/auth/user/image",
+                                    {
+                                        params: { userId: user.id },
+                                    }
+                                );
+
+                                return {
+                                    ...user,
+                                    imageUrl:
+                                        imageResponse.data.imageUrl || null,
+                                } as Invitation;
+                            } catch (error) {
+                                return {
+                                    ...user,
+                                    imageUrl: undefined,
+                                } as Invitation;
+                            }
+                        })
+                    );
+
+                    // Update userInvitations state with users including image URLs
+                    setUserInvitations(usersWithImages);
                 }
 
                 if (response.status === 404) {
@@ -193,24 +227,34 @@ const UserManagement: React.FC = () => {
 
             {/* Users List */}
             <div className="mt-6 space-y-4">
-                {invitations.length === 0 && (
+                {userInvitations.length === 0 && (
                     <div className="text-gray-500">
                         No users found. Invite new users to get started.
                     </div>
                 )}
-                {(invitations as User[]).map((user) => (
+                {(userInvitations as Invitation[]).map((user) => (
                     <div
                         key={user.id}
                         className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm gap-4"
                     >
                         <div className="flex items-center space-x-4 flex-1">
                             <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
-                                <span className="text-sm font-medium text-gray-600">
-                                    {user.email
-                                        .split(" ")
-                                        .map((n) => n[0])
-                                        .join("")}
-                                </span>
+                                {user.imageUrl ? (
+                                    <Image
+                                        src={user.imageUrl}
+                                        alt={user.email}
+                                        className="w-full h-full object-cover rounded-full"
+                                        width={40}
+                                        height={40}
+                                    />
+                                ) : (
+                                    <span className="text-sm font-medium text-gray-600">
+                                        {user.email
+                                            .split("@")[0]
+                                            .slice(0, 2)
+                                            .toUpperCase()}
+                                    </span>
+                                )}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 gap-1">
