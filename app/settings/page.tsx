@@ -37,12 +37,12 @@ const SettingsPage: React.FC = () => {
         );
     }
 
-    if (user?.role !== "admin") {
+    if (user?.role !== "admin" && user?.role !== "manager") {
         toast.error("You do not have permission to access this page.");
         router.back();
     }
 
-    if (user.role === "admin") {
+    if (user.role === "admin" || user.role === "manager") {
         return (
             <Navbar>
                 <div className="py-12">
@@ -51,11 +51,15 @@ const SettingsPage: React.FC = () => {
                             <div className="w-full mb-6">
                                 <div className="p-4 sm:p-8 bg-white shadow sm:rounded-lg flex flex-col lg:flex-row  gap-6">
                                     <div className="w-full">
-                                        <BusinessSettingsForm />
+                                        <BusinessSettingsForm
+                                            role={user.role}
+                                        />
                                     </div>
                                     <div className="space-y-6 w-full">
                                         <div className="w-full">
-                                            <NotificationPreferencesForm />
+                                            <NotificationPreferencesForm
+                                                role={user.role}
+                                            />
                                         </div>
                                         <div className="w-full">
                                             <IntegrationsSettings />
