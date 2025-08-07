@@ -4,7 +4,13 @@ import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import Image from "next/image";
 
-const BusinessSettingsForm: React.FC = () => {
+interface BusinessSettingsFormProps {
+    role: string;
+}
+
+const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
+    role,
+}) => {
     const [business, setBusiness] = useState<string>("");
     const [logoUrl, setLogoUrl] = useState<string>("");
     const [logoPreview, setLogoPreview] = useState<string>("");
@@ -216,6 +222,7 @@ const BusinessSettingsForm: React.FC = () => {
 
                 <button
                     type="submit"
+                    disabled={role === "manager"}
                     className="btn btn-md btn-ghost text-black flex items-center bg-green-400 w-full mt-8"
                 >
                     {hasExistingBusiness

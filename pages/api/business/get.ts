@@ -8,9 +8,13 @@ export const getBusiness = async (
 ) => {
     const { userId } = getAuth(req);
 
+    const currentUser = await prisma.user.findUnique({
+        where: { clerkId: userId ?? undefined },
+    });
+
     const business = await prisma.business.findMany({
         where: {
-            createdBy: userId,
+            id: currentUser?.businessId ?? undefined,
         },
     });
 

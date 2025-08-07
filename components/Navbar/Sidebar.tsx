@@ -73,7 +73,7 @@ const allLinks = [
             />
         ),
         label: "Settings",
-        allowedRoles: ["admin"],
+        allowedRoles: ["admin", "manager"],
     },
 ];
 

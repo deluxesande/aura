@@ -1,6 +1,7 @@
 import { prisma } from "@/utils/lib/client";
 import { getAuth } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
+import { clerkClient } from "@clerk/nextjs/server";
 
 // Delete an invitation
 export default async function handler(
@@ -44,6 +45,18 @@ export default async function handler(
         // Verify the invitation belongs to the user's business
         if (invitation.businessId !== currentUser.businessId) {
             return res.status(403).json({ error: "Forbidden" });
+        }
+
+        // Revoke the invitation on Clerk if clerkInvitationId exists
+        if (invitation.clerkInvitationId) {
+            try {
+                const client = await clerkClient();
+                await client.invitations.revokeInvitation(
+                    invitation.clerkInvitationId
+                );
+            } catch (clerkError) {
+                // Continue with local deletion even if Clerk revocation fails
+            }
         }
 
         // Delete the invitation

@@ -1,7 +1,13 @@
 import React, { useState } from "react";
 import { toast } from "sonner";
 
-const NotificationPreferencesForm: React.FC = () => {
+interface NotificationPreferencesFormProps {
+    role: string;
+}
+
+const NotificationPreferencesForm: React.FC<
+    NotificationPreferencesFormProps
+> = ({ role }) => {
     const [emailNotifications, setEmailNotifications] = useState(false);
     const [smsNotifications, setSmsNotifications] = useState(false);
 
@@ -60,6 +66,7 @@ const NotificationPreferencesForm: React.FC = () => {
 
                 <button
                     type="submit"
+                    disabled={role === "manager"}
                     className="btn btn-md btn-ghost text-black flex items-center bg-green-400 w-full mt-8"
                 >
                     Save

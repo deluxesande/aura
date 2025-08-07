@@ -45,7 +45,7 @@ const allLinks = [
         text: "Inventory",
         allowedRoles: ["admin", "manager", "user"],
     },
-    { href: "/settings", text: "Settings", allowedRoles: ["admin"] },
+    { href: "/settings", text: "Settings", allowedRoles: ["admin", "manager"] },
     {
         href: "/profile",
         text: "Profile",
