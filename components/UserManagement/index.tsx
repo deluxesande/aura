@@ -58,9 +58,19 @@ const UserManagement: React.FC = () => {
                     email: inviteEmail,
                     role: inviteRole,
                 });
-                dispatch(
-                    setInvitations([...invitations, response.data.invitation])
-                );
+
+                const newInvitation = response.data.invitation;
+
+                // Update Redux store
+                dispatch(setInvitations([...invitations, newInvitation]));
+
+                // Update local state with the new invitation (without imageUrl initially)
+                const newInvitationWithImage = {
+                    ...newInvitation,
+                    imageUrl: null, // Will be fetched later if user has profile image
+                } as Invitation;
+
+                setUserInvitations((prev) => [...prev, newInvitationWithImage]);
             } catch (error) {
                 throw error;
             }
@@ -69,7 +79,7 @@ const UserManagement: React.FC = () => {
         toast.promise(sendInvitation(), {
             loading: "Sending Invitation.",
             success: "Invitation sent.",
-            error: "Sending Invitation Failed.",
+            error: "Sending Invitation Failed. Ensure the email is valid.",
         });
 
         setInviteEmail("");
@@ -85,6 +95,7 @@ const UserManagement: React.FC = () => {
             });
 
             if (response.status === 200) {
+                // Update Redux store
                 dispatch(
                     setInvitations(
                         invitations.map((user) =>
@@ -92,6 +103,13 @@ const UserManagement: React.FC = () => {
                                 ? { ...user, role: newRole }
                                 : user
                         )
+                    )
+                );
+
+                // Update local state
+                setUserInvitations((prev) =>
+                    prev.map((user) =>
+                        user.id === userId ? { ...user, role: newRole } : user
                     )
                 );
             }
@@ -116,10 +134,16 @@ const UserManagement: React.FC = () => {
             });
 
             if (response.status === 204) {
+                // Update Redux store
                 dispatch(
                     setInvitations(
                         invitations.filter((inv) => inv.id !== userToDelete?.id)
                     )
+                );
+
+                // Update local state
+                setUserInvitations((prev) =>
+                    prev.filter((inv) => inv.id !== userToDelete?.id)
                 );
             }
         };
@@ -131,6 +155,7 @@ const UserManagement: React.FC = () => {
         });
 
         setShowDeleteModal(false);
+        setUserToDelete(null);
     };
 
     const getRoleColor = (role: string) => {
@@ -149,9 +174,6 @@ const UserManagement: React.FC = () => {
             ? "bg-green-100 text-green-800"
             : "bg-red-100 text-red-800";
     };
-
-    // Remove the current attachProfileImage function and the forEach loop
-    // Replace with this improved logic:
 
     useEffect(() => {
         const fetchUsers = async () => {

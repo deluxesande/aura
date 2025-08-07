@@ -67,6 +67,19 @@ export default async function handler(
             include: { Business: true },
         });
 
+        // Check if a local User record exists for this invitation and update it too
+        const existingUser = await prisma.user.findUnique({
+            where: { email: userInvitationToUpdate.email },
+        });
+
+        if (existingUser) {
+            // Update the local user's role to match the invitation
+            await prisma.user.update({
+                where: { id: existingUser.id },
+                data: { role },
+            });
+        }
+
         return res.status(200).json({
             message: "User role updated successfully",
             user: updatedUserInvitation,

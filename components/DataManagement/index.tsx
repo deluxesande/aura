@@ -38,7 +38,7 @@ const DataManagement: React.FC = () => {
                             className="flex items-center justify-center px-4 py-3 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
                         >
                             <Download className="mr-2 stroke-green-500" />
-                            Download Products
+                            Products
                         </button>
 
                         <button
@@ -46,7 +46,7 @@ const DataManagement: React.FC = () => {
                             className="flex items-center justify-center px-4 py-3 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
                         >
                             <Download className="mr-2 stroke-green-500" />
-                            Download Invoices
+                            Invoices
                         </button>
 
                         <button
@@ -56,7 +56,7 @@ const DataManagement: React.FC = () => {
                             className="flex items-center justify-center px-4 py-3 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
                         >
                             <Download className="mr-2 stroke-green-500" />
-                            Download Customers
+                            Customers
                         </button>
                     </div>
                 </div>
