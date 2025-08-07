@@ -21,15 +21,56 @@ import CustomUserButton from "../CustomUserButton";
 import FilterOverlay from "../FilterOverlay";
 import NotificationOverlay from "../NotificationOverlay";
 import Sidebar from "./Sidebar";
+import axios from "axios";
+import { setUser } from "@/store/slices/authSlice";
 
-const links = [
-    { href: "/dashboard", text: "Dashboard" },
-    { href: "/products", text: "Products" },
-    { href: "/invoices", text: "Invoices" },
-    { href: "/products/list", text: "Inventory" },
-    { href: "/settings", text: "Settings" },
-    { href: "/profile", text: "Profile" },
+const allLinks = [
+    {
+        href: "/dashboard",
+        text: "Dashboard",
+        allowedRoles: ["admin", "manager", "user"],
+    },
+    {
+        href: "/products",
+        text: "Products",
+        allowedRoles: ["admin", "manager", "user"],
+    },
+    {
+        href: "/invoices",
+        text: "Invoices",
+        allowedRoles: ["admin", "manager", "user"],
+    },
+    {
+        href: "/products/list",
+        text: "Inventory",
+        allowedRoles: ["admin", "manager", "user"],
+    },
+    { href: "/settings", text: "Settings", allowedRoles: ["admin"] },
+    {
+        href: "/profile",
+        text: "Profile",
+        allowedRoles: ["admin", "manager", "user"],
+    },
 ];
+
+type User = {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    businessId: string;
+    status: string;
+    Business: {};
+};
+
+// const links = [
+//     { href: "/dashboard", text: "Dashboard" },
+//     { href: "/products", text: "Products" },
+//     { href: "/invoices", text: "Invoices" },
+//     { href: "/products/list", text: "Inventory" },
+//     { href: "/settings", text: "Settings" },
+//     { href: "/profile", text: "Profile" },
+// ];
 
 export default function Navbar({
     children,
@@ -55,6 +96,30 @@ export default function Navbar({
 
     const [inputValue, setInputValue] = useState<string>("");
     const isProductsPage = pathname === "/products";
+
+    const user = useSelector(
+        (state: AppState) => state.auth.user
+    ) as User | null;
+
+    if (user === null) {
+        const fetchUser = async () => {
+            await axios.get("/api/auth/user/profile").then((res) => {
+                if (res.data) {
+                    dispatch(setUser(res.data.user));
+                }
+            });
+        };
+        fetchUser();
+    }
+
+    if (user == null) return;
+
+    // Filter AllLinks based on role
+    const links = allLinks.filter((link) =>
+        link.allowedRoles.some(
+            (role) => role.toLowerCase() === user.role.toLowerCase()
+        )
+    );
 
     const togglePopup = () => {
         filterPopUp ? setFilterPopUp(!filterPopUp) : filterPopUp;

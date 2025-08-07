@@ -16,8 +16,10 @@ import { useSelector } from "react-redux";
 import { AppState } from "@/store";
 import { useDispatch } from "react-redux";
 import { toggleSideBarState } from "@/store/slices/sideBarSlice";
+import axios from "axios";
+import { setUser } from "@/store/slices/authSlice";
 
-const links = [
+const allLinks = [
     {
         href: "/dashboard",
         icon: (isActive: boolean) => (
@@ -27,6 +29,7 @@ const links = [
             />
         ),
         label: "Dashboard",
+        allowedRoles: ["admin", "manager", "user"],
     },
     {
         href: "/products",
@@ -37,6 +40,7 @@ const links = [
             />
         ),
         label: "Products",
+        allowedRoles: ["admin", "manager", "user"],
     },
     {
         href: "/invoices",
@@ -47,6 +51,7 @@ const links = [
             />
         ),
         label: "Invoices",
+        allowedRoles: ["admin", "manager", "user"],
     },
     {
         href: "/products/list",
@@ -57,6 +62,7 @@ const links = [
             />
         ),
         label: "Inventory",
+        allowedRoles: ["admin", "manager", "user"],
     },
     {
         href: "/settings",
@@ -67,24 +73,58 @@ const links = [
             />
         ),
         label: "Settings",
+        allowedRoles: ["admin"],
     },
 ];
+
+type storeUser = {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    businessId: string;
+    status: string;
+    Business: {};
+};
 
 const Sidebar = () => {
     const pathname = usePathname();
 
-    const { user } = useUser();
+    const { user: clerkUser } = useUser();
     const dispatch = useDispatch();
     const sideBarState = useSelector(
         (state: AppState) => state.sidebar.isOpen,
         (prev, next) => prev === next
     );
-
-    const profileImage = user?.hasImage
-        ? user?.imageUrl
-        : "https://www.svgrepo.com/show/535711/user.svg";
+    const user = useSelector(
+        (state: AppState) => state.auth.user
+    ) as storeUser | null;
 
     const [toggleSideBar, setToggleSidebar] = React.useState(sideBarState);
+
+    if (user === null) {
+        const fetchUser = async () => {
+            await axios.get("/api/auth/user/profile").then((res) => {
+                if (res.data) {
+                    dispatch(setUser(res.data.user));
+                }
+            });
+        };
+        fetchUser();
+    }
+
+    if (user == null) return null;
+
+    // Filter links based on user role
+    const links = allLinks.filter((link) =>
+        link.allowedRoles.some(
+            (role) => role.toLowerCase() === user.role.toLowerCase()
+        )
+    );
+
+    const profileImage = clerkUser?.hasImage
+        ? clerkUser?.imageUrl
+        : "https://www.svgrepo.com/show/535711/user.svg";
 
     const toggleSidebarFunc = () => {
         setToggleSidebar(!sideBarState);
@@ -163,12 +203,12 @@ const Sidebar = () => {
                             src={profileImage}
                             width={40}
                             height={40}
-                            alt={`${user?.firstName} Profile Image`}
+                            alt={`${clerkUser?.firstName} Profile Image`}
                             className="object-cover rounded-full"
                         />
                     </div>
                     <p className="text-sm font-medium whitespace-nowrap ml-2">
-                        {user?.firstName} {user?.lastName}
+                        {clerkUser?.firstName} {clerkUser?.lastName}
                     </p>
                 </Link>
             ) : (
@@ -178,7 +218,7 @@ const Sidebar = () => {
                             src={profileImage}
                             width={30}
                             height={30}
-                            alt={`${user?.firstName} Profile Image`}
+                            alt={`${clerkUser?.firstName} Profile Image`}
                             className="rounded-full"
                         />
                     </div>
