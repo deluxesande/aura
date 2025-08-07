@@ -47,6 +47,13 @@ export default async function handler(
             return res.status(403).json({ error: "Forbidden" });
         }
 
+        // Role-based access control
+        if (currentUser.role === "manager" && invitation.role === "manager") {
+            return res.status(403).json({
+                error: "Managers cannot delete other managers",
+            });
+        }
+
         // Revoke the invitation on Clerk if clerkInvitationId exists
         if (invitation.clerkInvitationId) {
             try {

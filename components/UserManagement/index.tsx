@@ -7,6 +7,7 @@ import { useDispatch } from "react-redux";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import Image from "next/image";
+import { error } from "console";
 
 interface User {
     id: string;
@@ -114,11 +115,16 @@ const UserManagement: React.FC = () => {
                 );
             }
         };
-
         toast.promise(updateRole(), {
             loading: "Updating role.",
             success: "Role updated successfully.",
-            error: "Error updating role.",
+            error: (error) => {
+                // Return the actual error message from the API
+                if (error?.response?.data?.error) {
+                    return error.response.data.error;
+                }
+                return "Failed to update role.";
+            },
         });
     };
 
@@ -151,7 +157,13 @@ const UserManagement: React.FC = () => {
         toast.promise(deleteInvitation(), {
             loading: "Deleting Invitation.",
             success: "Invitation deleted successfully.",
-            error: "Error deleting Invitation.",
+            error: (error) => {
+                // Return the actual error message from the API
+                if (error?.response?.data?.error) {
+                    return error.response.data.error;
+                }
+                return "Failed to update role.";
+            },
         });
 
         setShowDeleteModal(false);

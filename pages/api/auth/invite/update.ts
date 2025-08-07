@@ -37,7 +37,7 @@ export default async function handler(
         // Check if current user has permission to update roles (admin only)
         if (currentUser.role !== "admin") {
             return res.status(403).json({
-                error: "Insufficient permissions. Only admins can update roles.",
+                error: "Only admins can update roles.",
             });
         }
 
