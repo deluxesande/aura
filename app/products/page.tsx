@@ -384,11 +384,11 @@ export default function Page() {
             try {
                 const response = await axios.get("/api/product");
                 // Ensure productsData is an array
-                if (!Array.isArray(response.data)) {
-                    setLocalProducts([]);
-                } else {
+                if (Array.isArray(response.data)) {
                     setLocalProducts(response.data);
                     dispatch(setProducts(response.data));
+                } else {
+                    setLocalProducts([]);
                 }
             } catch (error) {
                 // console.error("Error fetching products:", error);

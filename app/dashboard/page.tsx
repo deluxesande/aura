@@ -62,7 +62,9 @@ export default function Page() {
         };
 
         // Fetch fresh data in the background
-        fetchProducts();
+        if (productsData.length === 0) {
+            fetchProducts();
+        }
     }, [dispatch, productsData]);
 
     return (

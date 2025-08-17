@@ -21,6 +21,18 @@ const SettingsPage: React.FC = () => {
     if (user === null) {
         const fetchUser = async () => {
             await axios.get("/api/auth/user/profile").then((res) => {
+                if (res.status == 404) {
+                    // set user to an empty object if not found
+                    setUser({
+                        id: "",
+                        email: "",
+                        firstName: null,
+                        lastName: null,
+                        role: "",
+                        businessId: null,
+                        status: ""
+                    })
+                }
                 if (res.data) {
                     dispatch(setUser(res.data.user));
                 }

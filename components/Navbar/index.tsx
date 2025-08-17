@@ -178,7 +178,7 @@ export default function Navbar({
 
         // Filter products locally without modifying Redux state
         const filteredProducts = originalProducts.filter((product: any) =>
-            product.name.toLowerCase().includes(searchTerm)
+            product.name.toLowerCase().includes(searchTerm) || product.description.toLowerCase().includes(searchTerm)
         );
 
         if (filteredProducts.length === 0) {
