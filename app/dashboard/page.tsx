@@ -116,11 +116,7 @@ export default function Page() {
                     )}
 
                     {products.map((product, index) => (
-                        <TopProducts
-                            key={index}
-                            product={product}
-                            quantity={0}
-                        />
+                        <TopProducts key={index} product={product} />
                     ))}
                 </div>
             </div>
