@@ -5,9 +5,9 @@ import { toast } from "sonner";
 
 const ProfileInfo: React.FC = () => {
     const { user } = useUser();
-    const [firstName, setFirstName] = useState<string | undefined>(undefined);
-    const [lastName, setLastName] = useState<string | undefined>(undefined);
-    const [email, setEmail] = useState<string | undefined>(undefined);
+    const [firstName, setFirstName] = useState<string>("");
+    const [lastName, setLastName] = useState<string>("");
+    const [email, setEmail] = useState<string>("");
 
     React.useEffect(() => {
         if (user) {

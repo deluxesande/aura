@@ -115,13 +115,17 @@ export default function Page() {
             return;
         }
 
+        // Automatically set inStock to true if quantity > 0
+        const finalInStock =
+            Number(productQuantity) > 0 ? true : productInStock;
+
         const formData = new FormData();
         formData.append("name", productName);
         formData.append("description", productDescription);
         formData.append("price", productPrice);
         formData.append("quantity", productQuantity);
         formData.append("categoryId", productCategory);
-        formData.append("inStock", productInStock.toString());
+        formData.append("inStock", finalInStock.toString());
         if (productImage) {
             formData.append("file", productImage);
         }

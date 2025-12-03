@@ -2,6 +2,7 @@ import { RootState } from "@/store/rootReducer";
 import { ChevronRight, Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 
 export default function Navbar({
@@ -12,6 +13,7 @@ export default function Navbar({
     setIsMenuOpen: (value: boolean) => void;
 }) {
     const isSignedIn = useSelector((state: RootState) => state.auth.isSignedIn);
+    const router = useRouter();
 
     return (
         <nav className="fixed w-full bg-white/80 backdrop-blur-sm z-50 border-b">
@@ -145,7 +147,10 @@ export default function Navbar({
                                 />
                             </a>
                         ) : (
-                            <button className="w-full mt-2 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                            <button
+                                onClick={() => router.push("/sign-up")}
+                                className="w-full mt-2 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                            >
                                 Get Started
                             </button>
                         )}

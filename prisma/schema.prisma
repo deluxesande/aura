@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
 model Product {
@@ -23,7 +23,7 @@ model Product {
   Category    Category @relation(fields: [categoryId], references: [id])
   inStock     Boolean @default(false)
   invoiceItems InvoiceItem[]
-  image       String?
+  image       String? @db.Text
   createdBy   String?   
 }
 
@@ -58,7 +58,7 @@ model InvoiceItem {
   productId  String       @db.Uuid
   Product    Product      @relation(fields: [productId], references: [id])
   invoiceId  String?      @db.Uuid
-  Invoice    Invoice?    @relation(fields: [invoiceId], references: [id])
+  Invoice    Invoice?    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   createdBy  String?   
 }
 
@@ -159,7 +159,7 @@ model User {
 model Business {
   id                    String    @id @default(uuid()) @map("_id") @db.Uuid
   name                  String
-  logo                  String?   // URL to logo file
+  logo                  String? @db.Text
   users                 User[]
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt

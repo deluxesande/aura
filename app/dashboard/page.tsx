@@ -51,13 +51,19 @@ export default function Page() {
                 const response = await axios.get("/api/product");
                 const freshProducts = response.data;
 
+                // Ensure freshProducts is an array
+                const productsArray = Array.isArray(freshProducts)
+                    ? freshProducts
+                    : [];
+
                 // Update Redux store with fresh data
-                dispatch(setProducts(freshProducts));
+                dispatch(setProducts(productsArray));
 
                 // Update local state with limited products for display
-                setLocalProducts(freshProducts.slice(0, 5));
+                setLocalProducts(productsArray.slice(0, 5));
             } catch (error) {
                 console.error("Error fetching products:", error);
+                setLocalProducts([]); // Set empty array on error
             }
         };
 

@@ -1,19 +1,9 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { generateSKU } from "@/utils/generateSKU";
 import formidable from "formidable";
-import * as Minio from "minio";
-import { v4 as uuidv4 } from "uuid";
-import { generatePresignedUrl } from "@/utils/minio/generatePresignedUrl";
 import { addCreatedBy } from "../middleware";
 import { prisma } from "@/utils/lib/client";
-
-const minioClient = new Minio.Client({
-    endPoint: process.env.MINIO_PUBLIC_IP || "",
-    port: 9000,
-    useSSL: false,
-    accessKey: process.env.MINIO_ROOT_USER || "",
-    secretKey: process.env.MINIO_ROOT_PASSWORD || "",
-});
+import fs from "fs";
 
 const convertToBoolean = (value: string): boolean => {
     return value.toLowerCase() === "true";
@@ -42,22 +32,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
         const file = files.file[0];
         const filePath = file.filepath;
-        const objectName = `${uuidv4()}-salesense-product.png`;
 
-        const metaData = {
-            "Content-Type": "image/png",
-        };
-
-        const bucketName = "salesense-bucket";
-
-        // Defined in utils and handles the MinIO integration
-        const presignedImageUrl = await generatePresignedUrl(
-            minioClient,
-            bucketName,
-            objectName,
-            filePath,
-            metaData
-        );
+        // Read file and convert to base64
+        const fileBuffer = fs.readFileSync(filePath);
+        const base64Image = `data:${file.mimetype};base64,${fileBuffer.toString(
+            "base64"
+        )}`;
 
         // Extract strings from lists and convert to appropriate types
         const { name, description, price, quantity, inStock, categoryId } = {
@@ -97,9 +77,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     name,
                     description,
                     price,
-                    sku, // Use the generated SKU
+                    sku,
                     quantity,
-                    image: presignedImageUrl,
+                    image: base64Image,
                     inStock: inStock,
                     Category: {
                         connect: { id: categoryId },

@@ -1,8 +1,7 @@
+const MINIO_IP = process.env.MINIO_PUBLIC_IP || "localhost";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    experimental: {
-        missingSuspenseWithCSRBailout: false,
-    },
     images: {
         dangerouslyAllowSVG: true,
         remotePatterns: [
@@ -28,9 +27,14 @@ const nextConfig = {
             },
             {
                 protocol: "http",
-                hostname: process.env.MINIO_PUBLIC_IP,
+                hostname: MINIO_IP,
                 port: "9000",
                 pathname: "/salesense-bucket/**",
+            },
+            {
+                protocol: "https",
+                hostname: "zvtwhlkghglvxeaaemkk.supabase.co",
+                pathname: "/storage/v1/object/public/**",
             },
         ],
     },

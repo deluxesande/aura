@@ -441,37 +441,38 @@ export default function Page() {
                                 </Link>
                             </div>
                         )}
-                        {products?.map((product) => (
-                            <div key={product.name}>
-                                {/* Product Card for PC */}
-                                <div className="hidden lg:block">
-                                    <ProductCard
-                                        image={product.image}
-                                        name={product.name}
-                                        quantity={product.quantity}
-                                        price={product.price}
-                                        inStock={product.inStock}
-                                        onAddToCart={() =>
-                                            handleAddToCart(product)
-                                        }
-                                    />
-                                </div>
+                        {Array.isArray(products) &&
+                            products.map((product) => (
+                                <div key={product.name}>
+                                    {/* Product Card for PC */}
+                                    <div className="hidden lg:block">
+                                        <ProductCard
+                                            image={product.image}
+                                            name={product.name}
+                                            quantity={product.quantity}
+                                            price={product.price}
+                                            inStock={product.inStock}
+                                            onAddToCart={() =>
+                                                handleAddToCart(product)
+                                            }
+                                        />
+                                    </div>
 
-                                {/* Mobile Product Card */}
-                                <div className="block lg:hidden">
-                                    <MobileProductCard
-                                        image={product.image}
-                                        name={product.name}
-                                        quantity={product.quantity}
-                                        price={product.price}
-                                        inStock={product.inStock}
-                                        onAddToCart={() =>
-                                            handleAddToCart(product)
-                                        }
-                                    />
+                                    {/* Mobile Product Card */}
+                                    <div className="block lg:hidden">
+                                        <MobileProductCard
+                                            image={product.image}
+                                            name={product.name}
+                                            quantity={product.quantity}
+                                            price={product.price}
+                                            inStock={product.inStock}
+                                            onAddToCart={() =>
+                                                handleAddToCart(product)
+                                            }
+                                        />
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
                     </div>
                 </Navbar>
             </div>

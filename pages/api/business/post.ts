@@ -1,19 +1,9 @@
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
 import { addCreatedBy } from "../middleware";
-import * as Minio from "minio";
 import formidable from "formidable";
-import { v4 as uuidv4 } from "uuid";
-import { generatePresignedUrl } from "@/utils/minio/generatePresignedUrl";
 import { prisma } from "@/utils/lib/client";
-
-const minioClient = new Minio.Client({
-    endPoint: process.env.MINIO_PUBLIC_IP || "",
-    port: 9000,
-    useSSL: false,
-    accessKey: process.env.MINIO_ROOT_USER || "",
-    secretKey: process.env.MINIO_ROOT_PASSWORD || "",
-});
+import { readFileSync } from "fs";
 
 const addBusinessHandler = async (
     req: NextApiRequest,
@@ -84,37 +74,23 @@ const addBusinessHandler = async (
             return res.status(400).json({ error: "Business name is required" });
         }
 
-        let logoUrl = null;
+        let logoBase64 = null;
 
         // Handle logo upload if file is provided
         if (files.logo && files.logo[0]) {
-            console.log("Logo file found:", files.logo[0].originalFilename);
-
             const file = files.logo[0];
             const filePath = file.filepath;
-            const objectName = `${uuidv4()}-business-logo.png`;
-
-            const metaData = {
-                "Content-Type": file.mimetype || "image/png",
-            };
-
-            const bucketName = "salesense-bucket";
 
             try {
-                // Upload logo to MinIO and get presigned URL
-                logoUrl = await generatePresignedUrl(
-                    minioClient,
-                    bucketName,
-                    objectName,
-                    filePath,
-                    metaData
-                );
-            } catch (uploadError) {
+                // Read file and convert to base64
+                const fileBuffer = readFileSync(filePath);
+                logoBase64 = `data:${
+                    file.mimetype || "image/png"
+                };base64,${fileBuffer.toString("base64")}`;
+            } catch (error) {
                 // Continue without logo rather than failing the entire request
-                logoUrl = null;
+                logoBase64 = null;
             }
-        } else {
-            // console.log("No logo file provided in request");
         }
 
         // Use database transaction to create both business and user
@@ -123,7 +99,7 @@ const addBusinessHandler = async (
             const newBusiness = await tx.business.create({
                 data: {
                     name,
-                    logo: logoUrl,
+                    logo: logoBase64,
                     createdBy: user.userId,
                 },
             });

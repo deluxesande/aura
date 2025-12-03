@@ -74,7 +74,7 @@ export default function PricingPage() {
                     >
                         {/* Starter Plan */}
                         <motion.div
-                            className="border border-gray-100 rounded-2xl p-8 hover:border-green-200 transition-colors"
+                            className="border border-gray-100 bg-white rounded-2xl p-8 hover:border-green-200 transition-colors"
                             variants={itemVariants}
                         >
                             <div className="text-center mb-8">
@@ -123,7 +123,7 @@ export default function PricingPage() {
                             </ul>
                             <a
                                 href="/sign-up"
-                                className="w-full py-3 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors"
+                                className="block w-full text-center py-3 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors"
                             >
                                 Get Started
                             </a>
@@ -190,7 +190,7 @@ export default function PricingPage() {
                             </ul>
                             <a
                                 href="/sign-up"
-                                className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                                className="block w-full text-center py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                             >
                                 Get Started
                             </a>
@@ -198,7 +198,7 @@ export default function PricingPage() {
 
                         {/* Enterprise Plan */}
                         <motion.div
-                            className="border border-gray-100 rounded-2xl p-8 hover:border-green-200 transition-colors"
+                            className="border border-gray-100 bg-white rounded-2xl p-8 hover:border-green-200 transition-colors"
                             variants={itemVariants}
                         >
                             <div className="text-center mb-8">
@@ -251,7 +251,7 @@ export default function PricingPage() {
                             </ul>
                             <a
                                 href="/sign-up"
-                                className="w-full py-3 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors"
+                                className="block w-full text-center py-3 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors"
                             >
                                 Contact Sales
                             </a>

@@ -63,9 +63,14 @@ export default function ProductList({
                         </thead>
                         <tbody>
                             {products.length === 0 && (
-                                <p className="p-4 text-black text-lg">
-                                    No Products
-                                </p>
+                                <tr>
+                                    <td
+                                        colSpan={6}
+                                        className="p-4 text-black text-lg text-center"
+                                    >
+                                        No Products
+                                    </td>
+                                </tr>
                             )}
                             {products?.map((product, index) => (
                                 <tr
