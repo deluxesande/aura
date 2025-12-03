@@ -13,16 +13,34 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppState } from "@/store";
 import { setProducts } from "@/store/slices/productSlice";
 
-const infoCards = [
-    { title: "Invoices", number: 10, icon: ReceiptText },
-    { title: "Profit", number: 1000, icon: BadgeDollarSign },
-    { title: "Invoices", number: 1000, icon: ReceiptText },
-    { title: "Profit", number: 0, icon: BadgeDollarSign },
-];
+interface InvoiceStats {
+    totalInvoices: number;
+    totalRevenue: number;
+    paidInvoices: number;
+    profit: number;
+    percentageChanges: {
+        totalInvoices: number;
+        totalRevenue: number;
+        paidInvoices: number;
+        profit: number;
+    };
+}
 
 export default function Page() {
     const [products, setLocalProducts] = useState<Product[]>([]);
     const [invoices, setInvoices] = React.useState([]);
+    const [invoiceStats, setInvoiceStats] = useState<InvoiceStats>({
+        totalInvoices: 0,
+        totalRevenue: 0,
+        paidInvoices: 0,
+        profit: 0,
+        percentageChanges: {
+            totalInvoices: 0,
+            totalRevenue: 0,
+            paidInvoices: 0,
+            profit: 0,
+        },
+    });
     const dispatch = useDispatch();
     const productsData = useSelector(
         (state: AppState) => state.product.products
@@ -32,8 +50,96 @@ export default function Page() {
         const fetchInvoices = async () => {
             try {
                 const response = await axios.get("/api/invoice");
-                setInvoices(response.data.slice(0, 5)); // Limit to 5 invoices
-            } catch (error) {}
+                const allInvoices = response.data;
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+
+                // Today's stats
+                const todayInvoices = allInvoices.filter((inv: any) => {
+                    const invDate = new Date(inv.createdAt);
+                    invDate.setHours(0, 0, 0, 0);
+                    return invDate.getTime() === today.getTime();
+                });
+
+                // Yesterday's stats
+                const yesterdayInvoices = allInvoices.filter((inv: any) => {
+                    const invDate = new Date(inv.createdAt);
+                    invDate.setHours(0, 0, 0, 0);
+                    return invDate.getTime() === yesterday.getTime();
+                });
+
+                // Calculate today's metrics
+                const totalInvoices = allInvoices.length;
+                const paidInvoices = allInvoices.filter(
+                    (inv: any) => inv.status === "PAID"
+                ).length;
+
+                // TODO: Fix total revenue calculation to include only PAID invoices
+                const totalRevenue = allInvoices
+                    .filter((inv: any) => inv.status === "PENDING")
+                    .reduce(
+                        (sum: number, inv: any) => sum + inv.totalAmount,
+                        0
+                    );
+
+                // Assuming profit is 30% of total revenue
+                const profit = totalRevenue * 0.3;
+
+                // Calculate yesterday's metrics
+                const yesterdayTotalInvoices = yesterdayInvoices.length;
+                const yesterdayPaidInvoices = yesterdayInvoices.filter(
+                    (inv: any) => inv.status === "PAID"
+                ).length;
+                const yesterdayTotalRevenue = yesterdayInvoices
+                    .filter((inv: any) => inv.status === "PAID")
+                    .reduce(
+                        (sum: number, inv: any) => sum + inv.totalAmount,
+                        0
+                    );
+                const yesterdayProfit = yesterdayTotalRevenue * 0.3;
+
+                // Calculate percentage changes
+                const calculatePercentageChange = (
+                    current: number,
+                    previous: number
+                ) => {
+                    if (previous === 0) return current > 0 ? 100 : 0;
+                    return ((current - previous) / previous) * 100;
+                };
+
+                setInvoiceStats({
+                    totalInvoices,
+                    totalRevenue,
+                    paidInvoices,
+                    profit,
+                    percentageChanges: {
+                        totalInvoices: calculatePercentageChange(
+                            totalInvoices,
+                            yesterdayTotalInvoices
+                        ),
+                        totalRevenue: calculatePercentageChange(
+                            totalRevenue,
+                            yesterdayTotalRevenue
+                        ),
+                        paidInvoices: calculatePercentageChange(
+                            paidInvoices,
+                            yesterdayPaidInvoices
+                        ),
+                        profit: calculatePercentageChange(
+                            profit,
+                            yesterdayProfit
+                        ),
+                    },
+                });
+
+                setInvoices(allInvoices.slice(0, 5));
+            } catch (error) {
+                setInvoices([]);
+            }
         };
 
         fetchInvoices();
@@ -73,6 +179,33 @@ export default function Page() {
         }
     }, [dispatch, productsData]);
 
+    const infoCards = [
+        {
+            title: "Total Invoices",
+            number: invoiceStats.totalInvoices,
+            icon: ReceiptText,
+            percentageChange: invoiceStats.percentageChanges.totalInvoices,
+        },
+        {
+            title: "Total Revenue",
+            number: `$${invoiceStats.totalRevenue.toFixed(2)}`,
+            icon: BadgeDollarSign,
+            percentageChange: invoiceStats.percentageChanges.totalRevenue,
+        },
+        {
+            title: "Paid Invoices",
+            number: invoiceStats.paidInvoices,
+            icon: ReceiptText,
+            percentageChange: invoiceStats.percentageChanges.paidInvoices,
+        },
+        {
+            title: "Profit",
+            number: `$${invoiceStats.profit.toFixed(2)}`,
+            icon: BadgeDollarSign,
+            percentageChange: invoiceStats.percentageChanges.profit,
+        },
+    ];
+
     return (
         <Navbar>
             {/* Info Cards */}
@@ -83,6 +216,7 @@ export default function Page() {
                         title={card.title}
                         number={card.number}
                         icon={card.icon}
+                        percentageChange={card.percentageChange}
                     />
                 ))}
             </div>

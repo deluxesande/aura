@@ -34,7 +34,7 @@ export const updateBusiness = async (
 
         res.status(200).json(updatedBusiness);
     } catch (error) {
-        console.error("Error updating business:", error);
+        // console.error("Error updating business:", error);
         res.status(500).json({ error: "Failed to update business" });
     }
 };

@@ -8,7 +8,7 @@ interface CategoryBox {
 
 interface InfoCard {
     title: string;
-    number: number;
+    number: number | string;
     icon: React.ElementType;
 }
 

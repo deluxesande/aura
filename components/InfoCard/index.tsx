@@ -1,8 +1,20 @@
 import React from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
-export default function InfoCard({ title, number, icon: Icon }: InfoCard) {
-    const isTrendingUp = true;
+interface InfoCardProps {
+    title: string;
+    number: string | number;
+    icon: any;
+    percentageChange?: number;
+}
+
+export default function InfoCard({
+    title,
+    number,
+    icon: Icon,
+    percentageChange = 0,
+}: InfoCardProps) {
+    const isTrendingUp = percentageChange >= 0;
 
     return (
         <div className="px-6 py-4 flex-grow rounded-lg gap-2 lg:gap-4 bg-white">
@@ -22,7 +34,17 @@ export default function InfoCard({ title, number, icon: Icon }: InfoCard) {
                 ) : (
                     <TrendingDown color="#ef4444" className="w-4 h-4 mr-1" />
                 )}
-                <span className="text-green-500 mr-2">+6.35%</span> Yesterday
+                <span
+                    className={
+                        isTrendingUp
+                            ? "text-green-500 mr-2"
+                            : "text-red-500 mr-2"
+                    }
+                >
+                    {isTrendingUp ? "+" : ""}
+                    {percentageChange.toFixed(2)}%
+                </span>
+                Yesterday
             </p>
         </div>
     );
