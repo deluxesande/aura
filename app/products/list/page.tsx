@@ -17,6 +17,7 @@ export default function Page() {
     const originalProducts = useSelector(
         (state: AppState) => state.product.products
     );
+    const [loading, setLoading] = useState<boolean>(false);
     const dispatch = useDispatch();
 
     const handleDelete = async (productId: string) => {
@@ -48,6 +49,7 @@ export default function Page() {
     };
 
     useEffect(() => {
+        setLoading(true);
         const fetchProducts = async () => {
             try {
                 const response = await axios.get("/api/product");
@@ -59,6 +61,8 @@ export default function Page() {
                 }
             } catch (error) {
                 // console.error("Error fetching products:", error);
+            } finally {
+                setLoading(false);
             }
         };
 
@@ -74,12 +78,17 @@ export default function Page() {
     return (
         <Navbar>
             <div className="hidden lg:block">
-                <ProductList products={products} handleDelete={handleDelete} />
+                <ProductList
+                    products={products}
+                    handleDelete={handleDelete}
+                    loading={loading}
+                />
             </div>
             <div className="block lg:hidden">
                 <MobileProductList
                     products={products}
                     handleDelete={handleDelete}
+                    loading={loading}
                 />
             </div>
         </Navbar>

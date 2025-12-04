@@ -12,9 +12,11 @@ import { useRouter } from "next/navigation";
 export default function ProductList({
     products,
     handleDelete,
+    loading = false,
 }: {
     products: Product[];
     handleDelete: (productId: string) => void;
+    loading?: boolean;
 }) {
     const router = useRouter();
 
@@ -62,7 +64,18 @@ export default function ProductList({
                             </tr>
                         </thead>
                         <tbody>
-                            {products.length === 0 && (
+                            {loading ? (
+                                <tr>
+                                    <td
+                                        colSpan={6}
+                                        className="py-12 px-4 text-center"
+                                    >
+                                        <div className="flex flex-col items-center justify-center">
+                                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : products.length === 0 ? (
                                 <tr>
                                     <td
                                         colSpan={6}
@@ -71,50 +84,51 @@ export default function ProductList({
                                         No Products
                                     </td>
                                 </tr>
+                            ) : (
+                                products?.map((product, index) => (
+                                    <tr
+                                        key={index}
+                                        className="hover:bg-gray-100 cursor-pointer"
+                                    >
+                                        <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
+                                            <p className="w-32 truncate">
+                                                {product.id}
+                                            </p>
+                                        </td>
+                                        <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
+                                            <p>{product.name}</p>
+                                        </td>
+                                        <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
+                                            {product.description}
+                                        </td>
+                                        <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
+                                            {product.quantity}
+                                        </td>
+                                        <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
+                                            ${product.price}
+                                        </td>
+                                        <td className="py-2 px-4 border-b border-gray-100 flex items-center">
+                                            <button
+                                                className="btn btn-sm btn-ghost text-black"
+                                                onClick={() =>
+                                                    handleEditClick(product.id)
+                                                }
+                                            >
+                                                <Edit className="w-4 h-4" />
+                                            </button>
+                                            <div className="border-l border-gray-300 h-4 mx-1"></div>
+                                            <button
+                                                className="btn btn-sm btn-ghost text-black"
+                                                onClick={() => {
+                                                    handleDelete(product.id);
+                                                }}
+                                            >
+                                                <Trash className="w-4 h-4" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
                             )}
-                            {products?.map((product, index) => (
-                                <tr
-                                    key={index}
-                                    className="hover:bg-gray-100 cursor-pointer"
-                                >
-                                    <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
-                                        <p className="w-32 truncate">
-                                            {product.id}
-                                        </p>
-                                    </td>
-                                    <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
-                                        <p>{product.name}</p>
-                                    </td>
-                                    <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
-                                        {product.description}
-                                    </td>
-                                    <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
-                                        {product.quantity}
-                                    </td>
-                                    <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
-                                        ${product.price}
-                                    </td>
-                                    <td className="py-2 px-4 border-b border-gray-100 flex items-center">
-                                        <button
-                                            className="btn btn-sm btn-ghost text-black"
-                                            onClick={() =>
-                                                handleEditClick(product.id)
-                                            }
-                                        >
-                                            <Edit className="w-4 h-4" />
-                                        </button>
-                                        <div className="border-l border-gray-300 h-4 mx-1"></div>
-                                        <button
-                                            className="btn btn-sm btn-ghost text-black"
-                                            onClick={() => {
-                                                handleDelete(product.id);
-                                            }}
-                                        >
-                                            <Trash className="w-4 h-4" />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
                         </tbody>
                     </table>
                 </div>

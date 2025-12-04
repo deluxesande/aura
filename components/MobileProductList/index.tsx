@@ -12,9 +12,11 @@ import { useRouter } from "next/navigation";
 export default function MobileProductList({
     products,
     handleDelete,
+    loading = false,
 }: {
     products: Product[];
     handleDelete: (productId: string) => void;
+    loading?: boolean;
 }) {
     const router = useRouter();
 
@@ -36,8 +38,15 @@ export default function MobileProductList({
                 </Link>
             </div>
 
-            {products.length === 0 ? (
-                <p className="p-4 text-black text-lg">No Products</p>
+            {loading ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                    <span className="loading loading-spinner loading-lg text-green-500"></span>
+                    <p className="mt-4 text-gray-600">Loading products...</p>
+                </div>
+            ) : products.length === 0 ? (
+                <p className="p-4 text-black text-lg text-center">
+                    No Products
+                </p>
             ) : (
                 <div className="flex flex-col space-y-4">
                     {products.map((product, index) => (

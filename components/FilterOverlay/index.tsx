@@ -25,6 +25,7 @@ export default function FilterOverlay({
         MAX_PRICE,
     ]);
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+    const [categoriesLoading, setCategoriesLoading] = useState<boolean>(true);
     const originalProducts = useSelector(
         (state: AppState) => state.product.products
     );
@@ -70,6 +71,7 @@ export default function FilterOverlay({
     };
 
     useEffect(() => {
+        setCategoriesLoading(true);
         const fetchCategories = async () => {
             try {
                 const response = await axios.get("/api/category");
@@ -80,7 +82,9 @@ export default function FilterOverlay({
                     }))
                 );
             } catch (error) {
-                console.error("Error fetching categories:", error);
+                setCategories([]);
+            } finally {
+                setCategoriesLoading(false);
             }
         };
 
@@ -88,7 +92,7 @@ export default function FilterOverlay({
     }, []);
 
     return (
-        <div className="fixed inset-0 top-[88px] h-fit lg:absolute lg:left-[-250px] lg:top-[70px] lg:w-[30px] lg:min-w-[300px] bg-white lg:border lg:border-gray-300 rounded-lg shadow-lg p-4 whitespace-nowrap overflow-hidden text-ellipsis z-50">
+        <div className="inset-0 top-[88px] h-fit lg:absolute lg:left-[-250px] lg:top-[70px] lg:w-[30px] lg:min-w-[300px] bg-white lg:border lg:border-gray-300 rounded-lg shadow-lg p-4 whitespace-nowrap overflow-hidden text-ellipsis z-50">
             <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">Filters</h3>
                 <div
@@ -140,7 +144,11 @@ export default function FilterOverlay({
             <div className="mb-4">
                 <h4 className="text-md font-medium mb-2">Category</h4>
                 <div className="flex flex-col space-y-2">
-                    {categories.length === 0 ? (
+                    {categoriesLoading ? (
+                        <div className="flex flex-col items-center justify-center py-4">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                        </div>
+                    ) : categories.length === 0 ? (
                         <p className="text-sm text-gray-500 italic">
                             No categories available.
                         </p>

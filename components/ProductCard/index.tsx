@@ -12,16 +12,17 @@ export default function ProductCard({
 }: ProductCardProps) {
     return (
         <div
-            className="bg-white shadow-md rounded-lg overflow-hidden w-56 cursor-pointer"
+            className="bg-white shadow-md rounded-lg overflow-hidden w-56 cursor-pointer z-0"
             onClick={onAddToCart}
         >
-            <div className="w-56 h-56 relative overflow-hidden">
+            <div className="w-56 h-56 relative overflow-hidden z-0">
                 <Image
                     src={image}
                     alt={name}
                     fill
-                    className="object-cover"
+                    className="object-cover relative z-0"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    priority={false}
                 />
             </div>
             <div className="p-4">
