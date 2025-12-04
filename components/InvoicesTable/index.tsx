@@ -7,14 +7,17 @@ import { useRouter } from "next/navigation";
 interface ExtendedInvoice extends Invoice {
     totalQuantity?: number;
 }
+
 export default function InvoicesTable({
     title,
     invoices,
     handleDelete,
+    loading = false,
 }: {
     title: string;
     invoices: ExtendedInvoice[];
     handleDelete: (invoiceId: string) => void;
+    loading?: boolean;
 }) {
     const router = useRouter();
 
@@ -63,7 +66,18 @@ export default function InvoicesTable({
                                 </tr>
                             </thead>
                             <tbody>
-                                {invoices.length === 0 ? (
+                                {loading ? (
+                                    <tr>
+                                        <td
+                                            colSpan={6}
+                                            className="py-12 px-4 text-center"
+                                        >
+                                            <div className="flex flex-col items-center justify-center">
+                                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : invoices.length === 0 ? (
                                     <tr>
                                         <td
                                             colSpan={6}
@@ -140,7 +154,14 @@ export default function InvoicesTable({
 
             {/* Card tiles for smaller screens */}
             <div className="block lg:hidden">
-                {invoices.length === 0 ? (
+                {loading ? (
+                    <div className="w-full py-12 flex flex-col items-center justify-center">
+                        <span className="loading loading-spinner loading-lg text-green-500"></span>
+                        <p className="mt-4 text-gray-600">
+                            Loading invoices...
+                        </p>
+                    </div>
+                ) : invoices.length === 0 ? (
                     <p className="text-black text-lg text-center">
                         No Invoices
                     </p>

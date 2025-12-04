@@ -343,19 +343,7 @@ const LineChart: React.FC<LineChartProps> = ({ timePeriod = 7 }) => {
         <div style={{ height: "300px", width: "100%", position: "relative" }}>
             <Line data={loading ? emptyData : data} options={options} />
             {loading && (
-                <div
-                    style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        backgroundColor: "rgba(255, 255, 255, 0.8)",
-                    }}
-                >
+                <div className="absolute inset-0 flex items-center justify-center bg-white/80">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                 </div>
             )}

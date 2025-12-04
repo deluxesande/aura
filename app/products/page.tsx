@@ -60,6 +60,7 @@ export default function Page() {
     const dispatch = useDispatch();
     const cartItems = useSelector((state: AppState) => state.cart.items);
     const [products, setLocalProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
     const [categories, setCategories] = useState<Category[]>([
         {
             name: "All",
@@ -381,6 +382,7 @@ export default function Page() {
 
     useEffect(() => {
         const fetchProducts = async () => {
+            setLoading(true);
             try {
                 const response = await axios.get("/api/product");
                 // Ensure productsData is an array
@@ -392,12 +394,16 @@ export default function Page() {
                 }
             } catch (error) {
                 // console.error("Error fetching products:", error);
+                setLocalProducts([]);
+            } finally {
+                setLoading(false);
             }
         };
 
         // Check if productsData is already available in the store
         if (productsData.length > 0) {
             setLocalProducts(productsData);
+            setLoading(false);
         } else {
             // Fetch products from the API
             fetchProducts();
@@ -428,7 +434,11 @@ export default function Page() {
 
                     {/* Products */}
                     <div className="flex flex-wrap gap-4 mt-10">
-                        {products.length === 0 && (
+                        {loading ? (
+                            <div className="w-full m-auto mt-20 flex flex-col items-center justify-center">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                            </div>
+                        ) : products.length === 0 ? (
                             <div className="w-full m-auto mt-20 flex flex-col items-center justify-center">
                                 <h1 className="text-2xl font-bold mb-6 text-black">
                                     No Products
@@ -440,8 +450,8 @@ export default function Page() {
                                     </button>
                                 </Link>
                             </div>
-                        )}
-                        {Array.isArray(products) &&
+                        ) : (
+                            Array.isArray(products) &&
                             products.map((product) => (
                                 <div key={product.name}>
                                     {/* Product Card for PC */}
@@ -472,7 +482,8 @@ export default function Page() {
                                         />
                                     </div>
                                 </div>
-                            ))}
+                            ))
+                        )}
                     </div>
                 </Navbar>
             </div>

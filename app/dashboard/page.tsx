@@ -46,31 +46,50 @@ export default function Page() {
         (state: AppState) => state.product.products
     );
     const [timePeriod, setTimePeriod] = useState<number>(7); // in days
+    const [topProductsTimePeriod, setTopProductsTimePeriod] =
+        useState<number>(7); // in days
+    const [topProductsLoading, setTopProductsLoading] = useState<boolean>(true);
+    const [invoicesLoading, setInvoicesLoading] = useState<boolean>(true);
 
     useEffect(() => {
+        setInvoicesLoading(true);
         const fetchInvoices = async () => {
             try {
                 const response = await axios.get("/api/invoice");
                 const allInvoices = response.data;
 
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-
-                const yesterday = new Date(today);
-                yesterday.setDate(yesterday.getDate() - 1);
+                const now = new Date();
+                const today = new Date(
+                    now.getFullYear(),
+                    now.getMonth(),
+                    now.getDate()
+                );
+                const yesterday = new Date(
+                    now.getFullYear(),
+                    now.getMonth(),
+                    now.getDate() - 1
+                );
 
                 // Today's stats
                 const todayInvoices = allInvoices.filter((inv: any) => {
                     const invDate = new Date(inv.createdAt);
-                    invDate.setHours(0, 0, 0, 0);
-                    return invDate.getTime() === today.getTime();
+                    const invDateOnly = new Date(
+                        invDate.getFullYear(),
+                        invDate.getMonth(),
+                        invDate.getDate()
+                    );
+                    return invDateOnly.getTime() === today.getTime();
                 });
 
                 // Yesterday's stats
                 const yesterdayInvoices = allInvoices.filter((inv: any) => {
                     const invDate = new Date(inv.createdAt);
-                    invDate.setHours(0, 0, 0, 0);
-                    return invDate.getTime() === yesterday.getTime();
+                    const invDateOnly = new Date(
+                        invDate.getFullYear(),
+                        invDate.getMonth(),
+                        invDate.getDate()
+                    );
+                    return invDateOnly.getTime() === yesterday.getTime();
                 });
 
                 // Calculate today's metrics
@@ -140,6 +159,8 @@ export default function Page() {
                 setInvoices(allInvoices.slice(0, 5));
             } catch (error) {
                 setInvoices([]);
+            } finally {
+                setInvoicesLoading(false);
             }
         };
 
@@ -147,38 +168,27 @@ export default function Page() {
     }, []);
 
     useEffect(() => {
-        // Immediately use products from Redux store if available
-        if (productsData.length > 0) {
-            setLocalProducts(productsData.slice(0, 5));
-        }
+        setTopProductsLoading(true);
 
-        // Always fetch fresh data in the background
-        const fetchProducts = async () => {
+        const fetchTopProducts = async () => {
             try {
-                const response = await axios.get("/api/product");
-                const freshProducts = response.data;
+                const response = await axios.get("/api/product/topProduct", {
+                    params: {
+                        timePeriod: topProductsTimePeriod,
+                    },
+                });
 
-                // Ensure freshProducts is an array
-                const productsArray = Array.isArray(freshProducts)
-                    ? freshProducts
-                    : [];
-
-                // Update Redux store with fresh data
-                dispatch(setProducts(productsArray));
-
-                // Update local state with limited products for display
-                setLocalProducts(productsArray.slice(0, 5));
+                const topProducts = response.data;
+                setLocalProducts(Array.isArray(topProducts) ? topProducts : []);
             } catch (error) {
-                console.error("Error fetching products:", error);
-                setLocalProducts([]); // Set empty array on error
+                setLocalProducts([]);
+            } finally {
+                setTopProductsLoading(false);
             }
         };
 
-        // Fetch fresh data in the background
-        if (productsData.length === 0) {
-            fetchProducts();
-        }
-    }, [dispatch, productsData]);
+        fetchTopProducts();
+    }, [topProductsTimePeriod]);
 
     const infoCards = [
         {
@@ -229,7 +239,7 @@ export default function Page() {
                             Monthly Sales
                         </h1>
                         <select
-                            className="select select-sm outline-none bg-slate-50 appearance-none border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 disabled:opacity-50 text-green-500"
+                            className="select select-sm outline-none bg-green-50 appearance-none  rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 disabled:opacity-50 text-green-500"
                             value={timePeriod}
                             onChange={(e) =>
                                 setTimePeriod(Number(e.target.value))
@@ -245,12 +255,30 @@ export default function Page() {
                     <LineChart timePeriod={timePeriod} />
                 </div>
 
-                <div className="px-6 py-4 rounded-lg gap-4 bg-white w-full lg:w-[48%]">
-                    <h1 className="text-2xl font-bold mb-6 text-gray-400">
-                        Top Products
-                    </h1>
+                <div className="px-6 py-4 rounded-lg gap-4 bg-white w-full lg:w-[48%] relative">
+                    <div className="flex items-center justify-between mb-6">
+                        <h1 className="text-2xl font-bold text-gray-400">
+                            Top Products
+                        </h1>
+                        <select
+                            className="select select-sm outline-none bg-green-50 appearance-none  rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 disabled:opacity-50 text-green-500"
+                            value={topProductsTimePeriod}
+                            onChange={(e) =>
+                                setTopProductsTimePeriod(Number(e.target.value))
+                            }
+                        >
+                            <option value="7">Last 7 days</option>
+                            <option value="30">Last 30 days</option>
+                            <option value="90">Last 90 days</option>
+                            <option value="365">Last 1 year</option>
+                        </select>
+                    </div>
 
-                    {products.length === 0 && (
+                    {topProductsLoading ? (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/80">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                        </div>
+                    ) : products.length === 0 ? (
                         <div className="w-full m-auto mt-20 flex flex-col items-center justify-center">
                             <h1 className="text-2xl font-bold mb-6 text-black">
                                 No Products
@@ -262,11 +290,11 @@ export default function Page() {
                                 </button>
                             </Link>
                         </div>
+                    ) : (
+                        products.map((product, index) => (
+                            <TopProducts key={index} product={product} />
+                        ))
                     )}
-
-                    {products.map((product, index) => (
-                        <TopProducts key={index} product={product} />
-                    ))}
                 </div>
             </div>
 
@@ -274,6 +302,7 @@ export default function Page() {
                 title="Recent Invoices"
                 invoices={invoices}
                 handleDelete={() => {}}
+                loading={invoicesLoading}
             />
         </Navbar>
     );

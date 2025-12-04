@@ -45,8 +45,6 @@ const InvoicePage: React.FC = () => {
                 const response = await axios.get(`/api/invoice/${id}`);
                 const invoiceData = response.data;
 
-                console.log(invoiceData);
-
                 // Convert createdAt and updatedAt to formatted strings
                 invoiceData.createdAt = format(
                     new Date(invoiceData.createdAt),
@@ -151,7 +149,6 @@ const InvoicePage: React.FC = () => {
                             <TopProducts
                                 key={index}
                                 product={invoiceItem.Product}
-                                quantity={invoiceItem.quantity}
                             />
                         ))}
                     </div>

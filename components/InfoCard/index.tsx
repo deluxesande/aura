@@ -44,7 +44,7 @@ export default function InfoCard({
                     {isTrendingUp ? "+" : ""}
                     {percentageChange.toFixed(2)}%
                 </span>
-                Yesterday
+                from Yesterday
             </p>
         </div>
     );

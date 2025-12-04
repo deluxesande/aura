@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 export default function Page() {
     const [invoices, setInvoices] = React.useState<Invoice[]>([]);
+    const [loading, setLoading] = React.useState<boolean>(false);
 
     const handleDelete = async (invoiceId: string) => {
         const promise = async () => {
@@ -30,12 +31,15 @@ export default function Page() {
     };
 
     useEffect(() => {
+        setLoading(true);
         const fetchInvoices = async () => {
             try {
                 const response = await axios.get("/api/invoice");
                 setInvoices(response.data);
             } catch (error) {
                 // console.error("Error fetching invoices:", error);
+            } finally {
+                setLoading(false);
             }
         };
 
@@ -48,6 +52,7 @@ export default function Page() {
                 title="All Invoices"
                 invoices={invoices}
                 handleDelete={handleDelete}
+                loading={loading}
             />
         </Navbar>
     );
