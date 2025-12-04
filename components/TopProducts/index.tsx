@@ -4,7 +4,7 @@ import { Product } from "@/utils/typesDefinitions";
 
 export default function TopProducts({ product }: { product: Product }) {
     return (
-        <div className="w-full h-16 p-2 bg-slate-50 shadow-sm rounded-md flex items-center justify-between my-4">
+        <div className="w-full h-16 p-2 bg-slate-50 shadow-sm rounded-md flex items-center justify-between my-4 z-0">
             <div className="flex items-center">
                 <div className="relative h-10 w-10 rounded-md">
                     <Image

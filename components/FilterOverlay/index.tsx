@@ -92,7 +92,7 @@ export default function FilterOverlay({
     }, []);
 
     return (
-        <div className="inset-0 top-[88px] h-fit lg:absolute lg:left-[-250px] lg:top-[70px] lg:w-[30px] lg:min-w-[300px] bg-white lg:border lg:border-gray-300 rounded-lg shadow-lg p-4 whitespace-nowrap overflow-hidden text-ellipsis z-50">
+        <div className="min-w-[300px] max-w-[400px] mt-[20px] bg-white border border-gray-300 rounded-lg shadow-lg p-4 whitespace-nowrap overflow-hidden text-ellipsis">
             <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">Filters</h3>
                 <div

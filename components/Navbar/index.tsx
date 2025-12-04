@@ -1,10 +1,9 @@
 "use client";
 
 import { AppState } from "@/store";
-import { show } from "@/store/slices/visibilitySlice";
+import { hide, show } from "@/store/slices/visibilitySlice";
 import { SignedIn } from "@clerk/nextjs";
 import {
-    Bell,
     Menu,
     Search as SearchIcon,
     ShoppingCart,
@@ -19,10 +18,23 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import CustomUserButton from "../CustomUserButton";
 import FilterOverlay from "../FilterOverlay";
-import NotificationOverlay from "../NotificationOverlay";
 import Sidebar from "./Sidebar";
 import axios from "axios";
 import { setUser } from "@/store/slices/authSlice";
+import { Inbox, Notifications, Bell } from "@novu/nextjs";
+import {
+    Popover,
+    PopoverTrigger,
+    PopoverContent,
+} from "@radix-ui/react-popover";
+import {
+    useFloating,
+    FloatingPortal,
+    offset,
+    flip,
+    shift,
+    autoUpdate,
+} from "@floating-ui/react";
 
 const allLinks = [
     {
@@ -92,6 +104,19 @@ export default function Navbar({
         (state: AppState) => state.auth.user
     ) as User | null;
 
+    const isVisible = useSelector(
+        (state: AppState) => state.visibility.isVisible
+    );
+
+    // Floating UI setup for notification overlay
+    const { refs, floatingStyles } = useFloating({
+        open: showPopup,
+        onOpenChange: setShowPopup,
+        placement: "bottom",
+        middleware: [offset(10), flip(), shift({ padding: 8 })],
+        whileElementsMounted: autoUpdate,
+    });
+
     if (user === null) {
         const fetchUser = async () => {
             await axios.get("/api/auth/user/profile").then((res) => {
@@ -151,7 +176,10 @@ export default function Navbar({
     const toggleSidebar = () => {
         if (pathname !== "/products") {
             router.push("/products");
-            dispatch(show());
+        }
+
+        if (isVisible) {
+            dispatch(hide());
         } else {
             dispatch(show());
         }
@@ -177,8 +205,10 @@ export default function Navbar({
         const searchTerm = inputValue.trim().toLowerCase();
 
         // Filter products locally without modifying Redux state
-        const filteredProducts = originalProducts.filter((product: any) =>
-            product.name.toLowerCase().includes(searchTerm) || product.description.toLowerCase().includes(searchTerm)
+        const filteredProducts = originalProducts.filter(
+            (product: any) =>
+                product.name.toLowerCase().includes(searchTerm) ||
+                product.description.toLowerCase().includes(searchTerm)
         );
 
         if (filteredProducts.length === 0) {
@@ -195,7 +225,7 @@ export default function Navbar({
     };
 
     return (
-        <div className="flex h-screen overflow-hidden">
+        <div className="flex h-screen overflow-hidden z-50">
             <div className="fixed h-full">
                 <Sidebar />
             </div>
@@ -240,18 +270,30 @@ export default function Navbar({
                                                 <SlidersHorizontal size={25} />
                                             </button>
                                             {filterPopUp && (
-                                                <FilterOverlay
-                                                    filterPopUp={filterPopUp}
-                                                    setFilterPopUp={
-                                                        setFilterPopUp
-                                                    }
-                                                    setFilteredProducts={
-                                                        setFilteredProducts
-                                                    }
-                                                    toggleFilterPopUp={
-                                                        toggleFilterPopUp
-                                                    }
-                                                />
+                                                <FloatingPortal>
+                                                    <div
+                                                        ref={refs.setFloating}
+                                                        style={{
+                                                            ...floatingStyles,
+                                                            zIndex: 9999,
+                                                        }}
+                                                    >
+                                                        <FilterOverlay
+                                                            filterPopUp={
+                                                                filterPopUp
+                                                            }
+                                                            setFilterPopUp={
+                                                                setFilterPopUp
+                                                            }
+                                                            setFilteredProducts={
+                                                                setFilteredProducts
+                                                            }
+                                                            toggleFilterPopUp={
+                                                                toggleFilterPopUp
+                                                            }
+                                                        />
+                                                    </div>
+                                                </FloatingPortal>
                                             )}
                                         </div>
                                     </div>
@@ -259,26 +301,39 @@ export default function Navbar({
                             )}
                         </div>
 
-                        <div className="flex items-center">
-                            <div className="relative">
-                                <button
-                                    className="p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
-                                    onClick={togglePopup}
-                                >
-                                    <Bell size={25} />
-                                </button>
-                                {showPopup && (
-                                    <NotificationOverlay
-                                        markAllAsRead={markAllAsRead}
-                                        markAsRead={markAsRead}
-                                        notifications={notifications}
-                                        deleteAllNotifications={
-                                            deleteAllNotifications
-                                        }
-                                    />
-                                )}
-                            </div>
+                        {/* Novu Notifications */}
+                        <Inbox
+                            applicationIdentifier={
+                                process.env.NEXT_PUBLIC_APPLICATION_IDENTIFIER!
+                            }
+                            subscriberId={
+                                process.env.NEXT_PUBLIC_SUBSCRIBER_ID!
+                            }
+                            appearance={{
+                                variables: {
+                                    colorPrimary: "#4ade80",
+                                },
+                            }}
+                        >
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <button className="p-3 hover:bg-slate-100 text-black rounded-lg cursor-pointer flex items-center justify-center">
+                                        <Bell />
+                                    </button>
+                                </PopoverTrigger>
+                                <FloatingPortal>
+                                    <PopoverContent
+                                        className="h-[600px] w-[400px] p-0 bg-white border border-gray-300 rounded-lg shadow-lg"
+                                        style={{ zIndex: 9999 }}
+                                        sideOffset={10}
+                                    >
+                                        <Notifications />
+                                    </PopoverContent>
+                                </FloatingPortal>
+                            </Popover>
+                        </Inbox>
 
+                        <div className="flex items-center">
                             <div
                                 className="p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
                                 onClick={toggleSidebar}
@@ -309,24 +364,6 @@ export default function Navbar({
                         </Link>
                     </div>
                     <div className="flex items-center">
-                        <div className="relative">
-                            <div
-                                className="p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
-                                onClick={togglePopup}
-                            >
-                                <Bell size={25} />
-                            </div>
-                            {showPopup && (
-                                <NotificationOverlay
-                                    markAllAsRead={markAllAsRead}
-                                    markAsRead={markAsRead}
-                                    notifications={notifications}
-                                    deleteAllNotifications={
-                                        deleteAllNotifications
-                                    }
-                                />
-                            )}
-                        </div>
                         <div
                             className="p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
                             onClick={toggleSidebar}
