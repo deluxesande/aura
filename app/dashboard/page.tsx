@@ -45,6 +45,7 @@ export default function Page() {
     const productsData = useSelector(
         (state: AppState) => state.product.products
     );
+    const [timePeriod, setTimePeriod] = useState<number>(7); // in days
 
     useEffect(() => {
         const fetchInvoices = async () => {
@@ -222,15 +223,29 @@ export default function Page() {
             </div>
 
             <div className="flex flex-wrap lg:flex-nowrap gap-4 my-4">
-                <div className="px-6 py-4 h-fit rounded-lg gap-4 bg-white flex-1 w-full lg:w-[40%]">
-                    <h1 className="text-2xl font-bold mb-6 text-gray-400">
-                        Monthly Sales
-                    </h1>
+                <div className="px-6 py-4 h-fit rounded-lg gap-4 bg-white flex-1 w-full md:w-[40%]">
+                    <div className="flex items-center justify-between mb-6">
+                        <h1 className="text-2xl font-bold text-gray-400">
+                            Monthly Sales
+                        </h1>
+                        <select
+                            className="select select-sm outline-none bg-slate-50 appearance-none border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 disabled:opacity-50 text-green-500"
+                            value={timePeriod}
+                            onChange={(e) =>
+                                setTimePeriod(Number(e.target.value))
+                            }
+                        >
+                            <option value="7">Last 7 days</option>
+                            <option value="30">Last 30 days</option>
+                            <option value="90">Last 90 days</option>
+                            <option value="365">Last 1 year</option>
+                        </select>
+                    </div>
 
-                    <LineChart />
+                    <LineChart timePeriod={timePeriod} />
                 </div>
 
-                <div className="px-6 py-4 rounded-lg gap-4 bg-white w-full">
+                <div className="px-6 py-4 rounded-lg gap-4 bg-white w-full lg:w-[48%]">
                     <h1 className="text-2xl font-bold mb-6 text-gray-400">
                         Top Products
                     </h1>

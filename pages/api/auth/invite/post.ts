@@ -3,7 +3,6 @@ import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
 import { z } from "zod";
 import crypto from "crypto";
-import axios from "axios";
 
 // Validation schema
 const inviteSchema = z.object({
@@ -71,13 +70,31 @@ export default async function handler(
             return res.status(404).json({ error: "Business not found" });
         }
 
-        // Check if user is already registered
+        // Check if user is already registered in database
         const existingUser = await prisma.user.findUnique({
             where: { email },
         });
 
         if (existingUser) {
-            return res.status(409).json({ error: "User already exists" });
+            return res
+                .status(409)
+                .json({ error: "User already exists in the system" });
+        }
+
+        // Check if email is linked to any Clerk account
+        try {
+            const clerk = await clerkClient();
+            const clerkUsers = await clerk.users.getUserList({
+                emailAddress: [email],
+            });
+
+            if (clerkUsers.data && clerkUsers.data.length > 0) {
+                return res.status(409).json({
+                    error: "An account with this email already exists",
+                });
+            }
+        } catch (clerkError: any) {
+            console.error("Error checking Clerk users:", clerkError);
         }
 
         // Check if invitation already exists
@@ -113,32 +130,20 @@ export default async function handler(
             },
         });
 
-        // Create invitation in Clerk
+        // Create invitation in Clerk using SDK
         try {
-            const clerkOptions = {
-                method: "POST",
-                url: "https://api.clerk.com/v1/invitations",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}`,
-                },
-                data: {
-                    email_address: email,
-                    public_metadata: {
-                        role: role,
-                        businessId: businessId,
-                        businessName: business.name,
-                        invitationToken: token,
-                    },
-                    redirect_url: `${process.env.NEXT_PUBLIC_APP_URL}/auth/accept-invitation?token=${token}`,
-                    notify: true,
-                    ignore_existing: false,
-                    expires_in_days: 7,
-                    template_slug: "invitation",
-                },
-            };
+            const clerk = await clerkClient();
 
-            const { data: clerkInvitation } = await axios.request(clerkOptions);
+            const clerkInvitation = await clerk.invitations.createInvitation({
+                emailAddress: email,
+                redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/auth/accept-invitation?token=${token}`,
+                publicMetadata: {
+                    role: role,
+                    businessId: businessId,
+                    businessName: business.name,
+                    invitationToken: token,
+                },
+            });
 
             // Update invitation with Clerk invitation ID
             await prisma.userInvitation.update({
@@ -160,16 +165,21 @@ export default async function handler(
                     clerkInvitationId: clerkInvitation.id,
                 },
             });
-        } catch (clerkError) {
+        } catch (clerkError: any) {
             // If Clerk invitation fails, delete the database record
             await prisma.userInvitation.delete({
                 where: { id: invitation.id },
             });
 
-            console.error("Clerk invitation error:", clerkError);
+            console.error("Clerk invitation error details:", {
+                message: clerkError.message,
+                errors: clerkError.errors,
+                clerkTraceId: clerkError.clerkTraceId,
+            });
 
             return res.status(500).json({
                 error: "Failed to send invitation email",
+                details: clerkError.errors?.[0]?.message || clerkError.message,
             });
         }
     } catch (error) {
