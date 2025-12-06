@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { AppState } from "@/store";
 import { setProducts } from "@/store/slices/productSlice";
+import TopProductsChart from "@/components/TopProductsChart";
 
 interface InvoiceStats {
     totalInvoices: number;
@@ -291,7 +292,7 @@ export default function Page() {
                             </Link>
                         </div>
                     ) : (
-                        <TopProducts products={products} />
+                        <TopProductsChart products={products} />
                     )}
                 </div>
             </div>
