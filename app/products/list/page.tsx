@@ -49,31 +49,38 @@ export default function Page() {
     };
 
     useEffect(() => {
-        setLoading(true);
-        const fetchProducts = async () => {
+        const fetchProductsAndUpdateStore = async () => {
             try {
                 const response = await axios.get("/api/product");
-                // Ensure productsData is an array
-                if (!Array.isArray(response.data)) {
-                    setLocalProducts([]);
-                } else {
-                    setLocalProducts(response.data);
-                }
+                const fetchedProducts = Array.isArray(response.data)
+                    ? response.data
+                    : [];
+
+                // Update both local state and the Redux store with the latest data
+                setLocalProducts(fetchedProducts);
+                dispatch(setProducts(fetchedProducts));
             } catch (error) {
                 // console.error("Error fetching products:", error);
+                toast.error("Failed to fetch latest products.");
             } finally {
+                // Ensure loading is turned off after the fetch completes
                 setLoading(false);
             }
         };
 
-        // Check if productsData is already available in the store
+        // Check if products are already in the Redux store
         if (originalProducts.length > 0) {
+            // If yes, display them immediately from the store
             setLocalProducts(originalProducts);
+            setLoading(false); // We have data, so we are not in an initial loading state
         } else {
-            // Fetch products from the API
-            fetchProducts();
+            // If not, show the loading indicator while we fetch
+            setLoading(true);
         }
-    }, [originalProducts]);
+
+        // Always fetch in the background to get the latest updates
+        fetchProductsAndUpdateStore();
+    }, [dispatch, originalProducts]);
 
     return (
         <Navbar>

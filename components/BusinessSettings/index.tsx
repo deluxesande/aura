@@ -128,7 +128,8 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
                     setOriginalLogoUrl(businessData.logo);
                 }
             } catch (error) {
-                toast.error("Failed to fetch business data");
+                if (axios.isAxiosError(error) && error.response?.status !== 404)
+                    toast.error("Error fetching business data");
             }
         };
 

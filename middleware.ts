@@ -1,4 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const isPrivateRoute = createRouteMatcher([
     "/dashboard(.*)",
@@ -12,9 +13,14 @@ const isPrivateRoute = createRouteMatcher([
 
 // const isPrivateRoute = createRouteMatcher([]);
 
-const isAuthPage = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
+// const isAuthPage = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
 
 export default clerkMiddleware(async (auth, request) => {
+    // Block __nextjs_original-stack-frames requests
+    if (request.nextUrl.pathname === "/__nextjs_original-stack-frames") {
+        return new NextResponse("Not Found", { status: 404 });
+    }
+
     if (isPrivateRoute(request)) {
         await auth.protect();
     }

@@ -13,6 +13,11 @@ export const prisma =
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
+// Increase max listeners to prevent warning
+if (typeof process !== "undefined") {
+    process.setMaxListeners(20);
+}
+
 // Add graceful shutdown
 process.on("beforeExit", async () => {
     await prisma.$disconnect();

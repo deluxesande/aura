@@ -8,6 +8,7 @@ import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import Image from "next/image";
 import { error } from "console";
+import { useRouter } from "next/navigation";
 
 interface User {
     id: string;
@@ -45,6 +46,7 @@ const UserManagement: React.FC = () => {
     const invitations = useSelector(
         (state: AppState) => state.invitations.invitations
     ) as User[];
+    const router = useRouter();
 
     const handleInviteUser = (e: React.FormEvent) => {
         e.preventDefault();
@@ -135,11 +137,11 @@ const UserManagement: React.FC = () => {
 
     const confirmDeleteUser = () => {
         const deleteInvitation = async () => {
-            const response = await axios.delete("api/auth/invite/delete", {
-                data: { invitationId: userToDelete?.id },
-            });
+            const response = await axios.delete(
+                `/api/auth/delete/${userToDelete?.id}`
+            );
 
-            if (response.status === 204) {
+            if (response.status === 200) {
                 // Update Redux store
                 dispatch(
                     setInvitations(
@@ -151,6 +153,9 @@ const UserManagement: React.FC = () => {
                 setUserInvitations((prev) =>
                     prev.filter((inv) => inv.id !== userToDelete?.id)
                 );
+
+                // Redirect to login page
+                router.push("/sign-in");
             }
         };
 
@@ -162,7 +167,7 @@ const UserManagement: React.FC = () => {
                 if (error?.response?.data?.error) {
                     return error.response.data.error;
                 }
-                return "Failed to update role.";
+                return "Failed to delete user.";
             },
         });
 
