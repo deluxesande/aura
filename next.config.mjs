@@ -2,6 +2,11 @@ const MINIO_IP = process.env.MINIO_PUBLIC_IP || "localhost";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    experimental: {
+        turbo: {
+            enabled: false,
+        },
+    },
     images: {
         dangerouslyAllowSVG: true,
         remotePatterns: [
