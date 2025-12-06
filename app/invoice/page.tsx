@@ -9,7 +9,7 @@ import { format } from "date-fns";
 import { Copy } from "lucide-react";
 import { toast } from "sonner";
 
-const InvoicePage: React.FC = () => {
+function InvoicePageContent() {
     const searchParams = useSearchParams();
     const id = searchParams ? searchParams.get("id") : null;
     const [invoiceItems, setInvoiceItems] = useState<
@@ -67,93 +67,101 @@ const InvoicePage: React.FC = () => {
     }, [id]);
 
     return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <Navbar>
-                <div className="flex flex-row flex-wrap gap-10 justify-between p-4 card bg-white shadow-lg rounded-lg mt-4">
-                    <div className="w-full">
-                        <div className="flex justify-between">
-                            <p className="text-gray-600">
-                                {invoice?.invoiceName}
-                            </p>
-                            <span
-                                className={`px-2 py-1 rounded-lg ${getStatusColor(
-                                    invoice?.status.toLowerCase() ?? "pending"
-                                )}`}
-                            >
-                                {invoice?.status
-                                    ? invoice.status.charAt(0).toUpperCase() +
-                                      invoice.status.slice(1)
-                                    : "pending"}
-                            </span>
-                        </div>
-
-                        <div className="flex flex-col w-full gap-2">
-                            <div className="flex justify-between mt-10">
-                                <p className="text-black font-semibold">
-                                    Invoice No:
-                                </p>
-                                <div className="flex items-center">
-                                    <p className="text-black font-semibold mr-2 truncate w-36">
-                                        {invoice?.id}
-                                    </p>
-                                    <Copy
-                                        size={18}
-                                        className="text-gray-600 cursor-pointer"
-                                        onClick={() =>
-                                            copyToClipboard(invoice?.id)
-                                        }
-                                    />
-                                </div>
-                            </div>
-                            <div className="flex justify-between">
-                                <p className="text-black font-semibold">
-                                    Created:
-                                </p>
-                                <p className="text-black font-semibold">
-                                    {invoice?.createdAt?.toString()}
-                                </p>
-                            </div>
-
-                            <div className="flex justify-between mt-10">
-                                <p className="text-gray-600 font-light">
-                                    Payment Type
-                                </p>
-                                <p className="text-gray-600 font-light">
-                                    Client Name
-                                </p>
-                            </div>
-                            <div className="flex justify-between">
-                                <p className="text-black font-semibold">
-                                    {invoice?.paymentType}
-                                </p>
-                                <p className="text-black font-semibold">
-                                    {invoice?.Customer?.firstName || "N/A"}
-                                </p>
-                            </div>
-
-                            <div className="bg-green-600 h-28 w-full rounded-lg mt-8 flex flex-col items-center justify-center gap-2">
-                                <p className="text-white text-xl font-semibold">
-                                    Amount
-                                </p>
-                                <p className="text-white text-xl font-light">
-                                    ${invoice?.totalAmount}
-                                </p>
-                            </div>
-                        </div>
+        <Navbar>
+            <div className="flex flex-row flex-wrap gap-10 justify-between p-4 card bg-white shadow-lg rounded-lg mt-4">
+                <div className="w-full">
+                    <div className="flex justify-between">
+                        <p className="text-gray-600">{invoice?.invoiceName}</p>
+                        <span
+                            className={`px-2 py-1 rounded-lg ${getStatusColor(
+                                invoice?.status.toLowerCase() ?? "pending"
+                            )}`}
+                        >
+                            {invoice?.status
+                                ? invoice.status.charAt(0).toUpperCase() +
+                                  invoice.status.slice(1)
+                                : "pending"}
+                        </span>
                     </div>
-                    <div className="w-full">
-                        <div className="flex justify-between">
-                            <p className="text-gray-600 font-light">Items</p>
+
+                    <div className="flex flex-col w-full gap-2">
+                        <div className="flex justify-between mt-10">
+                            <p className="text-black font-semibold">
+                                Invoice No:
+                            </p>
+                            <div className="flex items-center">
+                                <p className="text-black font-semibold mr-2 truncate w-36">
+                                    {invoice?.id}
+                                </p>
+                                <Copy
+                                    size={18}
+                                    className="text-gray-600 cursor-pointer"
+                                    onClick={() => copyToClipboard(invoice?.id)}
+                                />
+                            </div>
                         </div>
-                        {invoiceItems.map((invoiceItem, index) => (
-                            <TopProducts
-                                key={index}
-                                product={invoiceItem.Product}
-                            />
-                        ))}
+                        <div className="flex justify-between">
+                            <p className="text-black font-semibold">Created:</p>
+                            <p className="text-black font-semibold">
+                                {invoice?.createdAt?.toString()}
+                            </p>
+                        </div>
+
+                        <div className="flex justify-between mt-10">
+                            <p className="text-gray-600 font-light">
+                                Payment Type
+                            </p>
+                            <p className="text-gray-600 font-light">
+                                Client Name
+                            </p>
+                        </div>
+                        <div className="flex justify-between">
+                            <p className="text-black font-semibold">
+                                {invoice?.paymentType}
+                            </p>
+                            <p className="text-black font-semibold">
+                                {invoice?.Customer?.firstName || "N/A"}
+                            </p>
+                        </div>
+
+                        <div className="bg-green-600 h-28 w-full rounded-lg mt-8 flex flex-col items-center justify-center gap-2">
+                            <p className="text-white text-xl font-semibold">
+                                Amount
+                            </p>
+                            <p className="text-white text-xl font-light">
+                                ${invoice?.totalAmount}
+                            </p>
+                        </div>
                     </div>
                 </div>
-            </Navbar>
+                <div className="w-full">
+                    <div className="flex justify-between">
+                        <p className="text-gray-600 font-light">Items</p>
+                    </div>
+                    {invoiceItems.map((invoiceItem, index) => (
+                        <TopProducts
+                            key={index}
+                            product={invoiceItem.Product}
+                        />
+                    ))}
+                </div>
+            </div>
+        </Navbar>
+    );
+}
+
+const InvoicePage: React.FC = () => {
+    return (
+        <Suspense
+            fallback={
+                <Navbar>
+                    <div className="flex items-center justify-center h-64">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+                    </div>
+                </Navbar>
+            }
+        >
+            <InvoicePageContent />
         </Suspense>
     );
 };
