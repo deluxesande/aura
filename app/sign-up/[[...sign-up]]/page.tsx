@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import AuthLayout from "@components/auth/AuthLayout";
 import Image from "next/image";
@@ -24,7 +24,11 @@ export default function SignupPage() {
     const dispatch = useDispatch();
 
     // Check if the user is already signed in
-    if (isSignedIn) router.push("/dashboard");
+    useEffect(() => {
+        if (isSignedIn) {
+            router.push("/dashboard");
+        }
+    }, [isSignedIn, router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

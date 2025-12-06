@@ -20,6 +20,7 @@ export const getProducts = async (
         });
 
         if (!currentUser || !currentUser.businessId) {
+            console.log(currentUser);
             return res
                 .status(404)
                 .json({ error: "User or business not found" });

@@ -26,6 +26,9 @@ interface TopProductsProps {
 }
 
 export default function TopProducts({ products }: TopProductsProps) {
+    // Check if there's no data
+    const hasNoData = !products || products.length === 0;
+
     // Prepare chart data
     const chartData = {
         labels: products.map((p) => p.name),
@@ -60,7 +63,7 @@ export default function TopProducts({ products }: TopProductsProps) {
                 display: false,
             },
             tooltip: {
-                enabled: true,
+                enabled: !hasNoData,
                 backgroundColor: "rgba(0, 0, 0, 0.8)",
                 titleColor: "#fff",
                 bodyColor: "#fff",
@@ -111,7 +114,20 @@ export default function TopProducts({ products }: TopProductsProps) {
 
     return (
         <div style={{ height: "300px", width: "100%", position: "relative" }}>
-            {<Bar data={data} options={options} />}
+            <Bar data={data} options={options} />
+            {hasNoData && (
+                <div
+                    style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        pointerEvents: "none",
+                    }}
+                >
+                    <p className="text-red-400 text-sm">Not enough data</p>
+                </div>
+            )}
         </div>
     );
 }

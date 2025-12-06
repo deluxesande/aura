@@ -279,18 +279,6 @@ export default function Page() {
                         <div className="absolute inset-0 flex items-center justify-center bg-white/80">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                         </div>
-                    ) : products.length === 0 ? (
-                        <div className="w-full m-auto mt-20 flex flex-col items-center justify-center">
-                            <h1 className="text-2xl font-bold mb-6 text-black">
-                                No Products
-                            </h1>
-                            <Link href="/products/create">
-                                <button className="btn btn-sm btn-ghost text-black flex items-center bg-green-400 w-full">
-                                    <PlusCircle className="w-4 h-4" />
-                                    Add Product
-                                </button>
-                            </Link>
-                        </div>
                     ) : (
                         <TopProductsChart products={products} />
                     )}

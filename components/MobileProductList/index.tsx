@@ -39,9 +39,8 @@ export default function MobileProductList({
             </div>
 
             {loading ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                    <span className="loading loading-spinner loading-lg text-green-500"></span>
-                    <p className="mt-4 text-gray-600">Loading products...</p>
+                <div className="flex flex-col items-center justify-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                 </div>
             ) : products.length === 0 ? (
                 <p className="p-4 text-black text-lg text-center">

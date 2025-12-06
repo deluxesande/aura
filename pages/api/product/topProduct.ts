@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/utils/lib/client";
+import { getAuth } from "@clerk/nextjs/server";
 
 export default async function handler(
     req: NextApiRequest,
@@ -7,6 +8,33 @@ export default async function handler(
 ) {
     if (req.method === "GET") {
         try {
+            // 1. Check authentication
+            const { userId } = getAuth(req);
+
+            if (!userId) {
+                return res.status(401).json({ error: "Unauthorized" });
+            }
+
+            // 2. Get current user with their business
+            const currentUser = await prisma.user.findUnique({
+                where: { clerkId: userId },
+                select: { businessId: true },
+            });
+
+            if (!currentUser || !currentUser.businessId) {
+                return res
+                    .status(404)
+                    .json({ error: "User or business not found" });
+            }
+
+            // 3. Get all users in the same business
+            const businessUsers = await prisma.user.findMany({
+                where: { businessId: currentUser.businessId },
+                select: { clerkId: true },
+            });
+
+            const userIds = businessUsers.map((user) => user.clerkId);
+
             const { timePeriod = "30" } = req.query;
             const days = parseInt(timePeriod as string);
 
@@ -20,9 +48,13 @@ export default async function handler(
             const startDate = new Date(today);
             startDate.setDate(today.getDate() - days);
 
-            // Fetch invoices with their items within the time period
+            // 4. Fetch invoices with their items within the time period
+            // ONLY for users in the same business
             const invoices = await prisma.invoice.findMany({
                 where: {
+                    createdBy: {
+                        in: userIds, // ← THIS IS THE KEY FILTER
+                    },
                     createdAt: {
                         gte: startDate,
                         lte: today,

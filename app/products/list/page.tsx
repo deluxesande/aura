@@ -32,7 +32,7 @@ export default function Page() {
                 dispatch(
                     setProducts(
                         originalProducts.filter(
-                            (product) => product.id !== productId
+                            (product: Product) => product.id !== productId
                         )
                     )
                 );
@@ -73,7 +73,7 @@ export default function Page() {
             // Fetch products from the API
             fetchProducts();
         }
-    }, [products, originalProducts]);
+    }, [originalProducts]);
 
     return (
         <Navbar>
