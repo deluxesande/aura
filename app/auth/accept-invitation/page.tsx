@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth, useClerk } from "@clerk/nextjs";
 import axios from "axios";
 import AuthLayout from "@components/auth/AuthLayout";
 import Link from "next/link";
 
-export default function AcceptInvitation() {
+function AcceptInvitationContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { isLoaded } = useAuth();
@@ -329,4 +329,20 @@ export default function AcceptInvitation() {
     }
 
     return null;
+}
+
+export default function AcceptInvitation() {
+    return (
+        <Suspense
+            fallback={
+                <AuthLayout title="Loading..." subtitle="Please wait">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                    </div>
+                </AuthLayout>
+            }
+        >
+            <AcceptInvitationContent />
+        </Suspense>
+    );
 }
