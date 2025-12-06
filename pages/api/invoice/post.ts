@@ -2,6 +2,11 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { InvoiceItem } from "@/utils/typesDefinitions";
 import { addCreatedBy } from "../middleware";
 import { prisma } from "@/utils/lib/client";
+import { Novu } from "@novu/api";
+
+const novu = new Novu({
+    secretKey: process.env.NOVU_SECRET_KEY!,
+});
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const { customerId, invoiceItems, totalAmount } = req.body;
@@ -63,6 +68,23 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         const invoice = await prisma.invoice.create({
             data: invoiceData,
         });
+
+        // Send Novu notification
+        try {
+            await novu.trigger({
+                name: "order-success",
+                to: {
+                    subscriberId: process.env.NEXT_PUBLIC_SUBSCRIBER_ID!,
+                },
+                payload: {
+                    totalAmount: invoice.totalAmount,
+                    paymentType: invoice.paymentType,
+                    status: invoice.status,
+                },
+            });
+        } catch (error) {
+            console.error("Failed to send Novu notification:", error);
+        }
 
         res.status(201).json(invoice);
     } catch (error) {

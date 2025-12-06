@@ -77,7 +77,7 @@ export default async function handler(
 
             return res.status(200).json(topProducts);
         } catch (error) {
-            console.error("Error fetching top products:", error);
+            // console.error("Error fetching top products:", error);
             return res.status(500).json({
                 error: "Failed to fetch top products",
                 message:

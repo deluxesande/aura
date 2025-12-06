@@ -291,9 +291,7 @@ export default function Page() {
                             </Link>
                         </div>
                     ) : (
-                        products.map((product, index) => (
-                            <TopProducts key={index} product={product} />
-                        ))
+                        <TopProducts products={products} />
                     )}
                 </div>
             </div>
