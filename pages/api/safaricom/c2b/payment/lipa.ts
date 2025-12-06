@@ -39,7 +39,7 @@ const initiatePayment = async (
         "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest";
     const timestamp = new Date()
         .toISOString()
-        .replace(/[-:.TZ]/g, "")
+        .replace(new RegExp("[-:.TZ]", "g"), "")
         .slice(0, 14);
     const password = Buffer.from(`${shortCode}${passkey}${timestamp}`).toString(
         "base64"

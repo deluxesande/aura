@@ -33,7 +33,7 @@ const checkTransactionStatus = async (
         "https://sandbox.safaricom.co.ke/mpesa/transactionstatus/v1/query";
     const timestamp = new Date()
         .toISOString()
-        .replace(/[-:.TZ]/g, "")
+        .replace(new RegExp("[-:.TZ]", "g"), "")
         .slice(0, 14);
     const password = Buffer.from(`${shortCode}${passkey}${timestamp}`).toString(
         "base64"
