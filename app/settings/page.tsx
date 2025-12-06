@@ -9,7 +9,7 @@ import { AppState } from "@/store";
 import { setUser } from "@/store/slices/authSlice";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import React from "react";
+import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { toast } from "sonner";
 
@@ -18,28 +18,34 @@ const SettingsPage: React.FC = () => {
     const dispatch = useDispatch();
     const user = useSelector((state: AppState) => state.auth.user);
 
-    if (user === null) {
-        const fetchUser = async () => {
-            await axios.get("/api/auth/user/profile").then((res) => {
-                if (res.status == 404) {
-                    // set user to an empty object if not found
-                    setUser({
-                        id: "",
-                        email: "",
-                        firstName: null,
-                        lastName: null,
-                        role: "",
-                        businessId: null,
-                        status: ""
-                    })
+    useEffect(() => {
+        if (user === null) {
+            const fetchUser = async () => {
+                try {
+                    const res = await axios.get("/api/auth/user/profile");
+                    if (res.status === 404) {
+                        dispatch(
+                            setUser({
+                                id: "",
+                                email: "",
+                                firstName: null,
+                                lastName: null,
+                                role: "",
+                                businessId: null,
+                                status: "",
+                            })
+                        );
+                    }
+                    if (res.data) {
+                        dispatch(setUser(res.data.user));
+                    }
+                } catch (error) {
+                    console.error("Error fetching user:", error);
                 }
-                if (res.data) {
-                    dispatch(setUser(res.data.user));
-                }
-            });
-        };
-        fetchUser();
-    }
+            };
+            fetchUser();
+        }
+    }, [user, dispatch]);
 
     if (user === null || user === undefined) {
         return (

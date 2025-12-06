@@ -13,7 +13,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import CustomUserButton from "../CustomUserButton";
@@ -117,16 +117,21 @@ export default function Navbar({
         whileElementsMounted: autoUpdate,
     });
 
-    if (user === null) {
-        const fetchUser = async () => {
-            await axios.get("/api/auth/user/profile").then((res) => {
-                if (res.data) {
-                    dispatch(setUser(res.data.user));
+    useEffect(() => {
+        if (user === null) {
+            const fetchUser = async () => {
+                try {
+                    const res = await axios.get("/api/auth/user/profile");
+                    if (res.data) {
+                        dispatch(setUser(res.data.user));
+                    }
+                } catch (error) {
+                    console.error("Error fetching user:", error);
                 }
-            });
-        };
-        fetchUser();
-    }
+            };
+            fetchUser();
+        }
+    }, [user, dispatch]);
 
     if (user == null) return;
 

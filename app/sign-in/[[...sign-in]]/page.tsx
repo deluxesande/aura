@@ -32,7 +32,7 @@ export default function LoginPage() {
                     const response = await axios.get("/api/auth/user/profile");
                     dispatch(setUser(response.data.user));
                 } catch (error) {
-                    console.error("Error fetching user data:", error);
+                    // console.error("Error fetching user data:", error);
                     // User will be handled by middleware or dashboard page
                 }
             }

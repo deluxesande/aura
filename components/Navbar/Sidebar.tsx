@@ -7,7 +7,7 @@ import {
     ChevronRight,
     ChevronLeft,
 } from "lucide-react";
-import React from "react";
+import React, { useEffect } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -102,16 +102,21 @@ const Sidebar = () => {
 
     const [toggleSideBar, setToggleSidebar] = React.useState(sideBarState);
 
-    if (user === null) {
-        const fetchUser = async () => {
-            await axios.get("/api/auth/user/profile").then((res) => {
-                if (res.data) {
-                    dispatch(setUser(res.data.user));
+    useEffect(() => {
+        if (user === null) {
+            const fetchUser = async () => {
+                try {
+                    const res = await axios.get("/api/auth/user/profile");
+                    if (res.data) {
+                        dispatch(setUser(res.data.user));
+                    }
+                } catch (error) {
+                    console.error("Error fetching user:", error);
                 }
-            });
-        };
-        fetchUser();
-    }
+            };
+            fetchUser();
+        }
+    }, [user, dispatch]);
 
     if (user == null) return null;
 
