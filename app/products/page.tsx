@@ -197,8 +197,6 @@ export default function Page() {
                         paymentType: paymentTypeOverride || paymentType,
                     };
 
-                    console.log(invoiceData);
-
                     const response = await axios.post(
                         "/api/invoice/",
                         invoiceData

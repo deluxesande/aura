@@ -88,6 +88,17 @@ export default async function handler(
                 },
             });
 
+            // Helper function to get week start (Monday)
+            const getWeekStart = (date: Date): string => {
+                const d = new Date(date);
+                const day = d.getDay();
+                // Adjust: Sunday=0, Monday=1, ..., Saturday=6
+                // We want Monday, so: if Sunday (0), subtract 6; if Monday (1), subtract 0; if Tuesday (2), subtract 1, etc.
+                const daysToSubtract = day === 0 ? 6 : day - 1;
+                d.setDate(d.getDate() - daysToSubtract);
+                return d.toISOString().split("T")[0];
+            };
+
             // Group products by time period
             const getTimePeriodKey = (date: Date, days: number): string => {
                 const dateOnly = new Date(
@@ -100,8 +111,8 @@ export default async function handler(
                     // Daily for 7-day period
                     return dateOnly.toISOString().split("T")[0];
                 } else if (days === 30) {
-                    // Daily for 30-day period
-                    return dateOnly.toISOString().split("T")[0];
+                    // Weekly for 30-day period (Monday start)
+                    return getWeekStart(dateOnly);
                 } else if (days === 90) {
                     // Monthly for 90-day period
                     return `${dateOnly.getFullYear()}-${String(
@@ -125,12 +136,21 @@ export default async function handler(
                 const keys: string[] = [];
                 const current = new Date(startDate);
 
-                if (days === 7 || days === 30) {
-                    // Daily grouping for both 7 and 30 day periods
+                if (days === 7) {
+                    // Daily grouping for 7 day periods
                     while (current <= endDate) {
                         keys.push(current.toISOString().split("T")[0]);
                         current.setDate(current.getDate() + 1);
                     }
+                } else if (days === 30) {
+                    // Weekly grouping for 30-day period (Monday-based)
+                    const weekStarts = new Set<string>();
+                    const temp = new Date(startDate);
+                    while (temp <= endDate) {
+                        weekStarts.add(getWeekStart(temp));
+                        temp.setDate(temp.getDate() + 1);
+                    }
+                    keys.push(...Array.from(weekStarts).sort());
                 } else if (days === 90) {
                     // Monthly grouping for 90-day period - 3 months
                     const startMonth = current.getMonth();

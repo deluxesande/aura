@@ -44,15 +44,40 @@ export default function TopProducts({
         const date = new Date(period);
 
         if (timePeriod === 7) {
-            // Mon, Tue, Wed, etc - weekday only
-            return date.toLocaleDateString("en-US", {
-                weekday: "short",
-            });
+            // Group by day for 7 days
+            const dayLabels: string[] = [];
+
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                dayLabels.push(
+                    date.toLocaleDateString("en-US", {
+                        weekday: "short",
+                    })
+                );
+            }
+            return dayLabels[date.getDay()];
         } else if (timePeriod === 30) {
-            // Mon, Tue - weekday only
-            return date.toLocaleDateString("en-US", {
-                weekday: "short",
-            });
+            // Group by week for 30 days
+            const weekLabels: string[] = [];
+
+            // Generate actual date ranges for each week
+            for (let i = 3; i >= 0; i--) {
+                const weekEnd = new Date();
+                weekEnd.setDate(weekEnd.getDate() - i * 7);
+                const weekStart = new Date(weekEnd);
+                weekStart.setDate(weekStart.getDate() - 6);
+
+                weekLabels.push(
+                    `${weekStart.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                    })} - ${weekEnd.toLocaleDateString("en-US", {
+                        day: "numeric",
+                    })}`
+                );
+            }
+            return weekLabels[Math.floor((date.getDate() - 1) / 7)];
         } else if (timePeriod === 90 || timePeriod === 365) {
             // Sep, Oct, Nov - month only
             return date.toLocaleDateString("en-US", {
