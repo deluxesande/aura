@@ -211,7 +211,7 @@ export default function Page() {
         },
         {
             title: "Total Revenue",
-            number: `$${invoiceStats.totalRevenue.toFixed(2)}`,
+            number: `Ksh ${invoiceStats.totalRevenue.toFixed(2)}`,
             icon: BadgeDollarSign,
             percentageChange: invoiceStats.percentageChanges.totalRevenue,
         },
@@ -223,7 +223,7 @@ export default function Page() {
         },
         {
             title: "Profit",
-            number: `$${invoiceStats.profit.toFixed(2)}`,
+            number: `Ksh ${invoiceStats.profit.toFixed(2)}`,
             icon: BadgeDollarSign,
             percentageChange: invoiceStats.percentageChanges.profit,
         },

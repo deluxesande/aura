@@ -140,7 +140,7 @@ export default function InvoicesTable({
                                                 {invoice.totalQuantity}
                                             </td>
                                             <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
-                                                ${invoice.totalAmount}
+                                                Ksh {invoice.totalAmount}
                                             </td>
                                             <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
                                                 <span

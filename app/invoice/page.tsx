@@ -129,7 +129,7 @@ function InvoicePageContent() {
                                 Amount
                             </p>
                             <p className="text-white text-xl font-light">
-                                ${invoice?.totalAmount}
+                                Ksh {invoice?.totalAmount}
                             </p>
                         </div>
                     </div>
