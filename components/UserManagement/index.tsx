@@ -1,5 +1,11 @@
 import { AppState } from "@/store";
 import { setInvitations } from "@/store/slices/invitationSlice";
+import {
+    setInvitationsWithImages,
+    addInvitation,
+    updateInvitation,
+    removeInvitation,
+} from "@/store/slices/invitationsDataSlice";
 import axios from "axios";
 import { Trash } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -7,7 +13,6 @@ import { useDispatch } from "react-redux";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import Image from "next/image";
-import { error } from "console";
 import { useRouter } from "next/navigation";
 
 interface User {
@@ -40,12 +45,15 @@ const UserManagement: React.FC = () => {
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteRole, setInviteRole] = useState("user");
-    const [userInvitations, setUserInvitations] = useState<Invitation[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     const dispatch = useDispatch();
     const invitations = useSelector(
         (state: AppState) => state.invitations.invitations
     ) as User[];
+    const userInvitations = useSelector(
+        (state: AppState) => state.invitationsData.invitationsWithImages
+    ) as Invitation[];
     const router = useRouter();
 
     const handleInviteUser = (e: React.FormEvent) => {
@@ -67,13 +75,13 @@ const UserManagement: React.FC = () => {
                 // Update Redux store
                 dispatch(setInvitations([...invitations, newInvitation]));
 
-                // Update local state with the new invitation (without imageUrl initially)
+                // Update invitations data store with the new invitation
                 const newInvitationWithImage = {
                     ...newInvitation,
-                    imageUrl: null, // Will be fetched later if user has profile image
+                    imageUrl: null,
                 } as Invitation;
 
-                setUserInvitations((prev) => [...prev, newInvitationWithImage]);
+                dispatch(addInvitation(newInvitationWithImage));
             } catch (error) {
                 throw error;
             }
@@ -109,11 +117,12 @@ const UserManagement: React.FC = () => {
                     )
                 );
 
-                // Update local state
-                setUserInvitations((prev) =>
-                    prev.map((user) =>
-                        user.id === userId ? { ...user, role: newRole } : user
-                    )
+                // Update invitations data store
+                dispatch(
+                    updateInvitation({
+                        id: userId,
+                        updates: { role: newRole },
+                    })
                 );
             }
         };
@@ -121,7 +130,6 @@ const UserManagement: React.FC = () => {
             loading: "Updating role.",
             success: "Role updated successfully.",
             error: (error) => {
-                // Return the actual error message from the API
                 if (error?.response?.data?.error) {
                     return error.response.data.error;
                 }
@@ -149,10 +157,8 @@ const UserManagement: React.FC = () => {
                     )
                 );
 
-                // Update local state
-                setUserInvitations((prev) =>
-                    prev.filter((inv) => inv.id !== userToDelete?.id)
-                );
+                // Update invitations data store
+                dispatch(removeInvitation(userToDelete?.id || ""));
 
                 // Redirect to login page
                 router.push("/sign-in");
@@ -163,7 +169,6 @@ const UserManagement: React.FC = () => {
             loading: "Deleting Invitation.",
             success: "Invitation deleted successfully.",
             error: (error) => {
-                // Return the actual error message from the API
                 if (error?.response?.data?.error) {
                     return error.response.data.error;
                 }
@@ -193,6 +198,14 @@ const UserManagement: React.FC = () => {
     };
 
     useEffect(() => {
+        // Check if invitations data exists in Redux store first
+        if (userInvitations.length > 0) {
+            // Data already in store, use it
+            setIsLoading(false);
+            return;
+        }
+
+        // If not in store, fetch from API
         const fetchUsers = async () => {
             try {
                 const response = await axios.get("/api/auth/invite/get");
@@ -224,8 +237,8 @@ const UserManagement: React.FC = () => {
                         })
                     );
 
-                    // Update userInvitations state with users including image URLs
-                    setUserInvitations(usersWithImages);
+                    // Update invitations data store with users including image URLs
+                    dispatch(setInvitationsWithImages(usersWithImages));
                 }
 
                 if (response.status === 404) {
@@ -238,14 +251,16 @@ const UserManagement: React.FC = () => {
                 ) {
                     toast.error("Failed to fetch Invitations.");
                 }
+            } finally {
+                setIsLoading(false);
             }
         };
 
         fetchUsers();
-    }, [dispatch]);
+    }, [dispatch, userInvitations.length]);
 
     return (
-        <section>
+        <section className="relative">
             <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h2 className="text-lg font-medium text-gray-900">
@@ -265,8 +280,13 @@ const UserManagement: React.FC = () => {
             </header>
 
             {/* Users List */}
-            <div className="mt-6 space-y-4">
-                {userInvitations.length === 0 && (
+            <div className="mt-6 space-y-4 relative">
+                {isLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-lg z-10">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                    </div>
+                )}
+                {userInvitations.length === 0 && !isLoading && (
                     <div className="text-gray-500">
                         No users found. Invite new users to get started.
                     </div>

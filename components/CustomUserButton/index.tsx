@@ -47,7 +47,7 @@ const CustomUserButton = () => {
             </Link>
             <button
                 onClick={handleSignOut}
-                className="px-4 py-2 text-sm truncate text-red-500 hover:text-red-700 transition-colors duration-200"
+                className="btn btn-sm truncate bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-300 transition-colors border-0 outline-none"
             >
                 Sign Out
             </button>

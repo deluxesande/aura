@@ -3,6 +3,9 @@ import { CloudUpload } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import Image from "next/image";
+import { useDispatch, useSelector } from "react-redux";
+import { AppState } from "@/store";
+import { setBusiness as setBusinessInStore } from "@/store/slices/businessSlice";
 
 interface BusinessSettingsFormProps {
     role: string;
@@ -17,10 +20,18 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
     const [businessId, setBusinessId] = useState<string>("");
     const [hasExistingBusiness, setHasExistingBusiness] =
         useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const dispatch = useDispatch();
 
     // Track original values to detect changes
     const [originalBusiness, setOriginalBusiness] = useState<string>("");
     const [originalLogoUrl, setOriginalLogoUrl] = useState<string>("");
+
+    // Get business data from Redux store
+    const user = useSelector((state: AppState) => state.auth.user);
+    const storedBusiness = useSelector(
+        (state: AppState) => state.business.business
+    );
 
     const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -111,33 +122,70 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
     };
 
     useEffect(() => {
-        const fetchBusiness = async () => {
-            try {
-                const response = await axios.get("/api/business");
+        // Check if business data exists in Redux store first
+        if (storedBusiness?.id && storedBusiness?.name) {
+            setBusiness(storedBusiness.name);
+            setLogoUrl(storedBusiness.logo || "");
+            setBusinessId(storedBusiness.id);
+            setHasExistingBusiness(true);
 
-                if (response.status == 200 && response.data.length > 0) {
-                    const businessData = response.data[0];
+            // Store original values for comparison
+            setOriginalBusiness(storedBusiness.name);
+            setOriginalLogoUrl(storedBusiness.logo || "");
+            setIsLoading(false);
+        }
 
-                    setBusiness(businessData.name);
-                    setLogoUrl(businessData.logo);
-                    setBusinessId(businessData.id);
-                    setHasExistingBusiness(true);
+        // Always fetch from API in the background to get the latest data
+        if (user?.businessId) {
+            const fetchAndStoreBusiness = async () => {
+                try {
+                    const response = await axios.get("/api/business");
 
-                    // Store original values for comparison
-                    setOriginalBusiness(businessData.name);
-                    setOriginalLogoUrl(businessData.logo);
+                    if (response.status === 200 && response.data.length > 0) {
+                        const businessData = response.data[0];
+
+                        // Update state with latest data
+                        setBusiness(businessData.name);
+                        setLogoUrl(businessData.logo);
+                        setBusinessId(businessData.id);
+                        setHasExistingBusiness(true);
+
+                        // Store original values for comparison
+                        setOriginalBusiness(businessData.name);
+                        setOriginalLogoUrl(businessData.logo);
+
+                        // Update Redux store with latest data
+                        dispatch(
+                            setBusinessInStore({
+                                id: businessData.id,
+                                name: businessData.name,
+                                logo: businessData.logo,
+                            })
+                        );
+                    }
+                } catch (error) {
+                    if (
+                        axios.isAxiosError(error) &&
+                        error.response?.status !== 404
+                    )
+                        toast.error("Error fetching business data");
+                } finally {
+                    setIsLoading(false);
                 }
-            } catch (error) {
-                if (axios.isAxiosError(error) && error.response?.status !== 404)
-                    toast.error("Error fetching business data");
-            }
-        };
+            };
 
-        fetchBusiness();
-    }, []);
+            fetchAndStoreBusiness();
+        }
+    }, [
+        storedBusiness?.id,
+        storedBusiness?.name,
+        storedBusiness?.logo,
+        user?.businessId,
+        dispatch,
+    ]);
 
     return (
-        <section>
+        <section className="relative">
             <header>
                 <h2 className="text-lg font-medium text-gray-900">
                     Business Settings
@@ -147,6 +195,12 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
                     invoices and documents.
                 </p>
             </header>
+
+            {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10 rounded-lg">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                </div>
+            )}
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-6">
                 <div>
@@ -224,7 +278,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
                 <button
                     type="submit"
                     disabled={role === "manager"}
-                    className="btn btn-md btn-ghost text-black flex items-center bg-green-400 w-full mt-8"
+                    className="btn btn-md btn-ghost flex items-center bg-green-500 text-white hover:bg-green-600 w-full mt-8"
                 >
                     {hasExistingBusiness
                         ? "Update Business"

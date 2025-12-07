@@ -272,7 +272,7 @@ export default function Navbar({
                                                 className="p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
                                                 onClick={toggleFilterPopUp}
                                             >
-                                                <SlidersHorizontal size={25} />
+                                                <SlidersHorizontal size={20} />
                                             </button>
                                             {filterPopUp && (
                                                 <FloatingPortal>

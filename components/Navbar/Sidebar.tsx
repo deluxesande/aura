@@ -200,31 +200,36 @@ const Sidebar = () => {
             </div>
             {sideBarState ? (
                 <Link
-                    className="w-full flex items-center space-x-2 px-2 py-2"
+                    className="w-full flex items-center space-x-3 px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer group"
                     href="/profile"
                 >
-                    <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center">
-                        <Image
-                            src={profileImage}
-                            width={40}
-                            height={40}
-                            alt={`${clerkUser?.firstName} Profile Image`}
-                            className="object-cover rounded-full"
-                        />
-                    </div>
-                    <p className="text-sm font-medium whitespace-nowrap ml-2">
-                        {clerkUser?.firstName} {clerkUser?.lastName}
-                    </p>
-                </Link>
-            ) : (
-                <Link href="/profile">
-                    <div className="w-10 h-10 rounded-full mt-auto mb-4 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 ring-2 ring-gray-200">
                         <Image
                             src={profileImage}
                             width={30}
                             height={30}
                             alt={`${clerkUser?.firstName} Profile Image`}
-                            className="rounded-full"
+                            className="object-cover rounded-full"
+                        />
+                    </div>
+                    <div className="flex flex-col overflow-hidden">
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                            {clerkUser?.firstName} {clerkUser?.lastName}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                            {user?.role}
+                        </p>
+                    </div>
+                </Link>
+            ) : (
+                <Link href="/profile">
+                    <div className="w-10 h-10 rounded-full mt-auto mb-4 flex items-center justify-center ring-2 ring-gray-200 hover:ring-green-400 transition-all cursor-pointer">
+                        <Image
+                            src={profileImage}
+                            width={30}
+                            height={30}
+                            alt={`${clerkUser?.firstName} Profile Image`}
+                            className="rounded-full object-cover"
                         />
                     </div>
                 </Link>

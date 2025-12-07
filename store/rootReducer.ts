@@ -5,6 +5,8 @@ import visibilityReducer from "./slices/visibilitySlice";
 import authReducer from "./slices/authSlice";
 import SideBarReducer from "./slices/sideBarSlice";
 import invitationsReducer from "./slices/invitationSlice";
+import businessReducer from "./slices/businessSlice";
+import invitationsDataReducer from "./slices/invitationsDataSlice";
 
 const rootReducer = combineReducers({
     product: productReducer,
@@ -13,6 +15,8 @@ const rootReducer = combineReducers({
     auth: authReducer,
     sidebar: SideBarReducer,
     invitations: invitationsReducer,
+    business: businessReducer,
+    invitationsData: invitationsDataReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

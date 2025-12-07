@@ -79,7 +79,7 @@ const DataManagement: React.FC = () => {
             <div className="mt-6 w-full">
                 <button
                     onClick={() => setShowModal(true)}
-                    className="btn btn-md btn-ghost text-black flex items-center bg-green-400 w-full mt-8"
+                    className="btn btn-md btn-ghost flex items-center bg-green-500 text-white hover:bg-green-600 w-full mt-8"
                 >
                     Download Data
                 </button>
@@ -95,27 +95,27 @@ const DataManagement: React.FC = () => {
                         }
                     }}
                 >
-                    <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+                    <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col md:max-h-[80vh]">
                         {/* Modal Header */}
-                        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                            <h3 className="text-lg font-medium text-gray-900">
+                        <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200">
+                            <h3 className="text-base md:text-lg font-medium text-gray-900">
                                 Select Data to Download
                             </h3>
                             <button
                                 onClick={() => setShowModal(false)}
-                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                                className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
                             >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
                         {/* Modal Body */}
-                        <div className="p-6 overflow-y-auto flex-1">
-                            <div className="space-y-4">
+                        <div className="p-4 md:p-6 overflow-y-auto flex-1">
+                            <div className="space-y-3 md:space-y-4">
                                 {dataOptions.map((option) => (
                                     <label
                                         key={option.id}
-                                        className="flex items-start space-x-3 p-3 rounded-md hover:bg-gray-50 cursor-pointer transition-colors border border-gray-200"
+                                        className="flex items-start space-x-3 p-3 md:p-4 rounded-md hover:bg-gray-50 cursor-pointer transition-colors border border-gray-200"
                                     >
                                         <input
                                             type="checkbox"
@@ -125,10 +125,10 @@ const DataManagement: React.FC = () => {
                                             onChange={() =>
                                                 handleCheckboxChange(option.id)
                                             }
-                                            className="mt-1 h-4 w-4 accent-green-500 bg-transparent border border-gray-300 rounded cursor-pointer focus:ring-2 focus:ring-green-500"
+                                            className="mt-1 h-4 w-4 accent-green-500 bg-transparent border border-gray-300 rounded cursor-pointer focus:ring-2 focus:ring-green-500 flex-shrink-0"
                                         />
-                                        <div className="flex-1">
-                                            <div className="font-medium text-gray-900">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-medium text-gray-900 text-sm md:text-base">
                                                 {option.label}
                                             </div>
                                         </div>
@@ -138,22 +138,22 @@ const DataManagement: React.FC = () => {
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="p-6 border-t border-gray-200 bg-gray-50">
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm text-gray-600">
+                        <div className="p-4 md:p-6 border-t border-gray-200 bg-gray-50">
+                            <div className="flex flex-col-reverse md:flex-row md:items-center md:justify-between gap-4">
+                                <p className="text-xs md:text-sm text-gray-600 order-last md:order-first">
                                     {selectedDataTypes.length} item
                                     {selectedDataTypes.length !== 1
                                         ? "s"
                                         : ""}{" "}
                                     selected
                                 </p>
-                                <div className="flex space-x-3">
+                                <div className="flex flex-col-reverse md:flex-row md:space-x-3 gap-2 md:gap-3">
                                     <button
                                         onClick={() => {
                                             setShowModal(false);
                                             setSelectedDataTypes([]);
                                         }}
-                                        className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                                        className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors order-last"
                                     >
                                         Cancel
                                     </button>
