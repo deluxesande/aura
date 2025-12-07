@@ -82,8 +82,20 @@ const LineChart: React.FC<LineChartProps> = ({ timePeriod = 7 }) => {
 
                     filteredInvoices.forEach((invoice) => {
                         const invoiceDate = new Date(invoice.createdAt);
+                        const invoiceDateOnly = new Date(
+                            invoiceDate.getFullYear(),
+                            invoiceDate.getMonth(),
+                            invoiceDate.getDate()
+                        );
+                        const nowDateOnly = new Date(
+                            now.getFullYear(),
+                            now.getMonth(),
+                            now.getDate()
+                        );
+
                         const daysDiff = Math.floor(
-                            (now.getTime() - invoiceDate.getTime()) /
+                            (nowDateOnly.getTime() -
+                                invoiceDateOnly.getTime()) /
                                 (1000 * 60 * 60 * 24)
                         );
                         const index = 6 - daysDiff;
@@ -120,8 +132,20 @@ const LineChart: React.FC<LineChartProps> = ({ timePeriod = 7 }) => {
 
                     filteredInvoices.forEach((invoice) => {
                         const invoiceDate = new Date(invoice.createdAt);
+                        const invoiceDateOnly = new Date(
+                            invoiceDate.getFullYear(),
+                            invoiceDate.getMonth(),
+                            invoiceDate.getDate()
+                        );
+                        const nowDateOnly = new Date(
+                            now.getFullYear(),
+                            now.getMonth(),
+                            now.getDate()
+                        );
+
                         const daysDiff = Math.floor(
-                            (now.getTime() - invoiceDate.getTime()) /
+                            (nowDateOnly.getTime() -
+                                invoiceDateOnly.getTime()) /
                                 (1000 * 60 * 60 * 24)
                         );
                         const weekIndex = Math.floor(daysDiff / 7);
@@ -316,8 +340,7 @@ const LineChart: React.FC<LineChartProps> = ({ timePeriod = 7 }) => {
             y: {
                 beginAtZero: true,
                 grid: {
-                    display: true,
-                    color: "rgba(148, 163, 184, 0.1)",
+                    display: false,
                     drawBorder: false,
                 },
                 ticks: {

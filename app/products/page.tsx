@@ -269,7 +269,7 @@ export default function Page() {
                         })
                     )
                 );
-                return "Order has been successfully processed";
+                return "Order Successful";
             },
             error: "Error processing order",
         });

@@ -22,6 +22,26 @@ export default function Page() {
     );
     const dispatch = useDispatch();
 
+    const clearForm = () => {
+        (document.getElementById("productName") as HTMLInputElement).value = "";
+        (
+            document.getElementById("productDescription") as HTMLTextAreaElement
+        ).value = "";
+        (document.getElementById("productPrice") as HTMLInputElement).value =
+            "";
+        (document.getElementById("productQuantity") as HTMLInputElement).value =
+            "";
+        (
+            document.getElementById("productCategory") as HTMLSelectElement
+        ).value = "";
+        (
+            document.getElementById("productInStock") as HTMLInputElement
+        ).checked = false;
+        (document.getElementById("productImage") as HTMLInputElement).value =
+            "";
+        setImagePreview(null);
+    };
+
     const handleCreateNewCategory = async (categoryName: string) => {
         const promise = async () => {
             try {
@@ -139,6 +159,7 @@ export default function Page() {
                 });
 
                 dispatch(setProducts([...originalProducts, response.data]));
+                clearForm();
             } catch (error) {
                 throw error;
             } finally {

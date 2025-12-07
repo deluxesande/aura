@@ -27,8 +27,19 @@ interface InvoiceStats {
     };
 }
 
+interface TopProduct {
+    id: string;
+    name: string;
+    soldQuantity?: number;
+    totalRevenue?: number;
+    quantity?: number;
+    price: number;
+    period?: string;
+    products?: TopProduct[];
+}
+
 export default function Page() {
-    const [products, setLocalProducts] = useState<Product[]>([]);
+    const [products, setLocalProducts] = useState<TopProduct[]>([]);
     const [invoices, setInvoices] = React.useState([]);
     const [invoiceStats, setInvoiceStats] = useState<InvoiceStats>({
         totalInvoices: 0,
@@ -280,7 +291,10 @@ export default function Page() {
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                         </div>
                     ) : (
-                        <TopProductsChart products={products} />
+                        <TopProductsChart
+                            products={products}
+                            timePeriod={topProductsTimePeriod}
+                        />
                     )}
                 </div>
             </div>
