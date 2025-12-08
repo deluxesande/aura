@@ -6,18 +6,19 @@ import {
     PackageSearch,
     ChevronRight,
     ChevronLeft,
+    LogOut,
 } from "lucide-react";
 import React, { useEffect } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { useSelector } from "react-redux";
 import { AppState } from "@/store";
 import { useDispatch } from "react-redux";
 import { toggleSideBarState } from "@/store/slices/sideBarSlice";
 import axios from "axios";
-import { setUser } from "@/store/slices/authSlice";
+import { setUser, signOut as signOutAction } from "@/store/slices/authSlice";
 
 const allLinks = [
     {
@@ -90,7 +91,8 @@ type storeUser = {
 const Sidebar = () => {
     const pathname = usePathname();
 
-    const { user: clerkUser } = useUser();
+    const { user: clerkUser, isSignedIn } = useUser();
+    const { signOut } = useClerk();
     const dispatch = useDispatch();
     const sideBarState = useSelector(
         (state: AppState) => state.sidebar.isOpen,
@@ -118,6 +120,15 @@ const Sidebar = () => {
         }
     }, [user, dispatch]);
 
+    const handleSignOut = async () => {
+        if (isSignedIn) {
+            await signOut();
+
+            // Clear user state in Redux
+            dispatch(signOutAction());
+        }
+    };
+
     if (user == null) return null;
 
     // Filter links based on user role
@@ -142,7 +153,7 @@ const Sidebar = () => {
                 toggleSideBar ? "w-44" : "w-20"
             } h-screen bg-white shadow-sm p-6 hidden lg:flex flex-col items-start justify-between sticky z-10`}
         >
-            <div className="flex flex-col items-center justify-center">
+            <div className="flex flex-col items-center justify-center w-full">
                 <Link href="/">
                     {toggleSideBar ? (
                         <Image
@@ -198,46 +209,77 @@ const Sidebar = () => {
                     })}
                 </ul>
             </div>
-            {sideBarState ? (
-                <Link
-                    className="w-full flex items-center space-x-3 px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer group"
-                    href="/profile"
-                >
-                    <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 ring-2 ring-gray-200 group-hover:ring-green-500">
-                        <Image
-                            src={profileImage}
-                            width={30}
-                            height={30}
-                            alt={`${clerkUser?.firstName} Profile Image`}
-                            className="object-cover rounded-full"
+
+            <div className="w-full space-y-2">
+                {sideBarState ? (
+                    <Link
+                        className="w-full flex items-center space-x-3 px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer group"
+                        href="/profile"
+                    >
+                        <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 ring-2 ring-gray-200 group-hover:ring-green-500 transition-colors">
+                            <Image
+                                src={profileImage}
+                                width={30}
+                                height={30}
+                                alt={`${clerkUser?.firstName} Profile Image`}
+                                className="object-cover rounded-full"
+                            />
+                        </div>
+                        <div className="flex flex-col overflow-hidden">
+                            <p className="text-sm font-semibold text-gray-900 truncate">
+                                {clerkUser?.firstName} {clerkUser?.lastName}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">
+                                {user?.role}
+                            </p>
+                        </div>
+                    </Link>
+                ) : (
+                    <Link href="/profile">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center ring-2 ring-gray-200 hover:ring-green-500 transition-all cursor-pointer mx-auto">
+                            <Image
+                                src={profileImage}
+                                width={30}
+                                height={30}
+                                alt={`${clerkUser?.firstName} Profile Image`}
+                                className="rounded-full object-cover"
+                            />
+                        </div>
+                    </Link>
+                )}
+
+                {sideBarState ? (
+                    <button
+                        onClick={handleSignOut}
+                        className="w-full flex items-center space-x-3 px-2 py-2 rounded-lg hover:bg-red-50 transition-colors cursor-pointer group"
+                    >
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#fafafa] group-hover:bg-red-100 transition-colors">
+                            <LogOut
+                                size={18}
+                                className="text-gray-700 stroke-red-600 group-hover:text-red-600"
+                            />
+                        </div>
+                        <span className="text-sm text-red-600 group-hover:text-red-600">
+                            Logout
+                        </span>
+                    </button>
+                ) : (
+                    <button
+                        onClick={handleSignOut}
+                        className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#fafafa] hover:bg-red-100 transition-colors cursor-pointer mx-auto"
+                        title="Logout"
+                    >
+                        <LogOut
+                            size={18}
+                            className="stroke-red-600 hover:text-red-600"
                         />
-                    </div>
-                    <div className="flex flex-col overflow-hidden">
-                        <p className="text-sm font-semibold text-gray-900 truncate">
-                            {clerkUser?.firstName} {clerkUser?.lastName}
-                        </p>
-                        <p className="text-xs text-gray-500 truncate">
-                            {user?.role}
-                        </p>
-                    </div>
-                </Link>
-            ) : (
-                <Link href="/profile">
-                    <div className="w-10 h-10 rounded-full mt-auto mb-4 flex items-center justify-center ring-2 ring-gray-200 hover:ring-green-400 transition-all cursor-pointer">
-                        <Image
-                            src={profileImage}
-                            width={30}
-                            height={30}
-                            alt={`${clerkUser?.firstName} Profile Image`}
-                            className="rounded-full object-cover"
-                        />
-                    </div>
-                </Link>
-            )}
+                    </button>
+                )}
+            </div>
 
             <button
                 onClick={toggleSidebarFunc}
-                className="absolute top-[140px] right-[-15px] transform -translate-y-1/2 bg-white p-2 rounded-full"
+                className="absolute top-[140px] right-[-15px] transform -translate-y-1/2 bg-white p-2 rounded-full shadow-md border border-gray-200"
             >
                 {toggleSideBar ? (
                     <ChevronLeft size={20} />

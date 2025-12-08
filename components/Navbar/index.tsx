@@ -142,40 +142,12 @@ export default function Navbar({
         )
     );
 
-    const togglePopup = () => {
-        filterPopUp ? setFilterPopUp(!filterPopUp) : filterPopUp;
-        setShowPopup(!showPopup);
-    };
-
     const toggleFilterPopUp = () => {
         if (pathname !== "/products") {
             router.push("/products");
         }
         showPopup ? setShowPopup(!showPopup) : showPopup;
         setFilterPopUp(!filterPopUp);
-    };
-
-    const markAsRead = (id: number) => {
-        setNotifications((prevNotifications) =>
-            prevNotifications.map((notification) =>
-                notification.id === id
-                    ? { ...notification, isRead: true }
-                    : notification
-            )
-        );
-    };
-
-    const markAllAsRead = () => {
-        setNotifications((prevNotifications) =>
-            prevNotifications.map((notification) => ({
-                ...notification,
-                isRead: true,
-            }))
-        );
-    };
-
-    const deleteAllNotifications = () => {
-        setNotifications([]);
     };
 
     const toggleSidebar = () => {
