@@ -429,7 +429,13 @@ export default function Navbar({
                 </div>
 
                 {/* Body content goes here */}
-                <div className="flex-grow px-6 lg:px-10 py-1 overflow-y-auto">
+                <div
+                    className={`flex-grow px-6 lg:px-10 py-1 overflow-y-auto transition-all duration-300 ease-in-out ${
+                        sideBarState
+                            ? "max-w-[calc(100vw-11rem)]"
+                            : "max-w-[calc(100vw-5rem)]"
+                    }`}
+                >
                     {children}
                 </div>
             </div>

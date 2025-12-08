@@ -21,6 +21,13 @@ export interface Category {
     products: Product[];
 }
 
+export interface InvoiceCreator {
+    firstName: string | null;
+    lastName: string | null;
+    role: string;
+    imageUrl: string | null;
+}
+
 export interface Invoice {
     id: string;
     createdAt: Date;
@@ -30,8 +37,9 @@ export interface Invoice {
     invoiceItems: InvoiceItem[];
     totalAmount: number;
     paymentType: string;
-    status: string; // e.g., "pending", "active", "completed", "cancelled"
+    status: string;
     invoiceName: string;
+    creator?: InvoiceCreator | null;
 }
 
 export interface InvoiceItem {

@@ -19,11 +19,9 @@ ChartJS.register(
     Filler
 );
 
-interface Invoice {
-    id: string;
-    createdAt: string;
-    totalAmount: number;
-    status: string;
+interface AnalyticsData {
+    labels: string[];
+    data: number[];
 }
 
 interface LineChartProps {
@@ -31,10 +29,7 @@ interface LineChartProps {
 }
 
 const LineChart: React.FC<LineChartProps> = ({ timePeriod = 7 }) => {
-    const [chartData, setChartData] = useState<{
-        labels: string[];
-        data: number[];
-    }>({
+    const [chartData, setChartData] = useState<AnalyticsData>({
         labels: [],
         data: [],
     });
@@ -42,196 +37,26 @@ const LineChart: React.FC<LineChartProps> = ({ timePeriod = 7 }) => {
 
     useEffect(() => {
         setLoading(true);
-        const fetchInvoices = async () => {
+        const fetchAnalytics = async () => {
             try {
-                const response = await fetch("/api/invoice");
-                const invoices: Invoice[] = await response.json();
-
-                // Filter only PAID invoices
-                const paidInvoices = invoices.filter(
-                    (inv) => inv.status === "PENDING"
+                const response = await fetch(
+                    `/api/invoice/analytics?timePeriod=${timePeriod}`
                 );
 
-                // Filter by time period
-                const now = new Date();
-                const startDate = new Date();
-                startDate.setDate(now.getDate() - timePeriod);
-
-                const filteredInvoices = paidInvoices.filter((invoice) => {
-                    const invoiceDate = new Date(invoice.createdAt);
-                    return invoiceDate >= startDate && invoiceDate <= now;
-                });
-
-                let labels: string[] = [];
-                let revenueData: number[] = [];
-
-                if (timePeriod === 7) {
-                    // Group by day for 7 days
-                    const dailyRevenue = new Array(7).fill(0);
-                    const dayLabels: string[] = [];
-
-                    for (let i = 6; i >= 0; i--) {
-                        const date = new Date();
-                        date.setDate(date.getDate() - i);
-                        dayLabels.push(
-                            date.toLocaleDateString("en-US", {
-                                weekday: "short",
-                            })
-                        );
-                    }
-
-                    filteredInvoices.forEach((invoice) => {
-                        const invoiceDate = new Date(invoice.createdAt);
-                        const invoiceDateOnly = new Date(
-                            invoiceDate.getFullYear(),
-                            invoiceDate.getMonth(),
-                            invoiceDate.getDate()
-                        );
-                        const nowDateOnly = new Date(
-                            now.getFullYear(),
-                            now.getMonth(),
-                            now.getDate()
-                        );
-
-                        const daysDiff = Math.floor(
-                            (nowDateOnly.getTime() -
-                                invoiceDateOnly.getTime()) /
-                                (1000 * 60 * 60 * 24)
-                        );
-                        const index = 6 - daysDiff;
-                        if (index >= 0 && index < 7) {
-                            dailyRevenue[index] += invoice.totalAmount;
-                        }
-                    });
-
-                    labels = dayLabels;
-                    revenueData = dailyRevenue.map((amount) =>
-                        Math.round(amount / 1000)
-                    );
-                } else if (timePeriod === 30) {
-                    // Group by week for 30 days
-                    const weeklyRevenue = new Array(4).fill(0);
-                    const weekLabels: string[] = [];
-
-                    // Generate actual date ranges for each week
-                    for (let i = 3; i >= 0; i--) {
-                        const weekEnd = new Date();
-                        weekEnd.setDate(weekEnd.getDate() - i * 7);
-                        const weekStart = new Date(weekEnd);
-                        weekStart.setDate(weekStart.getDate() - 6);
-
-                        weekLabels.push(
-                            `${weekStart.toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                            })} - ${weekEnd.toLocaleDateString("en-US", {
-                                day: "numeric",
-                            })}`
-                        );
-                    }
-
-                    filteredInvoices.forEach((invoice) => {
-                        const invoiceDate = new Date(invoice.createdAt);
-                        const invoiceDateOnly = new Date(
-                            invoiceDate.getFullYear(),
-                            invoiceDate.getMonth(),
-                            invoiceDate.getDate()
-                        );
-                        const nowDateOnly = new Date(
-                            now.getFullYear(),
-                            now.getMonth(),
-                            now.getDate()
-                        );
-
-                        const daysDiff = Math.floor(
-                            (nowDateOnly.getTime() -
-                                invoiceDateOnly.getTime()) /
-                                (1000 * 60 * 60 * 24)
-                        );
-                        const weekIndex = Math.floor(daysDiff / 7);
-                        const index = 3 - weekIndex;
-                        if (index >= 0 && index < 4) {
-                            weeklyRevenue[index] += invoice.totalAmount;
-                        }
-                    });
-
-                    labels = weekLabels;
-                    revenueData = weeklyRevenue.map((amount) =>
-                        Math.round(amount / 1000)
-                    );
-                } else if (timePeriod === 90) {
-                    // Group by month for 90 days
-                    const monthlyRevenue = new Array(3).fill(0);
-                    const monthLabels: string[] = [];
-
-                    for (let i = 2; i >= 0; i--) {
-                        const date = new Date();
-                        date.setMonth(date.getMonth() - i);
-                        monthLabels.push(
-                            date.toLocaleDateString("en-US", { month: "short" })
-                        );
-                    }
-
-                    filteredInvoices.forEach((invoice) => {
-                        const invoiceDate = new Date(invoice.createdAt);
-                        const monthsDiff =
-                            (now.getFullYear() - invoiceDate.getFullYear()) *
-                                12 +
-                            now.getMonth() -
-                            invoiceDate.getMonth();
-                        const index = 2 - monthsDiff;
-                        if (index >= 0 && index < 3) {
-                            monthlyRevenue[index] += invoice.totalAmount;
-                        }
-                    });
-
-                    labels = monthLabels;
-                    revenueData = monthlyRevenue.map((amount) =>
-                        Math.round(amount / 1000)
-                    );
-                } else if (timePeriod === 365) {
-                    // Group by month for 1 year
-                    const monthlyRevenue = new Array(12).fill(0);
-                    const monthLabels: string[] = [];
-
-                    for (let i = 11; i >= 0; i--) {
-                        const date = new Date();
-                        date.setMonth(date.getMonth() - i);
-                        monthLabels.push(
-                            date.toLocaleDateString("en-US", { month: "short" })
-                        );
-                    }
-
-                    filteredInvoices.forEach((invoice) => {
-                        const invoiceDate = new Date(invoice.createdAt);
-                        const monthsDiff =
-                            (now.getFullYear() - invoiceDate.getFullYear()) *
-                                12 +
-                            now.getMonth() -
-                            invoiceDate.getMonth();
-                        const index = 11 - monthsDiff;
-                        if (index >= 0 && index < 12) {
-                            monthlyRevenue[index] += invoice.totalAmount;
-                        }
-                    });
-
-                    labels = monthLabels;
-                    revenueData = monthlyRevenue.map((amount) =>
-                        Math.round(amount / 1000)
-                    );
+                if (!response.ok) {
+                    throw new Error("Failed to fetch analytics");
                 }
 
-                setChartData({
-                    labels,
-                    data: revenueData,
-                });
+                const data: AnalyticsData = await response.json();
+                setChartData(data);
                 setLoading(false);
             } catch (error) {
+                console.error("Error fetching analytics:", error);
                 setLoading(false);
             }
         };
 
-        fetchInvoices();
+        fetchAnalytics();
     }, [timePeriod]);
 
     const emptyData = {

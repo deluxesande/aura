@@ -168,7 +168,8 @@ export default function Page() {
                     },
                 });
 
-                setInvoices(allInvoices.slice(0, 5));
+                // Store all invoices instead of slicing
+                setInvoices(allInvoices);
             } catch (error) {
                 setInvoices([]);
             } finally {
@@ -304,6 +305,7 @@ export default function Page() {
                 invoices={invoices}
                 handleDelete={() => {}}
                 loading={invoicesLoading}
+                itemsPerPage={5}
             />
         </Navbar>
     );

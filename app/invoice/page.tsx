@@ -142,6 +142,7 @@ function InvoicePageContent() {
                         <TopProducts
                             key={index}
                             product={invoiceItem.Product}
+                            quantity={invoiceItem.quantity}
                         />
                     ))}
                 </div>

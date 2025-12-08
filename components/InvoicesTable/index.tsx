@@ -1,7 +1,15 @@
 import React, { useState } from "react";
-import { Edit, Trash, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+    Trash,
+    ChevronLeft,
+    ChevronRight,
+    Check,
+    Clock,
+    X,
+} from "lucide-react";
 import { Invoice } from "@/utils/typesDefinitions";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 // Extend the Invoice interface
 interface ExtendedInvoice extends Invoice {
@@ -13,15 +21,16 @@ export default function InvoicesTable({
     invoices,
     handleDelete,
     loading = false,
+    itemsPerPage = 10,
 }: {
     title: string;
     invoices: ExtendedInvoice[];
     handleDelete: (invoiceId: string) => void;
     loading?: boolean;
+    itemsPerPage?: number;
 }) {
     const router = useRouter();
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
 
     const handleRowClick = (invoiceId: string) => {
         router.push(`/invoice?id=${invoiceId}`);
@@ -30,11 +39,37 @@ export default function InvoicesTable({
     const getStatusBadgeColor = (status: string | undefined) => {
         switch (status?.toLowerCase()) {
             case "paid":
-                return "bg-green-500 text-white";
+                return "bg-green-100 text-green-700";
             case "pending":
-                return "bg-yellow-500 text-white";
+                return "bg-yellow-100 text-yellow-700";
             case "cancelled":
-                return "bg-red-500 text-white";
+                return "bg-red-100 text-red-700";
+            default:
+                return "bg-gray-100 text-gray-700";
+        }
+    };
+
+    const getStatusIcon = (status: string | undefined) => {
+        switch (status?.toLowerCase()) {
+            case "paid":
+                return <Check className="w-3 h-3 stroke-green-700" />;
+            case "pending":
+                return <Clock className="w-3 h-3 stroke-yellow-700" />;
+            case "cancelled":
+                return <X className="w-3 h-3 stroke-red-700" />;
+            default:
+                return null;
+        }
+    };
+
+    const getRoleBadgeColor = (role: string | undefined) => {
+        switch (role?.toLowerCase()) {
+            case "admin":
+                return "bg-purple-100 text-purple-800";
+            case "manager":
+                return "bg-blue-100 text-blue-800";
+            case "user":
+                return "bg-gray-100 text-gray-800";
             default:
                 return "bg-gray-100 text-gray-800";
         }
@@ -93,6 +128,9 @@ export default function InvoicesTable({
                                         Invoice Name
                                     </th>
                                     <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-400">
+                                        Created By
+                                    </th>
+                                    <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-400">
                                         Quantity
                                     </th>
                                     <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-400">
@@ -110,7 +148,7 @@ export default function InvoicesTable({
                                 {loading ? (
                                     <tr>
                                         <td
-                                            colSpan={5}
+                                            colSpan={6}
                                             className="py-12 px-4 text-center"
                                         >
                                             <div className="flex flex-col items-center justify-center">
@@ -121,7 +159,7 @@ export default function InvoicesTable({
                                 ) : paginatedInvoices.length === 0 ? (
                                     <tr>
                                         <td
-                                            colSpan={5}
+                                            colSpan={6}
                                             className="py-2 px-4 text-black text-lg text-center"
                                         >
                                             No Invoices
@@ -131,46 +169,93 @@ export default function InvoicesTable({
                                     paginatedInvoices?.map((invoice, index) => (
                                         <tr
                                             key={index}
-                                            className="hover:bg-gray-100 cursor-pointer"
+                                            className="hover:bg-gray-50 cursor-pointer transition-colors"
+                                            onClick={() =>
+                                                handleRowClick(
+                                                    String(invoice.id)
+                                                )
+                                            }
                                         >
-                                            <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
-                                                <p>{invoice.invoiceName}</p>
+                                            <td className="py-3 px-4 border-b text-black text-sm border-gray-100">
+                                                <p className="font-medium">
+                                                    {invoice.invoiceName}
+                                                </p>
                                             </td>
-                                            <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
+                                            <td className="py-3 px-4 border-b text-black text-sm border-gray-100">
+                                                {invoice.creator ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 ring-2 ring-gray-200">
+                                                            <Image
+                                                                src={
+                                                                    invoice
+                                                                        .creator
+                                                                        .imageUrl ||
+                                                                    "https://www.svgrepo.com/show/535711/user.svg"
+                                                                }
+                                                                width={32}
+                                                                height={32}
+                                                                alt={`${invoice.creator.firstName} Profile`}
+                                                                className="object-cover rounded-full"
+                                                            />
+                                                        </div>
+                                                        <div className="flex flex-col overflow-hidden">
+                                                            <p className="text-sm font-semibold text-gray-900 truncate">
+                                                                {
+                                                                    invoice
+                                                                        .creator
+                                                                        .firstName
+                                                                }{" "}
+                                                                {
+                                                                    invoice
+                                                                        .creator
+                                                                        .lastName
+                                                                }
+                                                            </p>
+                                                            <p className="text-xs text-gray-500 truncate">
+                                                                {
+                                                                    invoice
+                                                                        .creator
+                                                                        .role
+                                                                }
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-gray-400 text-sm">
+                                                        Unknown
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="py-3 px-4 border-b text-black text-sm border-gray-100">
                                                 {invoice.totalQuantity}
                                             </td>
-                                            <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
-                                                Ksh {invoice.totalAmount}
+                                            <td className="py-3 px-4 border-b text-black text-sm border-gray-100">
+                                                <span className="font-semibold">
+                                                    Ksh {invoice.totalAmount}
+                                                </span>
                                             </td>
-                                            <td className="py-2 px-2 border-b text-black text-xs border-gray-100">
+                                            <td className="py-3 px-4 border-b text-black text-xs border-gray-100">
                                                 <span
-                                                    className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(
+                                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(
                                                         invoice.status
                                                     )}`}
                                                 >
+                                                    {getStatusIcon(
+                                                        invoice.status
+                                                    )}
                                                     {invoice.status ||
                                                         "Unknown"}
                                                 </span>
                                             </td>
-                                            <td className="py-2 px-4 border-b border-gray-100 flex items-center">
+                                            <td className="py-3 px-4 border-b border-gray-100">
                                                 <button
-                                                    className="btn btn-sm btn-ghost text-black"
-                                                    onClick={() =>
-                                                        handleRowClick(
-                                                            String(invoice.id)
-                                                        )
-                                                    }
-                                                >
-                                                    <Edit className="w-4 h-4" />
-                                                </button>
-                                                <div className="border-l border-gray-300 h-4 mx-1"></div>
-                                                <button
-                                                    className="btn btn-sm btn-ghost text-black"
-                                                    onClick={() =>
+                                                    className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
                                                         handleDelete(
                                                             String(invoice.id)
-                                                        )
-                                                    }
+                                                        );
+                                                    }}
                                                 >
                                                     <Trash className="w-4 h-4" />
                                                 </button>
@@ -201,42 +286,71 @@ export default function InvoicesTable({
                         {paginatedInvoices.map((invoice, index) => (
                             <div
                                 key={index}
-                                className="p-4 border rounded-lg shadow-sm bg-gray-50"
+                                className="p-4 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
+                                onClick={() =>
+                                    handleRowClick(String(invoice.id))
+                                }
                             >
                                 <div className="flex justify-between items-start">
                                     <p className="font-bold text-lg text-black max-w-52 whitespace-nowrap truncate">
                                         {invoice.invoiceName}
                                     </p>
-                                    <span className="text-sm text-gray-600 mr-3">
-                                        {invoice.totalQuantity}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm text-gray-600">
+                                            {invoice.totalQuantity}
+                                        </span>
+                                        <span
+                                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(
+                                                invoice.status
+                                            )}`}
+                                        >
+                                            {getStatusIcon(invoice.status)}
+                                            {invoice.status || "Unknown"}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="flex justify-between items-center mt-2">
-                                    <p className="text-green-600 font-medium text-md">
-                                        ${invoice.totalAmount}
+
+                                {/* Creator Badge for Mobile */}
+                                {invoice.creator && (
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 ring-2 ring-gray-200">
+                                            <Image
+                                                src={
+                                                    invoice.creator.imageUrl ||
+                                                    "https://www.svgrepo.com/show/535711/user.svg"
+                                                }
+                                                width={24}
+                                                height={24}
+                                                alt={`${invoice.creator.firstName} Profile`}
+                                                className="object-cover rounded-full"
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-xs font-medium text-gray-700">
+                                                {invoice.creator.firstName}{" "}
+                                                {invoice.creator.lastName}
+                                            </p>
+                                            <span
+                                                className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getRoleBadgeColor(
+                                                    invoice.creator.role
+                                                )}`}
+                                            >
+                                                {invoice.creator.role}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="flex justify-between items-center mt-3">
+                                    <p className="text-green-600 font-semibold text-lg">
+                                        Ksh {invoice.totalAmount}
                                     </p>
-                                    <span
-                                        className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(
-                                            invoice.status
-                                        )}`}
-                                    >
-                                        {invoice.status || "Unknown"}
-                                    </span>
-                                </div>
-                                <div className="flex justify-end space-x-2 mt-3">
                                     <button
-                                        className="btn btn-sm btn-ghost text-black"
-                                        onClick={() =>
-                                            handleRowClick(String(invoice.id))
-                                        }
-                                    >
-                                        <Edit className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        className="btn btn-sm btn-ghost text-black"
-                                        onClick={() =>
-                                            handleDelete(String(invoice.id))
-                                        }
+                                        className="p-2 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDelete(String(invoice.id));
+                                        }}
                                     >
                                         <Trash className="w-4 h-4" />
                                     </button>
@@ -255,8 +369,8 @@ export default function InvoicesTable({
                         onClick={handlePreviousPage}
                         disabled={currentPage === 1}
                     >
-                        <ChevronLeft className="w-4 h-4" />
-                        <span className="text-sm">Back</span>
+                        <ChevronLeft className="w-4 h-4 stroke-white" />
+                        <span className="text-sm text-white">Back</span>
                     </button>
                     <div className="flex space-x-2">
                         {getPageNumbers().map((page) => (
@@ -278,8 +392,8 @@ export default function InvoicesTable({
                         onClick={handleNextPage}
                         disabled={currentPage === totalPages}
                     >
-                        <span className="text-sm">Next</span>
-                        <ChevronRight className="w-4 h-4" />
+                        <span className="text-sm text-white">Next</span>
+                        <ChevronRight className="w-4 h-4 stroke-white" />
                     </button>
                 </div>
             )}

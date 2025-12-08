@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { getAuth } from "@clerk/nextjs/server";
+import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
 
 export const getInvoices = async (
@@ -60,6 +60,43 @@ export const getInvoices = async (
             },
         });
 
+        // Get Clerk client to fetch user images
+        const clerk = await clerkClient();
+
+        // Fetch user details from database and Clerk
+        const usersMap = new Map();
+        for (const clerkId of userIds) {
+            const dbUser = await prisma.user.findUnique({
+                where: { clerkId },
+                select: {
+                    clerkId: true,
+                    firstName: true,
+                    lastName: true,
+                    role: true,
+                },
+            });
+
+            if (dbUser) {
+                try {
+                    const clerkUser = await clerk.users.getUser(clerkId);
+                    usersMap.set(clerkId, {
+                        firstName: dbUser.firstName || clerkUser.firstName,
+                        lastName: dbUser.lastName || clerkUser.lastName,
+                        role: dbUser.role,
+                        imageUrl: clerkUser.imageUrl,
+                    });
+                } catch (error) {
+                    // If Clerk fetch fails, use database info only
+                    usersMap.set(clerkId, {
+                        firstName: dbUser.firstName,
+                        lastName: dbUser.lastName,
+                        role: dbUser.role,
+                        imageUrl: null,
+                    });
+                }
+            }
+        }
+
         const updatedInvoices = invoices.map((invoice) => {
             let mostExpensiveItem: any = null;
             let totalQuantity = 0;
@@ -77,11 +114,17 @@ export const getInvoices = async (
                 }
             });
 
+            // Get creator user info
+            const creator = invoice.createdBy
+                ? usersMap.get(invoice.createdBy)
+                : null;
+
             // Attach the most expensive item name and total quantity to the invoice object
             return {
                 ...invoice,
                 itemName: mostExpensiveItem?.Product.name,
                 totalQuantity,
+                creator: creator || null,
             };
         });
 
