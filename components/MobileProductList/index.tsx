@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function MobileProductList({
     products,
@@ -19,9 +20,49 @@ export default function MobileProductList({
     loading?: boolean;
 }) {
     const router = useRouter();
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     const handleEditClick = (productId: string) => {
         router.push(`/products/${productId}/edit`);
+    };
+
+    // Calculate pagination
+    const totalPages = Math.ceil(products.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedProducts = products.slice(startIndex, endIndex);
+
+    const handlePreviousPage = () => {
+        setCurrentPage((prev) => Math.max(prev - 1, 1));
+    };
+
+    const handleNextPage = () => {
+        setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+    };
+
+    const handlePageClick = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    // Generate page numbers to display
+    const getPageNumbers = () => {
+        const pages = [];
+        const maxPagesToShow = 5;
+        let startPage = Math.max(
+            1,
+            currentPage - Math.floor(maxPagesToShow / 2)
+        );
+        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+        if (endPage - startPage + 1 < maxPagesToShow) {
+            startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pages.push(i);
+        }
+        return pages;
     };
 
     return (
@@ -31,8 +72,8 @@ export default function MobileProductList({
                     All Products
                 </h1>
                 <Link className="w-full" href="/products/create">
-                    <button className="btn btn-sm btn-ghost lg:w-auto text-black flex items-center bg-green-400 w-full">
-                        <PlusCircle className="w-4 h-4" />
+                    <button className="btn btn-sm btn-ghost lg:w-auto flex items-center bg-green-500 text-white hover:bg-green-600 w-full">
+                        <PlusCircle className="w-4 h-4 stroke-white" />
                         Add Product
                     </button>
                 </Link>
@@ -42,13 +83,13 @@ export default function MobileProductList({
                 <div className="flex flex-col items-center justify-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                 </div>
-            ) : products.length === 0 ? (
+            ) : paginatedProducts.length === 0 ? (
                 <p className="p-4 text-black text-lg text-center">
                     No Products
                 </p>
             ) : (
                 <div className="flex flex-col space-y-4">
-                    {products.map((product, index) => (
+                    {paginatedProducts.map((product, index) => (
                         <div
                             key={index}
                             className="p-4 border rounded-lg shadow-sm bg-gray-50"
@@ -91,30 +132,50 @@ export default function MobileProductList({
             )}
 
             {/* Pagination */}
-            <div className="flex justify-center items-center pt-4 my-4 space-x-4">
-                <button className="btn btn-sm btn-ghost text-black flex items-center bg-gray-100">
-                    <ChevronLeft className="w-4 h-4" />
-                    <span className="ml-2">Back</span>
-                </button>
-                <div className="flex space-x-2">
-                    {Array.from({ length: 2 }).map((_, index) => (
-                        <button
-                            key={index}
-                            className={`btn btn-sm ${
-                                index === 0
-                                    ? "bg-black text-white"
-                                    : "btn-ghost"
-                            } text-black`}
-                        >
-                            {index + 1}
-                        </button>
-                    ))}
+            {!loading && products.length > 0 && (
+                <div className="flex justify-center items-center pt-4 my-4 space-x-4">
+                    <button
+                        className="btn btn-sm btn-ghost flex items-center bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
+                        onClick={handlePreviousPage}
+                        disabled={currentPage === 1}
+                    >
+                        <ChevronLeft className="w-4 h-4" />
+                        <span className="ml-2 text-sm">Back</span>
+                    </button>
+                    <div className="flex space-x-2">
+                        {getPageNumbers().map((page) => (
+                            <button
+                                key={page}
+                                onClick={() => handlePageClick(page)}
+                                className={`btn btn-sm border-0 ${
+                                    currentPage === page
+                                        ? "bg-green-500 text-white hover:bg-green-600"
+                                        : "btn-ghost text-black hover:bg-green-100"
+                                }`}
+                            >
+                                {page}
+                            </button>
+                        ))}
+                    </div>
+                    <button
+                        className="btn btn-sm btn-ghost flex items-center bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
+                        onClick={handleNextPage}
+                        disabled={currentPage === totalPages}
+                    >
+                        <span className="mr-2 text-sm">Next</span>
+                        <ChevronRight className="w-4 h-4" />
+                    </button>
                 </div>
-                <button className="btn btn-sm btn-ghost text-black flex items-center bg-gray-100">
-                    <span className="mr-2">Next</span>
-                    <ChevronRight className="w-4 h-4" />
-                </button>
-            </div>
+            )}
+
+            {/* Page info */}
+            {!loading && products.length > 0 && (
+                <div className="text-center text-sm text-gray-500 mt-2">
+                    Page {currentPage} of {totalPages} | Showing{" "}
+                    {startIndex + 1}-{Math.min(endIndex, products.length)} of{" "}
+                    {products.length} products
+                </div>
+            )}
         </div>
     );
 }

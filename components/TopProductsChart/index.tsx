@@ -44,19 +44,10 @@ export default function TopProducts({
         const date = new Date(period);
 
         if (timePeriod === 7) {
-            // Group by day for 7 days
-            const dayLabels: string[] = [];
-
-            for (let i = 6; i >= 0; i--) {
-                const date = new Date();
-                date.setDate(date.getDate() - i);
-                dayLabels.push(
-                    date.toLocaleDateString("en-US", {
-                        weekday: "short",
-                    })
-                );
-            }
-            return dayLabels[date.getDay()];
+            // For 7-day period, return the weekday name for the specific date
+            return date.toLocaleDateString("en-US", {
+                weekday: "short",
+            });
         } else if (timePeriod === 30) {
             // Group by week for 30 days
             const weekLabels: string[] = [];

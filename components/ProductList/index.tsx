@@ -138,7 +138,7 @@ export default function ProductList({
                                             {product.quantity}
                                         </td>
                                         <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
-                                            ${product.price}
+                                            Ksh {product.price}
                                         </td>
                                         <td className="py-2 px-4 border-b border-gray-100 flex items-center">
                                             <button

@@ -38,7 +38,28 @@ export default async function handler(
             const { timePeriod = "30" } = req.query;
             const days = parseInt(timePeriod as string);
 
-            // Calculate start date based on time period
+            // Helper function to format local date as YYYY-MM-DD
+            const formatLocalDate = (date: Date): string => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, "0");
+                const day = String(date.getDate()).padStart(2, "0");
+                return `${year}-${month}-${day}`;
+            };
+
+            // Helper function to get week start (Monday) as local date
+            const getWeekStart = (date: Date): string => {
+                const d = new Date(
+                    date.getFullYear(),
+                    date.getMonth(),
+                    date.getDate()
+                );
+                const day = d.getDay();
+                const daysToSubtract = day === 0 ? 6 : day - 1;
+                d.setDate(d.getDate() - daysToSubtract);
+                return formatLocalDate(d);
+            };
+
+            // Calculate start and end dates in local time
             const now = new Date();
             const today = new Date(
                 now.getFullYear(),
@@ -51,21 +72,45 @@ export default async function handler(
 
             if (days === 365) {
                 // For 365 days, start from January 1st of current year
-                startDate = new Date(now.getFullYear(), 0, 1);
+                startDate = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+                endDate = new Date(
+                    today.getFullYear(),
+                    today.getMonth(),
+                    today.getDate(),
+                    23,
+                    59,
+                    59,
+                    999
+                );
             } else if (days === 90) {
                 // For 90 days, start from 3 months ago
-                startDate = new Date(today);
-                startDate.setMonth(today.getMonth() - 2);
-                startDate.setDate(1);
+                startDate = new Date(
+                    today.getFullYear(),
+                    today.getMonth() - 2,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0
+                );
+                endDate = new Date(
+                    today.getFullYear(),
+                    today.getMonth(),
+                    today.getDate(),
+                    23,
+                    59,
+                    59,
+                    999
+                );
             } else {
-                // For 7 and 30 days, use the standard calculation
+                // For 7 and 30 days, calculate from today
                 startDate = new Date(today);
-                startDate.setDate(today.getDate() - days + 1);
-            }
+                startDate.setDate(today.getDate() - (days - 1));
+                startDate.setHours(0, 0, 0, 0);
 
-            // Set end date to end of today
-            endDate = new Date(today);
-            endDate.setHours(23, 59, 59, 999);
+                endDate = new Date(today);
+                endDate.setHours(23, 59, 59, 999);
+            }
 
             // 4. Fetch invoices with their items within the time period
             const invoices = await prisma.invoice.findMany({
@@ -88,43 +133,35 @@ export default async function handler(
                 },
             });
 
-            // Helper function to get week start (Monday)
-            const getWeekStart = (date: Date): string => {
-                const d = new Date(date);
-                const day = d.getDay();
-                // Adjust: Sunday=0, Monday=1, ..., Saturday=6
-                // We want Monday, so: if Sunday (0), subtract 6; if Monday (1), subtract 0; if Tuesday (2), subtract 1, etc.
-                const daysToSubtract = day === 0 ? 6 : day - 1;
-                d.setDate(d.getDate() - daysToSubtract);
-                return d.toISOString().split("T")[0];
-            };
+            // console.log("DEBUG - Date Range:", { startDate, endDate, days });
+            // console.log("DEBUG - User IDs:", userIds);
+            // console.log("DEBUG - Invoices Found:", invoices.length);
+            // invoices.forEach((inv) => {
+            //     console.log("Invoice:", {
+            //         id: inv.id,
+            //         createdAt: inv.createdAt,
+            //         status: inv.status,
+            //         itemCount: inv.invoiceItems.length,
+            //     });
+            // });
 
-            // Group products by time period
+            // Group products by time period using local dates
             const getTimePeriodKey = (date: Date, days: number): string => {
-                const dateOnly = new Date(
-                    date.getFullYear(),
-                    date.getMonth(),
-                    date.getDate()
-                );
+                const localDate = new Date(date);
 
                 if (days === 7) {
                     // Daily for 7-day period
-                    return dateOnly.toISOString().split("T")[0];
+                    return formatLocalDate(localDate);
                 } else if (days === 30) {
                     // Weekly for 30-day period (Monday start)
-                    return getWeekStart(dateOnly);
-                } else if (days === 90) {
-                    // Monthly for 90-day period
-                    return `${dateOnly.getFullYear()}-${String(
-                        dateOnly.getMonth() + 1
-                    ).padStart(2, "0")}`;
-                } else if (days === 365) {
-                    // Monthly for 365-day period
-                    return `${dateOnly.getFullYear()}-${String(
-                        dateOnly.getMonth() + 1
+                    return getWeekStart(localDate);
+                } else if (days === 90 || days === 365) {
+                    // Monthly for 90 and 365-day periods
+                    return `${localDate.getFullYear()}-${String(
+                        localDate.getMonth() + 1
                     ).padStart(2, "0")}`;
                 }
-                return dateOnly.toISOString().split("T")[0];
+                return formatLocalDate(localDate);
             };
 
             // Generate all time period keys for the range
@@ -134,26 +171,40 @@ export default async function handler(
                 days: number
             ): string[] => {
                 const keys: string[] = [];
-                const current = new Date(startDate);
+                const current = new Date(
+                    startDate.getFullYear(),
+                    startDate.getMonth(),
+                    startDate.getDate()
+                );
 
                 if (days === 7) {
                     // Daily grouping for 7 day periods
                     while (current <= endDate) {
-                        keys.push(current.toISOString().split("T")[0]);
+                        keys.push(formatLocalDate(current));
                         current.setDate(current.getDate() + 1);
                     }
                 } else if (days === 30) {
-                    // Weekly grouping for 30-day period (Monday-based)
-                    const weekStarts = new Set<string>();
-                    const temp = new Date(startDate);
-                    while (temp <= endDate) {
-                        weekStarts.add(getWeekStart(temp));
-                        temp.setDate(temp.getDate() + 1);
+                    // Weekly grouping for 30-day period - return exactly 4 weeks
+                    // Start from the most recent Monday before or on endDate
+                    const endWeekStart = new Date(
+                        endDate.getFullYear(),
+                        endDate.getMonth(),
+                        endDate.getDate()
+                    );
+                    const endDay = endWeekStart.getDay();
+                    const daysToSubtract = endDay === 0 ? 6 : endDay - 1;
+                    endWeekStart.setDate(
+                        endWeekStart.getDate() - daysToSubtract
+                    );
+
+                    // Generate exactly 4 weeks going backwards
+                    for (let i = 3; i >= 0; i--) {
+                        const weekStart = new Date(endWeekStart);
+                        weekStart.setDate(endWeekStart.getDate() - i * 7);
+                        keys.push(formatLocalDate(weekStart));
                     }
-                    keys.push(...Array.from(weekStarts).sort());
                 } else if (days === 90) {
                     // Monthly grouping for 90-day period - 3 months
-                    const startMonth = current.getMonth();
                     for (let i = 0; i < 3; i++) {
                         keys.push(
                             `${current.getFullYear()}-${String(

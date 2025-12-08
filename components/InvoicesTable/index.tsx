@@ -28,12 +28,12 @@ export default function InvoicesTable({
     };
 
     const getStatusBadgeColor = (status: string | undefined) => {
-        switch (status?.toUpperCase()) {
-            case "PAID":
+        switch (status?.toLowerCase()) {
+            case "paid":
                 return "bg-green-500 text-white";
-            case "PENDING":
+            case "pending":
                 return "bg-yellow-500 text-white";
-            case "CANCELLED":
+            case "cancelled":
                 return "bg-red-500 text-white";
             default:
                 return "bg-gray-100 text-gray-800";
@@ -142,7 +142,7 @@ export default function InvoicesTable({
                                             <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
                                                 Ksh {invoice.totalAmount}
                                             </td>
-                                            <td className="py-2 px-4 border-b text-black text-sm border-gray-100">
+                                            <td className="py-2 px-2 border-b text-black text-xs border-gray-100">
                                                 <span
                                                     className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(
                                                         invoice.status
@@ -188,10 +188,9 @@ export default function InvoicesTable({
             <div className="block lg:hidden">
                 {loading ? (
                     <div className="w-full py-12 flex flex-col items-center justify-center">
-                        <span className="loading loading-spinner loading-lg text-green-500"></span>
-                        <p className="mt-4 text-gray-600">
-                            Loading invoices...
-                        </p>
+                        <div className="flex flex-col items-center justify-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                        </div>
                     </div>
                 ) : paginatedInvoices.length === 0 ? (
                     <p className="text-black text-lg text-center">

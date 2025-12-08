@@ -58,6 +58,8 @@ export default function LoginPage() {
                 await setActive({ session: result.createdSessionId });
                 dispatch(signInAction());
 
+                console.log("User signed in successfully");
+
                 // Redirect to dashboard immediately
                 router.push("/dashboard");
 
@@ -66,11 +68,12 @@ export default function LoginPage() {
                     const response = await axios.get("/api/auth/user/profile");
                     dispatch(setUser(response.data.user));
                 } catch (error) {
-                    console.error("Error fetching user data:", error);
+                    // console.error("Error fetching user data:", error);
                     // User will be handled by middleware or dashboard page
                 }
             }
         } catch (err: any) {
+            // console.log(err);
             toast.error(err.errors[0].longMessage);
         } finally {
             setIsLoading(false);
