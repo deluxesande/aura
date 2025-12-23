@@ -64,7 +64,7 @@ export default async function handler(
         // Filter by time period
         const now = new Date();
         const startDate = new Date();
-        startDate.setDate(now.getDate() - timePeriod);
+        startDate.setUTCDate(now.getUTCDate() - timePeriod);
 
         const filteredInvoices = invoices.filter((invoice) => {
             const invoiceDate = new Date(invoice.createdAt);
@@ -81,7 +81,7 @@ export default async function handler(
 
             for (let i = 6; i >= 0; i--) {
                 const date = new Date();
-                date.setDate(date.getDate() - i);
+                date.setUTCDate(date.getUTCDate() - i);
                 dayLabels.push(
                     date.toLocaleDateString("en-US", {
                         weekday: "short",
@@ -92,14 +92,14 @@ export default async function handler(
             filteredInvoices.forEach((invoice) => {
                 const invoiceDate = new Date(invoice.createdAt);
                 const invoiceDateOnly = new Date(
-                    invoiceDate.getFullYear(),
-                    invoiceDate.getMonth(),
-                    invoiceDate.getDate()
+                    invoiceDate.getUTCFullYear(),
+                    invoiceDate.getUTCMonth(),
+                    invoiceDate.getUTCDate()
                 );
                 const nowDateOnly = new Date(
-                    now.getFullYear(),
-                    now.getMonth(),
-                    now.getDate()
+                    now.getUTCFullYear(),
+                    now.getUTCMonth(),
+                    now.getUTCDate()
                 );
 
                 const daysDiff = Math.floor(
@@ -123,9 +123,9 @@ export default async function handler(
 
             for (let i = 3; i >= 0; i--) {
                 const weekEnd = new Date();
-                weekEnd.setDate(weekEnd.getDate() - i * 7);
+                weekEnd.setUTCDate(weekEnd.getUTCDate() - i * 7);
                 const weekStart = new Date(weekEnd);
-                weekStart.setDate(weekStart.getDate() - 6);
+                weekStart.setUTCDate(weekStart.getUTCDate() - 6);
 
                 weekLabels.push(
                     `${weekStart.toLocaleDateString("en-US", {
@@ -140,14 +140,14 @@ export default async function handler(
             filteredInvoices.forEach((invoice) => {
                 const invoiceDate = new Date(invoice.createdAt);
                 const invoiceDateOnly = new Date(
-                    invoiceDate.getFullYear(),
-                    invoiceDate.getMonth(),
-                    invoiceDate.getDate()
+                    invoiceDate.getUTCFullYear(),
+                    invoiceDate.getUTCMonth(),
+                    invoiceDate.getUTCDate()
                 );
                 const nowDateOnly = new Date(
-                    now.getFullYear(),
-                    now.getMonth(),
-                    now.getDate()
+                    now.getUTCFullYear(),
+                    now.getUTCMonth(),
+                    now.getUTCDate()
                 );
 
                 const daysDiff = Math.floor(
@@ -172,7 +172,7 @@ export default async function handler(
 
             for (let i = 2; i >= 0; i--) {
                 const date = new Date();
-                date.setMonth(date.getMonth() - i);
+                date.setUTCMonth(date.getUTCMonth() - i);
                 monthLabels.push(
                     date.toLocaleDateString("en-US", { month: "short" })
                 );
@@ -181,9 +181,9 @@ export default async function handler(
             filteredInvoices.forEach((invoice) => {
                 const invoiceDate = new Date(invoice.createdAt);
                 const monthsDiff =
-                    (now.getFullYear() - invoiceDate.getFullYear()) * 12 +
-                    now.getMonth() -
-                    invoiceDate.getMonth();
+                    (now.getUTCFullYear() - invoiceDate.getUTCFullYear()) * 12 +
+                    now.getUTCMonth() -
+                    invoiceDate.getUTCMonth();
                 const index = 2 - monthsDiff;
                 if (index >= 0 && index < 3) {
                     monthlyRevenue[index] += invoice.totalAmount;
@@ -201,7 +201,7 @@ export default async function handler(
 
             for (let i = 11; i >= 0; i--) {
                 const date = new Date();
-                date.setMonth(date.getMonth() - i);
+                date.setUTCMonth(date.getUTCMonth() - i);
                 monthLabels.push(
                     date.toLocaleDateString("en-US", { month: "short" })
                 );
@@ -210,9 +210,9 @@ export default async function handler(
             filteredInvoices.forEach((invoice) => {
                 const invoiceDate = new Date(invoice.createdAt);
                 const monthsDiff =
-                    (now.getFullYear() - invoiceDate.getFullYear()) * 12 +
-                    now.getMonth() -
-                    invoiceDate.getMonth();
+                    (now.getUTCFullYear() - invoiceDate.getUTCFullYear()) * 12 +
+                    now.getUTCMonth() -
+                    invoiceDate.getUTCMonth();
                 const index = 11 - monthsDiff;
                 if (index >= 0 && index < 12) {
                     monthlyRevenue[index] += invoice.totalAmount;
