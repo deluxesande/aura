@@ -26,7 +26,7 @@ const CreateOrder: React.FC<CreateOrderProps> = ({ children }) => {
     return (
         <FloatingPortal>
             <div
-                className="fixed right-0 top-0 h-full w-[20rem] bg-white shadow-md p-4"
+                className="fixed right-0 top-0 h-full w-[20rem] bg-white shadow-md p-4 overflow-y-auto"
                 style={{ zIndex: 9999 }}
             >
                 <button

@@ -365,7 +365,7 @@ export default function InvoicesTable({
             {!loading && invoices.length > 0 && (
                 <div className="flex justify-center items-center pt-4 my-4 space-x-4">
                     <button
-                        className="btn btn-xs btn-ghost flex items-center bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
+                        className="btn btn-xs btn-ghost flex items-center bg-green-400 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
                         onClick={handlePreviousPage}
                         disabled={currentPage === 1}
                     >
@@ -379,7 +379,7 @@ export default function InvoicesTable({
                                 onClick={() => handlePageClick(page)}
                                 className={`btn btn-xs border-0 ${
                                     currentPage === page
-                                        ? "bg-green-500 text-white hover:bg-green-600"
+                                        ? "bg-green-400 text-white hover:bg-green-600"
                                         : "btn-ghost text-black hover:bg-green-100"
                                 }`}
                             >
@@ -388,7 +388,7 @@ export default function InvoicesTable({
                         ))}
                     </div>
                     <button
-                        className="btn btn-xs btn-ghost flex items-center bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
+                        className="btn btn-xs btn-ghost flex items-center bg-green-400 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
                         onClick={handleNextPage}
                         disabled={currentPage === totalPages}
                     >

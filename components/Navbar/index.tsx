@@ -432,8 +432,8 @@ export default function Navbar({
                 <div
                     className={`flex-grow px-6 lg:px-10 py-1 overflow-y-auto transition-all duration-300 ease-in-out ${
                         sideBarState
-                            ? "max-w-[calc(100vw-11rem)]"
-                            : "max-w-[calc(100vw-5rem)]"
+                            ? "lg:max-w-[calc(100vw-11rem)]"
+                            : "lg:max-w-[calc(100vw-5rem)]"
                     }`}
                 >
                     {children}
