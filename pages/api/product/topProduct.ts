@@ -40,31 +40,31 @@ export default async function handler(
 
             // Helper function to format local date as YYYY-MM-DD
             const formatLocalDate = (date: Date): string => {
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, "0");
-                const day = String(date.getDate()).padStart(2, "0");
+                const year = date.getUTCFullYear();
+                const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+                const day = String(date.getUTCDate()).padStart(2, "0");
                 return `${year}-${month}-${day}`;
             };
 
             // Helper function to get week start (Monday) as local date
             const getWeekStart = (date: Date): string => {
                 const d = new Date(
-                    date.getFullYear(),
-                    date.getMonth(),
-                    date.getDate()
+                    date.getUTCFullYear(),
+                    date.getUTCMonth(),
+                    date.getUTCDate()
                 );
                 const day = d.getDay();
                 const daysToSubtract = day === 0 ? 6 : day - 1;
-                d.setDate(d.getDate() - daysToSubtract);
+                d.setUTCDate(d.getUTCDate() - daysToSubtract);
                 return formatLocalDate(d);
             };
 
             // Calculate start and end dates in local time
             const now = new Date();
             const today = new Date(
-                now.getFullYear(),
-                now.getMonth(),
-                now.getDate()
+                now.getUTCFullYear(),
+                now.getUTCMonth(),
+                now.getUTCDate()
             );
 
             let startDate: Date;
@@ -72,11 +72,11 @@ export default async function handler(
 
             if (days === 365) {
                 // For 365 days, start from January 1st of current year
-                startDate = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+                startDate = new Date(now.getUTCFullYear(), 0, 1, 0, 0, 0, 0);
                 endDate = new Date(
-                    today.getFullYear(),
-                    today.getMonth(),
-                    today.getDate(),
+                    today.getUTCFullYear(),
+                    today.getUTCMonth(),
+                    today.getUTCDate(),
                     23,
                     59,
                     59,
@@ -85,8 +85,8 @@ export default async function handler(
             } else if (days === 90) {
                 // For 90 days, start from 3 months ago
                 startDate = new Date(
-                    today.getFullYear(),
-                    today.getMonth() - 2,
+                    today.getUTCFullYear(),
+                    today.getUTCMonth() - 2,
                     1,
                     0,
                     0,
@@ -94,9 +94,9 @@ export default async function handler(
                     0
                 );
                 endDate = new Date(
-                    today.getFullYear(),
-                    today.getMonth(),
-                    today.getDate(),
+                    today.getUTCFullYear(),
+                    today.getUTCMonth(),
+                    today.getUTCDate(),
                     23,
                     59,
                     59,
@@ -105,7 +105,7 @@ export default async function handler(
             } else {
                 // For 7 and 30 days, calculate from today
                 startDate = new Date(today);
-                startDate.setDate(today.getDate() - (days - 1));
+                startDate.setUTCDate(today.getUTCDate() - (days - 1));
                 startDate.setHours(0, 0, 0, 0);
 
                 endDate = new Date(today);
@@ -157,8 +157,8 @@ export default async function handler(
                     return getWeekStart(localDate);
                 } else if (days === 90 || days === 365) {
                     // Monthly for 90 and 365-day periods
-                    return `${localDate.getFullYear()}-${String(
-                        localDate.getMonth() + 1
+                    return `${localDate.getUTCFullYear()}-${String(
+                        localDate.getUTCMonth() + 1
                     ).padStart(2, "0")}`;
                 }
                 return formatLocalDate(localDate);
@@ -172,50 +172,50 @@ export default async function handler(
             ): string[] => {
                 const keys: string[] = [];
                 const current = new Date(
-                    startDate.getFullYear(),
-                    startDate.getMonth(),
-                    startDate.getDate()
+                    startDate.getUTCFullYear(),
+                    startDate.getUTCMonth(),
+                    startDate.getUTCDate()
                 );
 
                 if (days === 7) {
                     // Daily grouping for 7 day periods
                     while (current <= endDate) {
                         keys.push(formatLocalDate(current));
-                        current.setDate(current.getDate() + 1);
+                        current.setUTCDate(current.getUTCDate() + 1);
                     }
                 } else if (days === 30) {
                     // Weekly grouping for 30-day period - return exactly 4 weeks
                     // Start from the most recent Monday before or on endDate
                     const endWeekStart = new Date(
-                        endDate.getFullYear(),
-                        endDate.getMonth(),
-                        endDate.getDate()
+                        endDate.getUTCFullYear(),
+                        endDate.getUTCMonth(),
+                        endDate.getUTCDate()
                     );
                     const endDay = endWeekStart.getDay();
                     const daysToSubtract = endDay === 0 ? 6 : endDay - 1;
-                    endWeekStart.setDate(
-                        endWeekStart.getDate() - daysToSubtract
+                    endWeekStart.setUTCDate(
+                        endWeekStart.getUTCDate() - daysToSubtract
                     );
 
                     // Generate exactly 4 weeks going backwards
                     for (let i = 3; i >= 0; i--) {
                         const weekStart = new Date(endWeekStart);
-                        weekStart.setDate(endWeekStart.getDate() - i * 7);
+                        weekStart.setUTCDate(endWeekStart.getUTCDate() - i * 7);
                         keys.push(formatLocalDate(weekStart));
                     }
                 } else if (days === 90) {
                     // Monthly grouping for 90-day period - 3 months
                     for (let i = 0; i < 3; i++) {
                         keys.push(
-                            `${current.getFullYear()}-${String(
-                                current.getMonth() + 1
+                            `${current.getUTCFullYear()}-${String(
+                                current.getUTCMonth() + 1
                             ).padStart(2, "0")}`
                         );
-                        current.setMonth(current.getMonth() + 1);
+                        current.setUTCMonth(current.getUTCMonth() + 1);
                     }
                 } else if (days === 365) {
                     // Monthly grouping for 365-day period - all 12 months of current year
-                    const year = current.getFullYear();
+                    const year = current.getUTCFullYear();
                     for (let i = 1; i <= 12; i++) {
                         keys.push(`${year}-${String(i).padStart(2, "0")}`);
                     }
