@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { signIn as signInAction } from "@/store/slices/authSlice";
+import axios from "axios";
 
 export default function SignupPage() {
     const { isLoaded, signUp, setActive } = useSignUp();
@@ -70,6 +71,14 @@ export default function SignupPage() {
 
                 if (result.status === "complete") {
                     await setActive({ session: result.createdSessionId });
+
+                    axios.post("/api/welcome", {
+                        userId: result.createdUserId,
+                        email: email,
+                        firstName: firstName,
+                        lastName: lastName,
+                    });
+
                     dispatch(signInAction());
                     router.push("/settings");
                 }
