@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { getAuth } from "@clerk/nextjs/server";
+import { clerkClient, getAuth } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
 
 export default async function handler(
@@ -23,12 +23,13 @@ export default async function handler(
         });
 
         if (!user) {
-            return res.status(200).json({ user: {role: "admin"} });
+            return res.status(200).json({ user: { role: "admin" } });
         }
 
         return res.status(200).json({
             user: {
                 id: user.id,
+                clerkId: user.clerkId,
                 email: user.email,
                 firstName: user.firstName,
                 lastName: user.lastName,

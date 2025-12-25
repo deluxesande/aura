@@ -68,6 +68,7 @@ const allLinks = [
 type User = {
     id: string;
     name: string;
+    clerkId: string;
     email: string;
     role: string;
     businessId: string;
@@ -283,9 +284,7 @@ export default function Navbar({
                             applicationIdentifier={
                                 process.env.NEXT_PUBLIC_APPLICATION_IDENTIFIER!
                             }
-                            subscriberId={
-                                process.env.NEXT_PUBLIC_SUBSCRIBER_ID!
-                            }
+                            subscriberId={user.clerkId}
                             appearance={{
                                 variables: {
                                     colorPrimary: "#4ade80",

@@ -69,11 +69,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             data: invoiceData,
         });
 
+        // Fetch the user to get clerkId for Novu
+        const user = await prisma.user.findUnique({
+            where: { id: req.body.createdBy },
+        });
+
         // Send Novu notification
         try {
             await novu.trigger({
                 to: {
-                    subscriberId: process.env.NEXT_PUBLIC_SUBSCRIBER_ID!,
+                    subscriberId: user?.clerkId!,
                 },
                 workflowId: "invoice-generated",
                 payload: {
