@@ -52,7 +52,6 @@ export const getProducts = async (
 
         res.status(200).json(products);
     } catch (error) {
-        console.error("Error fetching products:", error);
         res.status(500).json({ error: "Internal Server Error" });
     } finally {
         await prisma.$disconnect();

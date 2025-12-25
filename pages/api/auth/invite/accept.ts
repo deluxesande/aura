@@ -1,8 +1,13 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
+import { Novu } from "@novu/api";
 import { z } from "zod";
 import crypto from "crypto";
+
+const novu = new Novu({
+    secretKey: process.env.NOVU_SECRET_KEY!,
+});
 
 const acceptInvitationSchema = z.object({
     token: z.string().min(1, "Token is required"),
@@ -70,9 +75,9 @@ export default async function handler(
             const clerkUser = await client.users.createUser({
                 emailAddress: [invitation.email],
                 password: userPassword,
-                firstName: firstName || invitation.email.split("@")[0], // Use email prefix as default
+                firstName: firstName || invitation.email.split("@")[0],
                 lastName: lastName || "",
-                skipPasswordChecks: true, // Allow system-generated passwords
+                skipPasswordChecks: true,
                 skipPasswordRequirement: false,
             });
 
@@ -88,7 +93,7 @@ export default async function handler(
                 },
             });
 
-            // Update invitation status and link to user
+            // Update invitation status
             await prisma.userInvitation.update({
                 where: { id: invitation.id },
                 data: {
@@ -96,8 +101,43 @@ export default async function handler(
                 },
             });
 
-            // Send welcome email with login credentials (optional)
-            // You can use your email service here to send credentials
+            // Notify admins and managers in the business
+            try {
+                const adminsAndManagers = await prisma.user.findMany({
+                    where: {
+                        businessId: invitation.businessId,
+                        role: { in: ["admin", "manager"] },
+                    },
+                });
+
+                for (const admin of adminsAndManagers) {
+                    try {
+                        await novu.trigger({
+                            to: {
+                                subscriberId: admin.clerkId,
+                            },
+                            workflowId: "invite-accepted",
+                            payload: {
+                                userName: `${user.firstName} ${user.lastName}`,
+                                userEmail: user.email,
+                                userRole: invitation.role,
+                                businessName: invitation.Business.name,
+                            },
+                        });
+                    } catch (error) {
+                        console.error(
+                            `Failed to send notification to ${admin.email}:`,
+                            error
+                        );
+                    }
+                }
+            } catch (notificationError) {
+                console.error(
+                    "Error sending invitations notifications:",
+                    notificationError
+                );
+                // Don't fail the request if notifications fail
+            }
 
             return res.status(200).json({
                 message: "Account created successfully",
@@ -107,7 +147,6 @@ export default async function handler(
                     role: user.role,
                     businessName: invitation.Business.name,
                 },
-                // Only return password if it was auto-generated
                 credentials: password
                     ? undefined
                     : {
@@ -120,7 +159,6 @@ export default async function handler(
         } catch (clerkError: any) {
             console.error("Error creating Clerk user:", clerkError);
 
-            // Handle specific Clerk errors
             if (clerkError.errors?.[0]?.code === "form_param_format_invalid") {
                 return res.status(400).json({
                     error: "Invalid email format or password requirements not met",
