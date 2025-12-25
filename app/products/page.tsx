@@ -76,6 +76,7 @@ export default function Page() {
     const productsData = useSelector(
         (state: AppState) => state.product.products
     );
+    const [isProcessingOrder, setIsProcessingOrder] = useState(false);
     const [paymentType, setPaymentType] = useState("CASH");
     const { user } = useUser();
     const profileImage = user?.hasImage
@@ -156,89 +157,96 @@ export default function Page() {
             return;
         }
 
+        setIsProcessingOrder(true); // Disable buttons
+
         const promise = async () => {
-            const invoiceItemPromises = cartItems.map(async (item) => {
-                const data = {
-                    quantity: item.cartQuantity,
-                    price: item.price * item.cartQuantity,
-                    productId: item.id,
-                };
-
-                try {
-                    const response = await axios.post(
-                        "/api/invoiceItem/",
-                        data
-                    );
-                    return response.data;
-                } catch (error) {
-                    return null;
-                }
-            });
-
-            const results = await Promise.all(invoiceItemPromises);
-
-            const invoiceItems = results
-                .filter((result) => result !== null) // Filter out any null results
-                .map((result) => ({
-                    id: result.id, // Use the invoice item ID returned from the API response
-                }));
-
-            if (invoiceItems.length === cartItems.length) {
-                try {
-                    // Calculate total amount based on cart items and quantities
-                    // to reduce amount of API calls
-                    const totalAmount = cartItems.reduce(
-                        (total, item) => total + item.price * item.cartQuantity,
-                        0
-                    );
-                    const invoiceData = {
-                        invoiceItems: invoiceItems,
-                        totalAmount: totalAmount,
-                        paymentType: paymentTypeOverride || paymentType,
+            try {
+                const invoiceItemPromises = cartItems.map(async (item) => {
+                    const data = {
+                        quantity: item.cartQuantity,
+                        price: item.price * item.cartQuantity,
+                        productId: item.id,
                     };
 
-                    const response = await axios.post(
-                        "/api/invoice/",
-                        invoiceData
-                    );
-
-                    // Update product quantities in the state
-                    setLocalProducts((prevProducts) =>
-                        prevProducts.map((product) => {
-                            const cartItem = cartItems.find(
-                                (item) => item.id === product.id
-                            );
-                            if (cartItem) {
-                                return {
-                                    ...product,
-                                    quantity:
-                                        product.quantity -
-                                        cartItem.cartQuantity, // Reduce product quantity
-                                    inStock:
-                                        product.quantity -
-                                            cartItem.cartQuantity >
-                                        0
-                                            ? true
-                                            : false, // Update inStock based on new quantity
-                                };
-                            }
-                            return product;
-                        })
-                    );
-
-                    // Clear cart if invoice is created successfully
-                    if (response.status == 201) {
-                        dispatch(clearCart());
+                    try {
+                        const response = await axios.post(
+                            "/api/invoiceItem/",
+                            data
+                        );
+                        return response.data;
+                    } catch (error) {
+                        return null;
                     }
+                });
 
-                    return response.data;
-                } catch (error) {
-                    throw error;
+                const results = await Promise.all(invoiceItemPromises);
+
+                const invoiceItems = results
+                    .filter((result) => result !== null) // Filter out any null results
+                    .map((result) => ({
+                        id: result.id, // Use the invoice item ID returned from the API response
+                    }));
+
+                if (invoiceItems.length === cartItems.length) {
+                    try {
+                        // Calculate total amount based on cart items and quantities
+                        // to reduce amount of API calls
+                        const totalAmount = cartItems.reduce(
+                            (total, item) =>
+                                total + item.price * item.cartQuantity,
+                            0
+                        );
+                        const invoiceData = {
+                            invoiceItems: invoiceItems,
+                            totalAmount: totalAmount,
+                            paymentType: paymentTypeOverride || paymentType,
+                        };
+
+                        const response = await axios.post(
+                            "/api/invoice/",
+                            invoiceData
+                        );
+
+                        // Update product quantities in the state
+                        setLocalProducts((prevProducts) =>
+                            prevProducts.map((product) => {
+                                const cartItem = cartItems.find(
+                                    (item) => item.id === product.id
+                                );
+                                if (cartItem) {
+                                    return {
+                                        ...product,
+                                        quantity:
+                                            product.quantity -
+                                            cartItem.cartQuantity, // Reduce product quantity
+                                        inStock:
+                                            product.quantity -
+                                                cartItem.cartQuantity >
+                                            0
+                                                ? true
+                                                : false, // Update inStock based on new quantity
+                                    };
+                                }
+                                return product;
+                            })
+                        );
+
+                        // Clear cart if invoice is created successfully
+                        if (response.status == 201) {
+                            dispatch(clearCart());
+                        }
+
+                        return response.data;
+                    } catch (error) {
+                        throw error;
+                    }
+                } else {
+                    throw new Error(
+                        "Mismatch between cart items and invoice items"
+                    );
                 }
-            } else {
-                throw new Error(
-                    "Mismatch between cart items and invoice items"
-                );
+            } finally {
+                setIsProcessingOrder(false); // Re-enable buttons
             }
         };
 
@@ -308,6 +316,7 @@ export default function Page() {
         if (isInputVisible) {
             const formattedNumber = formatPhoneNumber(mpesaNumber);
             if (formattedNumber) {
+                setIsProcessingOrder(true); // Disable buttons
                 const promise = async () => {
                     try {
                         const response = await axios.post(
@@ -326,6 +335,8 @@ export default function Page() {
                         }
                     } catch (error) {
                         throw Error("Failed to prompt user for payment");
+                    } finally {
+                        setIsProcessingOrder(false); // Re-enable buttons
                     }
                 };
 
@@ -551,16 +562,19 @@ export default function Page() {
                                     onChange={(e) =>
                                         setMpesaNumber(e.target.value)
                                     }
+                                    disabled={isProcessingOrder}
                                 />
                             )}
                             <button
                                 type="submit"
+                                disabled={isProcessingOrder}
                                 className="px-4 py-2 mt-4 border border-green-400 text-green-400 w-full bg-white rounded-md"
                             >
                                 {buttonText}
                             </button>
                         </form>
                         <button
+                            disabled={isProcessingOrder}
                             className="px-4 py-2 mt-4 bg-green-400 w-full text-white rounded-md"
                             onClick={() => handleOrder()}
                         >
