@@ -70,6 +70,22 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         });
 
         // Send Novu notification
+        try {
+            await novu.trigger({
+                to: {
+                    subscriberId: process.env.NEXT_PUBLIC_SUBSCRIBER_ID!,
+                },
+                workflowId: "invoice-generated",
+                payload: {
+                    invoiceId: invoice.id,
+                    invoiceName: invoice.invoiceName,
+                    totalAmount: invoice.totalAmount,
+                },
+            });
+        } catch (error) {
+            console.error("Failed to send Novu notification:", error);
+        }
+
         res.status(201).json(invoice);
     } catch (error) {
         res.status(400).json({ error: "Failed to add or update invoice" });
