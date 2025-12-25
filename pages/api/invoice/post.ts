@@ -69,26 +69,45 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             data: invoiceData,
         });
 
-        // Fetch the user to get clerkId for Novu
-        const user = await prisma.user.findUnique({
-            where: { id: req.body.createdBy },
+        // Fetch the user to get businessId
+        const creator = await prisma.user.findUnique({
+            where: { clerkId: req.body.createdBy },
         });
 
-        // Send Novu notification
-        try {
-            await novu.trigger({
-                to: {
-                    subscriberId: user?.clerkId!,
-                },
-                workflowId: "invoice-generated",
-                payload: {
-                    invoiceId: invoice.id,
-                    invoiceName: invoice.invoiceName,
-                    totalAmount: invoice.totalAmount,
+        if (!creator || !creator.businessId) {
+            console.error("Creator or business not found");
+        } else {
+            // Fetch admins and managers in the business
+            const adminsAndManagers = await prisma.user.findMany({
+                where: {
+                    businessId: creator.businessId,
+                    role: { in: ["admin", "manager"] },
                 },
             });
-        } catch (error) {
-            console.error("Failed to send Novu notification:", error);
+
+            // Send Novu notification to each admin and manager
+            for (const admin of adminsAndManagers) {
+                try {
+                    await novu.trigger({
+                        to: {
+                            subscriberId: admin.clerkId,
+                        },
+                        workflowId: "invoice-generated",
+                        payload: {
+                            invoiceId: invoice.id,
+                            invoiceName: invoice.invoiceName,
+                            totalAmount: invoice.totalAmount,
+                            createdBy:
+                                creator.firstName + " " + creator.lastName,
+                        },
+                    });
+                } catch (error) {
+                    console.error(
+                        `Failed to send Novu notification to ${admin.email}:`,
+                        error
+                    );
+                }
+            }
         }
 
         res.status(201).json(invoice);
