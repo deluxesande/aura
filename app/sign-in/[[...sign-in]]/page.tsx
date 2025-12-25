@@ -71,6 +71,12 @@ export default function LoginPage() {
                     // console.error("Error fetching user data:", error);
                     // User will be handled by middleware or dashboard page
                 }
+            } else if (result.status === "needs_second_factor") {
+                // Send the email code
+                await signIn.prepareSecondFactor({
+                    strategy: "email_code",
+                });
+                router.push("/verify");
             }
         } catch (err: any) {
             // console.log(err);

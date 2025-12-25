@@ -23,7 +23,7 @@ export default function VerifyPage() {
         setIsLoading(true);
         try {
             const result = await signIn.attemptSecondFactor({
-                strategy: "backup_code",
+                strategy: "email_code",
                 code,
             });
 
@@ -32,7 +32,6 @@ export default function VerifyPage() {
                 dispatch(signInAction());
 
                 toast.success("Signed in successfully");
-                router.push("/dashboard");
 
                 // Fetch user data in background
                 try {
@@ -41,9 +40,10 @@ export default function VerifyPage() {
                 } catch (error) {
                     // Silent error
                 }
+
+                router.push("/dashboard");
             }
         } catch (err: any) {
-            console.log(err);
             toast.error(err.errors?.[0]?.longMessage || "Verification failed");
         } finally {
             setIsLoading(false);
