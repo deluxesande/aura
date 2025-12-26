@@ -98,7 +98,7 @@ export default async function handler(
             message: "User and all associated data deleted successfully",
         });
     } catch (error) {
-        // console.error("Error deleting user:", error);
+        console.error("Error deleting user:", error);
         return res.status(500).json({
             error: "Error deleting user",
             details: error instanceof Error ? error.message : "Unknown error",

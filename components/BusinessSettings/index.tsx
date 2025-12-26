@@ -122,7 +122,9 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
     };
 
     useEffect(() => {
-        // Check if business data exists in Redux store first
+        let foundInStore = false;
+
+        // 1. Check if business data exists in Redux store first
         if (storedBusiness?.id && storedBusiness?.name) {
             setBusiness(storedBusiness.name);
             setLogoUrl(storedBusiness.logo || "");
@@ -132,11 +134,14 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
             // Store original values for comparison
             setOriginalBusiness(storedBusiness.name);
             setOriginalLogoUrl(storedBusiness.logo || "");
+
             setIsLoading(false);
+            foundInStore = true; // Mark that we found data
         }
 
-        // Always fetch from API in the background to get the latest data
+        // 2. Handle API Fetching
         if (user?.businessId) {
+            // Case A: User HAS a business ID -> Fetch it
             const fetchAndStoreBusiness = async () => {
                 try {
                     const response = await axios.get("/api/business");
@@ -144,17 +149,14 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
                     if (response.status === 200 && response.data.length > 0) {
                         const businessData = response.data[0];
 
-                        // Update state with latest data
                         setBusiness(businessData.name);
                         setLogoUrl(businessData.logo);
                         setBusinessId(businessData.id);
                         setHasExistingBusiness(true);
 
-                        // Store original values for comparison
                         setOriginalBusiness(businessData.name);
                         setOriginalLogoUrl(businessData.logo);
 
-                        // Update Redux store with latest data
                         dispatch(
                             setBusinessInStore({
                                 id: businessData.id,
@@ -167,14 +169,22 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
                     if (
                         axios.isAxiosError(error) &&
                         error.response?.status !== 404
-                    )
+                    ) {
                         toast.error("Error fetching business data");
+                    }
                 } finally {
+                    // This stops loading when the fetch is done
                     setIsLoading(false);
                 }
             };
 
             fetchAndStoreBusiness();
+        } else {
+            // Case B: FIX - User does NOT have a business ID
+            // If we didn't find data in the store either, we must stop loading here.
+            if (!foundInStore) {
+                setIsLoading(false);
+            }
         }
     }, [
         storedBusiness?.id,

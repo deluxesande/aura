@@ -363,16 +363,22 @@ export default function InvoicesTable({
 
             {/* Pagination */}
             {!loading && invoices.length > 0 && (
-                <div className="flex justify-center items-center pt-4 my-4 space-x-4">
+                // Changed space-x-4 to gap-2 for mobile, gap-4 for larger screens
+                // Added flex-wrap to prevent rigid overflow if the screen is extremely small
+                <div className="flex flex-wrap justify-center items-center pt-4 my-4 gap-2 sm:gap-4">
                     <button
                         className="btn btn-xs btn-ghost flex items-center bg-green-400 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
                         onClick={handlePreviousPage}
                         disabled={currentPage === 1}
                     >
                         <ChevronLeft className="w-4 h-4 stroke-white" />
-                        <span className="text-sm text-white">Back</span>
+                        {/* Added hidden sm:inline to hide text on mobile */}
+                        <span className="hidden sm:inline text-sm text-white">
+                            Back
+                        </span>
                     </button>
-                    <div className="flex space-x-2">
+
+                    <div className="flex space-x-1 sm:space-x-2">
                         {getPageNumbers().map((page) => (
                             <button
                                 key={page}
@@ -387,12 +393,16 @@ export default function InvoicesTable({
                             </button>
                         ))}
                     </div>
+
                     <button
                         className="btn btn-xs btn-ghost flex items-center bg-green-400 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
                         onClick={handleNextPage}
                         disabled={currentPage === totalPages}
                     >
-                        <span className="text-sm text-white">Next</span>
+                        {/* Added hidden sm:inline to hide text on mobile */}
+                        <span className="hidden sm:inline text-sm text-white">
+                            Next
+                        </span>
                         <ChevronRight className="w-4 h-4 stroke-white" />
                     </button>
                 </div>

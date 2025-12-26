@@ -4,6 +4,11 @@ import { addCreatedBy } from "../middleware";
 import formidable from "formidable";
 import { prisma } from "@/utils/lib/client";
 import { readFileSync } from "fs";
+import { Novu } from "@novu/api";
+
+const novu = new Novu({
+    secretKey: process.env.NOVU_SECRET_KEY!,
+});
 
 const addBusinessHandler = async (
     req: NextApiRequest,
@@ -118,6 +123,26 @@ const addBusinessHandler = async (
 
             return { business: newBusiness, user: newUser };
         });
+
+        try {
+            console.log(result.user.clerkId);
+            await novu.trigger({
+                workflowId: "welcome",
+                to: {
+                    subscriberId: result.user.clerkId,
+                },
+                payload: {
+                    firstName: result.user.firstName || "User",
+                    organizationName: result.business.name,
+                },
+            });
+        } catch (notificationError) {
+            // Log the error but DO NOT crash the request. The business was created successfully.
+            console.error(
+                "Failed to trigger welcome notification:",
+                notificationError
+            );
+        }
 
         res.status(201).json({
             business: result.business,

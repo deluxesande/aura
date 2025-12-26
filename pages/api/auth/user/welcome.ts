@@ -19,7 +19,7 @@ export async function POST(request: NextApiRequest, response: NextApiResponse) {
                     firstName: firstName,
                     lastName: lastName,
                 },
-                workflowId: "user-welcome-email",
+                workflowId: "welcome",
                 payload: {
                     firstName: firstName,
                     organizationName: "Salesense",

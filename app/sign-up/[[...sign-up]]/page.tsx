@@ -72,13 +72,6 @@ export default function SignupPage() {
                 if (result.status === "complete") {
                     await setActive({ session: result.createdSessionId });
 
-                    axios.post("/api/welcome", {
-                        userId: result.createdUserId,
-                        email: email,
-                        firstName: firstName,
-                        lastName: lastName,
-                    });
-
                     dispatch(signInAction());
                     router.push("/settings");
                 }
