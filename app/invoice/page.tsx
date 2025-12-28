@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import Image from "next/image";
 
 function InvoicePageContent() {
     const searchParams = useSearchParams();
@@ -231,15 +232,44 @@ function InvoicePageContent() {
                                                 className="hover:bg-gray-50/50 transition-colors"
                                             >
                                                 <td className="px-6 py-4">
-                                                    <div className="flex flex-col">
-                                                        <span className="font-medium text-gray-900">
-                                                            {item.Product.name}
-                                                        </span>
-                                                        <span className="text-xs text-gray-500 truncate max-w-[200px]">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200 overflow-hidden">
                                                             {item.Product
-                                                                .description ||
-                                                                "No description"}
-                                                        </span>
+                                                                .image ? (
+                                                                <Image
+                                                                    src={
+                                                                        item
+                                                                            .Product
+                                                                            .image
+                                                                    }
+                                                                    alt={
+                                                                        item
+                                                                            .Product
+                                                                            .name
+                                                                    }
+                                                                    width={48}
+                                                                    height={48}
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                                                    No Image
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium text-gray-900">
+                                                                {
+                                                                    item.Product
+                                                                        .name
+                                                                }
+                                                            </span>
+                                                            <span className="text-xs text-gray-500 truncate max-w-[200px]">
+                                                                {item.Product
+                                                                    .description ||
+                                                                    "No description"}
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-center text-sm text-gray-600">

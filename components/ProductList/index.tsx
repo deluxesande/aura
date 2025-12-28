@@ -136,10 +136,6 @@ export default function ProductList({
                     <table className="min-w-full bg-white">
                         <thead>
                             <tr>
-                                {/* Image Column */}
-                                <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-400 w-20">
-                                    Image
-                                </th>
                                 {/* Combined Details Column */}
                                 <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-400">
                                     Product Details
@@ -207,44 +203,44 @@ export default function ProductList({
                                         key={index}
                                         className="hover:bg-gray-50 border-b border-gray-100 last:border-0"
                                     >
-                                        {/* 1. Product Image */}
-                                        <td className="py-3 px-4">
-                                            <div className="w-12 h-12 relative rounded-md overflow-hidden bg-gray-100 border border-gray-200">
-                                                {product.image ? (
-                                                    <Image
-                                                        src={product.image}
-                                                        alt={product.name}
-                                                        fill
-                                                        className="object-cover"
-                                                    />
-                                                ) : (
-                                                    <div className="flex items-center justify-center h-full text-xs text-gray-400">
-                                                        No Img
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </td>
-
                                         {/* 2. Product Name & Description (Stacked) */}
                                         <td className="py-3 px-4 max-w-xs">
-                                            <div>
-                                                <p className="text-sm font-semibold text-gray-900">
-                                                    {product.name}
-                                                </p>
-                                                <p className="text-xs text-gray-500 truncate mt-0.5">
-                                                    {product.description}
-                                                </p>
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 relative rounded-md overflow-hidden bg-gray-100 border border-gray-200">
+                                                    {product.image ? (
+                                                        <Image
+                                                            src={product.image}
+                                                            alt={product.name}
+                                                            fill
+                                                            className="object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="flex items-center justify-center h-full text-xs text-gray-400">
+                                                            No Img
+                                                        </div>
+                                                    )}
+                                                </div>
 
-                                                {/* COLOR CODED QUANTITY BADGE */}
-                                                <span
-                                                    className={`text-[10px] px-2 py-0.5 rounded-full mt-1 inline-block font-medium ${
-                                                        product.quantity <= 5
-                                                            ? "bg-red-100 text-red-600" // Low Stock Warning
-                                                            : "bg-green-100 text-green-600" // Good Stock
-                                                    }`}
-                                                >
-                                                    Qty: {product.quantity}
-                                                </span>
+                                                <div>
+                                                    <p className="text-sm font-semibold text-gray-900">
+                                                        {product.name}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500 truncate mt-0.5">
+                                                        {product.description}
+                                                    </p>
+
+                                                    {/* COLOR CODED QUANTITY BADGE */}
+                                                    <span
+                                                        className={`text-[10px] px-2 py-0.5 rounded-full mt-1 inline-block font-medium ${
+                                                            product.quantity <=
+                                                            5
+                                                                ? "bg-red-100 text-red-600" // Low Stock Warning
+                                                                : "bg-green-100 text-green-600" // Good Stock
+                                                        }`}
+                                                    >
+                                                        Qty: {product.quantity}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </td>
 
