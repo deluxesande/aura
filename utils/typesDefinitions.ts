@@ -1,3 +1,10 @@
+export interface Creator {
+    firstName: string;
+    lastName: string;
+    role: string;
+    imageUrl?: string;
+}
+
 export interface Product {
     id: string;
     name: string;
@@ -11,6 +18,7 @@ export interface Product {
     Category: Category;
     invoiceItems: InvoiceItem[];
     image: string;
+    creator?: Creator;
     inStock: boolean;
 }
 

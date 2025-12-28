@@ -7,6 +7,7 @@ import {
     ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image"; // Import Image
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -48,7 +49,7 @@ export default function MobileProductList({
     // Generate page numbers to display
     const getPageNumbers = () => {
         const pages = [];
-        const maxPagesToShow = 5;
+        const maxPagesToShow = 3; // Reduced for mobile
         let startPage = Math.max(
             1,
             currentPage - Math.floor(maxPagesToShow / 2)
@@ -80,7 +81,7 @@ export default function MobileProductList({
             </div>
 
             {loading ? (
-                <div className="flex flex-col items-center justify-center">
+                <div className="flex flex-col items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                 </div>
             ) : paginatedProducts.length === 0 ? (
@@ -92,34 +93,97 @@ export default function MobileProductList({
                     {paginatedProducts.map((product, index) => (
                         <div
                             key={index}
-                            className="p-4 border rounded-lg shadow-sm bg-gray-50"
+                            className="p-4 border rounded-lg shadow-sm bg-gray-50 flex flex-col gap-3"
                         >
-                            <div className="flex justify-between items-start">
-                                <h3 className="font-bold text-lg text-black max-w-36 whitespace-nowrap truncate">
-                                    {product.name}
-                                </h3>
-                                <span className="text-sm text-gray-400 mr-3">
-                                    {product.quantity}
-                                </span>
+                            {/* TOP SECTION: Image & Main Details */}
+                            <div className="flex gap-4">
+                                {/* Product Image */}
+                                <div className="w-20 h-20 relative rounded-md overflow-hidden bg-gray-200 shrink-0 border border-gray-200">
+                                    {product.image ? (
+                                        <Image
+                                            src={product.image}
+                                            alt={product.name}
+                                            fill
+                                            className="object-cover"
+                                        />
+                                    ) : (
+                                        <div className="flex items-center justify-center h-full text-[10px] text-gray-500">
+                                            No Img
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Details */}
+                                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                    <h3 className="font-bold text-base text-gray-900 truncate">
+                                        {product.name}
+                                    </h3>
+                                    <p className="text-xs text-gray-500 truncate mt-1">
+                                        {product.description}
+                                    </p>
+                                    {/* Quantity Badge */}
+                                    <div className="mt-2">
+                                        <span
+                                            className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                                                product.quantity <= 5
+                                                    ? "bg-red-100 text-red-600"
+                                                    : "bg-green-100 text-green-600"
+                                            }`}
+                                        >
+                                            Qty: {product.quantity}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
-                            <p className="text-sm text-gray-400 mt-1">
-                                {product.description}
-                            </p>
-                            <div className="flex justify-between items-center mt-2">
-                                <p className="text-green-600 font-light text-md">
-                                    ${product.price}
+
+                            <div className="border-t border-gray-200 my-1"></div>
+
+                            {/* MIDDLE SECTION: Creator Info */}
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-gray-400">
+                                    Created by:
+                                </span>
+                                {product.creator ? (
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full overflow-hidden relative ring-1 ring-gray-200">
+                                            <Image
+                                                src={
+                                                    product.creator.imageUrl ||
+                                                    "https://www.svgrepo.com/show/535711/user.svg"
+                                                }
+                                                fill
+                                                alt="Creator"
+                                                className="object-cover"
+                                            />
+                                        </div>
+                                        <span className="text-xs font-medium text-gray-700">
+                                            {product.creator.firstName}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <span className="text-xs text-gray-400">
+                                        Unknown
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* BOTTOM SECTION: Price & Actions */}
+                            <div className="flex justify-between items-center mt-1 bg-white p-2 rounded border border-gray-100">
+                                <p className="text-green-600 font-bold text-lg">
+                                    Ksh {product.price}
                                 </p>
-                                <div className="flex space-x-2">
+                                <div className="flex space-x-1">
                                     <button
-                                        className="btn btn-sm btn-ghost text-black"
+                                        className="btn btn-sm btn-ghost text-gray-600 hover:text-green-600"
                                         onClick={() =>
                                             handleEditClick(product.id)
                                         }
                                     >
                                         <Edit className="w-4 h-4" />
                                     </button>
+                                    <div className="border-l border-gray-300 h-5 mx-1 self-center"></div>
                                     <button
-                                        className="btn btn-sm btn-ghost text-black"
+                                        className="btn btn-sm btn-ghost text-gray-600 hover:text-red-600"
                                         onClick={() => handleDelete(product.id)}
                                     >
                                         <Trash className="w-4 h-4" />
@@ -134,20 +198,23 @@ export default function MobileProductList({
             {/* Pagination */}
             {!loading && products.length > 0 && (
                 <div className="flex justify-center items-center pt-4 my-4 space-x-4">
+                    {/* Previous Button */}
                     <button
-                        className="btn btn-sm btn-ghost flex items-center bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
+                        className="btn btn-xs btn-ghost flex items-center bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
                         onClick={handlePreviousPage}
                         disabled={currentPage === 1}
                     >
                         <ChevronLeft className="w-4 h-4" />
-                        <span className="ml-2 text-sm">Back</span>
+                        <span className="hidden sm:inline text-sm">Back</span>
                     </button>
+
+                    {/* Page Numbers */}
                     <div className="flex space-x-2">
                         {getPageNumbers().map((page) => (
                             <button
                                 key={page}
                                 onClick={() => handlePageClick(page)}
-                                className={`btn btn-sm border-0 ${
+                                className={`btn btn-xs border-0 ${
                                     currentPage === page
                                         ? "bg-green-500 text-white hover:bg-green-600"
                                         : "btn-ghost text-black hover:bg-green-100"
@@ -157,12 +224,14 @@ export default function MobileProductList({
                             </button>
                         ))}
                     </div>
+
+                    {/* Next Button */}
                     <button
-                        className="btn btn-sm btn-ghost flex items-center bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
+                        className="btn btn-xs btn-ghost flex items-center bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
                         onClick={handleNextPage}
                         disabled={currentPage === totalPages}
                     >
-                        <span className="mr-2 text-sm">Next</span>
+                        <span className="hidden sm:inline text-sm">Next</span>
                         <ChevronRight className="w-4 h-4" />
                     </button>
                 </div>

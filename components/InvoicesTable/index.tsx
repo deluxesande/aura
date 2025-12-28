@@ -278,7 +278,7 @@ export default function InvoicesTable({
                         </div>
                     </div>
                 ) : paginatedInvoices.length === 0 ? (
-                    <p className="text-black text-lg text-center">
+                    <p className="text-black text-lg text-center p-4">
                         No Invoices
                     </p>
                 ) : (
@@ -286,67 +286,79 @@ export default function InvoicesTable({
                         {paginatedInvoices.map((invoice, index) => (
                             <div
                                 key={index}
-                                className="p-4 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
+                                className="p-4 border rounded-lg shadow-sm bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors flex flex-col gap-3"
                                 onClick={() =>
                                     handleRowClick(String(invoice.id))
                                 }
                             >
+                                {/* TOP SECTION: Name, Quantity, Status */}
                                 <div className="flex justify-between items-start">
-                                    <p className="font-bold text-lg text-black max-w-52 whitespace-nowrap truncate">
-                                        {invoice.invoiceName}
-                                    </p>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm text-gray-600">
-                                            {invoice.totalQuantity}
-                                        </span>
-                                        <span
-                                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(
-                                                invoice.status
-                                            )}`}
-                                        >
-                                            {getStatusIcon(invoice.status)}
-                                            {invoice.status || "Unknown"}
+                                    <div className="flex flex-col min-w-0 mr-2">
+                                        <h3 className="font-bold text-base text-gray-900 truncate">
+                                            {invoice.invoiceName}
+                                        </h3>
+                                        <span className="text-xs text-gray-500 mt-1">
+                                            {invoice.totalQuantity} Items
                                         </span>
                                     </div>
+
+                                    {/* Status Badge */}
+                                    <span
+                                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium shrink-0 ${getStatusBadgeColor(
+                                            invoice.status
+                                        )}`}
+                                    >
+                                        {getStatusIcon(invoice.status)}
+                                        {invoice.status || "Unknown"}
+                                    </span>
                                 </div>
 
-                                {/* Creator Badge for Mobile */}
-                                {invoice.creator && (
-                                    <div className="flex items-center gap-2 mt-2">
-                                        <div className="w-6 h-6 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 ring-2 ring-gray-200">
-                                            <Image
-                                                src={
-                                                    invoice.creator.imageUrl ||
-                                                    "https://www.svgrepo.com/show/535711/user.svg"
-                                                }
-                                                width={24}
-                                                height={24}
-                                                alt={`${invoice.creator.firstName} Profile`}
-                                                className="object-cover rounded-full"
-                                            />
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <p className="text-xs font-medium text-gray-700">
-                                                {invoice.creator.firstName}{" "}
-                                                {invoice.creator.lastName}
-                                            </p>
-                                            <span
-                                                className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getRoleBadgeColor(
-                                                    invoice.creator.role
-                                                )}`}
-                                            >
-                                                {invoice.creator.role}
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
+                                <div className="border-t border-gray-200 my-1"></div>
 
-                                <div className="flex justify-between items-center mt-3">
-                                    <p className="text-green-600 font-semibold text-lg">
+                                {/* MIDDLE SECTION: Creator Info */}
+                                <div className="flex items-center justify-between">
+                                    {invoice.creator ? (
+                                        <div className="flex flex-1 items-center gap-2">
+                                            <div className="w-6 h-6 rounded-full overflow-hidden relative ring-1 ring-gray-200">
+                                                <Image
+                                                    src={
+                                                        invoice.creator
+                                                            .imageUrl ||
+                                                        "https://www.svgrepo.com/show/535711/user.svg"
+                                                    }
+                                                    fill
+                                                    alt="Creator"
+                                                    className="object-cover"
+                                                />
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-medium text-gray-700">
+                                                    {invoice.creator.firstName}{" "}
+                                                    {invoice.creator.lastName}
+                                                </span>
+                                                <span
+                                                    className={`px-1.5 py-0.5 rounded-[4px] text-[10px] font-semibold ${getRoleBadgeColor(
+                                                        invoice.creator.role
+                                                    )}`}
+                                                >
+                                                    {invoice.creator.role}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <span className="text-xs text-gray-400">
+                                            Unknown
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* BOTTOM SECTION: Price & Actions */}
+                                <div className="flex justify-between items-center mt-1 bg-white p-2 rounded border border-gray-100">
+                                    <p className="text-green-600 font-bold text-lg">
                                         Ksh {invoice.totalAmount}
                                     </p>
                                     <button
-                                        className="p-2 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
+                                        className="btn btn-sm btn-ghost text-gray-500 hover:text-red-600"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             handleDelete(String(invoice.id));

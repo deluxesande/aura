@@ -36,6 +36,7 @@ import {
     autoUpdate,
 } from "@floating-ui/react";
 
+// ... [Keep your allLinks and User types exactly as they were] ...
 const allLinks = [
     {
         href: "/dashboard",
@@ -89,10 +90,10 @@ export default function Navbar({
     const [showPopup, setShowPopup] = useState(false);
     const [filterPopUp, setFilterPopUp] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
-    const [notifications, setNotifications] = useState([
-        { id: 1, isRead: false },
-        { id: 2, isRead: true },
-    ]);
+    // Add state to track if we are on a large screen
+    const [isDesktop, setIsDesktop] = useState(true);
+    const [mounted, setMounted] = useState(false);
+
     const originalProducts = useSelector(
         (state: AppState) => state.product.products
     );
@@ -109,7 +110,6 @@ export default function Navbar({
         (state: AppState) => state.visibility.isVisible
     );
 
-    // Floating UI setup for notification overlay
     const { refs, floatingStyles } = useFloating({
         open: showPopup,
         onOpenChange: setShowPopup,
@@ -117,6 +117,21 @@ export default function Navbar({
         middleware: [offset(10), flip(), shift({ padding: 8 })],
         whileElementsMounted: autoUpdate,
     });
+
+    // Handle Screen Resize & Mounting
+    useEffect(() => {
+        setMounted(true);
+        const checkScreenSize = () => {
+            // 1024px is the default 'lg' breakpoint in Tailwind
+            setIsDesktop(window.innerWidth >= 1024);
+        };
+
+        // Check on initial load
+        checkScreenSize();
+
+        window.addEventListener("resize", checkScreenSize);
+        return () => window.removeEventListener("resize", checkScreenSize);
+    }, []);
 
     useEffect(() => {
         if (user === null) {
@@ -136,7 +151,6 @@ export default function Navbar({
 
     if (user == null) return;
 
-    // Filter AllLinks based on role
     const links = allLinks.filter((link) =>
         link.allowedRoles.some(
             (role) => role.toLowerCase() === user.role.toLowerCase()
@@ -169,7 +183,7 @@ export default function Navbar({
 
     const handleInputValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.value.length === 0)
-            setFilteredProducts?.(originalProducts); // Reset to original products if input is cleared
+            setFilteredProducts?.(originalProducts);
         setInputValue(e.target.value);
     };
 
@@ -178,11 +192,10 @@ export default function Navbar({
             router.push("/products");
         }
 
-        if (!setFilteredProducts) return; // Ensure setFilteredProducts is provided
+        if (!setFilteredProducts) return;
 
         const searchTerm = inputValue.trim().toLowerCase();
 
-        // Filter products locally without modifying Redux state
         const filteredProducts = originalProducts.filter(
             (product: any) =>
                 product.name.toLowerCase().includes(searchTerm) ||
@@ -193,12 +206,12 @@ export default function Navbar({
             toast.error("No products found matching your search.");
         }
 
-        setFilteredProducts(filteredProducts); // Pass filtered products to parent
+        setFilteredProducts(filteredProducts);
 
         const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
         if (isMobile) {
-            toggleMobileMenu(); // Close mobile menu only on mobile
+            toggleMobileMenu();
         }
     };
 
@@ -212,7 +225,7 @@ export default function Navbar({
                     sideBarState ? "lg:ml-40" : "lg:ml-20"
                 } flex flex-col w-full`}
             >
-                {/* Top navbar */}
+                {/* Top navbar (PC) */}
                 <div
                     className={`p-6 ${
                         sideBarState ? "ml-4" : "ml-0"
@@ -228,10 +241,10 @@ export default function Navbar({
                                             placeholder="Search..."
                                             className="py-3 px-4 rounded-l-lg bg-transparent outline-none w-full"
                                             value={inputValue}
-                                            onChange={handleInputValueChange} // Update input value
+                                            onChange={handleInputValueChange}
                                             onKeyDown={(e) => {
                                                 if (e.key === "Enter") {
-                                                    handleSearch(); // Trigger search on Enter key press
+                                                    handleSearch();
                                                 }
                                             }}
                                         />
@@ -279,35 +292,38 @@ export default function Navbar({
                             )}
                         </div>
 
-                        {/* Novu Notifications */}
-                        <Inbox
-                            applicationIdentifier={
-                                process.env.NEXT_PUBLIC_APPLICATION_IDENTIFIER!
-                            }
-                            subscriberId={user.clerkId}
-                            appearance={{
-                                variables: {
-                                    colorPrimary: "#4ade80",
-                                },
-                            }}
-                        >
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <button className="p-3 hover:bg-slate-100 text-black rounded-lg cursor-pointer flex items-center justify-center">
-                                        <Bell />
-                                    </button>
-                                </PopoverTrigger>
-                                <FloatingPortal>
-                                    <PopoverContent
-                                        className="h-[600px] w-[400px] p-0 bg-white border border-gray-300 rounded-lg shadow-lg"
-                                        style={{ zIndex: 9999 }}
-                                        sideOffset={10}
-                                    >
-                                        <Notifications />
-                                    </PopoverContent>
-                                </FloatingPortal>
-                            </Popover>
-                        </Inbox>
+                        {/* PC Novu Notifications - CONDITIONAL RENDER */}
+                        {mounted && isDesktop && (
+                            <Inbox
+                                applicationIdentifier={
+                                    process.env
+                                        .NEXT_PUBLIC_APPLICATION_IDENTIFIER!
+                                }
+                                subscriberId={user.clerkId}
+                                appearance={{
+                                    variables: {
+                                        colorPrimary: "#4ade80",
+                                    },
+                                }}
+                            >
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <button className="p-3 hover:bg-slate-100 text-black rounded-lg cursor-pointer flex items-center justify-center">
+                                            <Bell />
+                                        </button>
+                                    </PopoverTrigger>
+                                    <FloatingPortal>
+                                        <PopoverContent
+                                            className="h-[600px] w-[400px] p-0 bg-white border border-gray-300 rounded-lg shadow-lg"
+                                            style={{ zIndex: 9999 }}
+                                            sideOffset={10}
+                                        >
+                                            <Notifications />
+                                        </PopoverContent>
+                                    </FloatingPortal>
+                                </Popover>
+                            </Inbox>
+                        )}
 
                         <div className="flex items-center">
                             <div
@@ -339,7 +355,41 @@ export default function Navbar({
                             />
                         </Link>
                     </div>
+
                     <div className="flex items-center">
+                        {/* Mobile Novu Notifications - CONDITIONAL RENDER */}
+                        {mounted && !isDesktop && (
+                            <Inbox
+                                applicationIdentifier={
+                                    process.env
+                                        .NEXT_PUBLIC_APPLICATION_IDENTIFIER!
+                                }
+                                subscriberId={user.clerkId}
+                                appearance={{
+                                    variables: {
+                                        colorPrimary: "#4ade80",
+                                    },
+                                }}
+                            >
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <button className="p-3 hover:bg-slate-100 text-black rounded-lg cursor-pointer flex items-center justify-center">
+                                            <Bell />
+                                        </button>
+                                    </PopoverTrigger>
+                                    <FloatingPortal>
+                                        <PopoverContent
+                                            className="h-[600px] w-[400px] p-0 bg-white border border-gray-300 rounded-lg shadow-lg"
+                                            style={{ zIndex: 9999 }}
+                                            sideOffset={10}
+                                        >
+                                            <Notifications />
+                                        </PopoverContent>
+                                    </FloatingPortal>
+                                </Popover>
+                            </Inbox>
+                        )}
+
                         <div
                             className="p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
                             onClick={toggleSidebar}
@@ -365,16 +415,17 @@ export default function Navbar({
                         <>
                             <div className="fixed top-40 inset-0 bg-black/70 blur z-20"></div>
                             <div className="lg:hidden absolute z-30 w-full flex flex-col bg-white shadow-lg p-4">
+                                {/* Mobile Menu Content ... */}
                                 <div className="flex items-center bg-gray-100 rounded-lg shadow-sm flex-grow mb-4">
                                     <input
                                         type="text"
                                         placeholder="Search..."
                                         className="py-3 px-4 rounded-l-lg bg-transparent outline-none w-full"
                                         value={inputValue}
-                                        onChange={handleInputValueChange} // Update input value
+                                        onChange={handleInputValueChange}
                                         onKeyDown={(e) => {
                                             if (e.key === "Enter") {
-                                                handleSearch(); // Trigger search on Enter key press
+                                                handleSearch();
                                             }
                                         }}
                                     />
@@ -427,7 +478,7 @@ export default function Navbar({
                     )}
                 </div>
 
-                {/* Body content goes here */}
+                {/* Body content */}
                 <div
                     className={`flex-grow px-6 lg:px-10 py-1 overflow-y-auto transition-all duration-300 ease-in-out ${
                         sideBarState
