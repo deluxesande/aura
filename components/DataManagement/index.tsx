@@ -246,7 +246,7 @@ const DataManagement: React.FC = () => {
                                     accept=".xlsx, .xls"
                                     onChange={handleFileChange}
                                 />
-                                <Upload className="w-8 h-8 text-gray-400 mb-3" />
+                                <Upload className="w-8 h-8 stroke-green-500 mb-3" />
                                 {importFile ? (
                                     <div className="text-sm">
                                         <p className="font-semibold text-gray-900">

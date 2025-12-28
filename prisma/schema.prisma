@@ -23,7 +23,7 @@ model Product {
   Category    Category @relation(fields: [categoryId], references: [id])
   inStock     Boolean @default(false)
   invoiceItems InvoiceItem[]
-  image       String? @db.Text
+  image       String?  @default("/images/default-product.png") @db.Text
   createdBy   String?   
 }
 
