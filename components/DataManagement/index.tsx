@@ -1,3 +1,4 @@
+import axios from "axios";
 import { Download, X, FileSpreadsheet } from "lucide-react";
 import React, { useState } from "react";
 import { toast } from "sonner";
@@ -7,20 +8,40 @@ const DataManagement: React.FC = () => {
     const [isDownloading, setIsDownloading] = useState(false);
     const [showModal, setShowModal] = useState(false);
 
+    // Inside DataManagement.tsx
+
     const handleDownloadConfirm = async () => {
         setIsDownloading(true);
 
         try {
-            // TODO: Implement actual download logic here
-            // Example:
-            // const response = await axios.get('/api/download/excel', { responseType: 'blob' });
-            // downloadFile(response.data, 'business_data.xlsx');
+            // Fetch the file as a blob
+            const response = await axios.get("/api/download/excel", {
+                responseType: "blob",
+            });
 
-            await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulated delay
+            // Create a URL for the blob
+            const url = window.URL.createObjectURL(new Blob([response.data]));
 
-            toast.success("Data downloaded successfully in Excel format.");
+            // Create a temporary link element to trigger the download
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute(
+                "download",
+                `business_data_${new Date().toISOString().split("T")[0]}.xlsx`
+            );
+
+            // Append to body, click, and cleanup
+            document.body.appendChild(link);
+            link.click();
+
+            // Clean up
+            link.parentNode?.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            toast.success("Data downloaded successfully.");
             setShowModal(false);
         } catch (error) {
+            console.error(error);
             toast.error("Failed to download data");
         } finally {
             setIsDownloading(false);
