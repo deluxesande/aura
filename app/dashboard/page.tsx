@@ -108,7 +108,7 @@ export default function Page() {
 
                 // TODO: Fix total revenue calculation to include only PAID invoices
                 const totalRevenue = allInvoices
-                    .filter((inv: any) => inv.status === "PENDING")
+                    .filter((inv: any) => inv.status === "PAID")
                     .reduce(
                         (sum: number, inv: any) => sum + inv.totalAmount,
                         0

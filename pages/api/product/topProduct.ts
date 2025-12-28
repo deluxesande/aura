@@ -122,7 +122,7 @@ export default async function handler(
                         gte: startDate,
                         lte: endDate,
                     },
-                    status: "PENDING",
+                    status: "PAID",
                 },
                 include: {
                     invoiceItems: {

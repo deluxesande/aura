@@ -1,12 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/utils/lib/client";
 import { Novu } from "@novu/api";
+import { getAuth } from "@clerk/nextjs/server";
 
 const novu = new Novu({
     secretKey: process.env.NOVU_SECRET_KEY!,
 });
 
-async function sendDeleteNotification(invoice: any) {
+async function sendDeleteNotification(invoice: any, deletedBy: any) {
     if (!invoice.createdBy) {
         console.warn("Invoice has no creator, skipping notification.");
         return;
@@ -38,7 +39,7 @@ async function sendDeleteNotification(invoice: any) {
                 payload: {
                     invoiceName: invoice.invoiceName || "Unnamed Invoice",
                     totalAmount: String(invoice.totalAmount),
-                    cancelledBy: creator.firstName + " " + creator.lastName,
+                    deletedBy: `${deletedBy.firstName} ${deletedBy.lastName}`,
                 },
             });
         } catch (error) {
@@ -95,7 +96,13 @@ export const deleteInvoice = async (
             });
         });
 
-        sendDeleteNotification(deletedInvoice).catch((err) =>
+        const user = getAuth(req);
+        const deleteBy = await prisma.user.findUnique({
+            where: { clerkId: user.userId || "" },
+            select: { firstName: true, lastName: true },
+        });
+
+        sendDeleteNotification(deletedInvoice, deleteBy).catch((err) =>
             console.error("Notification Error:", err)
         );
 

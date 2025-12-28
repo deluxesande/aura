@@ -2,6 +2,7 @@ import { InvoiceItem } from "@/utils/typesDefinitions";
 import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/utils/lib/client";
 import { Novu } from "@novu/api";
+import { getAuth } from "@clerk/nextjs/server";
 
 // Initialize Novu
 const novu = new Novu({
@@ -49,9 +50,14 @@ export const updateInvoice = async (
 
         // 3. CHECK FOR CANCELLATION & SEND NOTIFICATION
         if (status === "CANCELLED") {
-            // Run this asynchronously (don't block the response)
-            sendCancellationNotification(updatedInvoice).catch((err) =>
-                console.error("Notification Error:", err)
+            // Get the logged in user
+            const user = getAuth(req);
+            const cancelledBy = await prisma.user.findUnique({
+                where: { clerkId: user.userId || "" },
+                select: { firstName: true, lastName: true },
+            });
+            sendCancellationNotification(updatedInvoice, cancelledBy).catch(
+                (err) => console.error("Notification Error:", err)
             );
         }
 
@@ -62,13 +68,7 @@ export const updateInvoice = async (
     }
 };
 
-async function sendCancellationNotification(invoice: any) {
-    // A. Fetch the creator (User who made the invoice) to find the business context
-    if (!invoice.createdBy) {
-        console.warn("Invoice has no creator, skipping notification.");
-        return;
-    }
-
+async function sendCancellationNotification(invoice: any, cancelledBy: any) {
     const creator = await prisma.user.findUnique({
         where: { clerkId: invoice.createdBy },
     });
@@ -95,7 +95,7 @@ async function sendCancellationNotification(invoice: any) {
                 payload: {
                     invoiceName: invoice.invoiceName || "Unnamed Invoice",
                     totalAmount: String(invoice.totalAmount),
-                    cancelledBy: creator.firstName + " " + creator.lastName,
+                    cancelledBy: `${cancelledBy.firstName} ${cancelledBy.lastName}`,
                 },
             });
         } catch (error) {

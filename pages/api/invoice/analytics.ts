@@ -51,7 +51,7 @@ export default async function handler(
                 createdBy: {
                     in: userIds,
                 },
-                status: "PENDING", // Filter by PENDING status
+                status: "PAID",
             },
             select: {
                 id: true,
