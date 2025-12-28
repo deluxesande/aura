@@ -25,6 +25,7 @@ const DeleteUserForm: React.FC = () => {
             const promise = async () => {
                 try {
                     await axios.delete(`/api/auth/delete/${user.id}`);
+                    router.push("/sign-up");
                 } catch (err) {
                     if (err instanceof Error) {
                         toast.error(err.message);

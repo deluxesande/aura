@@ -1,18 +1,14 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import Navbar from "@components/Navbar";
-import InvoicesTable from "@/components/InvoicesTable";
 import InfoCard from "@/components/InfoCard";
-import { ReceiptText, BadgeDollarSign, PlusCircle } from "lucide-react";
-import TopProducts from "@/components/TopProducts";
-import { Product } from "@/utils/typesDefinitions";
-import axios from "axios";
+import InvoicesTable from "@/components/InvoicesTable";
 import LineChart from "@/components/LineChart";
-import Link from "next/link";
-import { useDispatch, useSelector } from "react-redux";
-import { AppState } from "@/store";
-import { setProducts } from "@/store/slices/productSlice";
 import TopProductsChart from "@/components/TopProductsChart";
+import { AppState } from "@/store";
+import Navbar from "@components/Navbar";
+import axios from "axios";
+import { BadgeDollarSign, ReceiptText } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 interface InvoiceStats {
     totalInvoices: number;

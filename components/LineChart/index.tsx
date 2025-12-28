@@ -43,9 +43,9 @@ const LineChart: React.FC<LineChartProps> = ({ timePeriod = 7 }) => {
                     `/api/invoice/analytics?timePeriod=${timePeriod}`
                 );
 
-                if (!response.ok) {
-                    throw new Error("Failed to fetch analytics");
-                }
+                // if (!response.ok) {
+                //     throw new Error("Failed to fetch analytics");
+                // }
 
                 const data: AnalyticsData = await response.json();
                 setChartData(data);

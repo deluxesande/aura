@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { signIn as signInAction } from "@/store/slices/authSlice";
-import axios from "axios";
 
 export default function SignupPage() {
     const { isLoaded, signUp, setActive } = useSignUp();
@@ -16,7 +15,6 @@ export default function SignupPage() {
     const [password, setPassword] = useState("");
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
-    const [businessName, setBusinessName] = useState("");
     const [codeSent, setCodeSent] = useState(false);
     const [code, setCode] = useState("");
     const { isSignedIn } = useAuth();
@@ -27,7 +25,7 @@ export default function SignupPage() {
     // Check if the user is already signed in
     useEffect(() => {
         if (isSignedIn) {
-            router.push("/dashboard");
+            router.push("/settings");
         }
     }, [isSignedIn, router]);
 
@@ -49,13 +47,15 @@ export default function SignupPage() {
                 setCodeSent(true);
             } catch (err: any) {
                 // toast.error(err.errors[0].message);
+                throw err; // Re-throw to trigger toast.promise error
             }
         };
 
         toast.promise(promise(), {
             loading: "Creating account...",
             success: "Account created successfully! Please verify your email.",
-            error: "Failed to create account. Please try again.",
+            error: (err) =>
+                err.errors?.[0]?.message || "Failed to create account.",
         });
     };
 
@@ -70,19 +70,24 @@ export default function SignupPage() {
                 });
 
                 if (result.status === "complete") {
+                    // Set the session active
                     await setActive({ session: result.createdSessionId });
 
+                    // Dispatch your redux action
                     dispatch(signInAction());
+
+                    // FORCE REDIRECT TO SETTINGS
                     router.push("/settings");
+                } else {
+                    // console.error(JSON.stringify(result, null, 2));
                 }
             } catch (err: any) {
                 if (err.errors) {
                     err.errors.forEach((error: any) => {
                         toast.error(error.long_message || error.message);
                     });
-                } else {
-                    // toast.error("Failed to verify. Please try again.");
                 }
+                throw err;
             }
         };
 
@@ -98,7 +103,7 @@ export default function SignupPage() {
         try {
             await signUp.authenticateWithRedirect({
                 strategy: "oauth_google",
-                redirectUrl: "/sign-in",
+                redirectUrl: "/sso-callback",
                 redirectUrlComplete: "/settings",
             });
             dispatch(signInAction());
@@ -116,7 +121,7 @@ export default function SignupPage() {
             <button
                 type="button"
                 onClick={handleGoogleSignIn}
-                className="w-full flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="w-full flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
             >
                 <Image
                     className="h-5 w-5 mr-2"
@@ -229,7 +234,7 @@ export default function SignupPage() {
                             <input
                                 id="verification-code"
                                 name="verification-code"
-                                type="number"
+                                type="text"
                                 value={code}
                                 onChange={(e) => setCode(e.target.value)}
                                 required
@@ -242,19 +247,18 @@ export default function SignupPage() {
                     <button
                         type="submit"
                         onClick={handleVerify}
-                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
                     >
                         Verify Code
                     </button>
                 ) : (
                     <button
                         type="submit"
-                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
                     >
                         Create account
                     </button>
                 )}
-                {/* Add the CAPTCHA element */}
                 <div id="clerk-captcha"></div>
             </form>
 

@@ -35,6 +35,7 @@ import {
     shift,
     autoUpdate,
 } from "@floating-ui/react";
+import BusinessOnboardingModal from "../BusinessOnboardingModal";
 
 // ... [Keep your allLinks and User types exactly as they were] ...
 const allLinks = [
@@ -486,6 +487,7 @@ export default function Navbar({
                             : "lg:max-w-[calc(100vw-5rem)]"
                     }`}
                 >
+                    <BusinessOnboardingModal />
                     {children}
                 </div>
             </div>
