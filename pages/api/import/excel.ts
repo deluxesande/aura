@@ -21,36 +21,28 @@ export default async function handler(
 
     try {
         const { userId } = getAuth(req);
-        if (!userId) {
-            // console.log("❌ Import Failed: Unauthorized user");
-            return res.status(401).json({ error: "Unauthorized" });
-        }
+        if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-        // console.log(`🚀 Starting Import for User: ${userId}`);
-
-        // Get User Context
+        // 1. Get Context
         const currentUser = await prisma.user.findUnique({
             where: { clerkId: userId },
             select: { businessId: true },
         });
 
         if (!currentUser || !currentUser.businessId) {
-            // console.log("❌ Import Failed: Business not found");
             return res.status(404).json({ error: "Business not found" });
         }
 
-        // Parse Upload
+        // 2. Parse File
         const form = formidable({});
         const [fields, files] = await form.parse(req);
         const uploadedFile = files.file?.[0];
 
         if (!uploadedFile) {
-            // console.log("❌ Import Failed: No file uploaded");
             return res.status(400).json({ error: "No file uploaded" });
         }
 
-        // Read Excel
-        // console.log(`📂 Reading file: ${uploadedFile.originalFilename}`);
+        // 3. Read Excel Data
         const fileBuffer = fs.readFileSync(uploadedFile.filepath);
         const workbook = XLSX.read(fileBuffer, { type: "buffer" });
 
@@ -65,213 +57,141 @@ export default async function handler(
         const invoicesData = getSheetData("Invoices");
         const invoiceItemsData = getSheetData("Invoice Items");
 
-        //     console.log(`📊 Data Found:
-        //   - Categories: ${categoriesData.length}
-        //   - Customers: ${customersData.length}
-        //   - Products: ${productsData.length}
-        //   - Invoices: ${invoicesData.length}
-        //   - Invoice Items: ${invoiceItemsData.length}
-        // `);
-
-        // START TRANSACTION
+        // 4. DATABASE TRANSACTION
         await prisma.$transaction(
             async (tx) => {
-                // --- Helper: Bulletproof Find or Create Category ---
-                const findOrCreateCategory = async (rawName: string) => {
-                    const name = rawName
-                        ? rawName.toString().trim()
-                        : "Uncategorized";
+                // --- A. BULK CATEGORIES ---
+                const uniqueCatNames = Array.from(
+                    new Set(
+                        categoriesData
+                            .map((c: any) =>
+                                c["Category Name"]?.toString().trim()
+                            )
+                            .filter(Boolean)
+                    )
+                );
 
-                    // 1. Try finding it normally
-                    const existing = await tx.category.findFirst({
-                        where: { name: name, createdBy: userId },
-                    });
-                    if (existing) {
-                        // console.log(`   > Found Category: "${name}"`);
-                        return existing.id;
-                    }
-
-                    // 2. Try creating it
-                    try {
-                        // console.log(`   > Creating Category: "${name}"`);
-                        const newCat = await tx.category.create({
-                            data: {
-                                name: name,
-                                description: "Imported via Product",
-                                createdBy: userId,
-                            },
-                        });
-                        return newCat.id;
-                    } catch (error: any) {
-                        if (error.code === "P2002") {
-                            // console.log(
-                            //     `   > Race Condition: Category "${name}" existed after all. Fetching...`
-                            // );
-                            const retry = await tx.category.findFirst({
-                                where: { name: name, createdBy: userId },
-                            });
-                            if (retry) return retry.id;
-                        }
-                        throw error;
-                    }
-                };
-
-                // --- A. Categories ---
-                // console.log("--- Processing Categories ---");
-                const categoryMap = new Map<string, string>();
-                for (const row of categoriesData) {
-                    const name = row["Category Name"];
-                    if (!name) continue;
-                    const catId = await findOrCreateCategory(name);
-                    categoryMap.set(name.toString().trim(), catId);
-                }
-
-                // --- B. Customers ---
-                // console.log("--- Processing Customers ---");
-                const customerMap = new Map<string, string>();
-                for (const row of customersData) {
-                    const email = row["Email"]
-                        ? row["Email"].toString().trim()
-                        : null;
-                    const phone = row["Phone Number"]
-                        ? row["Phone Number"].toString().trim()
-                        : null;
-                    const key = email || phone;
-
-                    if (!key) continue;
-
-                    let customer = await tx.customer.findFirst({
-                        where: {
-                            OR: [
-                                { email: email || undefined },
-                                { phoneNumber: phone || undefined },
-                            ],
+                if (uniqueCatNames.length > 0) {
+                    await tx.category.createMany({
+                        data: uniqueCatNames.map((name) => ({
+                            name,
+                            description: "Imported",
                             createdBy: userId,
-                        },
+                        })),
+                        skipDuplicates: true,
                     });
-
-                    if (!customer) {
-                        try {
-                            // console.log(`   > Creating Customer: ${row["First Name"]} ${row["Last Name"]}`);
-                            customer = await tx.customer.create({
-                                data: {
-                                    firstName: row["First Name"],
-                                    lastName: row["Last Name"],
-                                    email: email,
-                                    phoneNumber: phone || "",
-                                    createdBy: userId,
-                                },
-                            });
-                        } catch (e: any) {
-                            if (e.code === "P2002") {
-                                // console.log(`   > Duplicate Customer found during creation: ${email || phone}`);
-                                customer = await tx.customer.findFirst({
-                                    where: {
-                                        OR: [
-                                            { email: email || undefined },
-                                            { phoneNumber: phone || undefined },
-                                        ],
-                                        createdBy: userId,
-                                    },
-                                });
-                            }
-                        }
-                    } else {
-                        // console.log(`   > Found Existing Customer: ${email || phone}`);
-                    }
-
-                    if (customer) {
-                        if (email) customerMap.set(email, customer.id);
-                        if (phone) customerMap.set(phone, customer.id);
-                    }
                 }
 
-                // --- C. Products ---
-                // console.log("--- Processing Products ---");
+                const allCategories = await tx.category.findMany({
+                    where: {
+                        name: { in: uniqueCatNames as string[] },
+                        createdBy: userId,
+                    },
+                    select: { id: true, name: true },
+                });
+
+                const categoryMap = new Map<string, string>();
+                allCategories.forEach((c) => categoryMap.set(c.name, c.id));
+
+                // --- B. BULK CUSTOMERS ---
+                const customersToInsert = customersData
+                    .filter((c: any) => c["Email"] || c["Phone Number"])
+                    .map((c: any) => ({
+                        firstName: c["First Name"],
+                        lastName: c["Last Name"],
+                        email: c["Email"]?.toString().trim() || null,
+                        phoneNumber: c["Phone Number"]?.toString().trim() || "",
+                        createdBy: userId,
+                    }));
+
+                if (customersToInsert.length > 0) {
+                    await tx.customer.createMany({
+                        data: customersToInsert,
+                        skipDuplicates: true,
+                    });
+                }
+
+                const contactKeys = customersToInsert
+                    .map((c) => c.email)
+                    .filter(Boolean) as string[];
+                const phoneKeys = customersToInsert
+                    .map((c) => c.phoneNumber)
+                    .filter(Boolean) as string[];
+
+                const allCustomers = await tx.customer.findMany({
+                    where: {
+                        OR: [
+                            { email: { in: contactKeys } },
+                            { phoneNumber: { in: phoneKeys } },
+                        ],
+                        createdBy: userId,
+                    },
+                    select: { id: true, email: true, phoneNumber: true },
+                });
+
+                const customerMap = new Map<string, string>();
+                allCustomers.forEach((c) => {
+                    if (c.email) customerMap.set(c.email, c.id);
+                    if (c.phoneNumber) customerMap.set(c.phoneNumber, c.id);
+                });
+
+                // --- C. BULK PRODUCTS ---
+                const productsToInsert = productsData
+                    .filter((p: any) => p["SKU"])
+                    .map((p: any) => {
+                        const catId =
+                            categoryMap.get(p["Category"]?.toString().trim()) ||
+                            categoryMap.get("Uncategorized");
+                        if (!catId) return null;
+
+                        return {
+                            name: p["Product Name"],
+                            description: p["Description"] || "",
+                            price: parseFloat(p["Price"]) || 0,
+                            sku: p["SKU"].toString().trim(),
+                            quantity: parseInt(p["Quantity"]) || 0,
+                            inStock: p["In Stock"] === "Yes",
+                            categoryId: catId,
+                            createdBy: userId,
+                        };
+                    })
+                    .filter(
+                        (item): item is NonNullable<typeof item> =>
+                            item !== null
+                    ); // TypeScript Safe Filter
+
+                if (productsToInsert.length > 0) {
+                    await tx.product.createMany({
+                        data: productsToInsert,
+                        skipDuplicates: true,
+                    });
+                }
+
+                const skuKeys = productsToInsert.map((p) => p.sku);
+                const allProducts = await tx.product.findMany({
+                    where: { sku: { in: skuKeys } },
+                    select: { id: true, sku: true },
+                });
+
                 const productMap = new Map<string, string>();
-                let newProductsCount = 0;
-                let existingProductsCount = 0;
+                allProducts.forEach((p) => productMap.set(p.sku, p.id));
 
-                for (const row of productsData) {
-                    const rawSku = row["SKU"];
-                    const categoryName = row["Category"];
-
-                    if (!rawSku) continue;
-                    const sku = rawSku.toString().trim();
-
-                    let categoryId = categoryMap.get(
-                        categoryName?.toString().trim()
-                    );
-
-                    if (!categoryId) {
-                        // console.log(`   > Category "${categoryName}" missing for product ${sku}. Auto-creating...`);
-                        categoryId = await findOrCreateCategory(categoryName);
-                        if (categoryName)
-                            categoryMap.set(
-                                categoryName.toString().trim(),
-                                categoryId
-                            );
-                    }
-
-                    let product = await tx.product.findUnique({
-                        where: { sku },
-                    });
-
-                    if (product) {
-                        existingProductsCount++;
-                        productMap.set(sku, product.id);
-                    } else {
-                        try {
-                            product = await tx.product.create({
-                                data: {
-                                    name: row["Product Name"],
-                                    description: row["Description"] || "",
-                                    price: parseFloat(row["Price"]) || 0,
-                                    sku: sku,
-                                    quantity: parseInt(row["Quantity"]) || 0,
-                                    inStock: row["In Stock"] === "Yes",
-                                    categoryId: categoryId,
-                                    createdBy: userId,
-                                },
-                            });
-                            newProductsCount++;
-                            productMap.set(sku, product.id);
-                        } catch (e: any) {
-                            if (e.code === "P2002") {
-                                // console.log(
-                                //     `   > Skipping duplicate SKU create: ${sku}`
-                                // );
-                                const existingP = await tx.product.findUnique({
-                                    where: { sku },
-                                });
-                                if (existingP)
-                                    productMap.set(sku, existingP.id);
-                            }
-                        }
-                    }
-                }
-                // console.log(
-                //     `   > Products Summary: ${newProductsCount} New, ${existingProductsCount} Existing`
-                // );
-
-                // --- D. Invoices ---
-                // console.log("--- Processing Invoices ---");
+                // --- D. INVOICES (Sequential) ---
                 const invoiceIdMap = new Map<string, string>();
-                let invoicesCreated = 0;
 
                 for (const row of invoicesData) {
                     const oldExcelId = row["Invoice ID"];
                     if (!oldExcelId) continue;
 
                     const customerEmail = row["Customer Email"]
-                        ? row["Customer Email"].toString().trim()
-                        : null;
+                        ?.toString()
+                        .trim();
                     const customerId = customerMap.get(customerEmail);
 
                     const newInvoice = await tx.invoice.create({
                         data: {
                             invoiceName:
-                                row["Invoice Name"] || `Imported Invoice`,
+                                row["Invoice Name"] || "Imported Invoice",
                             totalAmount: parseFloat(row["Total Amount"]) || 0,
                             status: row["Status"] || "PENDING",
                             paymentType: row["Payment Type"] || "CASH",
@@ -281,58 +201,44 @@ export default async function handler(
                     });
 
                     invoiceIdMap.set(oldExcelId, newInvoice.id);
-                    invoicesCreated++;
                 }
-                // console.log(`   > Created ${invoicesCreated} Invoices`);
 
-                // --- E. Invoice Items ---
-                // console.log("--- Processing Invoice Items ---");
+                // --- E. BULK INVOICE ITEMS (FIXED) ---
+                // We use a simple array push loop to ensure type safety (no nulls in the array)
                 const itemsToCreate: any[] = [];
 
                 for (const row of invoiceItemsData) {
-                    const oldExcelInvoiceId = row["Invoice ID"];
-                    const rawProductSku = row["Product SKU"];
+                    const newInvoiceId = invoiceIdMap.get(row["Invoice ID"]);
+                    const productId = productMap.get(
+                        row["Product SKU"]?.toString().trim()
+                    );
 
-                    if (!oldExcelInvoiceId || !rawProductSku) continue;
-
-                    const productSku = rawProductSku.toString().trim();
-                    const newInvoiceId = invoiceIdMap.get(oldExcelInvoiceId);
-                    const resolvedProductId = productMap.get(productSku);
-
-                    if (newInvoiceId && resolvedProductId) {
+                    if (newInvoiceId && productId) {
                         itemsToCreate.push({
                             invoiceId: newInvoiceId,
-                            productId: resolvedProductId,
+                            productId: productId,
                             quantity: parseInt(row["Quantity"]) || 1,
                             price: parseFloat(row["Unit Price"]) || 0,
                             createdBy: userId,
                         });
-                    } else {
-                        // console.log(`   ⚠️ Skipping Item: Inv ${oldExcelInvoiceId} or SKU ${productSku} not resolved.`);
                     }
                 }
 
                 if (itemsToCreate.length > 0) {
-                    // console.log(
-                    //     `   > Batch Inserting ${itemsToCreate.length} Invoice Items...`
-                    // );
                     await tx.invoiceItem.createMany({
                         data: itemsToCreate,
                     });
-                } else {
-                    // console.log("   > No invoice items matched to create.");
                 }
             },
             {
                 maxWait: 5000,
-                timeout: 50000,
+                timeout: 20000,
             }
         );
 
-        // console.log("✅ Import Completed Successfully");
         return res.status(200).json({ message: "Data imported successfully" });
     } catch (error) {
-        // console.error("❌ IMPORT ERROR:", error);
+        console.error("Import error:", error);
         return res.status(500).json({
             error: "Failed to import data",
             details: error instanceof Error ? error.message : "Unknown error",
