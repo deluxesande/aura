@@ -12,6 +12,10 @@ import {
     CreditCard,
     User,
     Printer,
+    CheckCircle,
+    XCircle,
+    RotateCcw,
+    Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -23,12 +27,14 @@ function InvoicePageContent() {
         { Product: Product; quantity: number }[]
     >([]);
     const [invoice, setInvoice] = useState<Invoice>();
+    const [isUpdating, setIsUpdating] = useState(false);
 
     const getStatusColor = (status: string) => {
         switch (status) {
             case "pending":
                 return "bg-yellow-100 text-yellow-700 border-yellow-200";
             case "active":
+            case "paid":
                 return "bg-green-100 text-green-700 border-green-200";
             case "completed":
                 return "bg-blue-100 text-blue-700 border-blue-200";
@@ -46,6 +52,26 @@ function InvoicePageContent() {
         }
     };
 
+    const handleStatusChange = async (newStatus: string) => {
+        if (!invoice || isUpdating) return;
+
+        const previousStatus = invoice.status;
+        setInvoice({ ...invoice, status: newStatus });
+        setIsUpdating(true);
+
+        try {
+            await axios.put(`/api/invoice/${invoice.id}`, {
+                status: newStatus,
+            });
+            toast.success(`Invoice marked as ${newStatus}`);
+        } catch (error) {
+            setInvoice({ ...invoice, status: previousStatus });
+            toast.error("Failed to update status");
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
     useEffect(() => {
         const fetchInvoice = async () => {
             if (!id) return;
@@ -53,7 +79,6 @@ function InvoicePageContent() {
                 const response = await axios.get(`/api/invoice/${id}`);
                 const invoiceData = response.data;
 
-                // Keep raw date for logic, formatted for display if needed
                 setInvoice({
                     ...invoiceData,
                     createdAt: new Date(invoiceData.createdAt),
@@ -77,6 +102,8 @@ function InvoicePageContent() {
         );
     }
 
+    const status = invoice.status?.toLowerCase() || "pending";
+
     return (
         <Navbar>
             <div className="max-w-6xl mx-auto px-4 py-8">
@@ -96,8 +123,7 @@ function InvoicePageContent() {
                                 </h1>
                                 <span
                                     className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
-                                        invoice.status?.toLowerCase() ||
-                                            "pending"
+                                        status
                                     )}`}
                                 >
                                     {invoice.status
@@ -114,19 +140,61 @@ function InvoicePageContent() {
                         </div>
                     </div>
 
-                    <div className="flex gap-2">
-                        <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    <div className="flex gap-2 flex-wrap">
+                        {/* ONLY Show "Mark Paid" if Payment Type is CASH */}
+                        {status !== "paid" &&
+                            status !== "completed" &&
+                            invoice.paymentType === "CASH" && (
+                                <button
+                                    onClick={() => handleStatusChange("PAID")}
+                                    disabled={isUpdating}
+                                    className="flex items-center gap-2 px-4 py-2 bg-green-600 border border-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
+                                >
+                                    <CheckCircle
+                                        size={16}
+                                        className="stroke-white"
+                                    />
+                                    Mark Paid
+                                </button>
+                            )}
+
+                        {/* Allow Cancelling if it's currently Pending */}
+                        {status === "pending" && (
+                            <button
+                                onClick={() => handleStatusChange("CANCELLED")}
+                                disabled={isUpdating}
+                                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 hover:border-red-200 disabled:opacity-50 transition-colors"
+                            >
+                                <XCircle size={16} className="stroke-red-500" />
+                                Cancel
+                            </button>
+                        )}
+
+                        {/* Allow Reopening if it's Cancelled */}
+                        {status === "cancelled" && (
+                            <button
+                                onClick={() => handleStatusChange("PENDING")}
+                                disabled={isUpdating}
+                                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                            >
+                                <RotateCcw size={16} />
+                                Reopen
+                            </button>
+                        )}
+
+                        {/* Print/Download */}
+                        <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                             <Printer size={16} />
                             Print
                         </button>
-                        <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                             Download
                         </button>
                     </div>
                 </div>
 
+                {/* ... Rest of grid layout (Items & Meta) remains unchanged ... */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* LEFT COLUMN - Invoice Items & Summary */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
@@ -191,7 +259,6 @@ function InvoicePageContent() {
                                 </table>
                             </div>
 
-                            {/* Total Summary Footer */}
                             <div className="bg-gray-50 p-6 flex flex-col items-end gap-2 border-t border-gray-100">
                                 <div className="flex justify-between w-full md:w-1/2 lg:w-1/3">
                                     <span className="text-sm text-gray-500">
@@ -213,9 +280,7 @@ function InvoicePageContent() {
                         </div>
                     </div>
 
-                    {/* RIGHT COLUMN - Meta Details */}
                     <div className="space-y-6">
-                        {/* Invoice Meta */}
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                             <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">
                                 Invoice Details
@@ -272,7 +337,6 @@ function InvoicePageContent() {
                             </div>
                         </div>
 
-                        {/* Customer Info */}
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                             <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">
                                 Customer

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Trash,
     ChevronLeft,
@@ -6,6 +6,7 @@ import {
     Check,
     Clock,
     X,
+    Filter,
 } from "lucide-react";
 import { Invoice } from "@/utils/typesDefinitions";
 import { useRouter } from "next/navigation";
@@ -31,6 +32,22 @@ export default function InvoicesTable({
 }) {
     const router = useRouter();
     const [currentPage, setCurrentPage] = useState(1);
+
+    // 1. Internal Filter State
+    const [filterStatus, setFilterStatus] = useState<
+        "ALL" | "PAID" | "PENDING" | "CANCELLED"
+    >("ALL");
+
+    // 2. Filter Logic
+    const filteredInvoices = invoices.filter((inv) => {
+        if (filterStatus === "ALL") return true;
+        return inv.status?.toLowerCase() === filterStatus.toLowerCase();
+    });
+
+    // 3. Reset to Page 1 when filter changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filterStatus]);
 
     const handleRowClick = (invoiceId: string) => {
         router.push(`/invoice?id=${invoiceId}`);
@@ -75,11 +92,11 @@ export default function InvoicesTable({
         }
     };
 
-    // Calculate pagination
-    const totalPages = Math.ceil(invoices.length / itemsPerPage);
+    // 4. Calculate pagination based on FILTERED results
+    const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const paginatedInvoices = invoices.slice(startIndex, endIndex);
+    const paginatedInvoices = filteredInvoices.slice(startIndex, endIndex);
 
     const handlePreviousPage = () => {
         setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -93,7 +110,6 @@ export default function InvoicesTable({
         setCurrentPage(page);
     };
 
-    // Generate page numbers to display
     const getPageNumbers = () => {
         const pages = [];
         const maxPagesToShow = 5;
@@ -115,7 +131,35 @@ export default function InvoicesTable({
 
     return (
         <div className="p-4 card bg-white shadow-lg rounded-lg mt-4">
-            <h1 className="text-2xl font-bold mb-6 text-gray-400">{title}</h1>
+            {/* Header Area with Title & Filters */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <h1 className="text-2xl font-bold text-gray-400">{title}</h1>
+
+                {/* Filter Tabs */}
+                <div className="flex items-center bg-gray-100 p-1 rounded-lg">
+                    {(["ALL", "PENDING", "PAID", "CANCELLED"] as const).map(
+                        (status) => (
+                            <button
+                                key={status}
+                                onClick={() => setFilterStatus(status)}
+                                className={`
+                        px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200
+                        ${
+                            filterStatus === status
+                                ? "bg-green-500 text-white shadow-sm"
+                                : "text-gray-400 hover:text-gray-700 hover:bg-gray-200/50"
+                        }
+                    `}
+                            >
+                                {status === "ALL"
+                                    ? "All"
+                                    : status.charAt(0) +
+                                      status.slice(1).toLowerCase()}
+                            </button>
+                        )
+                    )}
+                </div>
+            </div>
 
             {/* Table for larger screens */}
             <div className="hidden lg:block">
@@ -160,9 +204,11 @@ export default function InvoicesTable({
                                     <tr>
                                         <td
                                             colSpan={6}
-                                            className="py-2 px-4 text-black text-lg text-center"
+                                            className="py-12 px-4 text-center text-gray-500"
                                         >
-                                            No Invoices
+                                            {filterStatus === "ALL"
+                                                ? "No Invoices Found"
+                                                : `No ${filterStatus.toLowerCase()} invoices found.`}
                                         </td>
                                     </tr>
                                 ) : (
@@ -278,8 +324,10 @@ export default function InvoicesTable({
                         </div>
                     </div>
                 ) : paginatedInvoices.length === 0 ? (
-                    <p className="text-black text-lg text-center p-4">
-                        No Invoices
+                    <p className="text-gray-500 text-center p-8">
+                        {filterStatus === "ALL"
+                            ? "No Invoices"
+                            : `No ${filterStatus.toLowerCase()} invoices found.`}
                     </p>
                 ) : (
                     <div className="flex flex-col space-y-4">
@@ -374,9 +422,7 @@ export default function InvoicesTable({
             </div>
 
             {/* Pagination */}
-            {!loading && invoices.length > 0 && (
-                // Changed space-x-4 to gap-2 for mobile, gap-4 for larger screens
-                // Added flex-wrap to prevent rigid overflow if the screen is extremely small
+            {!loading && paginatedInvoices.length > 0 && (
                 <div className="flex flex-wrap justify-center items-center pt-4 my-4 gap-2 sm:gap-4">
                     <button
                         className="btn btn-xs btn-ghost flex items-center bg-green-400 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
@@ -384,7 +430,6 @@ export default function InvoicesTable({
                         disabled={currentPage === 1}
                     >
                         <ChevronLeft className="w-4 h-4 stroke-white" />
-                        {/* Added hidden sm:inline to hide text on mobile */}
                         <span className="hidden sm:inline text-sm text-white">
                             Back
                         </span>
@@ -411,7 +456,6 @@ export default function InvoicesTable({
                         onClick={handleNextPage}
                         disabled={currentPage === totalPages}
                     >
-                        {/* Added hidden sm:inline to hide text on mobile */}
                         <span className="hidden sm:inline text-sm text-white">
                             Next
                         </span>
@@ -421,11 +465,14 @@ export default function InvoicesTable({
             )}
 
             {/* Page info */}
-            {!loading && invoices.length > 0 && (
+            {!loading && filteredInvoices.length > 0 && (
                 <div className="text-center text-sm text-gray-500 mt-2">
                     Page {currentPage} of {totalPages} | Showing{" "}
-                    {startIndex + 1}-{Math.min(endIndex, invoices.length)} of{" "}
-                    {invoices.length} invoices
+                    {startIndex + 1}-
+                    {Math.min(endIndex, filteredInvoices.length)} of{" "}
+                    {filteredInvoices.length}{" "}
+                    {filterStatus === "ALL" ? "" : filterStatus.toLowerCase()}{" "}
+                    invoices
                 </div>
             )}
         </div>

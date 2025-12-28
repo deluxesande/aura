@@ -113,7 +113,7 @@ const BusinessOnboardingModal = () => {
                     >
                         {isLoading ? (
                             <>
-                                <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" />
+                                <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5 stroke-white" />
                                 Setting up...
                             </>
                         ) : (

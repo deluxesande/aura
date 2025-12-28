@@ -1,5 +1,54 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/utils/lib/client";
+import { Novu } from "@novu/api";
+
+const novu = new Novu({
+    secretKey: process.env.NOVU_SECRET_KEY!,
+});
+
+async function sendDeleteNotification(invoice: any) {
+    if (!invoice.createdBy) {
+        console.warn("Invoice has no creator, skipping notification.");
+        return;
+    }
+
+    const creator = await prisma.user.findUnique({
+        where: { clerkId: invoice.createdBy },
+    });
+
+    if (!creator || !creator.businessId) {
+        console.error("Creator or business not found for notification");
+        return;
+    }
+
+    const adminsAndManagers = await prisma.user.findMany({
+        where: {
+            businessId: creator.businessId,
+            role: { in: ["admin", "manager"] },
+        },
+    });
+
+    for (const admin of adminsAndManagers) {
+        try {
+            await novu.trigger({
+                to: {
+                    subscriberId: admin.clerkId,
+                },
+                workflowId: "invoice-deleted",
+                payload: {
+                    invoiceName: invoice.invoiceName || "Unnamed Invoice",
+                    totalAmount: String(invoice.totalAmount),
+                    cancelledBy: creator.firstName + " " + creator.lastName,
+                },
+            });
+        } catch (error) {
+            console.error(
+                `Failed to send Novu notification to ${admin.email}:`,
+                error
+            );
+        }
+    }
+}
 
 export const deleteInvoice = async (
     req: NextApiRequest,
@@ -8,6 +57,11 @@ export const deleteInvoice = async (
     const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
 
     try {
+        // Get the invoice details for notification
+        const deletedInvoice = await prisma.invoice.findUnique({
+            where: { id: id },
+        });
+
         // First, get all invoice items for this invoice
         const invoiceItems = await prisma.invoiceItem.findMany({
             where: {
@@ -40,6 +94,10 @@ export const deleteInvoice = async (
                 },
             });
         });
+
+        sendDeleteNotification(deletedInvoice).catch((err) =>
+            console.error("Notification Error:", err)
+        );
 
         res.status(204).end();
     } catch (error) {

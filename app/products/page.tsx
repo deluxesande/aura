@@ -575,7 +575,11 @@ export default function Page() {
                         </form>
                         <button
                             disabled={isProcessingOrder}
-                            className="px-4 py-2 mt-4 bg-green-400 w-full text-white rounded-md"
+                            className={`px-4 py-2 mt-4 bg-green-400 w-full text-white rounded-md ${
+                                isProcessingOrder
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : "cursor-pointer"
+                            }`}
                             onClick={() => handleOrder()}
                         >
                             Checkout
