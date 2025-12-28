@@ -1,45 +1,115 @@
 "use client";
 import CreateCategoryModal from "@/components/CreateCategoryModal";
+import ImageCropperModal from "@/components/ImageCropperModal";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import { Category } from "@/utils/typesDefinitions";
 import axios from "axios";
-import { CloudUpload, PlusCircle } from "lucide-react";
+import {
+    CloudUpload,
+    PlusCircle,
+    ArrowLeft,
+    Layers,
+    DollarSign,
+    Package,
+    Save,
+    Loader2,
+    Info,
+} from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useSelector } from "react-redux";
 import { AppState } from "@/store";
 import { useDispatch } from "react-redux";
 import { setProducts } from "@/store/slices/productSlice";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FloatingPortal } from "@floating-ui/react";
 
-export default function Page() {
+export default function CreateProductPage() {
+    const router = useRouter();
     const [categories, setCategories] = useState<Category[]>([]);
+
+    // State for Cropping
+    const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+    const [tempImageSrc, setTempImageSrc] = useState<string | null>(null);
+
+    // State for Final Image
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [productImage, setProductImage] = useState<File | null>(null);
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+
+    const [formData, setFormData] = useState({
+        name: "",
+        description: "",
+        price: "",
+        quantity: "",
+        categoryId: "",
+        inStock: false,
+    });
+
     const originalProducts = useSelector(
         (state: AppState) => state.product.products
     );
     const dispatch = useDispatch();
 
-    const clearForm = () => {
-        (document.getElementById("productName") as HTMLInputElement).value = "";
-        (
-            document.getElementById("productDescription") as HTMLTextAreaElement
-        ).value = "";
-        (document.getElementById("productPrice") as HTMLInputElement).value =
-            "";
-        (document.getElementById("productQuantity") as HTMLInputElement).value =
-            "";
-        (
-            document.getElementById("productCategory") as HTMLSelectElement
-        ).value = "";
-        (
-            document.getElementById("productInStock") as HTMLInputElement
-        ).checked = false;
-        (document.getElementById("productImage") as HTMLInputElement).value =
-            "";
-        setImagePreview(null);
+    const inputStyle =
+        "w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2 transition-colors";
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await axios.get("/api/category");
+                setCategories(response.data);
+            } catch (error) {
+                console.error("Error fetching categories:", error);
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    const handleChange = (
+        e: React.ChangeEvent<
+            HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+        >
+    ) => {
+        const { id, value } = e.target;
+        setFormData((prev) => ({ ...prev, [id]: value }));
+    };
+
+    const toggleStock = () => {
+        setFormData((prev) => ({ ...prev, inStock: !prev.inStock }));
+    };
+
+    // 1. Triggered when user selects a file
+    const handleImageFileSelect = (
+        event: React.ChangeEvent<HTMLInputElement>
+    ) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            // Create a URL for the selected file to pass to the cropper
+            const objectUrl = URL.createObjectURL(file);
+            setTempImageSrc(objectUrl);
+            setIsCropModalOpen(true);
+
+            // Reset the input value so the same file can be selected again if needed
+            event.target.value = "";
+        }
+    };
+
+    // 2. Triggered when user finishes cropping
+    const handleCropComplete = (croppedBlob: Blob) => {
+        // Create a preview URL from the cropped blob
+        const previewUrl = URL.createObjectURL(croppedBlob);
+        setImagePreview(previewUrl);
+
+        // Convert Blob to File to be compatible with your existing submit logic
+        const croppedFile = new File([croppedBlob], "product-image.jpg", {
+            type: "image/jpeg",
+        });
+        setProductImage(croppedFile);
     };
 
     const handleCreateNewCategory = async (categoryName: string) => {
@@ -55,111 +125,52 @@ export default function Page() {
         };
 
         toast.promise(promise(), {
-            loading: "Loading...",
+            loading: "Creating category...",
             success: "Category created.",
             error: "Error creating category.",
         });
-    };
-
-    const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
     };
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
         setIsLoading(true);
 
-        const productName = (
-            document.getElementById("productName") as HTMLInputElement
-        ).value;
-        const productDescription = (
-            document.getElementById("productDescription") as HTMLInputElement
-        ).value;
-        const productPrice = (
-            document.getElementById("productPrice") as HTMLInputElement
-        ).value;
-        const productQuantity = (
-            document.getElementById("productQuantity") as HTMLInputElement
-        ).value;
-        const productCategory = (
-            document.getElementById("productCategory") as HTMLSelectElement
-        ).value;
-        const productInStock = (
-            document.getElementById("productInStock") as HTMLInputElement
-        ).checked;
-        const productImage = (
-            document.getElementById("productImage") as HTMLInputElement
-        ).files?.[0];
-
-        // Validation checks
-        if (!productName) {
-            toast.error("Product name is required.");
-            setIsLoading(false);
-            return;
-        }
-        if (!productDescription) {
-            toast.error("Product description is required.");
-            setIsLoading(false);
-            return;
-        }
-        if (!productPrice || isNaN(Number(productPrice))) {
-            toast.error("Valid product price is required.");
-            setIsLoading(false);
-            return;
-        }
-        if (!productQuantity || isNaN(Number(productQuantity))) {
-            toast.error("Valid product quantity is required.");
-            setIsLoading(false);
-            return;
-        }
-        if (!productCategory) {
-            toast.error("Please select a category.");
-            setIsLoading(false);
-            return;
-        }
-        if (!productImage) {
-            toast.error("Product image is required.");
-            setIsLoading(false);
-            return;
-        }
-        if (productCategory === "") {
-            toast.error("Please select a category.");
+        if (
+            !formData.name ||
+            !formData.description ||
+            !formData.price ||
+            !formData.quantity ||
+            !formData.categoryId ||
+            !productImage
+        ) {
+            toast.error("Please fill in all required fields");
             setIsLoading(false);
             return;
         }
 
-        // Automatically set inStock to true if quantity > 0
         const finalInStock =
-            Number(productQuantity) > 0 ? true : productInStock;
+            Number(formData.quantity) > 0 ? true : formData.inStock;
 
-        const formData = new FormData();
-        formData.append("name", productName);
-        formData.append("description", productDescription);
-        formData.append("price", productPrice);
-        formData.append("quantity", productQuantity);
-        formData.append("categoryId", productCategory);
-        formData.append("inStock", finalInStock.toString());
+        const submitData = new FormData();
+        submitData.append("name", formData.name);
+        submitData.append("description", formData.description);
+        submitData.append("price", formData.price);
+        submitData.append("quantity", formData.quantity);
+        submitData.append("categoryId", formData.categoryId);
+        submitData.append("inStock", finalInStock.toString());
+
+        // Append the cropped file
         if (productImage) {
-            formData.append("file", productImage);
+            submitData.append("file", productImage);
         }
 
         const promise = async () => {
             try {
-                const response = await axios.post("/api/product", formData, {
-                    headers: {
-                        "Content-Type": "multipart/form-data",
-                    },
+                const response = await axios.post("/api/product", submitData, {
+                    headers: { "Content-Type": "multipart/form-data" },
                 });
-
                 dispatch(setProducts([...originalProducts, response.data]));
-                clearForm();
+                router.push("/products/list");
             } catch (error) {
                 throw error;
             } finally {
@@ -174,104 +185,225 @@ export default function Page() {
         });
     };
 
-    useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                const response = await axios.get("/api/category");
-                setCategories(response.data);
-            } catch (error) {
-                console.error("Error fetching categories:", error);
-            }
-        };
-
-        fetchCategories();
-    }, []);
-
     return (
         <Navbar>
-            <div className="flex w-auto justify-between">
-                <div className="px-6 py-4 rounded-lg gap-4 bg-white flex-1">
-                    <div className="flex flex-wrap space-y-4 lg:space-y-0 justify-between items-center mb-6">
-                        <h1 className="text-2xl font-bold mb-6 text-gray-400">
-                            Create Product
-                        </h1>
-                        <button
-                            className="btn btn-sm btn-ghost w-full lg:w-auto text-black flex items-center bg-green-400"
-                            onClick={() => setIsModalOpen(true)}
+            <div className="max-w-5xl mx-auto px-4 py-8">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                    <div className="flex items-center gap-4">
+                        <Link
+                            href="/products/list"
+                            className="p-2 bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors"
                         >
-                            <PlusCircle className="w-4 h-4" />
-                            Create Category
+                            <ArrowLeft className="w-5 h-5 text-gray-600" />
+                        </Link>
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900">
+                                Create Product
+                            </h1>
+                            <p className="text-sm text-gray-500">
+                                Add a new item to your inventory
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex gap-3">
+                        <button
+                            type="button"
+                            onClick={() => router.back()}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleSubmit}
+                            disabled={isLoading}
+                            className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                        >
+                            {isLoading ? (
+                                <Loader2 className="w-4 h-4 animate- stroke-white" />
+                            ) : (
+                                <Save className="w-4 h-4 stroke-white" />
+                            )}
+                            Save Product
                         </button>
                     </div>
+                </div>
 
-                    <form>
-                        <div className="flex flex-wrap flex-col-reverse lg:flex-row lg:flex-nowrap justify-between lg:space-x-8">
-                            <div className="w-full lg:w-1/2 space-y-4">
-                                {/* Product Name */}
-                                <div className="flex flex-col gap-2">
-                                    <label htmlFor="productName">Name:</label>
+                <form
+                    onSubmit={handleSubmit}
+                    className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+                >
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                General Information
+                            </h2>
+                            <div className="space-y-4">
+                                <div>
+                                    <label
+                                        htmlFor="name"
+                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                    >
+                                        Name:
+                                    </label>
                                     <input
-                                        id="productName"
+                                        id="name"
                                         type="text"
-                                        className="px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
+                                        className={inputStyle}
+                                        value={formData.name}
+                                        onChange={handleChange}
                                         required
                                     />
                                 </div>
-
-                                {/* Product Description */}
-                                <div className="flex flex-col gap-2">
-                                    <label htmlFor="productDescription">
+                                <div>
+                                    <label
+                                        htmlFor="description"
+                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                    >
                                         Description:
                                     </label>
                                     <textarea
-                                        id="productDescription"
+                                        id="description"
                                         rows={5}
-                                        className="px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
+                                        className={inputStyle}
+                                        value={formData.description}
+                                        onChange={handleChange}
                                         required
                                     />
                                 </div>
+                            </div>
+                        </div>
 
-                                {/* Product Price */}
-                                <div className="flex flex-col gap-2">
-                                    <label htmlFor="productPrice">Price:</label>
-                                    <input
-                                        id="productPrice"
-                                        type="number"
-                                        className="no-spinner px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
-                                        required
-                                    />
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                Pricing & Inventory
+                            </h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div>
+                                    <label
+                                        htmlFor="price"
+                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                    >
+                                        Price:
+                                    </label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <span className="text-gray-500 sm:text-sm">
+                                                Ksh
+                                            </span>
+                                        </div>
+                                        <input
+                                            id="price"
+                                            type="number"
+                                            className={`${inputStyle} pl-12 no-spinner`}
+                                            value={formData.price}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                    </div>
                                 </div>
-
-                                {/* Product Quantity */}
-                                <div className="flex flex-col gap-2">
-                                    <label htmlFor="productQuantity">
+                                <div>
+                                    <label
+                                        htmlFor="quantity"
+                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                    >
                                         Quantity:
                                     </label>
-                                    <input
-                                        id="productQuantity"
-                                        type="number"
-                                        className="no-spinner px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
-                                        required
-                                    />
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <Package className="h-4 w-4 text-gray-500" />
+                                        </div>
+                                        <input
+                                            id="quantity"
+                                            type="number"
+                                            className={`${inputStyle} pl-10 no-spinner`}
+                                            value={formData.quantity}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                    </div>
                                 </div>
+                            </div>
+                        </div>
 
-                                {/* Product Category */}
-                                <div className="flex flex-col gap-2">
-                                    <label htmlFor="productCategory">
+                        <div className="bg-green-50 p-5 rounded-xl shadow-sm border border-green-100">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Info className="w-5 h-5 text-green-600" />
+                                <h2 className="text-sm font-bold text-green-800 uppercase tracking-wider">
+                                    Instructions
+                                </h2>
+                            </div>
+                            <p className="text-sm text-green-700 mb-4 leading-relaxed">
+                                To create a new product, fill in the required
+                                fields. Upload a clear image and indicate if the
+                                item is in stock.
+                            </p>
+                            <div className="text-xs font-medium text-green-800 bg-white/60 p-3 rounded-lg border border-green-200">
+                                <strong>Tip:</strong> If you have no categories,
+                                click the &quot;Create New Category&quot; button
+                                below.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
+                                Status
+                            </h2>
+                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-medium text-gray-900">
+                                        In Stock
+                                    </span>
+                                    <span className="text-xs text-gray-500">
+                                        Available for sale
+                                    </span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={toggleStock}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                                        formData.inStock
+                                            ? "bg-green-500"
+                                            : "bg-gray-200"
+                                    }`}
+                                >
+                                    <span
+                                        className={`${
+                                            formData.inStock
+                                                ? "translate-x-6"
+                                                : "translate-x-1"
+                                        } inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out`}
+                                    />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
+                                Organization
+                            </h2>
+                            <div className="space-y-4">
+                                <div>
+                                    <label
+                                        htmlFor="categoryId"
+                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                    >
                                         Category:
                                     </label>
                                     <select
-                                        id="productCategory"
-                                        className="px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
+                                        id="categoryId"
+                                        className={inputStyle}
+                                        value={formData.categoryId}
+                                        onChange={handleChange}
                                         required
-                                        defaultValue=""
                                     >
                                         <option value="" disabled>
                                             Select Category
                                         </option>
-                                        {categories.map((category, index) => (
+                                        {categories.map((category) => (
                                             <option
-                                                key={index}
+                                                key={category.id}
                                                 value={category.id}
                                             >
                                                 {category.name}
@@ -279,108 +411,86 @@ export default function Page() {
                                         ))}
                                     </select>
                                 </div>
-                            </div>
-
-                            <div className="w-full lg:w-1/2">
-                                {/* Product Image */}
-                                <div className="flex flex-col gap-2">
-                                    <label
-                                        htmlFor="productImage"
-                                        className="flex items-center gap-2"
-                                    >
-                                        Image:
-                                    </label>
-                                    <div className="relative w-full lg:w-72 h-64 border-2 border-dashed border-gray-300 rounded-lg flex text-center items-center justify-center bg-slate-50 hover:border-green-400 transition-colors cursor-pointer overflow-hidden">
-                                        {imagePreview ? (
-                                            <Image
-                                                src={imagePreview}
-                                                alt="Preview"
-                                                fill
-                                                className="object-cover rounded-lg"
-                                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                            />
-                                        ) : (
-                                            <div className="flex flex-col items-center justify-center text-center space-y-2">
-                                                <CloudUpload
-                                                    size={25}
-                                                    className="stroke-green-500"
-                                                />
-                                                <p className="font-medium text-gray-600">
-                                                    Upload file
-                                                </p>
-                                                <p className="text-sm text-gray-400">
-                                                    PNG are Allowed.
-                                                </p>
-                                            </div>
-                                        )}
-                                        <input
-                                            id="productImage"
-                                            type="file"
-                                            accept="image/png"
-                                            className="absolute inset-0 opacity-0 cursor-pointer"
-                                            onChange={handleImageChange}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Product InStock */}
-                                <div className="flex flex-row items-center gap-4 my-4">
-                                    <label
-                                        htmlFor="productInStock"
-                                        className="flex items-center gap-2 cursor-pointer"
-                                    >
-                                        <input
-                                            id="productInStock"
-                                            type="checkbox"
-                                            className="form-checkbox h-4 w-4 text-green-600 border-green-300 rounded focus:ring-green-500"
-                                            required
-                                        />
-                                        <span className="text-gray-700">
-                                            Instock
-                                        </span>
-                                    </label>
-                                </div>
-
-                                {/* Info Section */}
-                                <div className="my-4 p-4 border border-green-200 rounded-lg">
-                                    <h2 className="text-lg font-semibold text-green-600">
-                                        How to Create a Product
-                                    </h2>
-                                    <p className="text-sm mt-2">
-                                        To create a new product, fill in all the
-                                        required fields, including the product
-                                        name, description, price, quantity, and
-                                        category. Upload an image of the product
-                                        and indicate whether it is in stock.
-                                    </p>
-                                    <p className="text-sm font-bold mt-2">
-                                        If you have no categories, click the
-                                        &quot;Create Category&quot; button at
-                                        the top of the page.
-                                    </p>
-                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsModalOpen(true)}
+                                    className="btn btn-sm btn-ghost w-full text-black flex items-center justify-center bg-green-400 hover:bg-green-500"
+                                >
+                                    <PlusCircle className="w-4 h-4 mr-2" />
+                                    Create New Category
+                                </button>
                             </div>
                         </div>
 
-                        <button
-                            type="submit"
-                            className="btn btn-md btn-ghost text-black flex items-center bg-green-400 w-full mt-8"
-                            onClick={handleSubmit}
-                            disabled={isLoading}
-                        >
-                            <span className="ml-2">
-                                {isLoading ? "Creating..." : "Add Product"}
-                            </span>
-                        </button>
-                    </form>
-                </div>
+                        {/* Media Card with Crop Trigger */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
+                                Product Image
+                            </h2>
+                            <div className="relative w-full aspect-square border-2 border-dashed border-gray-300 rounded-xl hover:border-green-500 transition-colors group bg-gray-50 overflow-hidden cursor-pointer">
+                                {/* Input handles file selection, triggers modal via handler */}
+                                <input
+                                    id="productImage"
+                                    type="file"
+                                    accept="image/png, image/jpeg, image/jpg"
+                                    onChange={handleImageFileSelect}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                    // required only if no image is currently set
+                                    required={!productImage}
+                                />
+
+                                {imagePreview ? (
+                                    <>
+                                        <Image
+                                            src={imagePreview}
+                                            alt="Preview"
+                                            fill
+                                            className="object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <span className="text-white text-sm font-medium bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm">
+                                                Change Image
+                                            </span>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+                                        <div className="p-3 bg-white rounded-full shadow-sm mb-3">
+                                            <CloudUpload className="w-6 h-6 text-green-500" />
+                                        </div>
+                                        <span className="text-sm font-medium text-gray-600">
+                                            Click to upload
+                                        </span>
+                                        <span className="text-xs mt-1">
+                                            PNG, JPG
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </form>
             </div>
+
+            {/* Category Modal */}
             <CreateCategoryModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSubmit={handleCreateNewCategory}
             />
+
+            {/* Image Cropper Modal */}
+            <FloatingPortal>
+                <ImageCropperModal
+                    isOpen={isCropModalOpen}
+                    imageSrc={tempImageSrc}
+                    onClose={() => {
+                        setIsCropModalOpen(false);
+                        setTempImageSrc(null);
+                    }}
+                    onCropComplete={handleCropComplete}
+                />
+            </FloatingPortal>
         </Navbar>
     );
 }

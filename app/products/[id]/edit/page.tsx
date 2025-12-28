@@ -6,17 +6,41 @@ import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setProducts } from "@/store/slices/productSlice";
-import { useSelector } from "react-redux";
 import { AppState } from "@/store";
+import {
+    ArrowLeft,
+    UploadCloud,
+    DollarSign,
+    Package,
+    Layers,
+    Save,
+    Loader2,
+} from "lucide-react";
+import Link from "next/link";
+import ImageCropperModal from "@/components/ImageCropperModal"; // Import the cropper
+import { FloatingPortal } from "@floating-ui/react";
 
 export default function EditProductPage() {
     const params = useParams();
     const router = useRouter();
     const id = params?.id as string;
+    const dispatch = useDispatch();
+    const originalProducts = useSelector(
+        (state: AppState) => state.product.products
+    );
+
     const [categories, setCategories] = useState<Category[]>([]);
+
+    // Image State
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+    const [tempImageSrc, setTempImageSrc] = useState<string | null>(null);
+
+    const [isLoading, setIsLoading] = useState(false);
+    const [isDataLoading, setIsDataLoading] = useState(true);
+
     const [formData, setFormData] = useState<Product>({
         id: "",
         name: "",
@@ -29,18 +53,46 @@ export default function EditProductPage() {
         sku: "",
         createdAt: new Date(),
         updatedAt: new Date(),
-        Category: {
-            id: "",
-            name: "",
-            products: [],
-        },
+        Category: { id: "", name: "", products: [] },
         invoiceItems: [],
     });
-    const [isLoading, setIsLoading] = useState(false);
-    const originalProducts = useSelector(
-        (state: AppState) => state.product.products
-    );
-    const dispatch = useDispatch();
+
+    // Fetch Logic
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsDataLoading(true);
+            try {
+                const productFromStore = originalProducts.find(
+                    (p) => p.id === id
+                );
+
+                if (productFromStore) {
+                    setFormData(productFromStore);
+                    setImagePreview(productFromStore.image);
+                    const categoriesRes = await axios.get("/api/category");
+                    setCategories(categoriesRes.data);
+                } else {
+                    const [productRes, categoriesRes] = await Promise.all([
+                        axios.get(`/api/product/${id}`),
+                        axios.get("/api/category"),
+                    ]);
+                    setFormData(productRes.data);
+                    setImagePreview(productRes.data.image);
+                    setCategories(categoriesRes.data);
+
+                    dispatch(
+                        setProducts([...originalProducts, productRes.data])
+                    );
+                }
+            } catch (error) {
+                toast.error("Error fetching product details");
+            } finally {
+                setIsDataLoading(false);
+            }
+        };
+
+        if (id) fetchData();
+    }, [id, originalProducts, dispatch]);
 
     // Handle input changes
     const handleChange = (
@@ -49,42 +101,54 @@ export default function EditProductPage() {
         >
     ) => {
         const { id, value } = e.target;
-        const fieldName = id.replace("product", "").toLowerCase();
-
+        // Note: The ID in your JSX (e.g. "price") matches the key in state
         setFormData((prev) => ({
             ...prev,
-            [fieldName]:
-                fieldName === "price" || fieldName === "quantity"
-                    ? parseInt(value, 10)
+            [id]:
+                id === "price" || id === "quantity"
+                    ? value === ""
+                        ? 0
+                        : parseInt(value, 10)
                     : value,
         }));
     };
 
-    // Handle checkbox change
-    const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData((prev) => ({
-            ...prev,
-            inStock: e.target.checked,
-        }));
+    const toggleStock = () => {
+        setFormData((prev) => ({ ...prev, inStock: !prev.inStock }));
     };
 
-    const handleImageChange = async (
+    // 1. Handle File Selection (Triggers Modal)
+    const handleImageFileSelect = (
         event: React.ChangeEvent<HTMLInputElement>
     ) => {
         const file = event.target.files?.[0];
         if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result as string);
-                setFormData((prev) => ({
-                    ...prev,
-                    image: reader.result as string,
-                }));
-            };
-            reader.readAsDataURL(file);
+            const objectUrl = URL.createObjectURL(file);
+            setTempImageSrc(objectUrl);
+            setIsCropModalOpen(true);
+            event.target.value = ""; // Reset input so same file can be selected again
         }
     };
 
+    // 2. Handle Crop Completion (Converts Blob to Base64 for JSON submit)
+    const handleCropComplete = (croppedBlob: Blob) => {
+        // Update preview immediately
+        const previewUrl = URL.createObjectURL(croppedBlob);
+        setImagePreview(previewUrl);
+
+        // Convert Blob to Base64 String to match your existing form data structure
+        const reader = new FileReader();
+        reader.readAsDataURL(croppedBlob);
+        reader.onloadend = () => {
+            const base64String = reader.result as string;
+            setFormData((prev) => ({
+                ...prev,
+                image: base64String, // Update the form data with the new base64 string
+            }));
+        };
+    };
+
+    // Submit
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setIsLoading(true);
@@ -95,231 +159,308 @@ export default function EditProductPage() {
                     `/api/product/${id}`,
                     formData
                 );
-
-                // Update the specific product in the Redux store
-                const updatedProducts = originalProducts.map((product) =>
-                    product.id === id ? response.data : product
+                const updatedProducts = originalProducts.map((p) =>
+                    p.id === id ? response.data : p
                 );
-
                 dispatch(setProducts(updatedProducts));
-
                 router.push("/products/list");
             } catch (error) {
-                // Do nothing error is thrown in toast
+                throw error;
             } finally {
                 setIsLoading(false);
             }
         };
 
         toast.promise(promise(), {
-            loading: "Updating product...",
+            loading: "Saving changes...",
             success: "Product updated successfully!",
             error: "Failed to update product",
         });
     };
 
-    // Optimized data fetching using Redux store first
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                // First, check if product exists in Redux store
-                const productFromStore = originalProducts.find(
-                    (product) => product.id === id
-                );
-
-                if (productFromStore) {
-                    // Use product from Redux store - no API call needed
-                    setFormData(productFromStore);
-                    setImagePreview(productFromStore.image);
-
-                    // Still need to fetch categories if not cached
-                    // You could also cache categories in Redux to avoid this call
-                    const categoriesRes = await axios.get("/api/category");
-                    setCategories(categoriesRes.data);
-                } else {
-                    // Product not in store, fetch from API
-                    const [productRes, categoriesRes] = await Promise.all([
-                        axios.get(`/api/product/${id}`),
-                        axios.get("/api/category"),
-                    ]);
-
-                    setFormData(productRes.data);
-                    setImagePreview(productRes.data.image);
-                    setCategories(categoriesRes.data);
-
-                    // Optionally, add the fetched product to Redux store
-                    // This helps if user navigates back to edit this product again
-                    const updatedProducts = [
-                        ...originalProducts,
-                        productRes.data,
-                    ];
-                    dispatch(setProducts(updatedProducts));
-                }
-            } catch (error) {
-                toast.error("Error fetching product data");
-            }
-        };
-
-        if (id) {
-            fetchData();
-        }
-    }, [id, originalProducts, dispatch]);
+    if (isDataLoading) {
+        return (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/80">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+            </div>
+        );
+    }
 
     return (
         <Navbar>
-            <div className="p-4 card bg-white shadow-lg rounded-lg mt-4">
-                <h1 className="text-2xl font-bold text-gray-400 mb-6">
-                    Edit Product
-                </h1>
-                <form onSubmit={handleSubmit}>
-                    <div className="flex flex-wrap flex-col-reverse lg:flex-row lg:flex-nowrap justify-between gap-4">
-                        <div className="w-full lg:w-1/2 space-y-4">
-                            {/* Product Name */}
-                            <div className="flex flex-col gap-2">
-                                <label htmlFor="productName">Name:</label>
-                                <input
-                                    id="productName"
-                                    type="text"
-                                    className="px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
-                                    value={formData.name}
-                                    onChange={handleChange}
-                                    required
-                                />
-                            </div>
+            <div className="max-w-5xl mx-auto px-4 py-8">
+                {/* Header Section */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                    <div className="flex items-center gap-4">
+                        <Link
+                            href="/products/list"
+                            className="p-2 bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors"
+                        >
+                            <ArrowLeft className="w-5 h-5 text-gray-600" />
+                        </Link>
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900">
+                                Edit Product
+                            </h1>
+                            <p className="text-sm text-gray-500">
+                                Update product details and inventory
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex gap-3">
+                        <button
+                            type="button"
+                            onClick={() => router.back()}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={(e) => handleSubmit(e as any)}
+                            disabled={isLoading}
+                            className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                        >
+                            {isLoading ? (
+                                <Loader2 className="w-4 h-4 animate-spin stroke-white" />
+                            ) : (
+                                <Save className="w-4 h-4 stroke-white" />
+                            )}
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
 
-                            {/* Product Description */}
-                            <div className="flex flex-col gap-2">
-                                <label htmlFor="productDescription">
-                                    Description:
-                                </label>
-                                <textarea
-                                    id="productDescription"
-                                    className="px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
-                                    value={formData.description}
-                                    onChange={handleChange}
-                                    required
-                                />
+                <form
+                    onSubmit={handleSubmit}
+                    className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+                >
+                    {/* LEFT COLUMN - Main Info */}
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* General Info Card */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                <Layers className="w-5 h-5 text-gray-500" />
+                                General Information
+                            </h2>
+                            <div className="space-y-4">
+                                <div>
+                                    <label
+                                        htmlFor="name"
+                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                    >
+                                        Name:
+                                    </label>
+                                    <input
+                                        id="name"
+                                        type="text"
+                                        value={formData.name}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-green-400 border-2"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label
+                                        htmlFor="description"
+                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                    >
+                                        Description:
+                                    </label>
+                                    <textarea
+                                        id="description"
+                                        rows={4}
+                                        value={formData.description}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-green-400 border-2"
+                                        required
+                                    />
+                                </div>
                             </div>
+                        </div>
 
-                            {/* Product Price */}
-                            <div className="flex flex-col gap-2">
-                                <label htmlFor="productPrice">Price:</label>
-                                <input
-                                    id="productPrice"
-                                    type="number"
-                                    className="no-spinner px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
-                                    value={formData.price}
-                                    onChange={handleChange}
-                                    required
-                                />
+                        {/* Pricing & Inventory Card */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                <DollarSign className="w-5 h-5 text-gray-500" />
+                                Pricing & Inventory
+                            </h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div>
+                                    <label
+                                        htmlFor="price"
+                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                    >
+                                        Base Price
+                                    </label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <span className="text-gray-500 sm:text-sm">
+                                                Ksh
+                                            </span>
+                                        </div>
+                                        <input
+                                            id="price"
+                                            type="number"
+                                            value={formData.price}
+                                            onChange={handleChange}
+                                            className="w-full pl-12 pr-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-green-400 border-2 no-spinner"
+                                            placeholder="0.00"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label
+                                        htmlFor="quantity"
+                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                    >
+                                        Stock Quantity
+                                    </label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <Package className="h-4 w-4 text-gray-500" />
+                                        </div>
+                                        <input
+                                            id="quantity"
+                                            type="number"
+                                            value={formData.quantity}
+                                            onChange={handleChange}
+                                            className="w-full pl-10 pr-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-green-400 border-2 no-spinner"
+                                            placeholder="0"
+                                            required
+                                        />
+                                    </div>
+                                </div>
                             </div>
+                        </div>
+                    </div>
 
-                            {/* Product Quantity */}
-                            <div className="flex flex-col gap-2">
-                                <label htmlFor="productQuantity">
-                                    Quantity:
-                                </label>
-                                <input
-                                    id="productQuantity"
-                                    type="number"
-                                    className="no-spinner px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
-                                    value={formData.quantity}
-                                    onChange={handleChange}
-                                    required
-                                />
+                    {/* RIGHT COLUMN - Media & Organization */}
+                    <div className="space-y-6">
+                        {/* Status Card */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
+                                Status
+                            </h2>
+                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-medium text-gray-900">
+                                        In Stock
+                                    </span>
+                                    <span className="text-xs text-gray-500">
+                                        Available for sale
+                                    </span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={toggleStock}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                                        formData.inStock
+                                            ? "bg-green-500"
+                                            : "bg-gray-200"
+                                    }`}
+                                >
+                                    <span
+                                        className={`${
+                                            formData.inStock
+                                                ? "translate-x-6"
+                                                : "translate-x-1"
+                                        } inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out`}
+                                    />
+                                </button>
                             </div>
+                        </div>
 
-                            {/* Product Category */}
-                            <div className="flex flex-col gap-2">
-                                <label htmlFor="productCategory">
-                                    Category:
+                        {/* Organization Card */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
+                                Organization
+                            </h2>
+                            <div>
+                                <label
+                                    htmlFor="categoryId"
+                                    className="block text-sm font-medium text-gray-700 mb-1"
+                                >
+                                    Category
                                 </label>
                                 <select
-                                    id="productCategory"
-                                    className="px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
+                                    id="categoryId"
                                     value={formData.categoryId}
                                     onChange={handleChange}
+                                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 bg-white cursor-pointer"
                                     required
                                 >
                                     <option value="" disabled>
                                         Select Category
                                     </option>
-                                    {categories.map((category) => (
-                                        <option
-                                            key={category.id}
-                                            value={category.id}
-                                        >
-                                            {category.name}
+                                    {categories.map((c) => (
+                                        <option key={c.id} value={c.id}>
+                                            {c.name}
                                         </option>
                                     ))}
                                 </select>
                             </div>
                         </div>
 
-                        <div className="w-full lg:w-1/2">
-                            {/* Product Image */}
-                            <div className="flex flex-col gap-2">
-                                <label
-                                    htmlFor="productImage"
-                                    className="flex items-center gap-2"
-                                >
-                                    Image:
-                                </label>
-                                <div className="relative w-full lg:w-72 h-72 border-2 border-dashed border-gray-400 rounded-lg flex text-center items-center justify-center bg-slate-50">
-                                    {imagePreview ? (
+                        {/* Media Card */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
+                                Product Image
+                            </h2>
+                            <div className="relative w-full aspect-square border-2 border-dashed border-gray-300 rounded-xl hover:border-green-500 transition-colors group bg-gray-50 overflow-hidden cursor-pointer">
+                                {/* File Input triggers the cropper */}
+                                <input
+                                    type="file"
+                                    accept="image/png, image/jpeg, image/jpg"
+                                    onChange={handleImageFileSelect}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                />
+
+                                {imagePreview ? (
+                                    <>
                                         <Image
                                             src={imagePreview}
                                             alt="Preview"
-                                            className="object-cover w-full h-full rounded-lg"
-                                            layout="fill"
+                                            fill
+                                            className="object-cover"
                                         />
-                                    ) : (
-                                        <span className="text-gray-500">
-                                            No image selected
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <span className="text-white text-sm font-medium bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm">
+                                                Change Image
+                                            </span>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+                                        <div className="p-3 bg-white rounded-full shadow-sm mb-3">
+                                            <UploadCloud className="w-6 h-6 text-green-500" />
+                                        </div>
+                                        <span className="text-sm font-medium text-gray-600">
+                                            Click to upload
                                         </span>
-                                    )}
-                                    <input
-                                        id="productImage"
-                                        type="file"
-                                        accept="image/png"
-                                        className="absolute inset-0 opacity-0 cursor-pointer"
-                                        onChange={handleImageChange}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Product InStock */}
-                            <div className="flex flex-row items-center gap-4 my-4">
-                                <label
-                                    htmlFor="productInStock"
-                                    className="flex items-center gap-2 cursor-pointer"
-                                >
-                                    <input
-                                        id="productInStock"
-                                        type="checkbox"
-                                        className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                        checked={formData.inStock}
-                                        onChange={handleCheckboxChange}
-                                    />
-                                    <span className="text-gray-700">
-                                        Instock
-                                    </span>
-                                </label>
+                                        <span className="text-xs mt-1">
+                                            PNG, JPG
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
-
-                    <button
-                        type="submit"
-                        className="btn btn-md btn-ghost text-black flex items-center bg-green-400 w-full mt-8"
-                        disabled={isLoading}
-                    >
-                        <span className="ml-2">
-                            {isLoading ? "Updating..." : "Update Product"}
-                        </span>
-                    </button>
                 </form>
             </div>
+
+            {/* Image Cropper Modal */}
+            <FloatingPortal>
+                <ImageCropperModal
+                    isOpen={isCropModalOpen}
+                    imageSrc={tempImageSrc}
+                    onClose={() => {
+                        setIsCropModalOpen(false);
+                        setTempImageSrc(null);
+                    }}
+                    onCropComplete={handleCropComplete}
+                />
+            </FloatingPortal>
         </Navbar>
     );
 }

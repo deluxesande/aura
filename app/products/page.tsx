@@ -578,7 +578,7 @@ export default function Page() {
                             className="px-4 py-2 mt-4 bg-green-400 w-full text-white rounded-md"
                             onClick={() => handleOrder()}
                         >
-                            Place Order
+                            Checkout
                         </button>
                     </div>
                 </div>

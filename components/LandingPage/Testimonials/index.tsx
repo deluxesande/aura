@@ -57,6 +57,7 @@ export default function Testimonials() {
                                 className="w-12 h-12 rounded-full"
                                 width={200}
                                 height={80}
+                                unoptimized={true}
                             />
                             <div className="ml-4">
                                 <div className="font-semibold">John Mwangi</div>
@@ -82,6 +83,7 @@ export default function Testimonials() {
                                 className="w-12 h-12 rounded-full"
                                 width={200}
                                 height={80}
+                                unoptimized={true}
                             />
                             <div className="ml-4">
                                 <div className="font-semibold">Sarah Kamau</div>
@@ -106,6 +108,7 @@ export default function Testimonials() {
                                 className="w-12 h-12 rounded-full"
                                 width={200}
                                 height={80}
+                                unoptimized={true}
                             />
                             <div className="ml-4">
                                 <div className="font-semibold">
