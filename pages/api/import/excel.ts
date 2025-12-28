@@ -4,6 +4,7 @@ import { prisma } from "@/utils/lib/client";
 import * as XLSX from "xlsx";
 import formidable from "formidable";
 import fs from "fs";
+import { randomUUID } from "crypto";
 
 export const config = {
     api: {
@@ -57,7 +58,7 @@ export default async function handler(
         const invoicesData = getSheetData("Invoices");
         const invoiceItemsData = getSheetData("Invoice Items");
 
-        // 4. DATABASE TRANSACTION
+        // 4. DATABASE TRANSACTION (Pure Bulk Operations)
         await prisma.$transaction(
             async (tx) => {
                 // --- A. BULK CATEGORIES ---
@@ -82,6 +83,7 @@ export default async function handler(
                     });
                 }
 
+                // Fetch IDs for linking
                 const allCategories = await tx.category.findMany({
                     where: {
                         name: { in: uniqueCatNames as string[] },
@@ -89,7 +91,6 @@ export default async function handler(
                     },
                     select: { id: true, name: true },
                 });
-
                 const categoryMap = new Map<string, string>();
                 allCategories.forEach((c) => categoryMap.set(c.name, c.id));
 
@@ -111,6 +112,7 @@ export default async function handler(
                     });
                 }
 
+                // Fetch IDs for linking
                 const contactKeys = customersToInsert
                     .map((c) => c.email)
                     .filter(Boolean) as string[];
@@ -128,7 +130,6 @@ export default async function handler(
                     },
                     select: { id: true, email: true, phoneNumber: true },
                 });
-
                 const customerMap = new Map<string, string>();
                 allCustomers.forEach((c) => {
                     if (c.email) customerMap.set(c.email, c.id);
@@ -158,7 +159,7 @@ export default async function handler(
                     .filter(
                         (item): item is NonNullable<typeof item> =>
                             item !== null
-                    ); // TypeScript Safe Filter
+                    );
 
                 if (productsToInsert.length > 0) {
                     await tx.product.createMany({
@@ -167,44 +168,59 @@ export default async function handler(
                     });
                 }
 
+                // Fetch IDs for linking
                 const skuKeys = productsToInsert.map((p) => p.sku);
                 const allProducts = await tx.product.findMany({
                     where: { sku: { in: skuKeys } },
                     select: { id: true, sku: true },
                 });
-
                 const productMap = new Map<string, string>();
                 allProducts.forEach((p) => productMap.set(p.sku, p.id));
 
-                // --- D. INVOICES (Sequential) ---
+                // --- D. BULK INVOICES (OPTIMIZED: PRE-GENERATE UUIDs) ---
+                // Instead of loop + create, we generate IDs here and bulk insert.
                 const invoiceIdMap = new Map<string, string>();
+                const invoicesToCreate: any[] = [];
 
                 for (const row of invoicesData) {
                     const oldExcelId = row["Invoice ID"];
                     if (!oldExcelId) continue;
+
+                    // 1. Generate ID in memory
+                    const newInvoiceId = randomUUID();
+                    invoiceIdMap.set(oldExcelId, newInvoiceId);
 
                     const customerEmail = row["Customer Email"]
                         ?.toString()
                         .trim();
                     const customerId = customerMap.get(customerEmail);
 
-                    const newInvoice = await tx.invoice.create({
-                        data: {
-                            invoiceName:
-                                row["Invoice Name"] || "Imported Invoice",
-                            totalAmount: parseFloat(row["Total Amount"]) || 0,
-                            status: row["Status"] || "PENDING",
-                            paymentType: row["Payment Type"] || "CASH",
-                            customerId: customerId || null,
-                            createdBy: userId,
-                        },
+                    // 2. Prepare object with explicit ID
+                    invoicesToCreate.push({
+                        id: newInvoiceId, // Explicitly set ID
+                        invoiceName: row["Invoice Name"] || "Imported Invoice",
+                        totalAmount: parseFloat(row["Total Amount"]) || 0,
+                        status: row["Status"] || "PENDING",
+                        paymentType: row["Payment Type"] || "CASH",
+                        customerId: customerId || null,
+                        createdBy: userId,
+                        createdAt: row["Date Issued"]
+                            ? new Date(row["Date Issued"])
+                            : new Date(),
+                        updatedAt: new Date(),
                     });
-
-                    invoiceIdMap.set(oldExcelId, newInvoice.id);
                 }
 
-                // --- E. BULK INVOICE ITEMS (FIXED) ---
-                // We use a simple array push loop to ensure type safety (no nulls in the array)
+                // 3. Single DB Call for ALL Invoices
+                if (invoicesToCreate.length > 0) {
+                    await tx.invoice.createMany({
+                        data: invoicesToCreate,
+                        skipDuplicates: true,
+                    });
+                }
+
+                // --- E. BULK INVOICE ITEMS ---
+                // Now we can link items because we already decided the Invoice IDs above.
                 const itemsToCreate: any[] = [];
 
                 for (const row of invoiceItemsData) {
@@ -224,6 +240,7 @@ export default async function handler(
                     }
                 }
 
+                // 4. Single DB Call for ALL Items
                 if (itemsToCreate.length > 0) {
                     await tx.invoiceItem.createMany({
                         data: itemsToCreate,
@@ -231,7 +248,7 @@ export default async function handler(
                 }
             },
             {
-                maxWait: 5000,
+                maxWait: 10000,
                 timeout: 20000,
             }
         );
