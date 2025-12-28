@@ -6,6 +6,8 @@ import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
 import { AppState } from "@/store";
 import { setBusiness as setBusinessInStore } from "@/store/slices/businessSlice";
+import ImageCropperModal from "@/components/ImageCropperModal"; // Import the cropper
+import { FloatingPortal } from "@floating-ui/react";
 
 interface BusinessSettingsFormProps {
     role: string;
@@ -16,7 +18,13 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
 }) => {
     const [business, setBusiness] = useState<string>("");
     const [logoUrl, setLogoUrl] = useState<string>("");
+
+    // Image State
     const [logoPreview, setLogoPreview] = useState<string>("");
+    const [logoFile, setLogoFile] = useState<File | null>(null); // To store the file for FormData
+    const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+    const [tempImageSrc, setTempImageSrc] = useState<string | null>(null);
+
     const [businessId, setBusinessId] = useState<string>("");
     const [hasExistingBusiness, setHasExistingBusiness] =
         useState<boolean>(false);
@@ -33,17 +41,32 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
         (state: AppState) => state.business.business
     );
 
-    const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // 1. Handle File Select -> Open Cropper
+    const handleLogoFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setLogoPreview(reader.result as string);
-                // Store the base64 string for API submission
-                setLogoUrl(reader.result as string);
-            };
-            reader.readAsDataURL(file);
+            const objectUrl = URL.createObjectURL(file);
+            setTempImageSrc(objectUrl);
+            setIsCropModalOpen(true);
+            e.target.value = ""; // Reset input
         }
+    };
+
+    // 2. Handle Crop Complete -> Process Result
+    const handleCropComplete = (croppedBlob: Blob) => {
+        // A. Create File object for FormData (Create API)
+        const croppedFile = new File([croppedBlob], "business-logo.jpg", {
+            type: "image/jpeg",
+        });
+        setLogoFile(croppedFile);
+
+        // B. Create Base64 string for Preview & JSON (Update API)
+        const reader = new FileReader();
+        reader.readAsDataURL(croppedBlob);
+        reader.onloadend = () => {
+            setLogoPreview(reader.result as string);
+            setLogoUrl(reader.result as string);
+        };
     };
 
     const createBusiness = async (formData: FormData) => {
@@ -93,15 +116,12 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
 
                 await updateBusiness(updateData);
             } else {
-                // For create, get the actual file from the input element
-                const logoFile = (
-                    document.getElementById("businessLogo") as HTMLInputElement
-                ).files?.[0];
-
                 const formData = new FormData();
                 formData.append("name", business);
+
+                // Use the state logoFile instead of querying DOM
                 if (logoFile) {
-                    formData.append("logo", logoFile); // Send actual file
+                    formData.append("logo", logoFile);
                 }
 
                 await createBusiness(formData);
@@ -195,7 +215,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
     ]);
 
     return (
-        <section className="relative">
+        <section className="relative bg-white p-6 rounded-lg shadow-md w-full max-w-3xl">
             <header>
                 <h2 className="text-lg font-medium text-gray-900">
                     Business Settings
@@ -221,21 +241,28 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
                         Business Logo
                     </label>
 
-                    <div className="relative mt-2 w-full border-2 border-dashed border-gray-300 rounded-lg flex text-center items-center justify-center bg-slate-50 hover:border-green-400 transition-colors cursor-pointer">
+                    <div className="relative mt-2 w-full border-2 border-dashed border-gray-300 rounded-lg flex text-center items-center justify-center bg-slate-50 hover:border-green-400 transition-colors cursor-pointer group overflow-hidden">
                         {logoPreview || logoUrl ? (
-                            <Image
-                                src={logoPreview || logoUrl}
-                                alt="Business Logo"
-                                className="w-full h-60 object-cover rounded-lg"
-                                width={256}
-                                height={256}
-                                style={{
-                                    objectFit: "cover",
-                                    borderRadius: "0.5rem",
-                                }}
-                            />
+                            <>
+                                <Image
+                                    src={logoPreview || logoUrl}
+                                    alt="Business Logo"
+                                    className="w-full h-60 object-cover rounded-lg"
+                                    width={256}
+                                    height={256}
+                                    style={{
+                                        objectFit: "cover",
+                                        borderRadius: "0.5rem",
+                                    }}
+                                />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <span className="text-white text-sm font-medium bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm">
+                                        Change Logo
+                                    </span>
+                                </div>
+                            </>
                         ) : (
-                            <div className="flex flex-col items-center justify-center text-center space-y-2">
+                            <div className="flex flex-col items-center justify-center text-center space-y-2 py-10">
                                 <CloudUpload
                                     size={25}
                                     className="stroke-green-500"
@@ -244,16 +271,16 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
                                     Upload file
                                 </p>
                                 <p className="text-sm text-gray-400">
-                                    PNG are Allowed.
+                                    PNG, JPG are Allowed.
                                 </p>
                             </div>
                         )}
                         <input
                             type="file"
                             id="businessLogo"
-                            accept="image/png"
+                            accept="image/png, image/jpeg, image/jpg"
                             className="absolute inset-0 opacity-0 cursor-pointer"
-                            onChange={handleLogoChange}
+                            onChange={handleLogoFileSelect}
                         />
                     </div>
 
@@ -288,13 +315,26 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
                 <button
                     type="submit"
                     disabled={role === "manager"}
-                    className="btn btn-md btn-ghost flex items-center bg-green-500 text-white hover:bg-green-600 w-full mt-8"
+                    className="btn btn-md btn-ghost flex items-center bg-green-500 text-white hover:bg-green-600 w-full mt-8 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {hasExistingBusiness
                         ? "Update Business"
                         : "Create Business"}
                 </button>
             </form>
+
+            {/* Image Cropper Modal */}
+            <FloatingPortal>
+                <ImageCropperModal
+                    isOpen={isCropModalOpen}
+                    imageSrc={tempImageSrc}
+                    onClose={() => {
+                        setIsCropModalOpen(false);
+                        setTempImageSrc(null);
+                    }}
+                    onCropComplete={handleCropComplete}
+                />
+            </FloatingPortal>
         </section>
     );
 };

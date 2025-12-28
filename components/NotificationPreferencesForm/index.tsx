@@ -18,7 +18,7 @@ const NotificationPreferencesForm: React.FC<
     };
 
     return (
-        <section>
+        <section className="bg-white p-6 rounded-lg shadow-md w-full max-w-3xl">
             <header>
                 <h2 className="text-lg font-medium text-gray-900">
                     Notification Preferences

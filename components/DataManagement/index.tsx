@@ -1,62 +1,24 @@
-import { Download, X } from "lucide-react";
+import { Download, X, FileSpreadsheet } from "lucide-react";
 import React, { useState } from "react";
 import { toast } from "sonner";
-import axios from "axios";
+// import axios from "axios"; // Uncomment when connecting API
 
 const DataManagement: React.FC = () => {
-    const [selectedDataTypes, setSelectedDataTypes] = useState<string[]>([]);
     const [isDownloading, setIsDownloading] = useState(false);
     const [showModal, setShowModal] = useState(false);
 
-    const dataOptions = [
-        {
-            id: "products",
-            label: "Products",
-        },
-        {
-            id: "invoices",
-            label: "Invoices",
-        },
-        {
-            id: "customers",
-            label: "Customers",
-        },
-        {
-            id: "categories",
-            label: "Categories",
-        },
-    ];
-
-    const handleCheckboxChange = (dataType: string) => {
-        setSelectedDataTypes((prev) =>
-            prev.includes(dataType)
-                ? prev.filter((type) => type !== dataType)
-                : [...prev, dataType]
-        );
-    };
-
-    const handleDownloadClick = async () => {
-        if (selectedDataTypes.length === 0) {
-            toast.error("Please select at least one data type to download");
-            return;
-        }
-
+    const handleDownloadConfirm = async () => {
         setIsDownloading(true);
 
         try {
-            // TODO: Implement actual download logic
-            // Example: const response = await axios.post('/api/download', { dataTypes: selectedDataTypes });
+            // TODO: Implement actual download logic here
+            // Example:
+            // const response = await axios.get('/api/download/excel', { responseType: 'blob' });
+            // downloadFile(response.data, 'business_data.xlsx');
 
-            await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulated delay
+            await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulated delay
 
-            toast.success(
-                `Downloaded ${selectedDataTypes
-                    .map(
-                        (id) => dataOptions.find((opt) => opt.id === id)?.label
-                    )
-                    .join(", ")} successfully`
-            );
-            setSelectedDataTypes([]);
+            toast.success("Data downloaded successfully in Excel format.");
             setShowModal(false);
         } catch (error) {
             toast.error("Failed to download data");
@@ -66,13 +28,13 @@ const DataManagement: React.FC = () => {
     };
 
     return (
-        <section>
+        <section className="bg-white p-6 rounded-lg shadow-md w-full">
             <header>
                 <h2 className="text-lg font-medium text-gray-900">
                     Data Management
                 </h2>
                 <p className="mt-1 text-sm text-gray-600">
-                    Download your business data for backup or analysis.
+                    Download a complete backup of your business data.
                 </p>
             </header>
 
@@ -95,90 +57,60 @@ const DataManagement: React.FC = () => {
                         }
                     }}
                 >
-                    <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col md:max-h-[80vh]">
+                    <div className="bg-white rounded-lg w-full max-w-md overflow-hidden flex flex-col shadow-xl">
                         {/* Modal Header */}
-                        <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200">
-                            <h3 className="text-base md:text-lg font-medium text-gray-900">
-                                Select Data to Download
+                        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                            <h3 className="text-lg font-medium text-gray-900">
+                                Export Data
                             </h3>
                             <button
                                 onClick={() => setShowModal(false)}
-                                className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
                             >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
                         {/* Modal Body */}
-                        <div className="p-4 md:p-6 overflow-y-auto flex-1">
-                            <div className="space-y-3 md:space-y-4">
-                                {dataOptions.map((option) => (
-                                    <label
-                                        key={option.id}
-                                        className="flex items-start space-x-3 p-3 md:p-4 rounded-md hover:bg-gray-50 cursor-pointer transition-colors border border-gray-200"
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedDataTypes.includes(
-                                                option.id
-                                            )}
-                                            onChange={() =>
-                                                handleCheckboxChange(option.id)
-                                            }
-                                            className="mt-1 h-4 w-4 accent-green-500 bg-transparent border border-gray-300 rounded cursor-pointer focus:ring-2 focus:ring-green-500 flex-shrink-0"
-                                        />
-                                        <div className="flex-1 min-w-0">
-                                            <div className="font-medium text-gray-900 text-sm md:text-base">
-                                                {option.label}
-                                            </div>
-                                        </div>
-                                    </label>
-                                ))}
+                        <div className="p-6">
+                            <div className="flex items-start space-x-4">
+                                <div className="p-3 bg-green-100 rounded-full flex-shrink-0">
+                                    <FileSpreadsheet className="w-6 h-6 stroke-green-600" />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-semibold text-gray-900">
+                                        Download as Excel
+                                    </h4>
+                                    <p className="text-sm text-gray-600 mt-2 leading-relaxed">
+                                        You are about to download a
+                                        comprehensive report containing:
+                                    </p>
+                                    <p>
+                                        All Products, Inventory Invoices,
+                                        Transactions, Customer Database &
+                                        Categories
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-3 italic">
+                                        The file will be saved in{" "}
+                                        <strong>.xlsx</strong> format.
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="p-4 md:p-6 border-t border-gray-200 bg-gray-50">
-                            <div className="flex flex-col-reverse md:flex-row md:items-center md:justify-between gap-4">
-                                <p className="text-xs md:text-sm text-gray-600 order-last md:order-first">
-                                    {selectedDataTypes.length} item
-                                    {selectedDataTypes.length !== 1
-                                        ? "s"
-                                        : ""}{" "}
-                                    selected
-                                </p>
-                                <div className="flex flex-col-reverse md:flex-row md:space-x-3 gap-2 md:gap-3">
-                                    <button
-                                        onClick={() => {
-                                            setShowModal(false);
-                                            setSelectedDataTypes([]);
-                                        }}
-                                        className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors order-last"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleDownloadClick}
-                                        disabled={
-                                            selectedDataTypes.length === 0 ||
-                                            isDownloading
-                                        }
-                                        className="flex items-center justify-center px-6 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                    >
-                                        {isDownloading ? (
-                                            <>
-                                                <span className="loading loading-spinner loading-sm mr-2"></span>
-                                                Downloading...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Download className="mr-2 h-4 w-4" />
-                                                Download
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
+                        <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+                            <button
+                                onClick={handleDownloadConfirm}
+                                disabled={isDownloading}
+                                className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-w-[120px]"
+                            >
+                                {isDownloading ? (
+                                    <>Processing...</>
+                                ) : (
+                                    <>Download</>
+                                )}
+                            </button>
                         </div>
                     </div>
                 </div>

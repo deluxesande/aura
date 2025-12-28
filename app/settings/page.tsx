@@ -67,7 +67,7 @@ const SettingsPage: React.FC = () => {
                     <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                         <div className="flex flex-col flex-wrap w-full">
                             <div className="w-full mb-6">
-                                <div className="p-4 sm:p-8 bg-white shadow sm:rounded-lg flex flex-col lg:flex-row  gap-6">
+                                <div className="flex flex-col lg:flex-row  gap-6">
                                     <div className="w-full">
                                         <BusinessSettingsForm
                                             role={user.role}
@@ -82,26 +82,12 @@ const SettingsPage: React.FC = () => {
                                         <div className="w-full">
                                             <IntegrationsSettings />
                                         </div>
-                                        <div className="w-full">
+                                        {/* <div className="w-full">
                                             <DataManagement />
-                                        </div>
+                                        </div> */}
                                     </div>
                                 </div>
                             </div>
-                            {/* <div className="w-full mb-6">
-                                <div className="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                                    <div className="w-full">
-                                        <NotificationPreferencesForm />
-                                    </div>
-                                </div>
-                            </div> */}
-                            {/* <div className="w-full mb-6">
-                                <div className="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                                    <div className="w-full">
-                                        <IntegrationsSettings />
-                                    </div>
-                                </div>
-                            </div> */}
                             <div className="w-full mb-6">
                                 <div className="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                                     <div className="w-full">
@@ -109,13 +95,9 @@ const SettingsPage: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
-                            {/* <div className="w-full mb-6">
-                                <div className="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                                    <div className="w-full">
-                                        <DataManagement />
-                                    </div>
-                                </div>
-                            </div> */}
+                            <div className="w-full">
+                                <DataManagement />
+                            </div>
                         </div>
                     </div>
                 </div>
