@@ -17,6 +17,7 @@ const nextConfig = {
             {
                 protocol: "https",
                 hostname: "randomuser.me",
+                pathname: "/**",
             },
             {
                 protocol: "https",
@@ -25,6 +26,7 @@ const nextConfig = {
             {
                 protocol: "https",
                 hostname: "img.clerk.com",
+                pathname: "/**",
             },
             {
                 protocol: "http",

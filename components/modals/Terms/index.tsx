@@ -163,18 +163,18 @@ export default function TermsModal({
                     <p>
                         <strong>Email:</strong>{" "}
                         <a
-                            href="mailto:salesense4@gmail.com"
+                            href="mailto:support@trysalesense.online"
                             className="text-green-600"
                         >
-                            salesense@gmail.com
+                            support@trysalesense.online
                         </a>{" "}
                         <br />
                         <strong>Website:</strong>{" "}
                         <a
-                            href="https://aura-omega-snowy.vercel.app/"
+                            href="https://www.trysalesense.online"
                             className="text-green-600"
                         >
-                            www.salesense.com
+                            www.trysalesense.online
                         </a>
                     </p>
                 </div>

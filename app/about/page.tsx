@@ -2,6 +2,7 @@
 import Footer from "@/components/LandingPage/Footer";
 import Navbar from "@/components/LandingPage/Navbar";
 import { motion, useInView } from "framer-motion";
+import Image from "next/image";
 import { useRef, useState } from "react";
 
 const containerVariants = {
@@ -47,8 +48,8 @@ export default function AboutPage() {
                 animate={isHeroInView ? "visible" : "hidden"}
                 variants={containerVariants}
             >
-                <div className="max-w-7xl mx-auto pt-16 px-4 sm:px-6 lg:px-8">
-                    {/* First Section */}
+                {/* <div className="max-w-7xl mx-auto pt-16 px-4 sm:px-6 lg:px-8">
+                    
                     <motion.div className="text-center" variants={itemVariants}>
                         <h1 className="text-4xl font-bold text-gray-900 mb-6">
                             About Us
@@ -59,12 +60,10 @@ export default function AboutPage() {
                         </p>
                     </motion.div>
 
-                    {/* Second Section */}
                     <motion.div
                         className="mt-16 text-center"
                         variants={itemVariants}
                     >
-                        {/* Text on the Right */}
                         <motion.div
                             className="flex-1 space-y-6 flex flex-col"
                             variants={{
@@ -100,7 +99,7 @@ export default function AboutPage() {
                             </p>
                         </motion.div>
                     </motion.div>
-                </div>
+                </div> */}
 
                 {/* Stats Section */}
                 <motion.div
@@ -277,7 +276,7 @@ export default function AboutPage() {
                             {
                                 name: "Deluxe Sande",
                                 role: "CEO & Founder",
-                                image: "https://img.clerk.com/eyJ0eXBlIjoicHJveHkiLCJzcmMiOiJodHRwczovL2ltYWdlcy5jbGVyay5kZXYvb2F1dGhfZ29vZ2xlL2ltZ18ycVU4VE10b0piUVgzd3ZldlpZZUsxQmpveTUifQ",
+                                image: "/images/Profile.jpg",
                             },
                         ].map((member, index) => (
                             <motion.div
@@ -289,10 +288,12 @@ export default function AboutPage() {
                                 whileInView="visible"
                                 viewport={{ once: true }}
                             >
-                                <img
+                                <Image
                                     src={member.image}
                                     alt={member.name}
-                                    className="w-24 h-24 rounded-full mx-auto mb-4"
+                                    width={200}
+                                    height={200}
+                                    className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
                                 />
                                 <h3 className="text-xl font-semibold mb-2">
                                     {member.name}
