@@ -40,6 +40,9 @@ export const getInvoices = async (
                     in: userIds,
                 },
             },
+            orderBy: {
+                createdAt: "desc",
+            },
             include: {
                 invoiceItems: {
                     select: {
