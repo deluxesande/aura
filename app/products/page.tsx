@@ -563,8 +563,9 @@ export default function Page() {
                             )}
                             <button
                                 type="submit"
-                                disabled={isProcessingOrder}
-                                className="px-4 py-2 mt-4 border border-green-400 text-green-400 w-full bg-white rounded-md"
+                                // disabled={isProcessingOrder}
+                                disabled={true}
+                                className="px-4 py-2 mt-4 border border-green-400 text-green-400 w-full bg-white rounded-md cursor-not-allowed"
                             >
                                 {buttonText}
                             </button>
