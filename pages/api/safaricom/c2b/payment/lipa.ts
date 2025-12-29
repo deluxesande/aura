@@ -1,80 +1,46 @@
 import { storeResponseInDb } from "@/utils/storeInDb";
 import { PrismaClient } from "@prisma/client";
-import axios from "axios";
-import { NextApiRequest, NextApiResponse } from "next";
+import axios, { AxiosError } from "axios";
+import type { NextApiRequest, NextApiResponse } from "next";
 
-const prisma = new PrismaClient();
+// 1. Prisma Singleton Pattern (Prevents "Too many connections" in development)
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+const prisma = globalForPrisma.prisma || new PrismaClient();
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
-const consumerKey = process.env.CONSUMER_KEY || "";
-const consumerSecret = process.env.CONSUMER_SECRET || "";
-const callbackUrl = process.env.CALLBACK_URL || "";
-const shortCode = process.env.SHORTCODE || "";
-const passkey = process.env.PASS_KEY || "";
+const {
+    CONSUMER_KEY: consumerKey,
+    CONSUMER_SECRET: consumerSecret,
+    CALLBACK_URL: callbackUrl,
+    SHORTCODE: shortCode,
+    PASS_KEY: passkey,
+} = process.env;
 
-// Function to get an access token from the endpoint
-const getAccessToken = async () => {
-    try {
-        const response = await axios.get(
-            "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
-            {
-                auth: {
-                    username: consumerKey,
-                    password: consumerSecret,
-                },
-            }
-        );
-        return response.data.access_token;
-    } catch (error) {
-        throw error;
-    }
+// Helper: Format phone to 254XXXXXXXXX
+const formatPhoneNumber = (phone: string) => {
+    let p = phone.replace(/\D/g, "");
+    if (p.startsWith("0")) return `254${p.substring(1)}`;
+    if (p.startsWith("7")) return `254${p}`;
+    return p;
 };
 
-const initiatePayment = async (
-    accessToken: string,
-    phoneNumber: string,
-    amount: number,
-    transactionType: string
-) => {
-    const url =
-        "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest";
+const generatePassword = () => {
     const timestamp = new Date()
         .toISOString()
-        .replace(new RegExp("[-:.TZ]", "g"), "")
+        .replace(/[-:.TZ]/g, "")
         .slice(0, 14);
     const password = Buffer.from(`${shortCode}${passkey}${timestamp}`).toString(
         "base64"
     );
-
-    const requestData = {
-        BusinessShortCode: shortCode,
-        Password: password,
-        Timestamp: timestamp,
-        TransactionType: transactionType,
-        Amount: amount,
-        PartyA: phoneNumber,
-        PartyB: shortCode,
-        PhoneNumber: phoneNumber,
-        CallBackURL: callbackUrl,
-        AccountReference: "Salesense",
-        TransactionDesc: "(development): Payment for goods",
-    };
-
-    try {
-        const response = await axios.post(url, requestData, {
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-            },
-        });
-        return response.data;
-    } catch (error) {
-        throw new Error("Failed to initiate payment");
-    }
+    return { timestamp, password };
 };
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-    if (req.method !== "POST") {
+export default async function handler(
+    req: NextApiRequest,
+    res: NextApiResponse
+) {
+    if (req.method !== "POST")
         return res.status(405).json({ error: "Method not allowed" });
-    }
 
     const {
         phoneNumber,
@@ -88,28 +54,65 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             .json({ error: "Phone number and amount are required" });
     }
 
+    if (
+        !consumerKey ||
+        !consumerSecret ||
+        !callbackUrl ||
+        !shortCode ||
+        !passkey
+    ) {
+        console.error("CRITICAL: Missing M-Pesa environment variables.");
+        return res.status(500).json({ error: "Server Configuration Error" });
+    }
+
     try {
-        const accessToken = await getAccessToken();
-        const paymentResponse = await initiatePayment(
-            accessToken,
-            phoneNumber,
-            amount,
-            transactionType
+        const authResponse = await axios.get(
+            "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
+            {
+                auth: { username: consumerKey, password: consumerSecret },
+            }
+        );
+        const accessToken = authResponse.data.access_token;
+
+        const formattedPhone = formatPhoneNumber(phoneNumber);
+        const formattedAmount = Math.floor(Number(amount));
+        const { timestamp, password } = generatePassword();
+
+        const { data: paymentResponse } = await axios.post(
+            "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
+            {
+                BusinessShortCode: shortCode,
+                Password: password,
+                Timestamp: timestamp,
+                TransactionType: transactionType,
+                Amount: formattedAmount,
+                PartyA: formattedPhone,
+                PartyB: shortCode,
+                PhoneNumber: formattedPhone,
+                CallBackURL: callbackUrl,
+                AccountReference: "Salesense",
+                TransactionDesc: "Payment for goods",
+            },
+            {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            }
         );
 
-        // Store in db
-        storeResponseInDb(paymentResponse)
-            .catch((e) => {
-                throw e;
-            })
-            .finally(async () => {
-                await prisma.$disconnect();
-            });
-        res.status(200).json(paymentResponse);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Failed to prompt user for payment" });
-    }
-};
+        storeResponseInDb(paymentResponse);
 
-export default handler;
+        return res.status(200).json({
+            success: true,
+            message: "STK Push sent",
+            data: paymentResponse,
+        });
+    } catch (error: any) {
+        if (axios.isAxiosError(error) && error.response) {
+            return res.status(error.response.status).json({
+                error: "M-Pesa Error",
+                details: error.response.data.errorMessage || "STK Push Failed",
+            });
+        }
+
+        return res.status(500).json({ error: "Internal Server Error" });
+    }
+}

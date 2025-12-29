@@ -2,36 +2,91 @@ import {
     storeFailedCallbackInDb,
     storeSuccessfulCallbackInDb,
 } from "@/utils/storeInDb";
-import { NextApiRequest, NextApiResponse } from "next";
+import type { NextApiRequest, NextApiResponse } from "next";
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-    if (req.method === "POST") {
-        const callbackData = req.body;
+interface CallbackItem {
+    Name: string;
+    Value?: string | number;
+}
 
-        // Check if Body and stkCallback are defined
-        if (!callbackData.Body || !callbackData.Body.stkCallback) {
-            return res.status(400).json({ error: "Invalid callback data" });
+interface StkCallbackMetadata {
+    Item: CallbackItem[];
+}
+
+interface StkCallback {
+    MerchantRequestID: string;
+    CheckoutRequestID: string;
+    ResultCode: number;
+    ResultDesc: string;
+    CallbackMetadata?: StkCallbackMetadata;
+}
+
+interface MpesaBody {
+    stkCallback: StkCallback;
+}
+
+interface MpesaPayload {
+    Body: MpesaBody;
+}
+
+export default async function handler(
+    req: NextApiRequest,
+    res: NextApiResponse
+) {
+    if (req.method !== "POST") {
+        return res.status(405).json({ error: "Method not allowed" });
+    }
+
+    try {
+        const payload = req.body as MpesaPayload;
+
+        if (!payload?.Body?.stkCallback) {
+            return res.status(400).json({ error: "Invalid payload structure" });
         }
 
-        // Check the result code
-        const resultCode = callbackData.Body.stkCallback.ResultCode;
-        if (resultCode !== 0) {
-            // If the result code is not 0, there was an error
-            const errorMessage = callbackData.Body.stkCallback.ResultDesc;
-            const responseData = {
-                ResultCode: resultCode,
-                ResultDesc: errorMessage,
-            };
-            storeFailedCallbackInDb(callbackData);
-            return res.json(responseData);
+        const {
+            ResultCode,
+            ResultDesc,
+            CallbackMetadata,
+            MerchantRequestID,
+            CheckoutRequestID,
+        } = payload.Body.stkCallback;
+
+        if (ResultCode !== 0) {
+            await storeFailedCallbackInDb({
+                CheckoutRequestID,
+                ResultCode,
+                ResultDesc,
+            });
+
+            // Always return 200 to Safaricom so they stop retrying
+            return res.status(200).json({ result: "acknowledged_failure" });
         }
 
-        // Store the successful callback data
-        storeSuccessfulCallbackInDb(callbackData);
+        const metaItems = CallbackMetadata?.Item || [];
 
-        // Return a success response to mpesa
-        return res.json("success");
-    } else {
-        res.status(405).json({ error: "Method not allowed" });
+        const getMetaValue = (name: string) => {
+            const item = metaItems.find((i) => i.Name === name);
+            return item?.Value;
+        };
+
+        const amount = Number(getMetaValue("Amount"));
+        const receiptNumber = String(getMetaValue("MpesaReceiptNumber"));
+        const phoneNumber = String(getMetaValue("PhoneNumber"));
+        const transactionDate = String(getMetaValue("TransactionDate"));
+
+        // Store cleaned data in DB
+        await storeSuccessfulCallbackInDb({
+            CheckoutRequestID,
+            MerchantRequestID,
+            Amount: amount,
+            MpesaReceiptNumber: receiptNumber,
+            PhoneNumber: phoneNumber,
+            TransactionDate: transactionDate,
+        });
+
+        return res.status(200).json({ result: "success" });
+    } catch (error) {
+        return res.status(200).json({ result: "error_handled" });
     }
 }
