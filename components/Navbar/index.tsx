@@ -91,7 +91,6 @@ export default function Navbar({
     const [showPopup, setShowPopup] = useState(false);
     const [filterPopUp, setFilterPopUp] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
-    // Add state to track if we are on a large screen
     const [isDesktop, setIsDesktop] = useState(true);
     const [mounted, setMounted] = useState(false);
 
@@ -99,6 +98,10 @@ export default function Navbar({
         (state: AppState) => state.product.products
     );
     const sideBarState = useSelector((state: AppState) => state.sidebar.isOpen);
+
+    // Calculate total items (sum of quantities or just array length)
+    const cartItems = useSelector((state: AppState) => state.cart?.items || []);
+    const cartCount = cartItems.length;
 
     const [inputValue, setInputValue] = useState<string>("");
     const isProductsPage = pathname === "/products";
@@ -123,11 +126,9 @@ export default function Navbar({
     useEffect(() => {
         setMounted(true);
         const checkScreenSize = () => {
-            // 1024px is the default 'lg' breakpoint in Tailwind
             setIsDesktop(window.innerWidth >= 1024);
         };
 
-        // Check on initial load
         checkScreenSize();
 
         window.addEventListener("resize", checkScreenSize);
@@ -293,7 +294,7 @@ export default function Navbar({
                             )}
                         </div>
 
-                        {/* PC Novu Notifications - CONDITIONAL RENDER */}
+                        {/* PC Novu Notifications */}
                         {mounted && isDesktop && (
                             <Inbox
                                 applicationIdentifier={
@@ -326,12 +327,20 @@ export default function Navbar({
                             </Inbox>
                         )}
 
+                        {/* --- DESKTOP CART ICON WITH BADGE --- */}
                         <div className="flex items-center">
                             <div
-                                className="p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
+                                className="relative p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
                                 onClick={toggleSidebar}
                             >
                                 <ShoppingCart size={25} />
+
+                                {/* Badge Logic */}
+                                {cartCount > 0 && (
+                                    <span className="absolute top-1 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[8px] text-white font-bold animate-in zoom-in duration-200">
+                                        {cartCount > 99 ? "99+" : cartCount}
+                                    </span>
+                                )}
                             </div>
 
                             <div className="p-2 text-black rounded-lg flex items-center gap-4 cursor-pointer">
@@ -358,7 +367,7 @@ export default function Navbar({
                     </div>
 
                     <div className="flex items-center">
-                        {/* Mobile Novu Notifications - CONDITIONAL RENDER */}
+                        {/* Mobile Novu Notifications */}
                         {mounted && !isDesktop && (
                             <Inbox
                                 applicationIdentifier={
@@ -392,11 +401,18 @@ export default function Navbar({
                         )}
 
                         <div
-                            className="p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
+                            className="relative p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
                             onClick={toggleSidebar}
                         >
                             <ShoppingCart size={25} />
+                            {/* Badge Logic */}
+                            {cartCount > 0 && (
+                                <span className="absolute top-1 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[8px] text-white font-bold animate-in zoom-in duration-200">
+                                    {cartCount > 99 ? "99+" : cartCount}
+                                </span>
+                            )}
                         </div>
+
                         <button
                             className="p-2 text-black rounded-lg cursor-pointer"
                             onClick={toggleMobileMenu}

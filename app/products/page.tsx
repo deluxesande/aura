@@ -18,16 +18,18 @@ import {
     Book,
     Briefcase,
     FileText,
+    Package,
     Pencil,
     PlusCircle,
     ShoppingCart,
     Store,
 } from "lucide-react";
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import Image from "next/image";
+import NoProductsFound from "@/components/NoProducts";
 
 interface Category {
     id: string;
@@ -82,6 +84,7 @@ export default function Page() {
     const profileImage = user?.hasImage
         ? user?.imageUrl
         : "https://www.svgrepo.com/show/535711/user.svg";
+    const hasFetched = useRef(false);
 
     // Function to map API data to the `Category` interface
     const mapCategories = React.useCallback((apiData: any[]): Category[] => {
@@ -129,7 +132,8 @@ export default function Page() {
                 product.quantity > (cartItem?.cartQuantity || 0)
             ) {
                 dispatch(addItem(product));
-                dispatch(show());
+                // Show cart sidebar
+                // dispatch(show());
             } else {
                 toast.warning("Insufficient product quantity available.");
             }
@@ -406,6 +410,7 @@ export default function Page() {
                 setLocalProducts([]);
             } finally {
                 setLoading(false);
+                hasFetched.current = true;
             }
         };
 
@@ -413,9 +418,10 @@ export default function Page() {
         if (productsData.length > 0) {
             setLocalProducts(productsData);
             setLoading(false);
-        } else {
-            // Fetch products from the API
+        } else if (!hasFetched.current) {
             fetchProducts();
+        } else {
+            setLoading(false);
         }
     }, [dispatch, productsData]);
 
@@ -448,17 +454,7 @@ export default function Page() {
                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                             </div>
                         ) : products.length === 0 ? (
-                            <div className="w-full m-auto mt-20 flex flex-col items-center justify-center">
-                                <h1 className="text-2xl font-bold mb-6 text-black">
-                                    No Products
-                                </h1>
-                                <Link href="/products/create">
-                                    <button className="btn btn-sm btn-ghost text-black flex items-center bg-green-400 w-full">
-                                        <PlusCircle className="w-4 h-4" />
-                                        Add Product
-                                    </button>
-                                </Link>
-                            </div>
+                            <NoProductsFound />
                         ) : (
                             Array.isArray(products) &&
                             products.map((product) => (

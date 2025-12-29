@@ -110,20 +110,27 @@ function InvoicePageContent() {
             <div className="max-w-6xl mx-auto px-4 py-8">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-start gap-3 sm:gap-4 w-full">
+                        {/* Back Button: shrinking disabled, aligned to top */}
                         <Link
                             href="/invoices"
-                            className="p-2 bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors"
+                            className="shrink-0 p-2 bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors mt-0.5"
                         >
                             <ArrowLeft className="w-5 h-5 text-gray-600" />
                         </Link>
-                        <div>
-                            <div className="flex items-center gap-3">
-                                <h1 className="text-2xl font-bold text-gray-900">
+
+                        {/* Content Container: min-w-0 is crucial for text truncation in Flexbox */}
+                        <div className="flex-1 min-w-0">
+                            {/* Title Row: Column on mobile (stacked), Row on desktop (inline) */}
+                            <div className="flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+                                {/* Name: Truncates on mobile because of max-w-full and parent min-w-0 */}
+                                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate max-w-full">
                                     {invoice.invoiceName}
                                 </h1>
+
+                                {/* Status: Below name on mobile, Next to name on Desktop */}
                                 <span
-                                    className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
+                                    className={`shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
                                         status
                                     )}`}
                                 >
@@ -135,13 +142,14 @@ function InvoicePageContent() {
                                         : "Pending"}
                                 </span>
                             </div>
-                            <p className="text-sm text-gray-500 mt-1">
+
+                            <p className="text-sm text-gray-500 mt-1 truncate">
                                 View and manage invoice details
                             </p>
                         </div>
                     </div>
 
-                    <div className="flex gap-2 flex-wrap">
+                    <div className="flex gap-2 flex-wrap w-full sm:w-auto">
                         {/* ONLY Show "Mark Paid" if Payment Type is CASH */}
                         {status !== "paid" &&
                             status !== "completed" &&
@@ -149,7 +157,7 @@ function InvoicePageContent() {
                                 <button
                                     onClick={() => handleStatusChange("PAID")}
                                     disabled={isUpdating}
-                                    className="flex items-center gap-2 px-4 py-2 bg-green-600 border border-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
+                                    className="w-full sm:w-auto justify-center flex btn-sm items-center gap-2 px-4 py-2 bg-green-600 border border-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
                                 >
                                     <CheckCircle
                                         size={16}
@@ -164,7 +172,7 @@ function InvoicePageContent() {
                             <button
                                 onClick={() => handleStatusChange("CANCELLED")}
                                 disabled={isUpdating}
-                                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 hover:border-red-200 disabled:opacity-50 transition-colors"
+                                className="w-full sm:w-auto justify-center flex btn-sm items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 hover:border-red-200 disabled:opacity-50 transition-colors"
                             >
                                 <XCircle size={16} className="stroke-red-500" />
                                 Cancel
@@ -176,18 +184,20 @@ function InvoicePageContent() {
                             <button
                                 onClick={() => handleStatusChange("PENDING")}
                                 disabled={isUpdating}
-                                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                                className="w-full sm:w-auto justify-center flex btn-sm items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors"
                             >
                                 <RotateCcw size={16} />
                                 Reopen
                             </button>
                         )}
 
-                        {/* Print/Download */}
-                        <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                        {/* Print Button */}
+                        <button className="w-full sm:w-auto justify-center flex btn-sm items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                             <Printer size={16} />
                             Print
                         </button>
+
+                        {/* Ensure your PDFDownloadLink also gets these classes if you are using it! */}
                     </div>
                 </div>
 
