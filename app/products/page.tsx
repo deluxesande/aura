@@ -142,29 +142,20 @@ export default function Page() {
         }
     };
 
-    const handleOrder = async (paymentTypeOverride?: string) => {
-        /**
-         * Create invoice items for each cart item
-         *
-         * This will create an invoice item for each cart item
-         * and store the invoice item ID in an array.
-         *
-         * If all invoice items are created successfully, an invoice
-         * will be created with the total amount based on the cart items.
-         *
-         * This approach reduces the number of API calls to create an invoice.
-         */
-
-        // Check if cartItems are empty
+    const handleOrder = async (
+        paymentTypeOverride?: string,
+        mpesaDetails?: any
+    ) => {
         if (cartItems.length === 0) {
             toast.warning("Cart is empty. No order to process.");
             return;
         }
 
-        setIsProcessingOrder(true); // Disable buttons
+        setIsProcessingOrder(true);
 
         const promise = async () => {
             try {
+                // Step 1: Create Invoice Items one by one
                 const invoiceItemPromises = cartItems.map(async (item) => {
                     const data = {
                         quantity: item.cartQuantity,
@@ -185,102 +176,50 @@ export default function Page() {
 
                 const results = await Promise.all(invoiceItemPromises);
 
-                const invoiceItems = results
-                    .filter((result) => result !== null) // Filter out any null results
-                    .map((result) => ({
-                        id: result.id, // Use the invoice item ID returned from the API response
-                    }));
+                // Filter out failed items
+                const createdInvoiceItems = results
+                    .filter((result) => result !== null)
+                    .map((result) => ({ id: result.id }));
 
-                if (invoiceItems.length === cartItems.length) {
-                    try {
-                        // Calculate total amount based on cart items and quantities
-                        // to reduce amount of API calls
-                        const totalAmount = cartItems.reduce(
-                            (total, item) =>
-                                total + item.price * item.cartQuantity,
-                            0
-                        );
-                        const invoiceData = {
-                            invoiceItems: invoiceItems,
-                            totalAmount: totalAmount,
-                            paymentType: paymentTypeOverride || paymentType,
-                        };
+                if (createdInvoiceItems.length === cartItems.length) {
+                    // Step 2: Create the Invoice
+                    const totalAmount = cartItems.reduce(
+                        (total, item) => total + item.price * item.cartQuantity,
+                        0
+                    );
 
-                        const response = await axios.post(
-                            "/api/invoice/",
-                            invoiceData
-                        );
+                    const invoiceData = {
+                        invoiceItems: createdInvoiceItems,
+                        totalAmount: totalAmount,
+                        paymentType: paymentTypeOverride || paymentType,
+                        // Pass M-Pesa details if they exist (will be undefined for CASH)
+                        mpesaDetails: mpesaDetails,
+                    };
 
-                        // Update product quantities in the state
-                        setLocalProducts((prevProducts) =>
-                            prevProducts.map((product) => {
-                                const cartItem = cartItems.find(
-                                    (item) => item.id === product.id
-                                );
-                                if (cartItem) {
-                                    return {
-                                        ...product,
-                                        quantity:
-                                            product.quantity -
-                                            cartItem.cartQuantity, // Reduce product quantity
-                                        inStock:
-                                            product.quantity -
-                                                cartItem.cartQuantity >
-                                            0
-                                                ? true
-                                                : false, // Update inStock based on new quantity
-                                    };
-                                }
-                                return product;
-                            })
-                        );
+                    const response = await axios.post(
+                        "/api/invoice/",
+                        invoiceData
+                    );
 
-                        // Clear cart if invoice is created successfully
-                        if (response.status == 201) {
-                            dispatch(clearCart());
-                        }
-
-                        return response.data;
-                    } catch (error) {
-                        throw error;
+                    // Step 3: Clear Cart on Success
+                    if (response.status === 201) {
+                        dispatch(clearCart());
                     }
+
+                    return response.data;
                 } else {
                     throw new Error(
-                        "Mismatch between cart items and invoice items"
+                        "Failed to create some invoice items. Please try again."
                     );
                 }
             } finally {
-                setIsProcessingOrder(false); // Re-enable buttons
+                setIsProcessingOrder(false);
             }
         };
 
         toast.promise(promise(), {
             loading: "Processing order...",
-            success: () => {
-                dispatch(
-                    setProducts(
-                        products.map((product) => {
-                            const cartItem = cartItems.find(
-                                (item) => item.id === product.id
-                            );
-                            if (cartItem) {
-                                return {
-                                    ...product,
-                                    quantity:
-                                        product.quantity -
-                                        cartItem.cartQuantity,
-                                    inStock:
-                                        product.quantity -
-                                            cartItem.cartQuantity >
-                                        0,
-                                };
-                            }
-                            return product;
-                        })
-                    )
-                );
-                return "Order Successful";
-            },
+            success: "Order Successful!",
             error: "Error processing order",
         });
     };
@@ -307,6 +246,8 @@ export default function Page() {
 
     const handleMpesaPrompt = async (event: React.FormEvent) => {
         event.preventDefault();
+
+        // Calculate amount again for safety
         const amount = parseFloat(
             cartItems
                 .reduce(
@@ -316,13 +257,15 @@ export default function Page() {
                 .toFixed(2)
         );
 
-        // If the input is visible, prompt the user for payment
         if (isInputVisible) {
             const formattedNumber = formatPhoneNumber(mpesaNumber);
+
             if (formattedNumber) {
-                setIsProcessingOrder(true); // Disable buttons
+                setIsProcessingOrder(true);
+
                 const promise = async () => {
                     try {
+                        // Step A: Trigger STK Push
                         const response = await axios.post(
                             "/api/safaricom/c2b/payment/lipa",
                             {
@@ -334,27 +277,39 @@ export default function Page() {
 
                         if (response.status === 200) {
                             setPaymentType("MPESA");
-                            // Place the order after prompting for payment
-                            await handleOrder("MPESA");
+
+                            // Step B: Capture the identifiers
+                            const mpesaDetails = {
+                                checkoutRequestId:
+                                    response.data.data.CheckoutRequestID,
+                                merchantRequestId:
+                                    response.data.data.MerchantRequestID,
+                                phoneNumber: formattedNumber,
+                            };
+
+                            // Step C: Create the Order immediately, passing the M-Pesa link
+                            await handleOrder("MPESA", mpesaDetails);
+
+                            return "Payment Request Sent";
                         }
                     } catch (error) {
-                        throw Error("Failed to prompt user for payment");
+                        throw Error("Failed to send payment request");
                     } finally {
-                        setIsProcessingOrder(false); // Re-enable buttons
+                        setIsProcessingOrder(false);
                     }
                 };
 
                 toast.promise(promise(), {
-                    loading: "Prompting user...",
-                    success: "User prompted successfully",
-                    error: "Error prompting user",
+                    loading: "Sending M-Pesa prompt...",
+                    success: (msg) => msg || "Prompt Sent",
+                    error: "Error sending prompt",
                 });
             } else {
-                toast.error("Invalid phone number");
+                toast.error("Invalid phone number format");
             }
         } else {
             setIsInputVisible(true);
-            setButtonText("Prompt User");
+            setButtonText("Pay with M-Pesa");
         }
     };
 
@@ -563,9 +518,9 @@ export default function Page() {
                             )}
                             <button
                                 type="submit"
-                                // disabled={isProcessingOrder}
-                                disabled={true}
-                                className="px-4 py-2 mt-4 border border-green-400 text-green-400 w-full bg-white rounded-md cursor-not-allowed"
+                                disabled={isProcessingOrder}
+                                // disabled={true}
+                                className="px-4 py-2 mt-4 border border-green-400 text-green-400 w-full bg-white rounded-md"
                             >
                                 {buttonText}
                             </button>

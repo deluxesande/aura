@@ -1,3 +1,4 @@
+// pages/api/invoice/index.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { InvoiceItem } from "@/utils/typesDefinitions";
 import { addCreatedBy } from "../middleware";
@@ -9,13 +10,13 @@ const novu = new Novu({
 });
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-    const { customerId, invoiceItems, totalAmount } = req.body;
+    const { customerId, invoiceItems, totalAmount, mpesaDetails } = req.body;
 
     const currentDate = new Date();
     const formattedDate = currentDate
         .toISOString()
         .replace("T", "-")
-        .split(".")[0]; // Format as YYYY-MM-DD-HH:MM:SS
+        .split(".")[0];
     const invoiceName = `Invoice-${formattedDate}`;
 
     try {
@@ -23,21 +24,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             const customerExists = await prisma.customer.findUnique({
                 where: { id: customerId },
             });
-
             if (!customerExists) {
                 return res.status(400).json({ error: "Customer not found" });
             }
         }
 
-        // Check if any invoiceItem is already linked to another invoice
+        // Check for already linked items
         const existingInvoiceItems = await prisma.invoiceItem.findMany({
             where: {
-                id: {
-                    in: invoiceItems.map((item: InvoiceItem) => item.id),
-                },
-                invoiceId: {
-                    not: null,
-                },
+                id: { in: invoiceItems.map((item: InvoiceItem) => item.id) },
+                invoiceId: { not: null },
             },
         });
 
@@ -47,7 +43,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             });
         }
 
-        // Create invoice omit customerId if not provided
+        // Prepare Invoice Data
         const invoiceData: any = {
             invoiceName,
             totalAmount,
@@ -69,7 +65,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             data: invoiceData,
         });
 
-        // Fetch the user to get businessId
         const creator = await prisma.user.findUnique({
             where: { clerkId: req.body.createdBy },
         });
@@ -77,7 +72,32 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         if (!creator || !creator.businessId) {
             console.error("Creator or business not found");
         } else {
-            // Fetch admins and managers in the business
+            if (mpesaDetails && req.body.paymentType === "MPESA") {
+                try {
+                    await prisma.mpesaPayment.create({
+                        data: {
+                            invoiceId: invoice.id,
+                            businessId: creator.businessId,
+                            userId: creator.id,
+                            amount: parseFloat(totalAmount),
+                            phoneNumber: mpesaDetails.phoneNumber,
+                            accountReference: "Salesense",
+                            transactionDesc: "Invoice Payment",
+                            merchantRequestId: mpesaDetails.merchantRequestId,
+                            checkoutRequestId: mpesaDetails.checkoutRequestId,
+                            status: "PENDING",
+                        },
+                    });
+                } catch (mpesaError) {
+                    // Log error but DO NOT fail the invoice creation
+                    console.error(
+                        "Failed to link M-Pesa payment to invoice:",
+                        mpesaError
+                    );
+                }
+            }
+
+            // 3. Send Novu Notifications
             const adminsAndManagers = await prisma.user.findMany({
                 where: {
                     businessId: creator.businessId,
@@ -85,13 +105,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 },
             });
 
-            // Send Novu notification to each admin and manager
             for (const admin of adminsAndManagers) {
                 try {
                     await novu.trigger({
-                        to: {
-                            subscriberId: admin.clerkId,
-                        },
+                        to: { subscriberId: admin.clerkId },
                         workflowId: "invoice-generated",
                         payload: {
                             invoiceId: invoice.id,
@@ -102,16 +119,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                         },
                     });
                 } catch (error) {
-                    console.error(
-                        `Failed to send Novu notification to ${admin.email}:`,
-                        error
-                    );
+                    console.error(`Failed to notify ${admin.email}:`, error);
                 }
             }
         }
 
         res.status(201).json(invoice);
     } catch (error) {
+        console.error(error);
         res.status(400).json({ error: "Failed to add or update invoice" });
     }
 };

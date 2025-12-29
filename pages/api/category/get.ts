@@ -46,7 +46,5 @@ export const getCategories = async (
     } catch (error) {
         console.error("Error fetching categories:", error);
         res.status(500).json({ error: "Internal Server Error" });
-    } finally {
-        await prisma.$disconnect();
     }
 };

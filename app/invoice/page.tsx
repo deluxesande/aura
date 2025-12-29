@@ -149,7 +149,7 @@ function InvoicePageContent() {
                         </div>
                     </div>
 
-                    <div className="flex gap-2 flex-wrap w-full sm:w-auto">
+                    <div className="flex gap-2 flex-wrap w-full sm:w-auto shrink-0">
                         {/* ONLY Show "Mark Paid" if Payment Type is CASH */}
                         {status !== "paid" &&
                             status !== "completed" &&
@@ -201,7 +201,6 @@ function InvoicePageContent() {
                     </div>
                 </div>
 
-                {/* ... Rest of grid layout (Items & Meta) remains unchanged ... */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

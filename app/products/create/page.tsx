@@ -456,7 +456,7 @@ export default function CreateProductPage() {
                                 ) : (
                                     <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
                                         <div className="p-3 bg-white rounded-full shadow-sm mb-3">
-                                            <CloudUpload className="w-6 h-6 text-green-500" />
+                                            <CloudUpload className="w-6 h-6 stroke-green-500" />
                                         </div>
                                         <span className="text-sm font-medium text-gray-600">
                                             Click to upload

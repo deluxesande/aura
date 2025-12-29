@@ -181,6 +181,9 @@ export default function InvoicesTable({
                                         Amount
                                     </th>
                                     <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-400">
+                                        Payment Type
+                                    </th>
+                                    <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-400">
                                         Status
                                     </th>
                                     <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-400">
@@ -278,6 +281,12 @@ export default function InvoicesTable({
                                             <td className="py-3 px-4 border-b text-black text-sm border-gray-100">
                                                 <span className="font-semibold">
                                                     Ksh {invoice.totalAmount}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4 border-b text-black text-sm border-gray-100">
+                                                <span className="font-ligth text-sm">
+                                                    {invoice.paymentType ||
+                                                        "N/A"}
                                                 </span>
                                             </td>
                                             <td className="py-3 px-4 border-b text-black text-xs border-gray-100">
