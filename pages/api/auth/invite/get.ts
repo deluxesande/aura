@@ -49,7 +49,7 @@ export default async function handler(
 
         // Remove token from each invitation
         const sanitizedInvitations = await Promise.all(
-            invitations.map(async ({ token, ...invitation }) => {
+            invitations.map(async ({ token: string, ...invitation }) => {
                 // Get inviter details if invitedBy exists
                 let inviterDetails = null;
                 if (invitation.invitedBy) {
