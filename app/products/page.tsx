@@ -36,27 +36,7 @@ interface Category {
     name: string;
     description?: string;
     active?: boolean;
-    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 }
-
-// Function to dynamically assign icons based on category name
-const getCategoryIcon = (
-    categoryName: string
-): React.ComponentType<React.SVGProps<SVGSVGElement>> => {
-    const iconMap: Record<
-        string,
-        React.ComponentType<React.SVGProps<SVGSVGElement>>
-    > = {
-        Stationery: Pencil,
-        Books: Book,
-        Shopping: ShoppingCart,
-        Business: Briefcase,
-        Documents: FileText,
-    };
-
-    // Return the icon if found, otherwise a default icon
-    return iconMap[categoryName] || FileText; // Default icon
-};
 
 export default function Page() {
     const dispatch = useDispatch();
@@ -67,7 +47,6 @@ export default function Page() {
         {
             name: "All",
             description: "All products",
-            icon: Store,
             active: true,
             id: "",
         },
@@ -93,7 +72,6 @@ export default function Page() {
             name: category.name,
             description: category.description || "",
             active: false,
-            icon: getCategoryIcon(category.name),
         }));
     }, []);
 
@@ -395,7 +373,6 @@ export default function Page() {
                                 key={category.id}
                                 id={category.id}
                                 category={category.name}
-                                icon={category.icon}
                                 active={category.active}
                                 onCategoryClick={toggleActiveCategory}
                             />

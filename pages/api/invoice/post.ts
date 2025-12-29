@@ -101,7 +101,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             const adminsAndManagers = await prisma.user.findMany({
                 where: {
                     businessId: creator.businessId,
-                    role: { in: ["admin", "manager"] },
+                    OR: [
+                        { role: { in: ["admin", "manager"] } }, // Admins & Managers
+                        { clerkId: creator.clerkId }, // Plus the Creator (even if they are just a 'user')
+                    ],
                 },
             });
 

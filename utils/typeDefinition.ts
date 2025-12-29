@@ -1,7 +1,6 @@
 interface CategoryBox {
     id: string;
     category: string;
-    icon: React.ElementType;
     active?: boolean;
     onCategoryClick: (categoryId: string) => void;
 }

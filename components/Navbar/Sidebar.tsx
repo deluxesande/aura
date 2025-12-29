@@ -25,8 +25,8 @@ const allLinks = [
         href: "/dashboard",
         icon: (isActive: boolean) => (
             <LayoutDashboard
-                size={22}
-                className={isActive ? "stroke-white" : "stroke-black"}
+                size={20}
+                className={isActive ? "stroke-white" : "stroke-green-500"}
             />
         ),
         label: "Dashboard",
@@ -36,8 +36,8 @@ const allLinks = [
         href: "/products",
         icon: (isActive: boolean) => (
             <ShoppingBasket
-                size={22}
-                className={isActive ? "stroke-white" : "stroke-black"}
+                size={20}
+                className={isActive ? "stroke-white" : "stroke-green-500"}
             />
         ),
         label: "Products",
@@ -47,8 +47,8 @@ const allLinks = [
         href: "/invoices",
         icon: (isActive: boolean) => (
             <HistoryIcon
-                size={22}
-                className={isActive ? "stroke-white" : "stroke-black"}
+                size={20}
+                className={isActive ? "stroke-white" : "stroke-green-500"}
             />
         ),
         label: "Invoices",
@@ -58,8 +58,8 @@ const allLinks = [
         href: "/products/list",
         icon: (isActive: boolean) => (
             <PackageSearch
-                size={22}
-                className={isActive ? "stroke-white" : "stroke-black"}
+                size={20}
+                className={isActive ? "stroke-white" : "stroke-green-500"}
             />
         ),
         label: "Inventory",
@@ -69,8 +69,8 @@ const allLinks = [
         href: "/settings",
         icon: (isActive: boolean) => (
             <Settings
-                size={22}
-                className={isActive ? "stroke-white" : "stroke-black"}
+                size={20}
+                className={isActive ? "stroke-white" : "stroke-green-500"}
             />
         ),
         label: "Settings",
@@ -140,7 +140,7 @@ const Sidebar = () => {
 
     const profileImage = clerkUser?.hasImage
         ? clerkUser?.imageUrl
-        : "https://www.svgrepo.com/show/535711/user.svg";
+        : "/images/user.png";
 
     const toggleSidebarFunc = () => {
         setToggleSidebar(!sideBarState);
@@ -187,7 +187,7 @@ const Sidebar = () => {
                                         className={`cursor-pointer w-8 h-8 rounded-lg flex text-black items-center justify-center ${
                                             pathname === link.href
                                                 ? "bg-[#22c55e] stroke-green-400"
-                                                : "bg-[#fafafa]"
+                                                : "bg-green-50"
                                         }`}
                                     >
                                         {link.icon(isActive)}

@@ -1,11 +1,14 @@
 import React from "react";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, CreditCard } from "lucide-react";
 
 interface InfoCardProps {
     title: string;
     number: string | number;
     icon: any;
     percentageChange?: number;
+    actionLabel?: string;
+    onAction?: () => void;
+    isActionVisible?: boolean;
 }
 
 export default function InfoCard({
@@ -13,6 +16,9 @@ export default function InfoCard({
     number,
     icon: Icon,
     percentageChange = 0,
+    actionLabel,
+    onAction,
+    isActionVisible = false,
 }: InfoCardProps) {
     const isTrendingUp = percentageChange >= 0;
 
@@ -24,7 +30,7 @@ export default function InfoCard({
                     <p className="font-semibold text-lg text-black">{number}</p>
                 </div>
                 <div className="mt-1 text-black">
-                    <Icon size={35} />
+                    <Icon size={35} className="stroke-green-500" />
                 </div>
             </div>
 

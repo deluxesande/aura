@@ -161,7 +161,7 @@ const UserManagement: React.FC = () => {
                 dispatch(removeInvitation(userToDelete?.id || ""));
 
                 // Redirect to login page
-                router.push("/sign-in");
+                // router.push("/sign-in");
             }
         };
 

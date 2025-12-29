@@ -1,5 +1,6 @@
-import { Package, Link, PlusCircle } from "lucide-react";
+import { Package, PlusCircle } from "lucide-react";
 import React from "react";
+import Link from "next/link";
 
 function NoProductsFound() {
     return (
