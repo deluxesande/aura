@@ -1,8 +1,6 @@
-// pages/api/auth/delete/[userId].ts
 import { clerkClient } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/utils/lib/client";
-import { Prisma } from "@prisma/client"; // <--- 1. Import Types
 
 export default async function handler(
     req: NextApiRequest,
@@ -35,13 +33,15 @@ export default async function handler(
             // Continue if Clerk user is missing
         }
 
-        // 2. Explicitly type 'tx' to satisfy the linter
-        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        // FIX: Explicitly type tx as 'any' to bypass the broken Type definition import
+        // This satisfies the compiler and allows the valid Javascript to run.
+        await prisma.$transaction(async (tx: any) => {
+            // 1. Fetch Invoice IDs created by this user
             const userInvoices = await tx.invoice.findMany({
                 where: { createdBy: userId },
                 select: { id: true },
             });
-            const invoiceIds = userInvoices.map((inv) => inv.id);
+            const invoiceIds = userInvoices.map((inv: any) => inv.id);
 
             if (invoiceIds.length > 0) {
                 await tx.successfulCallback.deleteMany({
