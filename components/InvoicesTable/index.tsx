@@ -284,7 +284,7 @@ export default function InvoicesTable({
                                                 </span>
                                             </td>
                                             <td className="py-3 px-4 border-b text-black text-sm border-gray-100">
-                                                <span className="font-ligth text-sm">
+                                                <span className="font-light text-sm">
                                                     {invoice.paymentType ||
                                                         "N/A"}
                                                 </span>

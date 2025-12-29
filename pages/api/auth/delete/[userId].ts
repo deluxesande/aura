@@ -18,79 +18,96 @@ export default async function handler(
     }
 
     try {
-        // Find the user in the database using clerkId
         const user = await prisma.user.findUnique({
-            where: { clerkId: userId }, // Changed from id to clerkId
-            include: {
-                Business: true,
-            },
+            where: { clerkId: userId },
+            include: { Business: true },
         });
 
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
 
-        // Delete from Clerk first
         const client = await clerkClient();
         try {
-            await client.users.deleteUser(userId); // userId is already clerkId
+            await client.users.deleteUser(userId);
         } catch (clerkError) {
-            // console.error("Error deleting user from Clerk:", clerkError);
-            // Continue with database deletion even if Clerk deletion fails
+            // Continue if Clerk user is missing
         }
 
-        // Start cascading delete from database
-        // Use a transaction to ensure all-or-nothing deletion
         await prisma.$transaction(async (tx) => {
-            // Delete all invoice items created by the user
+            // 1. Fetch Invoice IDs created by this user to clean up their callbacks
+            const userInvoices = await tx.invoice.findMany({
+                where: { createdBy: userId },
+                select: { id: true },
+            });
+            const invoiceIds = userInvoices.map((inv) => inv.id);
+
+            // 2. Delete M-Pesa Data linked to these Invoices
+            if (invoiceIds.length > 0) {
+                // Delete Callbacks linked to the user's invoices
+                await tx.successfulCallback.deleteMany({
+                    where: { invoiceId: { in: invoiceIds } },
+                });
+                await tx.failedCallback.deleteMany({
+                    where: { invoiceId: { in: invoiceIds } },
+                });
+
+                // Delete Payments linked to these invoices (or the user directly)
+                await tx.mpesaPayment.deleteMany({
+                    where: {
+                        OR: [
+                            { invoiceId: { in: invoiceIds } },
+                            { userId: user.id }, // Use internal UUID
+                        ],
+                    },
+                });
+            }
+
+            // 3. Proceed with standard deletion
             await tx.invoiceItem.deleteMany({
-                where: { createdBy: userId }, // userId is clerkId
+                where: { createdBy: userId },
             });
 
-            // Delete all invoices created by the user
             await tx.invoice.deleteMany({
                 where: { createdBy: userId },
             });
 
-            // Delete all customers created by the user
             await tx.customer.deleteMany({
                 where: { createdBy: userId },
             });
 
-            // Delete all products created by the user
             await tx.product.deleteMany({
                 where: { createdBy: userId },
             });
 
-            // Delete all categories created by the user
             await tx.category.deleteMany({
                 where: { createdBy: userId },
             });
 
-            // If user has a business, delete all related data and the business
             if (user.businessId) {
-                // Delete all user invitations for the business
+                // Clean up business-linked M-Pesa payments before deleting business
+                await tx.mpesaPayment.deleteMany({
+                    where: { businessId: user.businessId },
+                });
+
                 await tx.userInvitation.deleteMany({
                     where: { businessId: user.businessId },
                 });
 
-                // Delete all other users in the same business
                 await tx.user.deleteMany({
                     where: {
                         businessId: user.businessId,
-                        clerkId: { not: userId }, // Don't delete the current user yet
+                        clerkId: { not: userId },
                     },
                 });
 
-                // Delete the business
                 await tx.business.delete({
                     where: { id: user.businessId },
                 });
             }
 
-            // Finally, delete the user
             await tx.user.delete({
-                where: { id: user.id }, // Use the database UUID here
+                where: { id: user.id },
             });
         });
 
