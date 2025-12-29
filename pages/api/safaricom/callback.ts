@@ -40,6 +40,8 @@ export default async function handler(
     try {
         const payload = req.body as MpesaPayload;
 
+        console.log(payload);
+
         if (!payload?.Body?.stkCallback) {
             return res.status(400).json({ error: "Invalid payload structure" });
         }
