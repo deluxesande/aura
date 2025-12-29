@@ -56,6 +56,7 @@ export default async function handler(
 
         if (ResultCode !== 0) {
             await storeFailedCallbackInDb({
+                MerchantRequestID,
                 CheckoutRequestID,
                 ResultCode,
                 ResultDesc,
@@ -83,6 +84,8 @@ export default async function handler(
             MerchantRequestID,
             Amount: amount,
             MpesaReceiptNumber: receiptNumber,
+            ResultCode,
+            ResultDesc,
             PhoneNumber: phoneNumber,
             TransactionDate: transactionDate,
         });
