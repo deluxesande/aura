@@ -2,12 +2,13 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/utils/lib/client";
+import { Prisma } from "@prisma/client"; // <--- 1. Import Types
 
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse
 ) {
-    const { userId } = req.query; // This is the clerkId
+    const { userId } = req.query;
 
     if (req.method !== "DELETE") {
         return res.status(405).json({ error: "Method not allowed" });
@@ -34,17 +35,15 @@ export default async function handler(
             // Continue if Clerk user is missing
         }
 
-        await prisma.$transaction(async (tx) => {
-            // 1. Fetch Invoice IDs created by this user to clean up their callbacks
+        // 2. Explicitly type 'tx' to satisfy the linter
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const userInvoices = await tx.invoice.findMany({
                 where: { createdBy: userId },
                 select: { id: true },
             });
             const invoiceIds = userInvoices.map((inv) => inv.id);
 
-            // 2. Delete M-Pesa Data linked to these Invoices
             if (invoiceIds.length > 0) {
-                // Delete Callbacks linked to the user's invoices
                 await tx.successfulCallback.deleteMany({
                     where: { invoiceId: { in: invoiceIds } },
                 });
@@ -52,18 +51,16 @@ export default async function handler(
                     where: { invoiceId: { in: invoiceIds } },
                 });
 
-                // Delete Payments linked to these invoices (or the user directly)
                 await tx.mpesaPayment.deleteMany({
                     where: {
                         OR: [
                             { invoiceId: { in: invoiceIds } },
-                            { userId: user.id }, // Use internal UUID
+                            { userId: user.id },
                         ],
                     },
                 });
             }
 
-            // 3. Proceed with standard deletion
             await tx.invoiceItem.deleteMany({
                 where: { createdBy: userId },
             });
@@ -85,7 +82,6 @@ export default async function handler(
             });
 
             if (user.businessId) {
-                // Clean up business-linked M-Pesa payments before deleting business
                 await tx.mpesaPayment.deleteMany({
                     where: { businessId: user.businessId },
                 });
