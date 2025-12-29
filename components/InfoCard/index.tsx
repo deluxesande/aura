@@ -29,7 +29,7 @@ export default function InfoCard({
                     <p className="font-light text-lg text-gray-400">{title}</p>
                     <p className="font-semibold text-lg text-black">{number}</p>
                 </div>
-                <div className="mt-1 text-black">
+                <div className="mt-1 bg-green-50 p-3 rounded-full">
                     <Icon size={35} className="stroke-green-500" />
                 </div>
             </div>

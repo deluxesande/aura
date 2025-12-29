@@ -172,7 +172,7 @@ export default function Page() {
                     ))}
                 </div>
 
-                {isAdminOrManager && dashboardData && (
+                {isAdminOrManager && (
                     <div className="lg:col-span-1 h-full">
                         <div className="bg-white rounded-lg p-6 h-full flex flex-col justify-between shadow-sm border border-transparent hover:shadow-md transition-all duration-200">
                             {/* Header Section */}
@@ -185,7 +185,7 @@ export default function Page() {
                                         <p className="font-bold text-3xl text-black mt-2">
                                             Ksh{" "}
                                             {(
-                                                dashboardData.mpesaBalance || 0
+                                                dashboardData?.mpesaBalance || 0
                                             ).toLocaleString()}
                                         </p>
                                     </div>
@@ -223,11 +223,12 @@ export default function Page() {
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Action Button */}
                             <button
                                 onClick={handleWithdrawal}
-                                className="w-full mt-6 bg-green-500 text-white py-3 rounded-md font-semibold hover:bg-green-300 transition-colors flex items-center justify-center gap-2"
+                                disabled={userRole === "manager"}
+                                className={`${
+                                    userRole === "manager" ? "hidden" : "block"
+                                } w-full mt-6 bg-green-500 text-white py-3 rounded-md font-semibold hover:bg-green-300 transition-colors flex items-center justify-center gap-2`}
                             >
                                 Withdraw Funds
                             </button>
