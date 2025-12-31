@@ -8,13 +8,28 @@ const addCustomerHandler = async (
     res: NextApiResponse
 ) => {
     try {
-        const user = getAuth(req);
-        const {
-            firstName,
-            lastName,
-            email = undefined, // Optional field
-            phoneNumber,
-        } = req.body;
+        const { userId: clerkUserId } = getAuth(req);
+
+        if (!clerkUserId) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+        const dbUser = await prisma.user.findUnique({
+            where: { clerkId: clerkUserId },
+            select: { id: true, businessId: true },
+        });
+
+        if (!dbUser) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        if (!dbUser.businessId) {
+            return res
+                .status(400)
+                .json({ error: "User is not linked to a business" });
+        }
+
+        const { firstName, lastName, phoneNumber, email: rawEmail } = req.body;
+        const email = rawEmail && rawEmail.trim() !== "" ? rawEmail : null;
 
         const newCustomer = await prisma.customer.create({
             data: {
@@ -22,13 +37,23 @@ const addCustomerHandler = async (
                 lastName,
                 email,
                 phoneNumber,
-                createdBy: req.body.createdBy,
+                businessId: dbUser.businessId,
+                createdById: dbUser.id,
             },
         });
 
         res.status(201).json(newCustomer);
-    } catch (error) {
+    } catch (error: any) {
+        console.error("Add Customer Error:", error);
+
+        if (error.code === "P2002") {
+            return res.status(409).json({
+                error: `A customer with this ${error.meta?.target} already exists.`,
+            });
+        }
+
         res.status(500).json({ error: "Failed to add customer" });
     }
 };
+
 export const addCustomer = addCreatedBy(addCustomerHandler);

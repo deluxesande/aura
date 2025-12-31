@@ -86,13 +86,19 @@ model InvoiceItem {
 
 model Customer {
   id          String   @id @default(uuid()) @map("_id") @db.Uuid
-  firstName   String?  @unique
-  lastName    String?  @unique
+  firstName   String?  
+  lastName    String?  
   email       String?  @unique
   phoneNumber String   @unique
   invoices    Invoice[]
-  createdBy   String?
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  businessId  String   @db.Uuid
+  Business    Business @relation(fields: [businessId], references: [id])
+
+  createdById String   @db.Uuid
+  CreatedBy   User     @relation("CustomerCreator", fields: [createdById], references: [id])
 }
 
 model FailedCallback {
@@ -131,6 +137,7 @@ model User {
   status        String    @default("active") 
   businessId    String?   @db.Uuid
   Business      Business? @relation(fields: [businessId], references: [id])
+  createdCustomers Customer[] @relation("CustomerCreator")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   lastLogin     DateTime?
@@ -148,6 +155,7 @@ model Business {
   createdBy     String?  @unique 
   mpesaPayoutNumber String?  // Number for B2C payouts
   mpesaPayments     MpesaPayment[]
+  customers         Customer[]
 }
 
 model Response {

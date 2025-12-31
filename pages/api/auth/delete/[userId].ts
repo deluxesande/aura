@@ -26,14 +26,6 @@ export default async function handler(
             return res.status(404).json({ error: "User not found" });
         }
 
-        // 1. Delete from Clerk (Authentication)
-        const client = await clerkClient();
-        try {
-            await client.users.deleteUser(userId);
-        } catch (clerkError) {
-            // Continue if Clerk user is missing
-        }
-
         await prisma.$transaction(async (tx: any) => {
             if (user.role === "admin") {
                 const userInvoices = await tx.invoice.findMany({
@@ -63,7 +55,11 @@ export default async function handler(
                     where: { createdBy: userId },
                 });
                 await tx.invoice.deleteMany({ where: { createdBy: userId } });
-                await tx.customer.deleteMany({ where: { createdBy: userId } });
+
+                await tx.customer.deleteMany({
+                    where: { createdById: user.id },
+                });
+
                 await tx.product.deleteMany({ where: { createdBy: userId } });
                 await tx.category.deleteMany({ where: { createdBy: userId } });
 
@@ -85,53 +81,67 @@ export default async function handler(
                     });
                 }
             } else {
-                // We set 'createdBy' to null so the records stay but don't point to the dead user.
+                let assignee = null;
 
-                await tx.invoice.updateMany({
-                    where: { createdBy: userId },
-                    data: { createdBy: null },
-                });
-
-                await tx.invoiceItem.updateMany({
-                    where: { createdBy: userId },
-                    data: { createdBy: null },
-                });
-
-                await tx.product.updateMany({
-                    where: { createdBy: userId },
-                    data: { createdBy: null },
-                });
-
-                await tx.category.updateMany({
-                    where: { createdBy: userId },
-                    data: { createdBy: null },
-                });
-
-                await tx.customer.updateMany({
-                    where: { createdBy: userId },
-                    data: { createdBy: null },
-                });
-
-                // MpesaPayment has a strict 'userId' foreign key. We cannot set it to null.
-                // We must reassign these payments to the Business Admin so the financial record is kept.
-                if (user.businessId) {
-                    const admin = await tx.user.findFirst({
-                        where: { businessId: user.businessId, role: "admin" },
-                        select: { id: true },
+                // Try to find the Inviter
+                if (user.email && user.businessId) {
+                    const invitation = await tx.userInvitation.findFirst({
+                        where: {
+                            email: user.email,
+                            businessId: user.businessId,
+                        },
                     });
 
-                    if (admin) {
-                        await tx.mpesaPayment.updateMany({
-                            where: { userId: user.id },
-                            data: { userId: admin.id },
-                        });
-                    } else {
-                        // Edge case: No admin found? We must delete the payments to allow user deletion.
-                        // (The Invoices will survive because we unlinked them above)
-                        await tx.mpesaPayment.deleteMany({
-                            where: { userId: user.id },
+                    if (invitation && invitation.invitedBy) {
+                        assignee = await tx.user.findUnique({
+                            where: { id: invitation.invitedBy },
                         });
                     }
+                }
+
+                // Fallback to Business Admin
+                if (!assignee && user.businessId) {
+                    assignee = await tx.user.findFirst({
+                        where: {
+                            businessId: user.businessId,
+                            role: "admin",
+                        },
+                    });
+                }
+
+                if (assignee) {
+                    const assigneeClerkId = assignee.clerkId;
+                    const assigneeUuid = assignee.id;
+
+                    await tx.invoice.updateMany({
+                        where: { createdBy: userId },
+                        data: { createdBy: assigneeClerkId },
+                    });
+
+                    await tx.invoiceItem.updateMany({
+                        where: { createdBy: userId },
+                        data: { createdBy: assigneeClerkId },
+                    });
+
+                    await tx.product.updateMany({
+                        where: { createdBy: userId },
+                        data: { createdBy: assigneeClerkId },
+                    });
+
+                    await tx.category.updateMany({
+                        where: { createdBy: userId },
+                        data: { createdBy: assigneeClerkId },
+                    });
+
+                    await tx.customer.updateMany({
+                        where: { createdById: user.id },
+                        data: { createdById: assigneeUuid },
+                    });
+
+                    await tx.mpesaPayment.updateMany({
+                        where: { userId: user.id },
+                        data: { userId: assigneeUuid },
+                    });
                 }
 
                 if (user.email) {
@@ -141,16 +151,24 @@ export default async function handler(
                 }
             }
 
+            // Finally, delete the user from Postgres
             await tx.user.delete({
                 where: { id: user.id },
             });
         });
 
+        // Only reached if the transaction above succeeds.
+        const client = await clerkClient();
+        try {
+            await client.users.deleteUser(userId);
+        } catch (clerkError) {
+            console.warn("Clerk user already deleted or not found");
+        }
+
         return res.status(200).json({
             message: "User deleted successfully",
         });
     } catch (error) {
-        console.error("Error deleting user:", error);
         return res.status(500).json({
             error: "Error deleting user",
             details: error instanceof Error ? error.message : "Unknown error",

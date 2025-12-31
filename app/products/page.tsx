@@ -1,41 +1,40 @@
 "use client";
 
 import CategoryBox from "@/components/CategoryBox";
-import CreateOrder from "@/components/CreateOrder"; // Import the CreateOrder component
-import CustomUserButton from "@/components/CustomUserButton";
+import CreateOrder from "@/components/CreateOrder";
+import CustomerModal from "@/components/CustomerModal";
 import MobileProductCard from "@/components/MobileProductCard";
 import Navbar from "@/components/Navbar";
+import NoProductsFound from "@/components/NoProducts";
 import OrderCard from "@/components/OrderCard";
 import ProductCard from "@/components/ProductCard";
+import SelectCustomerModal from "@/components/SelectCustomerModal";
 import { AppState } from "@/store";
 import { addItem, clearCart } from "@/store/slices/cartSlice";
 import { setProducts } from "@/store/slices/productSlice";
-import { show } from "@/store/slices/visibilitySlice";
 import { Product } from "@/utils/typesDefinitions";
 import { SignedIn, useUser } from "@clerk/nextjs";
 import axios from "axios";
-import {
-    Book,
-    Briefcase,
-    FileText,
-    Package,
-    Pencil,
-    PlusCircle,
-    ShoppingCart,
-    Store,
-} from "lucide-react";
+import { ChevronRight, User as UserIcon } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
-import Image from "next/image";
-import NoProductsFound from "@/components/NoProducts";
 
 interface Category {
     id: string;
     name: string;
     description?: string;
     active?: boolean;
+}
+
+interface Customer {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber: string;
+    email?: string;
 }
 
 export default function Page() {
@@ -60,12 +59,30 @@ export default function Page() {
     const [isProcessingOrder, setIsProcessingOrder] = useState(false);
     const [paymentType, setPaymentType] = useState("CASH");
     const { user } = useUser();
-    const profileImage = user?.hasImage
-        ? user?.imageUrl
-        : "https://www.svgrepo.com/show/535711/user.svg";
+    const profileImage = user?.hasImage ? user?.imageUrl : "/images/user.png";
+
     const hasFetched = useRef(false);
 
-    // Function to map API data to the `Category` interface
+    // --- Customer State ---
+    const [customers, setCustomers] = useState<Customer[]>([]);
+    const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+        null
+    );
+
+    // Modal States
+    const [showSelectCustomerModal, setShowSelectCustomerModal] =
+        useState(false);
+    const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
+    const [customerSearchQuery, setCustomerSearchQuery] = useState("");
+
+    const [newCustomerDetails, setNewCustomerDetails] = useState({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phoneNumber: "",
+    });
+
+    // --- Helper Functions ---
     const mapCategories = React.useCallback((apiData: any[]): Category[] => {
         return apiData.map((category) => ({
             id: category.id,
@@ -74,33 +91,118 @@ export default function Page() {
             active: false,
         }));
     }, []);
+    const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
 
     const toggleActiveCategory = (categoryId: string) => {
         setCategories((prevCategories) =>
             prevCategories.map((category) => ({
                 ...category,
-                active: category.id === categoryId, // Set active to true for the clicked category, false for others
+                active: category.id === categoryId,
             }))
         );
     };
+
+    const formatPhoneNumber = (phoneNumber: string): string | null => {
+        // 1. Remove any non-digit characters (this handles the + sign automatically)
+        phoneNumber = phoneNumber.replace(/\D/g, "");
+
+        // 2. Define Regex patterns
+        const regexLocal = /^0(1|7)\d{8}$/; // Matches 07... or 01...
+        const regexIntl = /^254(1|7)\d{8}$/; // Matches 2547... or 2541...
+
+        // 3. Check and Format
+        if (regexLocal.test(phoneNumber)) {
+            return phoneNumber.replace(/^0/, "254");
+        } else if (regexIntl.test(phoneNumber)) {
+            return phoneNumber;
+        }
+
+        return null;
+    };
+
+    useEffect(() => {
+        const fetchCustomers = async () => {
+            try {
+                const response = await axios.get("/api/customer");
+                setCustomers(response.data);
+            } catch (error) {
+                console.error("Error fetching customers", error);
+            }
+        };
+        fetchCustomers();
+    }, []);
 
     useEffect(() => {
         setFilteredProducts(() => {
             const activeCategory = categories.find(
                 (category) => category.active
             );
-
-            // If the active category is "All", return all products
             if (activeCategory?.name === "All") {
                 return productsData;
             }
-
-            // Otherwise, filter products by the active category's ID
             return productsData.filter(
                 (product) => product.categoryId === activeCategory?.id
             );
         });
     }, [categories, productsData]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await axios.get("/api/category");
+                const categoriesData = mapCategories(response.data);
+                setCategories((prevCategories) => {
+                    const mergedCategories = [
+                        ...prevCategories,
+                        ...categoriesData,
+                    ];
+                    const uniqueCategories = mergedCategories.filter(
+                        (category, index, self) =>
+                            index ===
+                            self.findIndex((c) => c.id === category.id)
+                    );
+                    return uniqueCategories;
+                });
+            } catch (error) {
+                // console.error("Error fetching categories:", error);
+            }
+        };
+
+        fetchCategories();
+    }, [mapCategories]);
+
+    useEffect(() => {
+        setLocalProducts(filteredProducts);
+    }, [filteredProducts]);
+
+    useEffect(() => {
+        const fetchProducts = async () => {
+            setLoading(true);
+            try {
+                const response = await axios.get("/api/product");
+                if (Array.isArray(response.data)) {
+                    setLocalProducts(response.data);
+                    dispatch(setProducts(response.data));
+                } else {
+                    setLocalProducts([]);
+                }
+            } catch (error) {
+                setLocalProducts([]);
+            } finally {
+                setLoading(false);
+                hasFetched.current = true;
+            }
+        };
+
+        if (productsData.length > 0) {
+            setLocalProducts(productsData);
+            setLoading(false);
+        } else if (!hasFetched.current) {
+            fetchProducts();
+        } else {
+            setLoading(false);
+        }
+    }, [dispatch, productsData]);
 
     const handleAddToCart = (product: Product) => {
         const cartItem = cartItems.find((item) => item.id === product.id);
@@ -110,8 +212,6 @@ export default function Page() {
                 product.quantity > (cartItem?.cartQuantity || 0)
             ) {
                 dispatch(addItem(product));
-                // Show cart sidebar
-                // dispatch(show());
             } else {
                 toast.warning("Insufficient product quantity available.");
             }
@@ -133,7 +233,7 @@ export default function Page() {
 
         const promise = async () => {
             try {
-                // Step 1: Create Invoice Items one by one
+                // Step 1: Create Invoice Items
                 const invoiceItemPromises = cartItems.map(async (item) => {
                     const data = {
                         quantity: item.cartQuantity,
@@ -154,7 +254,6 @@ export default function Page() {
 
                 const results = await Promise.all(invoiceItemPromises);
 
-                // Filter out failed items
                 const createdInvoiceItems = results
                     .filter((result) => result !== null)
                     .map((result) => ({ id: result.id }));
@@ -170,8 +269,8 @@ export default function Page() {
                         invoiceItems: createdInvoiceItems,
                         totalAmount: totalAmount,
                         paymentType: paymentTypeOverride || paymentType,
-                        // Pass M-Pesa details if they exist (will be undefined for CASH)
                         mpesaDetails: mpesaDetails,
+                        customerId: selectedCustomer?.id || null,
                     };
 
                     const response = await axios.post(
@@ -179,9 +278,12 @@ export default function Page() {
                         invoiceData
                     );
 
-                    // Step 3: Clear Cart on Success
                     if (response.status === 201) {
                         dispatch(clearCart());
+                        setMpesaNumber("");
+                        setSelectedCustomer(null);
+                        setIsInputVisible(false);
+                        setButtonText("Mpesa");
                     }
 
                     return response.data;
@@ -202,30 +304,116 @@ export default function Page() {
         });
     };
 
-    const formatPhoneNumber = (phoneNumber: string): string | null => {
-        // Remove any non-digit characters
-        phoneNumber = phoneNumber.replace(/\D/g, "");
+    const handleSelectCustomer = (customer: Customer) => {
+        setSelectedCustomer(customer);
+        setMpesaNumber(customer.phoneNumber);
+        setIsInputVisible(true);
+        setButtonText("Pay with M-Pesa");
+        setShowSelectCustomerModal(false);
+    };
 
-        // Define regex patterns for different formats
-        const regex07 = /^07\d{8}$/;
-        const regex2547 = /^2547\d{8}$/;
-        const regexPlus2547 = /^\+2547\d{8}$/;
+    const handleGuestCheckout = () => {
+        setSelectedCustomer(null);
+        setMpesaNumber("");
+        setIsInputVisible(false);
+        setButtonText("Mpesa");
+        setShowSelectCustomerModal(false);
+    };
 
-        if (regex07.test(phoneNumber)) {
-            return phoneNumber.replace(/^07/, "2547");
-        } else if (regex2547.test(phoneNumber)) {
-            return phoneNumber;
-        } else if (regexPlus2547.test(phoneNumber)) {
-            return phoneNumber.replace(/^\+/, "");
+    const findCustomerByNumber = (num: string) => {
+        const formatted = formatPhoneNumber(num);
+        if (!formatted) return undefined;
+        return customers.find(
+            (c) => formatPhoneNumber(c.phoneNumber) === formatted
+        );
+    };
+
+    // --- NEW: Handle typing in the input field ---
+    const handleMpesaNumberChange = (
+        e: React.ChangeEvent<HTMLInputElement>
+    ) => {
+        const val = e.target.value;
+        setMpesaNumber(val);
+
+        // Check if the typed number matches an existing customer
+        const matchedCustomer = findCustomerByNumber(val);
+
+        if (matchedCustomer) {
+            // Auto-select the customer
+            setSelectedCustomer(matchedCustomer);
+        } else {
+            // If it no longer matches (or is a new number), revert to guest
+            // This prevents mismatch between selected customer and typed number
+            setSelectedCustomer(null);
+        }
+    };
+
+    const handleSaveNewCustomer = async () => {
+        if (!newCustomerDetails.firstName || !newCustomerDetails.lastName) {
+            toast.warning("Name fields are required.");
+            return;
         }
 
-        return null;
+        const formatted = formatPhoneNumber(newCustomerDetails.phoneNumber);
+        if (!formatted) {
+            toast.error("Invalid Phone Number");
+            return;
+        }
+
+        // Logic: If email is an empty string, set it to null (or undefined)
+        const emailToSave =
+            newCustomerDetails.email.trim() === ""
+                ? null
+                : newCustomerDetails.email;
+
+        try {
+            const promise = async () => {
+                const res = await axios.post("/api/customer", {
+                    firstName: newCustomerDetails.firstName,
+                    lastName: newCustomerDetails.lastName,
+                    phoneNumber: formatted,
+                    email: emailToSave,
+                });
+
+                if (res.status === 201 || res.status === 200) {
+                    setCustomers((prev) => [...prev, res.data]);
+
+                    handleSelectCustomer(res.data);
+
+                    setShowAddCustomerModal(false);
+                    setShowSelectCustomerModal(false);
+
+                    setNewCustomerDetails({
+                        firstName: "",
+                        lastName: "",
+                        email: "",
+                        phoneNumber: "",
+                    });
+                }
+            };
+
+            await toast.promise(promise(), {
+                loading: "Saving customer...",
+                success: "Customer saved successfully",
+                error: "Failed to save customer",
+            });
+        } catch (e) {
+            toast.error("Failed to save customer");
+        }
+    };
+
+    // Called when user clicks "Add this number" prompt
+    const handlePromptAddCustomer = () => {
+        setNewCustomerDetails((prev) => ({
+            ...prev,
+            phoneNumber: mpesaNumber,
+        }));
+        setShowAddCustomerModal(true);
     };
 
     const handleMpesaPrompt = async (event: React.FormEvent) => {
         event.preventDefault();
 
-        // Calculate amount again for safety
         const amount = parseFloat(
             cartItems
                 .reduce(
@@ -240,10 +428,8 @@ export default function Page() {
 
             if (formattedNumber) {
                 setIsProcessingOrder(true);
-
                 const promise = async () => {
                     try {
-                        // Step A: Trigger STK Push
                         const response = await axios.post(
                             "/api/safaricom/c2b/payment/lipa",
                             {
@@ -255,8 +441,6 @@ export default function Page() {
 
                         if (response.status === 200) {
                             setPaymentType("MPESA");
-
-                            // Step B: Capture the identifiers
                             const mpesaDetails = {
                                 checkoutRequestId:
                                     response.data.data.CheckoutRequestID,
@@ -264,10 +448,7 @@ export default function Page() {
                                     response.data.data.MerchantRequestID,
                                 phoneNumber: formattedNumber,
                             };
-
-                            // Step C: Create the Order immediately, passing the M-Pesa link
                             await handleOrder("MPESA", mpesaDetails);
-
                             return "Payment Request Sent";
                         }
                     } catch (error) {
@@ -276,7 +457,6 @@ export default function Page() {
                         setIsProcessingOrder(false);
                     }
                 };
-
                 toast.promise(promise(), {
                     loading: "Sending M-Pesa prompt...",
                     success: (msg) => msg || "Prompt Sent",
@@ -287,76 +467,9 @@ export default function Page() {
             }
         } else {
             setIsInputVisible(true);
-            setButtonText("Pay with M-Pesa");
+            setButtonText("Prompt M-Pesa");
         }
     };
-
-    const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
-
-    useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                const response = await axios.get("/api/category");
-                const categoriesData = mapCategories(response.data);
-                setCategories((prevCategories) => {
-                    const mergedCategories = [
-                        ...prevCategories,
-                        ...categoriesData,
-                    ];
-
-                    // Filter out duplicates based on the `id` property
-                    const uniqueCategories = mergedCategories.filter(
-                        (category, index, self) =>
-                            index ===
-                            self.findIndex((c) => c.id === category.id)
-                    );
-
-                    return uniqueCategories;
-                });
-            } catch (error) {
-                // console.error("Error fetching categories:", error);
-            }
-        };
-
-        fetchCategories();
-    }, [mapCategories]);
-
-    useEffect(() => {
-        // Filter products
-        setLocalProducts(filteredProducts);
-    }, [filteredProducts]);
-
-    useEffect(() => {
-        const fetchProducts = async () => {
-            setLoading(true);
-            try {
-                const response = await axios.get("/api/product");
-                // Ensure productsData is an array
-                if (Array.isArray(response.data)) {
-                    setLocalProducts(response.data);
-                    dispatch(setProducts(response.data));
-                } else {
-                    setLocalProducts([]);
-                }
-            } catch (error) {
-                // console.error("Error fetching products:", error);
-                setLocalProducts([]);
-            } finally {
-                setLoading(false);
-                hasFetched.current = true;
-            }
-        };
-
-        // Check if productsData is already available in the store
-        if (productsData.length > 0) {
-            setLocalProducts(productsData);
-            setLoading(false);
-        } else if (!hasFetched.current) {
-            fetchProducts();
-        } else {
-            setLoading(false);
-        }
-    }, [dispatch, productsData]);
 
     return (
         <div className="flex h-screen overflow-hidden">
@@ -391,7 +504,6 @@ export default function Page() {
                             Array.isArray(products) &&
                             products.map((product) => (
                                 <div key={product.name}>
-                                    {/* Product Card for PC */}
                                     <div className="hidden lg:block">
                                         <ProductCard
                                             image={product.image}
@@ -404,8 +516,6 @@ export default function Page() {
                                             }
                                         />
                                     </div>
-
-                                    {/* Mobile Product Card */}
                                     <div className="block lg:hidden">
                                         <MobileProductCard
                                             image={product.image}
@@ -424,49 +534,45 @@ export default function Page() {
                     </div>
                 </Navbar>
             </div>
-            {/* Right Sidebar */}
+
             <CreateOrder>
-                <div className="p-2 mt-2 text-black rounded-lg flex items-center gap-4 cursor-pointer">
-                    <SignedIn>
-                        <Link
-                            className="w-full flex items-center space-x-2"
-                            href="/profile"
-                        >
-                            <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center">
-                                <Image
-                                    src={profileImage}
-                                    width={40}
-                                    height={40}
-                                    alt={`${user?.firstName} Profile Image`}
-                                    className="object-cover"
-                                />
-                            </div>
-                            <p className="text-sm font-medium whitespace-nowrap ml-2">
-                                {user?.firstName} {user?.lastName}
-                            </p>
-                        </Link>
-                    </SignedIn>
-                </div>
+                <div className="flex flex-col h-full">
+                    <div className="p-2 mt-2 text-black rounded-lg flex items-center gap-4 cursor-pointer flex-shrink-0">
+                        <SignedIn>
+                            <Link
+                                className="w-full flex items-center space-x-2"
+                                href="/profile"
+                            >
+                                <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center">
+                                    <Image
+                                        src={profileImage}
+                                        width={40}
+                                        height={40}
+                                        alt={`${user?.firstName} Profile Image`}
+                                        className="object-cover"
+                                    />
+                                </div>
+                                <p className="text-sm font-medium whitespace-nowrap ml-2">
+                                    {user?.firstName} {user?.lastName}
+                                </p>
+                            </Link>
+                        </SignedIn>
+                    </div>
 
-                <div className="mt-14 px-4 flex flex-col justify-between h-[85%]">
-                    <div>
+                    <div className="px-4 mt-6">
                         <p className="font-bold text-2xl">Create Order</p>
+                    </div>
 
-                        {/* Order Items */}
-                        <div className="mt-10 flex flex-col gap-4">
+                    <div className="mt-4 flex-grow overflow-y-auto px-4 pb-4">
+                        <div className="flex flex-col gap-4">
                             {cartItems.map((item) => (
                                 <OrderCard key={item.id} product={item} />
                             ))}
                         </div>
                     </div>
 
-                    {/* Total */}
-                    <div>
-                        {/* Dotted line */}
-                        <div className="border-b-2 border-dotted border-gray-400 my-4"></div>
-
-                        {/* Values */}
-                        <div className="flex items-center justify-between">
+                    <div className="mt-auto bg-white p-4 border-t border-gray-100 shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.05)]">
+                        <div className="flex items-center justify-between mb-4">
                             <p className="font-bold text-xl">Total: </p>
                             <p className="font-bold text-xl">
                                 $
@@ -480,42 +586,116 @@ export default function Page() {
                                     .toFixed(2)}
                             </p>
                         </div>
+
+                        {/* Customer Trigger Button */}
+                        <button
+                            onClick={() => setShowSelectCustomerModal(true)}
+                            className="w-full mb-3 flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 transition-colors"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div
+                                    className={`p-2 rounded-full ${
+                                        selectedCustomer
+                                            ? "bg-green-100 text-green-600"
+                                            : "bg-gray-100 text-gray-500"
+                                    }`}
+                                >
+                                    <UserIcon size={18} />
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-sm text-gray-500">
+                                        Customer
+                                    </p>
+                                    <p className="font-medium text-sm">
+                                        {selectedCustomer
+                                            ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}`
+                                            : "Guest Customer"}
+                                    </p>
+                                </div>
+                            </div>
+                            <ChevronRight size={16} className="text-gray-400" />
+                        </button>
+
+                        {/* Payment Forms */}
                         <form onSubmit={handleMpesaPrompt}>
                             {isInputVisible && (
-                                <input
-                                    type="number"
-                                    className="mt-4 w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-green-200 border-2 no-spinner"
-                                    placeholder="Enter M-pesa number"
-                                    value={mpesaNumber}
-                                    onChange={(e) =>
-                                        setMpesaNumber(e.target.value)
-                                    }
-                                    disabled={isProcessingOrder}
-                                />
+                                <div className="mb-3 animate-in fade-in slide-in-from-bottom-2">
+                                    <input
+                                        type="number"
+                                        className="w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-green-200 border-2 no-spinner"
+                                        placeholder="Enter M-pesa number"
+                                        value={mpesaNumber}
+                                        onChange={handleMpesaNumberChange}
+                                        disabled={isProcessingOrder}
+                                    />
+
+                                    {/* --- ADD NEW CUSTOMER PROMPT --- */}
+                                    {!selectedCustomer &&
+                                        mpesaNumber.length >= 10 &&
+                                        !findCustomerByNumber(mpesaNumber) && (
+                                            <button
+                                                type="button"
+                                                onClick={
+                                                    handlePromptAddCustomer
+                                                }
+                                                className="mt-2 text-xs text-green-500 font-medium flex items-center gap-1 hover:underline hover:text-green-700 transition-colors"
+                                            >
+                                                Add this number as new customer?
+                                            </button>
+                                        )}
+                                </div>
                             )}
+
                             <button
                                 type="submit"
                                 disabled={isProcessingOrder}
-                                // disabled={true}
-                                className="px-4 py-2 mt-4 border border-green-400 text-green-400 w-full bg-white rounded-md"
+                                className="px-4 py-2 border border-green-400 text-green-400 w-full bg-white rounded-md hover:bg-green-50 transition-colors"
                             >
                                 {buttonText}
                             </button>
                         </form>
+
                         <button
                             disabled={isProcessingOrder}
-                            className={`px-4 py-2 mt-4 bg-green-400 w-full text-white rounded-md ${
+                            className={`px-4 py-2 mt-3 bg-green-400 w-full text-white rounded-md ${
                                 isProcessingOrder
                                     ? "opacity-50 cursor-not-allowed"
-                                    : "cursor-pointer"
+                                    : "cursor-pointer hover:bg-green-200 transition-colors"
                             }`}
                             onClick={() => handleOrder()}
                         >
-                            Checkout
+                            Checkout (Cash)
                         </button>
                     </div>
                 </div>
             </CreateOrder>
+
+            {/* --- MODAL: Select Customer --- */}
+            {showSelectCustomerModal && (
+                <SelectCustomerModal
+                    setShowSelectCustomerModal={setShowSelectCustomerModal}
+                    customers={customers}
+                    customerSearchQuery={customerSearchQuery}
+                    setCustomerSearchQuery={setCustomerSearchQuery}
+                    selectedCustomer={selectedCustomer}
+                    setSelectedCustomer={setSelectedCustomer}
+                    handleSelectCustomer={handleSelectCustomer}
+                    handleGuestCheckout={handleGuestCheckout}
+                    showAddCustomerModal={showAddCustomerModal}
+                    setShowAddCustomerModal={setShowAddCustomerModal}
+                />
+            )}
+
+            {/* --- MODAL: Add Customer --- */}
+            {showAddCustomerModal && (
+                <CustomerModal
+                    showAddCustomerModal={showAddCustomerModal}
+                    setShowAddCustomerModal={setShowAddCustomerModal}
+                    newCustomerDetails={newCustomerDetails}
+                    setNewCustomerDetails={setNewCustomerDetails}
+                    handleSaveNewCustomer={handleSaveNewCustomer}
+                />
+            )}
         </div>
     );
 }

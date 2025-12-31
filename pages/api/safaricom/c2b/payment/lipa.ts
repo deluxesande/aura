@@ -19,8 +19,22 @@ const {
 // Helper: Format phone to 254XXXXXXXXX
 const formatPhoneNumber = (phone: string) => {
     let p = phone.replace(/\D/g, "");
-    if (p.startsWith("0")) return `254${p.substring(1)}`;
-    if (p.startsWith("7")) return `254${p}`;
+
+    // Handle 07... and 01... (Standard 10 digits)
+    if (p.length === 10 && p.startsWith("0")) {
+        return `254${p.substring(1)}`;
+    }
+
+    // Handle 7... and 1... (Short 9 digits)
+    if (p.length === 9 && (p.startsWith("7") || p.startsWith("1"))) {
+        return `254${p}`;
+    }
+
+    // Handle 254... (International 12 digits)
+    if (p.length === 12 && p.startsWith("254")) {
+        return p;
+    }
+
     return p;
 };
 

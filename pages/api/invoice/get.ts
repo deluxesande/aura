@@ -58,6 +58,7 @@ export const getInvoices = async (
                 Customer: {
                     select: {
                         firstName: true,
+                        lastName: true,
                     },
                 },
             },
