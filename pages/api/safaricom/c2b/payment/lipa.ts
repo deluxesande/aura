@@ -7,15 +7,24 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient();
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
+const OAUTH_URL =
+    "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials";
+const STK_PUSH_URL =
+    "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest";
+
 const getAccessToken = async () => {
     const consumerKey = process.env.MPESA_CONSUMER_KEY;
     const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
-    const url = process.env.MPESA_OAUTH_URL!;
+
+    if (!consumerKey || !consumerSecret) {
+        throw new Error("Missing MPESA_CONSUMER_KEY or MPESA_CONSUMER_SECRET");
+    }
+
     const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString(
         "base64"
     );
 
-    const response = await axios.get(url, {
+    const response = await axios.get(OAUTH_URL, {
         headers: { Authorization: `Basic ${auth}` },
     });
     return response.data.access_token;
@@ -33,10 +42,8 @@ export default async function handler(
         const { phoneNumber, amount, invoiceId } = req.body;
         const { userId } = getAuth(req);
 
-        if (!invoiceId || !userId) {
-            return res
-                .status(400)
-                .json({ error: "Missing invoiceId or userId" });
+        if (!invoiceId || !userId || !amount || !phoneNumber) {
+            return res.status(400).json({ error: "Missing required fields" });
         }
 
         const user = await prisma.user.findUnique({
@@ -63,6 +70,12 @@ export default async function handler(
 
         const shortCode = process.env.MPESA_SHORTCODE;
         const passkey = process.env.MPESA_PASSKEY;
+        const callbackUrl = process.env.MPESA_CALLBACK_URL;
+
+        if (!shortCode || !passkey || !callbackUrl) {
+            throw new Error("Missing MPESA env variables");
+        }
+
         const password = Buffer.from(
             `${shortCode}${passkey}${timestamp}`
         ).toString("base64");
@@ -76,16 +89,14 @@ export default async function handler(
             PartyA: phoneNumber,
             PartyB: shortCode,
             PhoneNumber: phoneNumber,
-            CallBackURL: process.env.MPESA_CALLBACK_URL,
+            CallBackURL: callbackUrl,
             AccountReference: "Invoice Payment",
             TransactionDesc: `Invoice ${invoiceId}`,
         };
 
-        const stkResponse = await axios.post(
-            process.env.MPESA_STK_PUSH_URL!,
-            stkData,
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const stkResponse = await axios.post(STK_PUSH_URL, stkData, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
 
         try {
             await prisma.mpesaPayment.create({
@@ -103,10 +114,7 @@ export default async function handler(
                 },
             });
         } catch (dbError) {
-            console.error(
-                "CRITICAL DB ERROR: Failed to save payment record:",
-                dbError
-            );
+            console.error("CRITICAL: DB Write Failed:", dbError);
         }
 
         return res.status(200).json({
@@ -114,7 +122,7 @@ export default async function handler(
             message: "STK Push sent",
         });
     } catch (error: any) {
-        console.error("STK API Error:", error?.response?.data || error);
+        console.error("STK API Error:", error?.message || error);
         return res.status(500).json({ error: "Payment initiation failed" });
     }
 }
