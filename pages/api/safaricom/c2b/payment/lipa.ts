@@ -20,11 +20,9 @@ const getAccessToken = async () => {
     if (!CONSUMER_KEY || !CONSUMER_SECRET) {
         throw new Error("Missing CONSUMER_KEY or CONSUMER_SECRET");
     }
-
     const auth = Buffer.from(`${CONSUMER_KEY}:${CONSUMER_SECRET}`).toString(
         "base64"
     );
-
     const response = await axios.get(OAUTH_URL, {
         headers: { Authorization: `Basic ${auth}` },
     });
@@ -107,6 +105,21 @@ export default async function handler(
         });
 
         await storeResponseInDb(stkResponse.data);
+
+        await prisma.mpesaPayment.create({
+            data: {
+                amount: parseFloat(amount),
+                phoneNumber: formattedPhone,
+                accountReference: "Invoice Payment",
+                transactionDesc: "M-Pesa STK Push",
+                merchantRequestId: stkResponse.data.MerchantRequestID,
+                checkoutRequestId: stkResponse.data.CheckoutRequestID,
+                status: "PENDING",
+                invoiceId: invoiceId,
+                userId: user.id,
+                businessId: user.businessId,
+            },
+        });
 
         return res.status(200).json({
             data: stkResponse.data,
