@@ -17,10 +17,13 @@ import {
     Layers,
     Save,
     Loader2,
+    Plus, // Imported Plus icon
+    X, // Imported X for modal close
 } from "lucide-react";
 import Link from "next/link";
-import ImageCropperModal from "@/components/ImageCropperModal"; // Import the cropper
+import ImageCropperModal from "@/components/ImageCropperModal";
 import { FloatingPortal } from "@floating-ui/react";
+import QuicKRestockModal from "@/components/QuickRestockModal";
 
 export default function EditProductPage() {
     const params = useParams();
@@ -37,6 +40,10 @@ export default function EditProductPage() {
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [isCropModalOpen, setIsCropModalOpen] = useState(false);
     const [tempImageSrc, setTempImageSrc] = useState<string | null>(null);
+
+    // Restock Modal State
+    const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
+    const [restockAmount, setRestockAmount] = useState<string>("");
 
     const [isLoading, setIsLoading] = useState(false);
     const [isDataLoading, setIsDataLoading] = useState(true);
@@ -101,7 +108,6 @@ export default function EditProductPage() {
         >
     ) => {
         const { id, value } = e.target;
-        // Note: The ID in your JSX (e.g. "price") matches the key in state
         setFormData((prev) => ({
             ...prev,
             [id]:
@@ -117,7 +123,25 @@ export default function EditProductPage() {
         setFormData((prev) => ({ ...prev, inStock: !prev.inStock }));
     };
 
-    // 1. Handle File Selection (Triggers Modal)
+    const handleRestock = () => {
+        const amountToAdd = parseInt(restockAmount, 10);
+        if (isNaN(amountToAdd) || amountToAdd <= 0) {
+            toast.error("Please enter a valid amount");
+            return;
+        }
+
+        setFormData((prev) => ({
+            ...prev,
+            quantity: (prev.quantity || 0) + amountToAdd,
+            inStock: true, // Auto set to in-stock if we add items
+        }));
+
+        toast.success(`Added ${amountToAdd} units to stock count.`);
+
+        setIsRestockModalOpen(false);
+        setRestockAmount("");
+    };
+
     const handleImageFileSelect = (
         event: React.ChangeEvent<HTMLInputElement>
     ) => {
@@ -126,29 +150,25 @@ export default function EditProductPage() {
             const objectUrl = URL.createObjectURL(file);
             setTempImageSrc(objectUrl);
             setIsCropModalOpen(true);
-            event.target.value = ""; // Reset input so same file can be selected again
+            event.target.value = "";
         }
     };
 
-    // 2. Handle Crop Completion (Converts Blob to Base64 for JSON submit)
     const handleCropComplete = (croppedBlob: Blob) => {
-        // Update preview immediately
         const previewUrl = URL.createObjectURL(croppedBlob);
         setImagePreview(previewUrl);
 
-        // Convert Blob to Base64 String to match your existing form data structure
         const reader = new FileReader();
         reader.readAsDataURL(croppedBlob);
         reader.onloadend = () => {
             const base64String = reader.result as string;
             setFormData((prev) => ({
                 ...prev,
-                image: base64String, // Update the form data with the new base64 string
+                image: base64String,
             }));
         };
     };
 
-    // Submit
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setIsLoading(true);
@@ -188,7 +208,7 @@ export default function EditProductPage() {
 
     return (
         <Navbar>
-            <div className="max-w-5xl mx-auto px-4 py-8">
+            <div className="max-w-5xl mx-auto px-4 py-8 relative">
                 {/* Header Section */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                     <div className="flex items-center gap-4">
@@ -309,13 +329,27 @@ export default function EditProductPage() {
                                         />
                                     </div>
                                 </div>
+
+                                {/* MODIFIED: Stock Quantity with Restock Button */}
                                 <div>
-                                    <label
-                                        htmlFor="quantity"
-                                        className="block text-sm font-medium text-gray-700 mb-1"
-                                    >
-                                        Stock Quantity
-                                    </label>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label
+                                            htmlFor="quantity"
+                                            className="block text-sm font-medium text-gray-700"
+                                        >
+                                            Stock Quantity
+                                        </label>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setIsRestockModalOpen(true)
+                                            }
+                                            className="text-xs flex items-center gap-1 text-green-500 hover:text-green-700 font-medium"
+                                        >
+                                            <Plus className="w-3 h-3 stroke-green-500" />
+                                            Restock
+                                        </button>
+                                    </div>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                             <Package className="h-4 w-4 text-gray-500" />
@@ -408,7 +442,6 @@ export default function EditProductPage() {
                                 Product Image
                             </h2>
                             <div className="relative w-full aspect-square border-2 border-dashed border-gray-300 rounded-xl hover:border-green-500 transition-colors group bg-gray-50 overflow-hidden cursor-pointer">
-                                {/* File Input triggers the cropper */}
                                 <input
                                     type="file"
                                     accept="image/png, image/jpeg, image/jpg"
@@ -447,20 +480,31 @@ export default function EditProductPage() {
                         </div>
                     </div>
                 </form>
-            </div>
 
-            {/* Image Cropper Modal */}
-            <FloatingPortal>
-                <ImageCropperModal
-                    isOpen={isCropModalOpen}
-                    imageSrc={tempImageSrc}
-                    onClose={() => {
-                        setIsCropModalOpen(false);
-                        setTempImageSrc(null);
-                    }}
-                    onCropComplete={handleCropComplete}
-                />
-            </FloatingPortal>
+                {/* --- Image Cropper Modal --- */}
+                <FloatingPortal>
+                    <ImageCropperModal
+                        isOpen={isCropModalOpen}
+                        imageSrc={tempImageSrc}
+                        onClose={() => {
+                            setIsCropModalOpen(false);
+                            setTempImageSrc(null);
+                        }}
+                        onCropComplete={handleCropComplete}
+                    />
+                </FloatingPortal>
+
+                {isRestockModalOpen && (
+                    <QuicKRestockModal
+                        productToRestock={formData}
+                        setIsRestockModalOpen={setIsRestockModalOpen}
+                        restockAmount={restockAmount}
+                        setRestockAmount={setRestockAmount}
+                        handleQuickRestockSubmit={handleRestock}
+                        isRestocking={false}
+                    />
+                )}
+            </div>
         </Navbar>
     );
 }

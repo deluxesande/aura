@@ -1,7 +1,6 @@
 "use client";
 
 import Navbar from "@/components/Navbar";
-// Make sure this path matches where your component is located
 import InvoicesTable from "@/components/InvoicesTable";
 import axios from "axios";
 import { ArrowLeft, CreditCard, Mail, Phone, Receipt } from "lucide-react";
@@ -139,14 +138,11 @@ export default function CustomerDetailsPage() {
     return (
         <Navbar>
             <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
-                <Link
-                    href="/customers"
-                    className="flex items-center text-sm text-gray-500 hover:text-green-600 transition-colors mb-4"
-                >
-                    <ArrowLeft className="w-4 h-4 mr-1" />
-                    Back to Customers
+                <Link href="/customers">
+                    <div className="w-10 h-10 items-center justify-center flex bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors">
+                        <ArrowLeft className="w-5 h-5 text-gray-600" />
+                    </div>
                 </Link>
-
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                     <div className="p-6 md:p-8">
                         <div className="flex flex-col lg:flex-row justify-between gap-8">

@@ -257,7 +257,7 @@ export default function Page() {
                                         <th className="p-4 font-semibold">
                                             Date Added
                                         </th>
-                                        <th className="p-4 font-semibold text-right">
+                                        <th className="p-4 font-semibold">
                                             Actions
                                         </th>
                                     </tr>
@@ -545,59 +545,61 @@ export default function Page() {
                                 </div>
                             )}
                         </div>
-                    </div>
-                )}
 
-                {/* Pagination Controls */}
-                {!loading && paginatedCustomers.length > 0 && (
-                    <div className="flex flex-wrap justify-center items-center pt-4 my-4 gap-2 sm:gap-4">
-                        <button
-                            className="btn btn-xs btn-ghost flex items-center bg-green-400 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
-                            onClick={handlePreviousPage}
-                            disabled={currentPage === 1}
-                        >
-                            <ChevronLeft className="w-4 h-4 stroke-white" />
-                            <span className="hidden sm:inline text-sm text-white">
-                                Back
-                            </span>
-                        </button>
-
-                        <div className="flex space-x-1 sm:space-x-2">
-                            {getPageNumbers().map((page) => (
+                        {/* Pagination Controls */}
+                        {!loading && paginatedCustomers.length > 0 && (
+                            <div className="flex flex-wrap justify-center items-center pt-4 my-4 gap-2 sm:gap-4">
                                 <button
-                                    key={page}
-                                    onClick={() => handlePageClick(page)}
-                                    className={`btn btn-xs border-0 ${
-                                        currentPage === page
-                                            ? "bg-green-400 text-white hover:bg-green-600"
-                                            : "btn-ghost text-black hover:bg-green-100"
-                                    }`}
+                                    className="btn btn-xs btn-ghost flex items-center bg-green-400 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
+                                    onClick={handlePreviousPage}
+                                    disabled={currentPage === 1}
                                 >
-                                    {page}
+                                    <ChevronLeft className="w-4 h-4 stroke-white" />
+                                    <span className="hidden sm:inline text-sm text-white">
+                                        Back
+                                    </span>
                                 </button>
-                            ))}
-                        </div>
 
-                        <button
-                            className="btn btn-xs btn-ghost flex items-center bg-green-400 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
-                            onClick={handleNextPage}
-                            disabled={currentPage === totalPages}
-                        >
-                            <span className="hidden sm:inline text-sm text-white">
-                                Next
-                            </span>
-                            <ChevronRight className="w-4 h-4 stroke-white" />
-                        </button>
-                    </div>
-                )}
+                                <div className="flex space-x-1 sm:space-x-2">
+                                    {getPageNumbers().map((page) => (
+                                        <button
+                                            key={page}
+                                            onClick={() =>
+                                                handlePageClick(page)
+                                            }
+                                            className={`btn btn-xs border-0 ${
+                                                currentPage === page
+                                                    ? "bg-green-400 text-white hover:bg-green-600"
+                                                    : "btn-ghost text-black hover:bg-green-100"
+                                            }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
+                                </div>
 
-                {/* Page info */}
-                {!loading && filteredCustomers.length > 0 && (
-                    <div className="text-center text-sm text-gray-500 mt-2">
-                        Page {currentPage} of {totalPages} | Showing{" "}
-                        {startIndex + 1}-
-                        {Math.min(endIndex, filteredCustomers.length)} of{" "}
-                        {filteredCustomers.length} customers
+                                <button
+                                    className="btn btn-xs btn-ghost flex items-center bg-green-400 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
+                                    onClick={handleNextPage}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    <span className="hidden sm:inline text-sm text-white">
+                                        Next
+                                    </span>
+                                    <ChevronRight className="w-4 h-4 stroke-white" />
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Page info */}
+                        {!loading && filteredCustomers.length > 0 && (
+                            <div className="text-center text-sm text-gray-500 my-2">
+                                Page {currentPage} of {totalPages} | Showing{" "}
+                                {startIndex + 1}-
+                                {Math.min(endIndex, filteredCustomers.length)}{" "}
+                                of {filteredCustomers.length} customers
+                            </div>
+                        )}
                     </div>
                 )}
 

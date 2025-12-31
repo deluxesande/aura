@@ -16,13 +16,21 @@ import { formatPhoneNumber } from "@/utils/formatPhoneNumber";
 import { Product } from "@/utils/typesDefinitions";
 import { SignedIn, useUser } from "@clerk/nextjs";
 import axios from "axios";
-import { ChevronRight, User as UserIcon } from "lucide-react";
+import {
+    ChevronRight,
+    User as UserIcon,
+    Plus,
+    X,
+    Loader2,
+    ShoppingCart,
+} from "lucide-react"; // Added Icons
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 import { hide } from "@/store/slices/visibilitySlice";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
+import QuicKRestockModal from "@/components/QuickRestockModal";
 
 interface Category {
     id: string;
@@ -81,6 +89,14 @@ export default function Page() {
         email: "",
         phoneNumber: "",
     });
+
+    // --- Restock Modal State ---
+    const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
+    const [productToRestock, setProductToRestock] = useState<Product | null>(
+        null
+    );
+    const [restockAmount, setRestockAmount] = useState("");
+    const [isRestocking, setIsRestocking] = useState(false);
 
     const mapCategories = React.useCallback((apiData: any[]): Category[] => {
         return apiData.map((category) => ({
@@ -188,6 +204,62 @@ export default function Page() {
             setLoading(false);
         }
     }, [dispatch, productsData]);
+
+    const openRestockModal = (product: Product) => {
+        setProductToRestock(product);
+        setRestockAmount("");
+        setIsRestockModalOpen(true);
+    };
+
+    const handleQuickRestockSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!productToRestock) return;
+
+        const amountToAdd = parseInt(restockAmount, 10);
+        if (isNaN(amountToAdd) || amountToAdd <= 0) {
+            toast.error("Please enter a valid quantity");
+            return;
+        }
+
+        setIsRestocking(true);
+        try {
+            // Calculate new total
+            const newQuantity = (productToRestock.quantity || 0) + amountToAdd;
+            const updatedProduct = {
+                ...productToRestock,
+                quantity: newQuantity,
+                inStock: true,
+            };
+
+            // Call API
+            await axios.put(
+                `/api/product/${productToRestock.id}`,
+                updatedProduct
+            );
+
+            // Update Redux Store
+            const updatedProductsList = productsData.map((p) =>
+                p.id === productToRestock.id ? updatedProduct : p
+            );
+            dispatch(setProducts(updatedProductsList));
+
+            // Update Local State (if needed, though redux sync usually handles this via useEffect)
+            setLocalProducts((prev) =>
+                prev.map((p) =>
+                    p.id === productToRestock.id ? updatedProduct : p
+                )
+            );
+
+            toast.success(
+                `${productToRestock.name} restocked! New Qty: ${newQuantity}`
+            );
+            setIsRestockModalOpen(false);
+        } catch (error) {
+            toast.error("Failed to restock product");
+        } finally {
+            setIsRestocking(false);
+        }
+    };
 
     const handleAddToCart = (product: Product) => {
         const cartItem = cartItems.find((item) => item.id === product.id);
@@ -313,22 +385,17 @@ export default function Page() {
         );
     };
 
-    // --- NEW: Handle typing in the input field ---
     const handleMpesaNumberChange = (
         e: React.ChangeEvent<HTMLInputElement>
     ) => {
         const val = e.target.value;
         setMpesaNumber(val);
 
-        // Check if the typed number matches an existing customer
         const matchedCustomer = findCustomerByNumber(val);
 
         if (matchedCustomer) {
-            // Auto-select the customer
             setSelectedCustomer(matchedCustomer);
         } else {
-            // If it no longer matches (or is a new number), revert to guest
-            // This prevents mismatch between selected customer and typed number
             setSelectedCustomer(null);
         }
     };
@@ -345,7 +412,6 @@ export default function Page() {
             return;
         }
 
-        // Logic: If email is an empty string, set it to null (or undefined)
         const emailToSave =
             newCustomerDetails.email.trim() === ""
                 ? null
@@ -490,7 +556,10 @@ export default function Page() {
                         ) : (
                             Array.isArray(products) &&
                             products.map((product) => (
-                                <div key={product.name}>
+                                <div
+                                    key={product.id}
+                                    className="relative group"
+                                >
                                     <div className="hidden lg:block">
                                         <ProductCard
                                             image={product.image}
@@ -515,6 +584,27 @@ export default function Page() {
                                             }
                                         />
                                     </div>
+
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            openRestockModal(product);
+                                        }}
+                                        className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-sm hover:bg-green-100 hover:text-green-600 text-gray-400 transition-all border border-gray-100 z-10"
+                                        title="Quick Restock"
+                                    >
+                                        <Plus size={16} />
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleAddToCart(product);
+                                        }}
+                                        className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-sm hover:bg-green-100 hover:text-green-600 text-gray-400 transition-all border border-gray-100 z-10"
+                                        title="Add to Cart"
+                                    >
+                                        <ShoppingCart size={16} />
+                                    </button>
                                 </div>
                             ))
                         )}
@@ -688,6 +778,18 @@ export default function Page() {
                     newCustomerDetails={newCustomerDetails}
                     setNewCustomerDetails={setNewCustomerDetails}
                     handleSaveNewCustomer={handleSaveNewCustomer}
+                />
+            )}
+
+            {/* --- RESTOCK MODAL --- */}
+            {isRestockModalOpen && productToRestock && (
+                <QuicKRestockModal
+                    productToRestock={productToRestock}
+                    setIsRestockModalOpen={setIsRestockModalOpen}
+                    restockAmount={restockAmount}
+                    setRestockAmount={setRestockAmount}
+                    handleQuickRestockSubmit={handleQuickRestockSubmit}
+                    isRestocking={isRestocking}
                 />
             )}
         </div>

@@ -216,7 +216,7 @@ const CustomUserButton = () => {
                             className="h-8 w-8 min-h-8 min-w-8 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center border-2 border-white cursor-pointer transition-colors"
                             title="Add user"
                         >
-                            <Plus size={16} className="text-white" />
+                            <Plus size={16} className="stroke-white" />
                         </button>
                     </div>
                 ) : (
@@ -245,7 +245,7 @@ const CustomUserButton = () => {
                             style={{ zIndex: 0 }}
                             title="Add user"
                         >
-                            <Plus size={16} className="text-white" />
+                            <Plus size={16} className="stroke-white" />
                         </button>
                     </div>
                 )}
