@@ -49,64 +49,62 @@ export default async function handler(
             CheckoutRequestID,
         } = payload.Body.stkCallback;
 
-        // --- FIX: POLLING MECHANISM ---
-        // Safaricom might hit this callback BEFORE the frontend has finished creating the Invoice/Payment record.
-        // We retry looking for the record 5 times (waiting 2s each time = 10s total buffer).
+        // --- OPTIMIZED POLLING ---
+        // Instead of waiting 10s (which timeouts Vercel), we wait max 4s.
+        // We check every 500ms. This is "aggressive" polling.
         let pendingPayment = null;
-        let retries = 5;
+        let retries = 8; // 8 * 500ms = 4 seconds max
 
         while (retries > 0) {
             pendingPayment = await prisma.mpesaPayment.findUnique({
                 where: { checkoutRequestId: CheckoutRequestID },
+                select: { id: true, invoiceId: true },
             });
 
             if (pendingPayment) {
                 break;
             }
-            await wait(2000);
+            await wait(500); // Wait 0.5s
             retries--;
         }
 
-        if (!pendingPayment) {
-            console.error(
-                `Timeout: Payment record missing for ${CheckoutRequestID} after retries.`
-            );
+        // Even if payment is missing after 4s, we MUST save the callback log
+        // so we don't lose the data. 'invoiceId' will be null, which is fine.
+        const invoiceId = pendingPayment?.invoiceId || null;
 
-            if (ResultCode !== 0) {
-                await storeFailedCallbackInDb({
-                    MerchantRequestID,
-                    CheckoutRequestID,
-                    ResultCode,
-                    ResultDesc,
-                });
-            }
-            return res.status(200).json({ result: "record_missing_timeout" });
-        }
-
+        // --- CASE 1: FAILED / CANCELLED ---
         if (ResultCode !== 0) {
-            await storeFailedCallbackInDb({
-                MerchantRequestID,
-                CheckoutRequestID,
-                ResultCode,
-                ResultDesc,
+            await prisma.failedCallback.create({
+                data: {
+                    merchantRequestId: MerchantRequestID,
+                    checkoutRequestId: CheckoutRequestID,
+                    resultCode: ResultCode,
+                    resultDesc: ResultDesc,
+                    invoiceId: invoiceId,
+                },
             });
 
-            const newStatus = ResultCode === 1032 ? "CANCELLED" : "FAILED";
+            if (pendingPayment) {
+                const newStatus = ResultCode === 1032 ? "CANCELLED" : "FAILED";
 
-            await prisma.$transaction([
-                prisma.mpesaPayment.update({
-                    where: { id: pendingPayment.id },
-                    data: { status: "FAILED" },
-                }),
-                prisma.invoice.update({
-                    where: { id: pendingPayment.invoiceId },
-                    data: { status: newStatus as any },
-                }),
-            ]);
+                await prisma.$transaction([
+                    prisma.mpesaPayment.update({
+                        where: { id: pendingPayment.id },
+                        data: { status: "FAILED" },
+                    }),
+                    prisma.invoice.update({
+                        where: { id: pendingPayment.invoiceId },
+                        data: { status: newStatus as any },
+                    }),
+                ]);
+            } else {
+                console.warn(`Orphaned Failure Callback: ${CheckoutRequestID}`);
+            }
 
             return res.status(200).json({ result: "acknowledged_failure" });
         }
 
+        // --- CASE 2: SUCCESS ---
         const metaItems = CallbackMetadata?.Item || [];
         const getMetaValue = (name: string) =>
             metaItems.find((i) => i.Name === name)?.Value;
@@ -114,32 +112,40 @@ export default async function handler(
         const amount = Number(getMetaValue("Amount"));
         const receiptNumber = String(getMetaValue("MpesaReceiptNumber"));
         const phoneNumber = String(getMetaValue("PhoneNumber"));
-        const transactionDate = String(getMetaValue("TransactionDate"));
+        const tDateVal = getMetaValue("TransactionDate");
+        const transactionDate = tDateVal ? String(tDateVal) : "0";
 
-        await storeSuccessfulCallbackInDb({
-            MerchantRequestID,
-            CheckoutRequestID,
-            ResultCode,
-            ResultDesc,
-            Amount: amount,
-            MpesaReceiptNumber: receiptNumber,
-            PhoneNumber: phoneNumber,
-            TransactionDate: transactionDate,
+        await prisma.successfulCallback.create({
+            data: {
+                merchantRequestId: MerchantRequestID,
+                checkoutRequestId: CheckoutRequestID,
+                resultCode: ResultCode,
+                resultDesc: ResultDesc,
+                amount: amount,
+                mpesaReceiptNumber: receiptNumber,
+                phoneNumber: BigInt(phoneNumber),
+                transactionDate: BigInt(transactionDate),
+                invoiceId: invoiceId,
+            },
         });
 
-        await prisma.$transaction([
-            prisma.mpesaPayment.update({
-                where: { id: pendingPayment.id },
-                data: { status: "COMPLETED" },
-            }),
-            prisma.invoice.update({
-                where: { id: pendingPayment.invoiceId },
-                data: {
-                    status: "PAID",
-                    paymentType: "MPESA",
-                },
-            }),
-        ]);
+        if (pendingPayment) {
+            await prisma.$transaction([
+                prisma.mpesaPayment.update({
+                    where: { id: pendingPayment.id },
+                    data: { status: "COMPLETED" },
+                }),
+                prisma.invoice.update({
+                    where: { id: pendingPayment.invoiceId },
+                    data: {
+                        status: "PAID",
+                        paymentType: "MPESA",
+                    },
+                }),
+            ]);
+        } else {
+            console.warn(`Orphaned Success Callback: ${CheckoutRequestID}`);
+        }
 
         return res.status(200).json({ result: "success" });
     } catch (error) {
