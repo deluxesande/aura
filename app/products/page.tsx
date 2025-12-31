@@ -515,7 +515,7 @@ export default function Page() {
 
                         await toast.promise(stkPromise(), {
                             loading: "Sending M-Pesa prompt...",
-                            success: "Prompt Sent! Check your phone.",
+                            success: "Prompt Sent!",
                             error: "Failed to send prompt",
                         });
                     }

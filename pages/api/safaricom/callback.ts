@@ -24,6 +24,8 @@ interface MpesaPayload {
     Body: { stkCallback: StkCallback };
 }
 
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse
@@ -47,9 +49,37 @@ export default async function handler(
             CheckoutRequestID,
         } = payload.Body.stkCallback;
 
-        const pendingPayment = await prisma.mpesaPayment.findUnique({
-            where: { checkoutRequestId: CheckoutRequestID },
-        });
+        let pendingPayment = null;
+        let retries = 5;
+
+        while (retries > 0) {
+            pendingPayment = await prisma.mpesaPayment.findUnique({
+                where: { checkoutRequestId: CheckoutRequestID },
+            });
+
+            if (pendingPayment) {
+                break;
+            }
+
+            await wait(500);
+            retries--;
+        }
+
+        if (!pendingPayment) {
+            console.warn(
+                `Orphaned Callback (Record missing after retry): ${CheckoutRequestID}`
+            );
+
+            if (ResultCode !== 0) {
+                await storeFailedCallbackInDb({
+                    MerchantRequestID,
+                    CheckoutRequestID,
+                    ResultCode,
+                    ResultDesc,
+                });
+            }
+            return res.status(200).json({ result: "orphaned_record" });
+        }
 
         if (ResultCode !== 0) {
             await storeFailedCallbackInDb({
@@ -59,23 +89,19 @@ export default async function handler(
                 ResultDesc,
             });
 
-            if (pendingPayment) {
-                // 1032 = User Cancelled, others are FAILED
-                const newStatus = ResultCode === 1032 ? "CANCELLED" : "FAILED";
+            // 1032 = User Cancelled, others are FAILED
+            const newStatus = ResultCode === 1032 ? "CANCELLED" : "FAILED";
 
-                await prisma.$transaction([
-                    prisma.mpesaPayment.update({
-                        where: { id: pendingPayment.id },
-                        data: { status: "FAILED" },
-                    }),
-                    prisma.invoice.update({
-                        where: { id: pendingPayment.invoiceId },
-                        data: { status: newStatus as any },
-                    }),
-                ]);
-            } else {
-                console.warn(`Orphaned Failure Callback: ${CheckoutRequestID}`);
-            }
+            await prisma.$transaction([
+                prisma.mpesaPayment.update({
+                    where: { id: pendingPayment.id },
+                    data: { status: "FAILED" },
+                }),
+                prisma.invoice.update({
+                    where: { id: pendingPayment.invoiceId },
+                    data: { status: newStatus as any },
+                }),
+            ]);
 
             return res.status(200).json({ result: "acknowledged_failure" });
         }
@@ -101,23 +127,19 @@ export default async function handler(
             TransactionDate: transactionDate,
         });
 
-        if (pendingPayment) {
-            await prisma.$transaction([
-                prisma.mpesaPayment.update({
-                    where: { id: pendingPayment.id },
-                    data: { status: "COMPLETED" },
-                }),
-                prisma.invoice.update({
-                    where: { id: pendingPayment.invoiceId },
-                    data: {
-                        status: "PAID",
-                        paymentType: "MPESA",
-                    },
-                }),
-            ]);
-        } else {
-            console.warn(`Orphaned Success Callback: ${CheckoutRequestID}`);
-        }
+        await prisma.$transaction([
+            prisma.mpesaPayment.update({
+                where: { id: pendingPayment.id },
+                data: { status: "COMPLETED" },
+            }),
+            prisma.invoice.update({
+                where: { id: pendingPayment.invoiceId },
+                data: {
+                    status: "PAID",
+                    paymentType: "MPESA",
+                },
+            }),
+        ]);
 
         return res.status(200).json({ result: "success" });
     } catch (error) {
