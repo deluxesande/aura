@@ -423,7 +423,12 @@ export default function Page() {
                                 paginatedCustomers.map((customer) => (
                                     <div
                                         key={customer.id}
-                                        className="p-4 bg-white"
+                                        onClick={() =>
+                                            router.push(
+                                                `/customers/${customer.id}`
+                                            )
+                                        }
+                                        className="p-4 bg-white cursor-pointer"
                                     >
                                         {/* Top Row: Avatar, Name, Delete */}
                                         <div className="flex justify-between items-start mb-3">
@@ -441,7 +446,7 @@ export default function Page() {
                                                         {customer.firstName}{" "}
                                                         {customer.lastName}
                                                     </p>
-                                                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                                                    <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
                                                         {new Date(
                                                             customer.createdAt
                                                         ).toLocaleDateString()}

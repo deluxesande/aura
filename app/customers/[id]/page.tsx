@@ -11,6 +11,7 @@ import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { Invoice } from "@/utils/typesDefinitions";
+import EditCustomerModal from "@/components/EditCustomerModal";
 
 interface Customer {
     id: string;
@@ -39,6 +40,11 @@ export default function CustomerDetailsPage() {
     const [customer, setCustomer] = useState<Customer | null>(null);
     const [invoices, setInvoices] = useState<ExtendedInvoice[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showEditCustomerModal, setShowEditCustomerModal] = useState(false);
+
+    const onSuccess = (updatedCustomer: Customer) => {
+        setCustomer(updatedCustomer);
+    };
 
     // Stats
     const totalSpent = invoices.reduce(
@@ -232,7 +238,12 @@ export default function CustomerDetailsPage() {
                                     </p>
                                 )}
                                 <div className="pt-2">
-                                    <button className="w-full btn btn-sm bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300">
+                                    <button
+                                        onClick={() =>
+                                            setShowEditCustomerModal(true)
+                                        }
+                                        className="w-full btn btn-sm bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300"
+                                    >
                                         Edit Profile
                                     </button>
                                 </div>
@@ -287,6 +298,13 @@ export default function CustomerDetailsPage() {
                     handleDelete={handleInvoiceDelete}
                     loading={loading}
                     itemsPerPage={5}
+                />
+
+                <EditCustomerModal
+                    showEditCustomerModal={showEditCustomerModal}
+                    setShowEditCustomerModal={setShowEditCustomerModal}
+                    customer={customer}
+                    onSuccess={onSuccess}
                 />
             </div>
         </Navbar>
