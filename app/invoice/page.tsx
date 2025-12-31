@@ -377,7 +377,10 @@ function InvoicePageContent() {
                             <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">
                                 Customer
                             </h3>
-                            <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50/50">
+                            <Link
+                                href={`/customers/${invoice.customerId}`}
+                                className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50/50 cursor-pointer"
+                            >
                                 <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center border border-green-200">
                                     <User className="w-5 h-5 text-green-700" />
                                 </div>
@@ -390,7 +393,7 @@ function InvoicePageContent() {
                                         Billed Client
                                     </p>
                                 </div>
-                            </div>
+                            </Link>
                         </div>
                     </div>
                 </div>
