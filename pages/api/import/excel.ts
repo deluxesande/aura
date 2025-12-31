@@ -95,14 +95,18 @@ export default async function handler(
                 allCategories.forEach((c) => categoryMap.set(c.name, c.id));
 
                 // --- B. BULK CUSTOMERS ---
+
                 const customersToInsert = customersData
                     .filter((c: any) => c["Email"] || c["Phone Number"])
                     .map((c: any) => ({
-                        firstName: c["First Name"],
-                        lastName: c["Last Name"],
+                        // Use || "" to ensure these are never undefined, which Prisma hates
+                        firstName: c["First Name"]?.toString().trim() || "",
+                        lastName: c["Last Name"]?.toString().trim() || "",
                         email: c["Email"]?.toString().trim() || null,
                         phoneNumber: c["Phone Number"]?.toString().trim() || "",
-                        createdBy: userId,
+                        // Ensure these are passed as strings (assuming checks passed earlier)
+                        businessId: currentUser.businessId!,
+                        createdById: userId!,
                     }));
 
                 if (customersToInsert.length > 0) {
