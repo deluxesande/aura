@@ -1,7 +1,3 @@
-import {
-    storeFailedCallbackInDb,
-    storeSuccessfulCallbackInDb,
-} from "@/utils/storeInDb";
 import { PrismaClient } from "@prisma/client";
 import type { NextApiRequest, NextApiResponse } from "next";
 
@@ -47,41 +43,47 @@ export default async function handler(
             CheckoutRequestID,
         } = payload.Body.stkCallback;
 
+        const pendingPayment = await prisma.mpesaPayment.findUnique({
+            where: { checkoutRequestId: CheckoutRequestID },
+            include: { Invoice: true }, // Optional: include invoice if you need details
+        });
+
+        const invoiceId = pendingPayment?.invoiceId || null;
+
         if (ResultCode !== 0) {
-            await storeFailedCallbackInDb({
-                MerchantRequestID,
-                CheckoutRequestID,
-                ResultCode,
-                ResultDesc,
-            });
-            const pendingPayment = await prisma.mpesaPayment.findUnique({
-                where: { checkoutRequestId: CheckoutRequestID },
+            await prisma.failedCallback.create({
+                data: {
+                    merchantRequestId: MerchantRequestID,
+                    checkoutRequestId: CheckoutRequestID,
+                    resultCode: ResultCode,
+                    resultDesc: ResultDesc,
+                    invoiceId: invoiceId,
+                },
             });
 
-            if (!pendingPayment) {
-                // We return 200 to stop Safaricom from retrying, as we can't fix this without the record.
-                return res.status(200).json({ result: "record_missing" });
+            if (pendingPayment) {
+                // Determine Status based on code
+                // 1032: Cancelled by user
+                // 1037: DS Timeout (User didn't enter PIN)
+                // 1: Insufficient Funds
+                // 2001: Wrong PIN
+                const statusToSet =
+                    ResultCode === 1032 ? "CANCELLED" : "FAILED";
+
+                // 3. UPDATE DB ATOMICALLY
+                await prisma.$transaction([
+                    prisma.mpesaPayment.update({
+                        where: { id: pendingPayment.id },
+                        data: { status: "FAILED" },
+                    }),
+                    prisma.invoice.update({
+                        where: { id: pendingPayment.invoiceId },
+                        data: { status: statusToSet },
+                    }),
+                ]);
+            } else {
+                console.warn(`Payment record missing for ${CheckoutRequestID}`);
             }
-
-            // Determine Status
-            // Code 1032 = Cancelled by user
-            // Code 1 = Insufficient Funds
-            // Code 2001 = Wrong PIN
-            // We mark all as FAILED/CANCELLED to release the invoice
-            const newStatus = ResultCode === 1032 ? "CANCELLED" : "FAILED";
-
-            // ATOMIC TRANSACTION
-            // Both updates happen, or neither happens.
-            await prisma.$transaction([
-                prisma.mpesaPayment.update({
-                    where: { id: pendingPayment.id },
-                    data: { status: "FAILED" },
-                }),
-                prisma.invoice.update({
-                    where: { id: pendingPayment.invoiceId },
-                    data: { status: newStatus as any },
-                }),
-            ]);
 
             return res.status(200).json({ result: "acknowledged_failure" });
         }
@@ -93,21 +95,20 @@ export default async function handler(
         const amount = Number(getMetaValue("Amount"));
         const receiptNumber = String(getMetaValue("MpesaReceiptNumber"));
         const phoneNumber = String(getMetaValue("PhoneNumber"));
-        const transactionDate = String(getMetaValue("TransactionDate"));
+        const transactionDate = getMetaValue("TransactionDate");
 
-        await storeSuccessfulCallbackInDb({
-            MerchantRequestID,
-            CheckoutRequestID,
-            ResultCode,
-            ResultDesc,
-            Amount: amount,
-            MpesaReceiptNumber: receiptNumber,
-            PhoneNumber: phoneNumber,
-            TransactionDate: transactionDate,
-        });
-
-        const pendingPayment = await prisma.mpesaPayment.findUnique({
-            where: { checkoutRequestId: CheckoutRequestID },
+        await prisma.successfulCallback.create({
+            data: {
+                merchantRequestId: MerchantRequestID,
+                checkoutRequestId: CheckoutRequestID,
+                resultCode: ResultCode,
+                resultDesc: ResultDesc,
+                amount: amount,
+                mpesaReceiptNumber: receiptNumber,
+                phoneNumber: BigInt(phoneNumber),
+                transactionDate: BigInt(transactionDate || 0),
+                invoiceId: invoiceId,
+            },
         });
 
         if (pendingPayment) {
@@ -128,6 +129,7 @@ export default async function handler(
 
         return res.status(200).json({ result: "success" });
     } catch (error) {
+        console.error("Callback Error:", error);
         return res.status(200).json({ result: "error_handled" });
     }
 }
