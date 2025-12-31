@@ -10,6 +10,7 @@ interface FailedCallbackData {
     CheckoutRequestID: string;
     ResultCode: number;
     ResultDesc: string;
+    invoiceId?: string | null;
 }
 
 interface SuccessCallbackData {
@@ -21,6 +22,7 @@ interface SuccessCallbackData {
     MpesaReceiptNumber: string;
     TransactionDate: string;
     PhoneNumber: string;
+    invoiceId?: string | null;
 }
 
 // 1. Store Failed Callback (Now accepts flat data)
@@ -32,6 +34,7 @@ export const storeFailedCallbackInDb = async (data: FailedCallbackData) => {
                 checkoutRequestId: data.CheckoutRequestID,
                 resultCode: data.ResultCode,
                 resultDesc: data.ResultDesc,
+                invoiceId: data.invoiceId || null,
             },
         });
         console.log("Failed transaction stored in DB");
@@ -55,6 +58,7 @@ export const storeSuccessfulCallbackInDb = async (
                 mpesaReceiptNumber: data.MpesaReceiptNumber,
                 transactionDate: Number(data.TransactionDate),
                 phoneNumber: Number(data.PhoneNumber),
+                invoiceId: data.invoiceId || null,
             },
         });
         console.log("Successful transaction stored in DB");

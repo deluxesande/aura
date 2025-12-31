@@ -87,6 +87,7 @@ export default async function handler(
                 CheckoutRequestID,
                 ResultCode,
                 ResultDesc,
+                invoiceId: pendingPayment?.invoiceId,
             });
 
             // 1032 = User Cancelled, others are FAILED
@@ -125,6 +126,7 @@ export default async function handler(
             MpesaReceiptNumber: receiptNumber,
             PhoneNumber: phoneNumber,
             TransactionDate: transactionDate,
+            invoiceId: pendingPayment?.invoiceId,
         });
 
         await prisma.$transaction([
