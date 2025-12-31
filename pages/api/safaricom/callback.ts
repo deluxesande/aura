@@ -24,6 +24,7 @@ interface MpesaPayload {
     Body: { stkCallback: StkCallback };
 }
 
+// Optimized short wait function
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default async function handler(
@@ -50,41 +51,32 @@ export default async function handler(
         } = payload.Body.stkCallback;
 
         // --- OPTIMIZED POLLING ---
-        // Instead of waiting 10s (which timeouts Vercel), we wait max 4s.
-        // We check every 500ms. This is "aggressive" polling.
+        // Check every 500ms for max 4 seconds (8 tries) to prevent Vercel timeouts
         let pendingPayment = null;
-        let retries = 8; // 8 * 500ms = 4 seconds max
+        let retries = 8;
 
         while (retries > 0) {
             pendingPayment = await prisma.mpesaPayment.findUnique({
                 where: { checkoutRequestId: CheckoutRequestID },
-                select: { id: true, invoiceId: true },
             });
 
             if (pendingPayment) {
                 break;
             }
-            await wait(500); // Wait 0.5s
+            await wait(500); // 500ms wait
             retries--;
         }
 
-        // Even if payment is missing after 4s, we MUST save the callback log
-        // so we don't lose the data. 'invoiceId' will be null, which is fine.
-        const invoiceId = pendingPayment?.invoiceId || null;
-
-        // --- CASE 1: FAILED / CANCELLED ---
         if (ResultCode !== 0) {
-            await prisma.failedCallback.create({
-                data: {
-                    merchantRequestId: MerchantRequestID,
-                    checkoutRequestId: CheckoutRequestID,
-                    resultCode: ResultCode,
-                    resultDesc: ResultDesc,
-                    invoiceId: invoiceId,
-                },
+            await storeFailedCallbackInDb({
+                MerchantRequestID,
+                CheckoutRequestID,
+                ResultCode,
+                ResultDesc,
             });
 
             if (pendingPayment) {
+                // 1032 = User Cancelled, everything else is FAILED
                 const newStatus = ResultCode === 1032 ? "CANCELLED" : "FAILED";
 
                 await prisma.$transaction([
@@ -99,12 +91,14 @@ export default async function handler(
                 ]);
             } else {
                 console.warn(`Orphaned Failure Callback: ${CheckoutRequestID}`);
+                return res
+                    .status(200)
+                    .json({ result: "record_missing_timeout" });
             }
 
             return res.status(200).json({ result: "acknowledged_failure" });
         }
 
-        // --- CASE 2: SUCCESS ---
         const metaItems = CallbackMetadata?.Item || [];
         const getMetaValue = (name: string) =>
             metaItems.find((i) => i.Name === name)?.Value;
@@ -112,21 +106,17 @@ export default async function handler(
         const amount = Number(getMetaValue("Amount"));
         const receiptNumber = String(getMetaValue("MpesaReceiptNumber"));
         const phoneNumber = String(getMetaValue("PhoneNumber"));
-        const tDateVal = getMetaValue("TransactionDate");
-        const transactionDate = tDateVal ? String(tDateVal) : "0";
+        const transactionDate = String(getMetaValue("TransactionDate"));
 
-        await prisma.successfulCallback.create({
-            data: {
-                merchantRequestId: MerchantRequestID,
-                checkoutRequestId: CheckoutRequestID,
-                resultCode: ResultCode,
-                resultDesc: ResultDesc,
-                amount: amount,
-                mpesaReceiptNumber: receiptNumber,
-                phoneNumber: BigInt(phoneNumber),
-                transactionDate: BigInt(transactionDate),
-                invoiceId: invoiceId,
-            },
+        await storeSuccessfulCallbackInDb({
+            MerchantRequestID,
+            CheckoutRequestID,
+            ResultCode,
+            ResultDesc,
+            Amount: amount,
+            MpesaReceiptNumber: receiptNumber,
+            PhoneNumber: phoneNumber,
+            TransactionDate: transactionDate,
         });
 
         if (pendingPayment) {
