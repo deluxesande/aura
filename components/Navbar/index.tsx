@@ -37,7 +37,6 @@ import {
 } from "@floating-ui/react";
 import BusinessOnboardingModal from "../BusinessOnboardingModal";
 
-// ... [Keep your allLinks and User types exactly as they were] ...
 const allLinks = [
     {
         href: "/dashboard",
@@ -57,6 +56,11 @@ const allLinks = [
     {
         href: "/products/list",
         text: "Inventory",
+        allowedRoles: ["admin", "manager", "user"],
+    },
+    {
+        href: "/customers",
+        text: "Customers",
         allowedRoles: ["admin", "manager", "user"],
     },
     { href: "/settings", text: "Settings", allowedRoles: ["admin", "manager"] },

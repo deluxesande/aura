@@ -6,6 +6,9 @@ export const deleteCustomer = async (
     req: NextApiRequest,
     res: NextApiResponse
 ) => {
+    const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
+    if (!id) return res.status(400).json({ error: "Missing Customer ID" });
+
     try {
         const { userId: clerkUserId } = getAuth(req);
         if (!clerkUserId) {
@@ -22,8 +25,6 @@ export const deleteCustomer = async (
                 .status(403)
                 .json({ error: "User is not linked to a business" });
         }
-
-        const { id } = req.body;
 
         if (!id) {
             return res.status(400).json({ error: "Missing customer ID" });

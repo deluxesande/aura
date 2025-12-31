@@ -383,9 +383,7 @@ function InvoicePageContent() {
                                 </div>
                                 <div>
                                     <p className="text-sm font-bold text-gray-900">
-                                        {invoice.Customer?.firstName +
-                                            " " +
-                                            invoice.Customer?.lastName ||
+                                        {invoice.Customer?.firstName ||
                                             "Unknown Client"}
                                     </p>
                                     <p className="text-xs text-gray-500">

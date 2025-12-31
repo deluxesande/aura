@@ -36,6 +36,15 @@ async function getCustomerById(req: NextApiRequest, res: NextApiResponse) {
                 id: id,
                 businessId: user.businessId,
             },
+            include: {
+                CreatedBy: {
+                    select: {
+                        firstName: true,
+                        lastName: true,
+                        role: true,
+                    },
+                },
+            },
         });
 
         if (!customer) {

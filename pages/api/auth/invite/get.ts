@@ -26,13 +26,18 @@ export default async function handler(
             return res.status(404).json({ error: "User not found" });
         }
 
+        if (currentUser.role !== "admin" && currentUser.role !== "manager") {
+            return res
+                .status(403)
+                .json({ error: "Forbidden: Insufficient permissions" });
+        }
+
         const businessId = currentUser.businessId;
 
         if (!businessId || typeof businessId !== "string") {
             return res.status(400).json({ error: "Business ID required" });
         }
 
-        // Check if user has access to this business
         if (currentUser.businessId !== businessId) {
             return res.status(403).json({ error: "Forbidden" });
         }
@@ -47,10 +52,9 @@ export default async function handler(
             orderBy: { createdAt: "desc" },
         });
 
-        // Remove token from each invitation
+        // Remove token from each invitation and fetch inviter details
         const sanitizedInvitations = await Promise.all(
             invitations.map(async ({ token, ...invitation }) => {
-                // Get inviter details if invitedBy exists
                 let inviterDetails = null;
                 if (invitation.invitedBy) {
                     const inviter = await prisma.user.findUnique({

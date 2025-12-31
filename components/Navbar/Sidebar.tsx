@@ -7,6 +7,7 @@ import {
     ChevronRight,
     ChevronLeft,
     LogOut,
+    Users,
 } from "lucide-react";
 import React, { useEffect } from "react";
 import Image from "next/image";
@@ -63,6 +64,17 @@ const allLinks = [
             />
         ),
         label: "Inventory",
+        allowedRoles: ["admin", "manager", "user"],
+    },
+    {
+        href: "/customers",
+        icon: (isActive: boolean) => (
+            <Users
+                size={20}
+                className={isActive ? "stroke-white" : "stroke-green-500"}
+            />
+        ),
+        label: "Customers",
         allowedRoles: ["admin", "manager", "user"],
     },
     {

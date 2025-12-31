@@ -12,6 +12,7 @@ import SelectCustomerModal from "@/components/SelectCustomerModal";
 import { AppState } from "@/store";
 import { addItem, clearCart } from "@/store/slices/cartSlice";
 import { setProducts } from "@/store/slices/productSlice";
+import { formatPhoneNumber } from "@/utils/formatPhoneNumber";
 import { Product } from "@/utils/typesDefinitions";
 import { SignedIn, useUser } from "@clerk/nextjs";
 import axios from "axios";
@@ -63,13 +64,11 @@ export default function Page() {
 
     const hasFetched = useRef(false);
 
-    // --- Customer State ---
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
         null
     );
 
-    // Modal States
     const [showSelectCustomerModal, setShowSelectCustomerModal] =
         useState(false);
     const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
@@ -82,7 +81,6 @@ export default function Page() {
         phoneNumber: "",
     });
 
-    // --- Helper Functions ---
     const mapCategories = React.useCallback((apiData: any[]): Category[] => {
         return apiData.map((category) => ({
             id: category.id,
@@ -100,24 +98,6 @@ export default function Page() {
                 active: category.id === categoryId,
             }))
         );
-    };
-
-    const formatPhoneNumber = (phoneNumber: string): string | null => {
-        // 1. Remove any non-digit characters (this handles the + sign automatically)
-        phoneNumber = phoneNumber.replace(/\D/g, "");
-
-        // 2. Define Regex patterns
-        const regexLocal = /^0(1|7)\d{8}$/; // Matches 07... or 01...
-        const regexIntl = /^254(1|7)\d{8}$/; // Matches 2547... or 2541...
-
-        // 3. Check and Format
-        if (regexLocal.test(phoneNumber)) {
-            return phoneNumber.replace(/^0/, "254");
-        } else if (regexIntl.test(phoneNumber)) {
-            return phoneNumber;
-        }
-
-        return null;
     };
 
     useEffect(() => {
