@@ -14,8 +14,7 @@ import {
     Printer,
     CheckCircle,
     XCircle,
-    RotateCcw,
-    Download,
+    RefreshCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -29,6 +28,7 @@ function InvoicePageContent() {
     >([]);
     const [invoice, setInvoice] = useState<Invoice>();
     const [isUpdating, setIsUpdating] = useState(false);
+    const [isRetrying, setIsRetrying] = useState(false);
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -40,6 +40,7 @@ function InvoicePageContent() {
             case "completed":
                 return "bg-blue-100 text-blue-700 border-blue-200";
             case "cancelled":
+            case "failed": // Added failed styling
                 return "bg-red-100 text-red-700 border-red-200";
             default:
                 return "bg-gray-100 text-gray-700 border-gray-200";
@@ -70,6 +71,29 @@ function InvoicePageContent() {
             toast.error("Failed to update status");
         } finally {
             setIsUpdating(false);
+        }
+    };
+
+    const handleRetryPayment = async () => {
+        if (!invoice || isRetrying) return;
+
+        setIsRetrying(true);
+        const toastId = toast.loading("Initiating payment retry...");
+
+        try {
+            await axios.post("/api/safaricom/c2b/payment/retry", {
+                invoiceId: invoice.id,
+            });
+
+            toast.success("Payment prompt sent to customer", { id: toastId });
+        } catch (error: any) {
+            console.error("Retry failed", error);
+            toast.error(
+                error?.response?.data?.error || "Failed to retry payment",
+                { id: toastId }
+            );
+        } finally {
+            setIsRetrying(false);
         }
     };
 
@@ -111,7 +135,6 @@ function InvoicePageContent() {
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                     <div className="flex items-start gap-3 sm:gap-4 w-full">
-                        {/* Back Button: shrinking disabled, aligned to top */}
                         <Link
                             href="/invoices"
                             className="shrink-0 p-2 bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors mt-0.5"
@@ -119,16 +142,12 @@ function InvoicePageContent() {
                             <ArrowLeft className="w-5 h-5 text-gray-600" />
                         </Link>
 
-                        {/* Content Container: min-w-0 is crucial for text truncation in Flexbox */}
                         <div className="flex-1 min-w-0">
-                            {/* Title Row: Column on mobile (stacked), Row on desktop (inline) */}
                             <div className="flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:gap-3">
-                                {/* Name: Truncates on mobile because of max-w-full and parent min-w-0 */}
                                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate max-w-full">
                                     {invoice.invoiceName}
                                 </h1>
 
-                                {/* Status: Below name on mobile, Next to name on Desktop */}
                                 <span
                                     className={`shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
                                         status
@@ -150,13 +169,30 @@ function InvoicePageContent() {
                     </div>
 
                     <div className="flex gap-2 flex-wrap w-full sm:w-auto shrink-0">
-                        {/* ONLY Show "Mark Paid" if Payment Type is CASH */}
+                        {/* 1. RETRY BUTTON: Shows if Failed or Cancelled */}
+                        {(status === "failed" || status === "cancelled") && (
+                            <button
+                                onClick={handleRetryPayment}
+                                disabled={isRetrying || isUpdating}
+                                className="w-full sm:w-auto justify-center flex btn-sm items-center gap-2 px-4 py-2 bg-orange-500 border border-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 disabled:opacity-50 transition-colors"
+                            >
+                                <RefreshCcw
+                                    size={16}
+                                    className={`stroke-white ${
+                                        isRetrying ? "animate-spin" : ""
+                                    }`}
+                                />
+                                {isRetrying ? "Sending..." : "Retry Payment"}
+                            </button>
+                        )}
+
+                        {/* 2. MARK PAID: Only if Cash */}
                         {status !== "paid" &&
                             status !== "completed" &&
                             invoice.paymentType === "CASH" && (
                                 <button
                                     onClick={() => handleStatusChange("PAID")}
-                                    disabled={isUpdating}
+                                    disabled={isUpdating || isRetrying}
                                     className="w-full sm:w-auto justify-center flex btn-sm items-center gap-2 px-4 py-2 bg-green-600 border border-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
                                 >
                                     <CheckCircle
@@ -167,27 +203,15 @@ function InvoicePageContent() {
                                 </button>
                             )}
 
-                        {/* Allow Cancelling if it's currently Pending */}
+                        {/* 3. CANCEL: Only if Pending */}
                         {status === "pending" && (
                             <button
                                 onClick={() => handleStatusChange("CANCELLED")}
-                                disabled={isUpdating}
+                                disabled={isUpdating || isRetrying}
                                 className="w-full sm:w-auto justify-center flex btn-sm items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 hover:border-red-200 disabled:opacity-50 transition-colors"
                             >
                                 <XCircle size={16} className="stroke-red-500" />
                                 Cancel
-                            </button>
-                        )}
-
-                        {/* Allow Reopening if it's Cancelled */}
-                        {status === "cancelled" && (
-                            <button
-                                onClick={() => handleStatusChange("PENDING")}
-                                disabled={isUpdating}
-                                className="w-full sm:w-auto justify-center flex btn-sm items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors"
-                            >
-                                <RotateCcw size={16} />
-                                Reopen
                             </button>
                         )}
 
@@ -196,12 +220,11 @@ function InvoicePageContent() {
                             <Printer size={16} />
                             Print
                         </button>
-
-                        {/* Ensure your PDFDownloadLink also gets these classes if you are using it! */}
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* ... (Rest of the component remains exactly the same) ... */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
