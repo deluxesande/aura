@@ -5,8 +5,6 @@ import {
 import { PrismaClient } from "@prisma/client";
 import type { NextApiRequest, NextApiResponse } from "next";
 
-// Best practice: Import this from a shared lib file to prevent connection exhaustion
-// But keeping your current setup for consistency:
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient();
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
@@ -56,44 +54,32 @@ export default async function handler(
                 ResultCode,
                 ResultDesc,
             });
-
             const pendingPayment = await prisma.mpesaPayment.findUnique({
                 where: { checkoutRequestId: CheckoutRequestID },
             });
 
             if (!pendingPayment) {
-                // We still return 200 to stop Safaricom from retrying
-                return res.status(200).json({ result: "record_not_found" });
+                // We return 200 to stop Safaricom from retrying, as we can't fix this without the record.
+                return res.status(200).json({ result: "record_missing" });
             }
 
-            // Determine statuses based on specific M-Pesa codes
-            let paymentStatus = "FAILED";
-            let invoiceStatus = "FAILED"; // Default
+            // Determine Status
+            // Code 1032 = Cancelled by user
+            // Code 1 = Insufficient Funds
+            // Code 2001 = Wrong PIN
+            // We mark all as FAILED/CANCELLED to release the invoice
+            const newStatus = ResultCode === 1032 ? "CANCELLED" : "FAILED";
 
-            // 1032: Cancelled by user
-            // 1037: DS timeout (User didn't enter PIN in time)
-            // 2001: Wrong PIN
-            // 1: Insufficient Funds
-            if (ResultCode === 1032) {
-                paymentStatus = "CANCELLED";
-                invoiceStatus = "CANCELLED";
-            } else if (ResultCode === 1037) {
-                paymentStatus = "TIMEOUT";
-                invoiceStatus = "OVERDUE";
-            }
-
-            // Use a Transaction to ensure both update or neither does
+            // ATOMIC TRANSACTION
+            // Both updates happen, or neither happens.
             await prisma.$transaction([
                 prisma.mpesaPayment.update({
                     where: { id: pendingPayment.id },
-                    data: {
-                        status: paymentStatus,
-                        resultDesc: ResultDesc,
-                    },
+                    data: { status: "FAILED" },
                 }),
                 prisma.invoice.update({
                     where: { id: pendingPayment.invoiceId },
-                    data: { status: invoiceStatus as any },
+                    data: { status: newStatus as any },
                 }),
             ]);
 
@@ -124,29 +110,21 @@ export default async function handler(
             where: { checkoutRequestId: CheckoutRequestID },
         });
 
-        if (!pendingPayment) {
-            return res.status(200).json({ result: "record_not_found" });
+        if (pendingPayment) {
+            await prisma.$transaction([
+                prisma.mpesaPayment.update({
+                    where: { id: pendingPayment.id },
+                    data: { status: "COMPLETED" },
+                }),
+                prisma.invoice.update({
+                    where: { id: pendingPayment.invoiceId },
+                    data: {
+                        status: "PAID",
+                        paymentType: "MPESA",
+                    },
+                }),
+            ]);
         }
-
-        await prisma.$transaction([
-            prisma.mpesaPayment.update({
-                where: { id: pendingPayment.id },
-                data: {
-                    status: "COMPLETED",
-                    amountPaid: amount,
-                    receiptNumber: receiptNumber,
-                    phoneNumber: phoneNumber,
-                    transactionDate: new Date(),
-                },
-            }),
-            prisma.invoice.update({
-                where: { id: pendingPayment.invoiceId },
-                data: {
-                    status: "PAID",
-                    paymentType: "MPESA",
-                },
-            }),
-        ]);
 
         return res.status(200).json({ result: "success" });
     } catch (error) {
