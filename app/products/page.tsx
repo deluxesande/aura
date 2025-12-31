@@ -288,9 +288,8 @@ export default function Page() {
 
         setIsProcessingOrder(true);
 
-        const promise = async () => {
+        const orderLogic = async () => {
             try {
-                // Step 1: Create Invoice Items
                 const invoiceItemPromises = cartItems.map(async (item) => {
                     const data = {
                         quantity: item.cartQuantity,
@@ -316,7 +315,6 @@ export default function Page() {
                     .map((result) => ({ id: result.id }));
 
                 if (createdInvoiceItems.length === cartItems.length) {
-                    // Step 2: Create the Invoice
                     const totalAmount = cartItems.reduce(
                         (total, item) => total + item.price * item.cartQuantity,
                         0
@@ -345,20 +343,30 @@ export default function Page() {
 
                     return response.data;
                 } else {
-                    throw new Error(
-                        "Failed to create some invoice items. Please try again."
-                    );
+                    throw new Error("Failed to create some invoice items.");
                 }
             } finally {
-                setIsProcessingOrder(false);
+                // If this is NOT the first step of an M-Pesa flow (i.e. it is Cash or final step), turn off loading
+                // If paymentTypeOverride is "MPESA" AND mpesaDetails is null, it means we are just starting the flow -> Keep Loading on
+                // Otherwise -> Turn Loading off
+                const isStartingMpesaFlow =
+                    paymentTypeOverride === "MPESA" && !mpesaDetails;
+
+                if (!isStartingMpesaFlow) {
+                    setIsProcessingOrder(false);
+                }
             }
         };
 
-        toast.promise(promise(), {
-            loading: "Processing order...",
-            success: "Order Successful!",
-            error: "Error processing order",
+        const orderPromise = orderLogic();
+
+        toast.promise(orderPromise, {
+            loading: "Creating Order...",
+            success: "Order Created Successfully!",
+            error: "Error creating order",
         });
+
+        return await orderPromise;
     };
 
     const handleSelectCustomer = (customer: Customer) => {
@@ -481,40 +489,42 @@ export default function Page() {
 
             if (formattedNumber) {
                 setIsProcessingOrder(true);
-                const promise = async () => {
-                    try {
-                        const response = await axios.post(
-                            "/api/safaricom/c2b/payment/lipa",
-                            {
-                                phoneNumber: formattedNumber,
-                                amount: amount,
-                                transactionType: "CustomerPayBillOnline",
-                            }
-                        );
+                try {
+                    // STEP 1: Create Invoice First (Status: PENDING)
+                    // We pass "MPESA" as type, but no details yet.
+                    const invoice = await handleOrder("MPESA");
 
-                        if (response.status === 200) {
-                            setPaymentType("MPESA");
-                            const mpesaDetails = {
-                                checkoutRequestId:
-                                    response.data.data.CheckoutRequestID,
-                                merchantRequestId:
-                                    response.data.data.MerchantRequestID,
-                                phoneNumber: formattedNumber,
-                            };
-                            await handleOrder("MPESA", mpesaDetails);
-                            return "Payment Request Sent";
-                        }
-                    } catch (error) {
-                        throw Error("Failed to send payment request");
-                    } finally {
-                        setIsProcessingOrder(false);
+                    if (invoice && invoice.id) {
+                        // STEP 2: Trigger STK Push with the Invoice ID
+                        const stkPromise = async () => {
+                            const response = await axios.post(
+                                "/api/safaricom/c2b/payment/lipa",
+                                {
+                                    phoneNumber: formattedNumber,
+                                    amount: amount,
+                                    transactionType: "CustomerPayBillOnline",
+                                    invoiceId: invoice.id,
+                                }
+                            );
+
+                            if (response.status === 200) {
+                                setPaymentType("MPESA");
+                                return "Payment Request Sent";
+                            }
+                        };
+
+                        await toast.promise(stkPromise(), {
+                            loading: "Sending M-Pesa prompt...",
+                            success: "Prompt Sent! Check your phone.",
+                            error: "Failed to send prompt",
+                        });
                     }
-                };
-                toast.promise(promise(), {
-                    loading: "Sending M-Pesa prompt...",
-                    success: (msg) => msg || "Prompt Sent",
-                    error: "Error sending prompt",
-                });
+                } catch (error) {
+                    console.error("Mpesa Flow Error:", error);
+                    // No need for extra toast here, handleOrder or stkPromise handles it
+                } finally {
+                    setIsProcessingOrder(false);
+                }
             } else {
                 toast.error("Invalid phone number format");
             }

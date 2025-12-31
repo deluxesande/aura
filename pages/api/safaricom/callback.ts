@@ -24,9 +24,6 @@ interface MpesaPayload {
     Body: { stkCallback: StkCallback };
 }
 
-// Optimized short wait function
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse
@@ -50,22 +47,9 @@ export default async function handler(
             CheckoutRequestID,
         } = payload.Body.stkCallback;
 
-        // --- OPTIMIZED POLLING ---
-        // Check every 500ms for max 4 seconds (8 tries) to prevent Vercel timeouts
-        let pendingPayment = null;
-        let retries = 8;
-
-        while (retries > 0) {
-            pendingPayment = await prisma.mpesaPayment.findUnique({
-                where: { checkoutRequestId: CheckoutRequestID },
-            });
-
-            if (pendingPayment) {
-                break;
-            }
-            await wait(500); // 500ms wait
-            retries--;
-        }
+        const pendingPayment = await prisma.mpesaPayment.findUnique({
+            where: { checkoutRequestId: CheckoutRequestID },
+        });
 
         if (ResultCode !== 0) {
             await storeFailedCallbackInDb({
@@ -76,7 +60,7 @@ export default async function handler(
             });
 
             if (pendingPayment) {
-                // 1032 = User Cancelled, everything else is FAILED
+                // 1032 = User Cancelled, others are FAILED
                 const newStatus = ResultCode === 1032 ? "CANCELLED" : "FAILED";
 
                 await prisma.$transaction([
@@ -91,9 +75,6 @@ export default async function handler(
                 ]);
             } else {
                 console.warn(`Orphaned Failure Callback: ${CheckoutRequestID}`);
-                return res
-                    .status(200)
-                    .json({ result: "record_missing_timeout" });
             }
 
             return res.status(200).json({ result: "acknowledged_failure" });
@@ -106,7 +87,8 @@ export default async function handler(
         const amount = Number(getMetaValue("Amount"));
         const receiptNumber = String(getMetaValue("MpesaReceiptNumber"));
         const phoneNumber = String(getMetaValue("PhoneNumber"));
-        const transactionDate = String(getMetaValue("TransactionDate"));
+        const tDateVal = getMetaValue("TransactionDate");
+        const transactionDate = tDateVal ? String(tDateVal) : "0";
 
         await storeSuccessfulCallbackInDb({
             MerchantRequestID,
