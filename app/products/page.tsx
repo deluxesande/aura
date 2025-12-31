@@ -387,14 +387,15 @@ export default function Page() {
         }
     };
 
-    // Called when user clicks "Add this number" prompt
     const handlePromptAddCustomer = () => {
         setNewCustomerDetails((prev) => ({
             ...prev,
             phoneNumber: mpesaNumber,
         }));
         setShowAddCustomerModal(true);
-        handleClose();
+        if (typeof window !== "undefined" && window.innerWidth < 1020) {
+            handleClose();
+        }
     };
 
     const handleMpesaPrompt = async (event: React.FormEvent) => {
@@ -577,7 +578,13 @@ export default function Page() {
                         <button
                             onClick={() => {
                                 setShowSelectCustomerModal(true);
-                                handleClose();
+                                // Only close if screen width is less than 768px (Mobile/Tablet)
+                                if (
+                                    typeof window !== "undefined" &&
+                                    window.innerWidth < 1020
+                                ) {
+                                    handleClose();
+                                }
                             }}
                             className="w-full mb-3 flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 transition-colors"
                         >
