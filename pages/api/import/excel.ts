@@ -130,7 +130,7 @@ export default async function handler(
                             { email: { in: contactKeys } },
                             { phoneNumber: { in: phoneKeys } },
                         ],
-                        createdBy: userId,
+                        createdById: userId,
                     },
                     select: { id: true, email: true, phoneNumber: true },
                 });
