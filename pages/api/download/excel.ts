@@ -94,7 +94,11 @@ export default async function handler(
             }),
             // Customers
             prisma.customer.findMany({
-                where: { createdBy: { in: userIds } },
+                where: {
+                    CreatedBy: {
+                        clerkId: { in: userIds },
+                    },
+                },
                 orderBy: { createdAt: "desc" },
             }),
         ]);
