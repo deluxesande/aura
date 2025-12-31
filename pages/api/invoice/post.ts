@@ -136,4 +136,4 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 };
 
-export default addCreatedBy(handler);
+export const addInvoice = addCreatedBy(handler);
