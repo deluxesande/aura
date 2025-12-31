@@ -253,7 +253,7 @@ export default function InvoicesTable({
                                                                     invoice
                                                                         .creator
                                                                         .imageUrl ||
-                                                                    "https://www.svgrepo.com/show/535711/user.svg"
+                                                                    "/images/user.png"
                                                                 }
                                                                 width={32}
                                                                 height={32}
@@ -347,11 +347,23 @@ export default function InvoicesTable({
                         </div>
                     </div>
                 ) : paginatedInvoices.length === 0 ? (
-                    <p className="text-gray-500 text-center p-8">
-                        {filterStatus === "ALL"
-                            ? "No Invoices"
-                            : `No ${filterStatus.toLowerCase()} invoices found.`}
-                    </p>
+                    <div className="flex flex-col items-center justify-center my-8">
+                        <div className="bg-green-100 border border-gray-100 rounded-full p-4 mb-3">
+                            <FileX className="h-6 w-6 stroke-green-500" />
+                        </div>
+
+                        <h3 className="text-gray-900 font-medium text-sm">
+                            {filterStatus === "ALL"
+                                ? "No Invoices Found"
+                                : `No ${filterStatus.toLowerCase()} invoices`}
+                        </h3>
+
+                        <p className="text-gray-500 text-xs mt-1 max-w-xs mx-auto">
+                            {filterStatus === "ALL"
+                                ? "It looks like there are no invoices recorded yet."
+                                : `There are no invoices matching the "${filterStatus}" filter.`}
+                        </p>
+                    </div>
                 ) : (
                     <div className="flex flex-col space-y-4">
                         {paginatedInvoices.map((invoice, index) => (
@@ -395,7 +407,7 @@ export default function InvoicesTable({
                                                     src={
                                                         invoice.creator
                                                             .imageUrl ||
-                                                        "https://www.svgrepo.com/show/535711/user.svg"
+                                                        "/images/user.png"
                                                     }
                                                     fill
                                                     alt="Creator"

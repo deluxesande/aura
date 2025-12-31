@@ -20,6 +20,7 @@ import { ChevronRight, User as UserIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
+import { hide } from "@/store/slices/visibilitySlice";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 
@@ -98,6 +99,10 @@ export default function Page() {
                 active: category.id === categoryId,
             }))
         );
+    };
+
+    const handleClose = () => {
+        dispatch(hide());
     };
 
     useEffect(() => {
@@ -389,6 +394,7 @@ export default function Page() {
             phoneNumber: mpesaNumber,
         }));
         setShowAddCustomerModal(true);
+        handleClose();
     };
 
     const handleMpesaPrompt = async (event: React.FormEvent) => {
@@ -569,7 +575,10 @@ export default function Page() {
 
                         {/* Customer Trigger Button */}
                         <button
-                            onClick={() => setShowSelectCustomerModal(true)}
+                            onClick={() => {
+                                setShowSelectCustomerModal(true);
+                                handleClose();
+                            }}
                             className="w-full mb-3 flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 transition-colors"
                         >
                             <div className="flex items-center gap-3">
@@ -650,7 +659,6 @@ export default function Page() {
                 </div>
             </CreateOrder>
 
-            {/* --- MODAL: Select Customer --- */}
             {showSelectCustomerModal && (
                 <SelectCustomerModal
                     setShowSelectCustomerModal={setShowSelectCustomerModal}
@@ -666,7 +674,6 @@ export default function Page() {
                 />
             )}
 
-            {/* --- MODAL: Add Customer --- */}
             {showAddCustomerModal && (
                 <CustomerModal
                     showAddCustomerModal={showAddCustomerModal}
