@@ -6,7 +6,7 @@ import {
     Check,
     Clock,
     X,
-    Filter,
+    FileX,
 } from "lucide-react";
 import { Invoice } from "@/utils/typesDefinitions";
 import { useRouter } from "next/navigation";
@@ -207,11 +207,25 @@ export default function InvoicesTable({
                                     <tr>
                                         <td
                                             colSpan={6}
-                                            className="py-12 px-4 text-center text-gray-500"
+                                            className="py-16 text-center"
                                         >
-                                            {filterStatus === "ALL"
-                                                ? "No Invoices Found"
-                                                : `No ${filterStatus.toLowerCase()} invoices found.`}
+                                            <div className="flex flex-col items-center justify-center">
+                                                <div className="bg-green-100 border border-gray-100 rounded-full p-4 mb-3">
+                                                    <FileX className="h-6 w-6 stroke-green-500" />
+                                                </div>
+
+                                                <h3 className="text-gray-900 font-medium text-sm">
+                                                    {filterStatus === "ALL"
+                                                        ? "No Invoices Found"
+                                                        : `No ${filterStatus.toLowerCase()} invoices`}
+                                                </h3>
+
+                                                <p className="text-gray-500 text-xs mt-1 max-w-xs mx-auto">
+                                                    {filterStatus === "ALL"
+                                                        ? "It looks like there are no invoices recorded yet."
+                                                        : `There are no invoices matching the "${filterStatus}" filter.`}
+                                                </p>
+                                            </div>
                                         </td>
                                     </tr>
                                 ) : (

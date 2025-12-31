@@ -2,6 +2,7 @@
 
 import CustomerModal from "@/components/CustomerModal";
 import Navbar from "@/components/Navbar";
+import { formatPhoneNumber } from "@/utils/formatPhoneNumber";
 import axios from "axios";
 import {
     ChevronLeft,
@@ -14,10 +15,10 @@ import {
     User,
 } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 import { toast } from "sonner";
 
-// --- Interface Definition ---
 interface Customer {
     id: string;
     firstName: string;
@@ -45,10 +46,10 @@ export default function Page() {
         phoneNumber: "",
     });
 
-    // --- Pagination & Search State ---
     const [currentPage, setCurrentPage] = React.useState(1);
     const [itemsPerPage] = React.useState(10);
     const [searchTerm, setSearchTerm] = React.useState("");
+    const router = useRouter();
 
     const handleDelete = async (customerId: string) => {
         const promise = async () => {
@@ -81,9 +82,8 @@ export default function Page() {
         }
 
         try {
-            const formattedPhone = newCustomerDetails.phoneNumber.replace(
-                /\D/g,
-                ""
+            const formattedPhone = formatPhoneNumber(
+                newCustomerDetails.phoneNumber
             );
             const emailToSave =
                 newCustomerDetails.email.trim() === ""
@@ -136,9 +136,6 @@ export default function Page() {
         fetchCustomers();
     }, []);
 
-    // --- Pagination & Search Logic ---
-
-    // 1. Filter customers based on search term
     const filteredCustomers = customers.filter((customer) => {
         const searchLower = searchTerm.toLowerCase();
         return (
@@ -149,19 +146,15 @@ export default function Page() {
                 customer.email.toLowerCase().includes(searchLower))
         );
     });
-
-    // 2. Reset page when search term changes
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm]);
 
-    // 3. Calculate pagination values
     const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const paginatedCustomers = filteredCustomers.slice(startIndex, endIndex);
 
-    // 4. Handlers
     const handlePreviousPage = () => {
         if (currentPage > 1) setCurrentPage(currentPage - 1);
     };
@@ -197,9 +190,6 @@ export default function Page() {
                 {loading ? (
                     <div className="w-full h-64 flex flex-col items-center justify-center bg-white rounded-xl border border-gray-100">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
-                        <p className="mt-4 text-sm text-gray-500 font-medium">
-                            Loading customers...
-                        </p>
                     </div>
                 ) : (
                     <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
@@ -277,7 +267,12 @@ export default function Page() {
                                         paginatedCustomers.map((customer) => (
                                             <tr
                                                 key={customer.id}
-                                                className="hover:bg-gray-50 transition-colors group"
+                                                onClick={() =>
+                                                    router.push(
+                                                        `/customers/${customer.id}`
+                                                    )
+                                                }
+                                                className="hover:bg-gray-50 transition-colors group cursor-pointer"
                                             >
                                                 <td className="p-4">
                                                     <div className="flex items-center gap-3">
