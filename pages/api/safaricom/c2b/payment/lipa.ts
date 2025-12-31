@@ -2,10 +2,14 @@ import { getAuth } from "@clerk/nextjs/server";
 import { PrismaClient } from "@prisma/client";
 import axios from "axios";
 import type { NextApiRequest, NextApiResponse } from "next";
+import { storeResponseInDb } from "@/utils/storeInDb";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient();
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+
+const { CONSUMER_KEY, CONSUMER_SECRET, SHORTCODE, PASS_KEY, CALLBACK_URL } =
+    process.env;
 
 const OAUTH_URL =
     "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials";
@@ -13,14 +17,11 @@ const STK_PUSH_URL =
     "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest";
 
 const getAccessToken = async () => {
-    const consumerKey = process.env.MPESA_CONSUMER_KEY;
-    const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
-
-    if (!consumerKey || !consumerSecret) {
-        throw new Error("Missing MPESA_CONSUMER_KEY or MPESA_CONSUMER_SECRET");
+    if (!CONSUMER_KEY || !CONSUMER_SECRET) {
+        throw new Error("Missing CONSUMER_KEY or CONSUMER_SECRET");
     }
 
-    const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString(
+    const auth = Buffer.from(`${CONSUMER_KEY}:${CONSUMER_SECRET}`).toString(
         "base64"
     );
 
@@ -28,6 +29,15 @@ const getAccessToken = async () => {
         headers: { Authorization: `Basic ${auth}` },
     });
     return response.data.access_token;
+};
+
+const formatPhoneNumber = (phone: string) => {
+    let p = phone.replace(/\D/g, "");
+    if (p.length === 10 && p.startsWith("0")) return `254${p.substring(1)}`;
+    if (p.length === 9 && (p.startsWith("7") || p.startsWith("1")))
+        return `254${p}`;
+    if (p.length === 12 && p.startsWith("254")) return p;
+    return p;
 };
 
 export default async function handler(
@@ -52,13 +62,13 @@ export default async function handler(
         });
 
         if (!user || !user.businessId) {
-            console.error("Lipa Error: User missing Business ID linkage");
             return res
                 .status(400)
                 .json({ error: "User is not linked to a business" });
         }
 
         const token = await getAccessToken();
+
         const date = new Date();
         const timestamp =
             date.getFullYear() +
@@ -68,28 +78,26 @@ export default async function handler(
             ("0" + date.getMinutes()).slice(-2) +
             ("0" + date.getSeconds()).slice(-2);
 
-        const shortCode = process.env.MPESA_SHORTCODE;
-        const passkey = process.env.MPESA_PASSKEY;
-        const callbackUrl = process.env.MPESA_CALLBACK_URL;
-
-        if (!shortCode || !passkey || !callbackUrl) {
-            throw new Error("Missing MPESA env variables");
+        if (!SHORTCODE || !PASS_KEY || !CALLBACK_URL) {
+            throw new Error("Missing M-Pesa env variables");
         }
 
         const password = Buffer.from(
-            `${shortCode}${passkey}${timestamp}`
+            `${SHORTCODE}${PASS_KEY}${timestamp}`
         ).toString("base64");
 
+        const formattedPhone = formatPhoneNumber(phoneNumber);
+
         const stkData = {
-            BusinessShortCode: shortCode,
+            BusinessShortCode: SHORTCODE,
             Password: password,
             Timestamp: timestamp,
             TransactionType: "CustomerPayBillOnline",
             Amount: Math.ceil(Number(amount)),
-            PartyA: phoneNumber,
-            PartyB: shortCode,
-            PhoneNumber: phoneNumber,
-            CallBackURL: callbackUrl,
+            PartyA: formattedPhone,
+            PartyB: SHORTCODE,
+            PhoneNumber: formattedPhone,
+            CallBackURL: CALLBACK_URL,
             AccountReference: "Invoice Payment",
             TransactionDesc: `Invoice ${invoiceId}`,
         };
@@ -98,31 +106,17 @@ export default async function handler(
             headers: { Authorization: `Bearer ${token}` },
         });
 
-        try {
-            await prisma.mpesaPayment.create({
-                data: {
-                    amount: parseFloat(amount),
-                    phoneNumber: phoneNumber,
-                    accountReference: "Invoice Payment",
-                    transactionDesc: "M-Pesa STK Push",
-                    merchantRequestId: stkResponse.data.MerchantRequestID,
-                    checkoutRequestId: stkResponse.data.CheckoutRequestID,
-                    status: "PENDING",
-                    invoiceId: invoiceId,
-                    userId: user.id,
-                    businessId: user.businessId,
-                },
-            });
-        } catch (dbError) {
-            console.error("CRITICAL: DB Write Failed:", dbError);
-        }
+        await storeResponseInDb(stkResponse.data);
 
         return res.status(200).json({
             data: stkResponse.data,
             message: "STK Push sent",
         });
     } catch (error: any) {
-        console.error("STK API Error:", error?.message || error);
-        return res.status(500).json({ error: "Payment initiation failed" });
+        console.error("STK API Error:", error?.response?.data || error.message);
+        return res.status(500).json({
+            error: "Payment initiation failed",
+            details: error?.response?.data,
+        });
     }
 }
