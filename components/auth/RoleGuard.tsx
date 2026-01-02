@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { AppState } from "@/store";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 const PUBLIC_ROUTES = new Set([
@@ -35,10 +35,33 @@ export default function RoleGuard({ children }: { children: React.ReactNode }) {
     const pathname = usePathname() || "";
     const user = useSelector((state: AppState) => state.auth.user);
 
+    const [isChecking, setIsChecking] = useState(true);
+
     const isPublicRoute = PUBLIC_ROUTES.has(pathname);
+
+    useEffect(() => {
+        if (user) {
+            setIsChecking(false);
+            return;
+        }
+
+        const hasAuthCookie =
+            document.cookie.includes("token") ||
+            document.cookie.includes("session") ||
+            document.cookie.includes("auth");
+
+        if (!hasAuthCookie) {
+            setIsChecking(false);
+        } else {
+            const timer = setTimeout(() => setIsChecking(false), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [user]);
 
     const { isAuthorized, redirectPath } = useMemo(() => {
         if (isPublicRoute) return { isAuthorized: true, redirectPath: null };
+
+        if (isChecking) return { isAuthorized: true, redirectPath: null };
 
         if (!user) return { isAuthorized: false, redirectPath: "/sign-in" };
 
@@ -59,10 +82,10 @@ export default function RoleGuard({ children }: { children: React.ReactNode }) {
         }
 
         return { isAuthorized: true, redirectPath: null };
-    }, [pathname, user, isPublicRoute]);
+    }, [pathname, user, isPublicRoute, isChecking]);
 
     useEffect(() => {
-        if (!isAuthorized && redirectPath) {
+        if (!isChecking && !isAuthorized && redirectPath) {
             if (user) {
                 toast.error(
                     "Access Denied: You do not have permission to view this page."
@@ -70,14 +93,13 @@ export default function RoleGuard({ children }: { children: React.ReactNode }) {
             } else if (pathname !== "/sign-in") {
                 toast.error("Please sign in to access this page.");
             }
-
             router.replace(redirectPath);
         }
-    }, [isAuthorized, redirectPath, router, user, pathname]);
+    }, [isAuthorized, redirectPath, router, user, pathname, isChecking]);
 
     if (isPublicRoute) return <>{children}</>;
 
-    if (!user) {
+    if (isChecking) {
         return (
             <div className="h-screen w-full flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>

@@ -40,12 +40,10 @@ export default function RootLayout({
                             transition={{ duration: 0.5 }}
                         >
                             <ReduxProvider>
-                                <RoleGuard>
-                                    <ToastProvider>
-                                        {children}
-                                        <Analytics />
-                                    </ToastProvider>
-                                </RoleGuard>
+                                <ToastProvider>
+                                    {children}
+                                    <Analytics />
+                                </ToastProvider>
                             </ReduxProvider>
                         </motion.div>
                     </AnimatePresence>
