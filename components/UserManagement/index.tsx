@@ -7,13 +7,14 @@ import {
     removeInvitation,
 } from "@/store/slices/invitationsDataSlice";
 import axios from "axios";
-import { Trash } from "lucide-react";
+import { Trash, Users } from "lucide-react"; // Changed icon to Users for context
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface User {
     id: string;
@@ -107,7 +108,6 @@ const UserManagement: React.FC = () => {
             });
 
             if (response.status === 200) {
-                // Update Redux store
                 dispatch(
                     setInvitations(
                         invitations.map((user) =>
@@ -118,7 +118,6 @@ const UserManagement: React.FC = () => {
                     )
                 );
 
-                // Update invitations data store
                 dispatch(
                     updateInvitation({
                         id: userId,
@@ -204,21 +203,17 @@ const UserManagement: React.FC = () => {
     };
 
     useEffect(() => {
-        // Check if invitations data exists in Redux store first
         if (userInvitations.length > 0) {
-            // Data already in store, use it
             setIsLoading(false);
             return;
         }
 
-        // If not in store, fetch from API
         const fetchUsers = async () => {
             try {
                 const response = await axios.get("/api/auth/invite/get");
                 if (response.data.invitations) {
                     dispatch(setInvitations(response.data.invitations));
 
-                    // Fetch profile images for all users
                     const usersWithImages = await Promise.all(
                         response.data.invitations.map(async (user: User) => {
                             try {
@@ -243,7 +238,6 @@ const UserManagement: React.FC = () => {
                         })
                     );
 
-                    // Update invitations data store with users including image URLs
                     dispatch(setInvitationsWithImages(usersWithImages));
                 }
 
@@ -267,7 +261,7 @@ const UserManagement: React.FC = () => {
 
     return (
         <section className="relative">
-            <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div>
                     <h2 className="text-lg font-medium text-gray-900">
                         User Management
@@ -277,12 +271,24 @@ const UserManagement: React.FC = () => {
                         your team.
                     </p>
                 </div>
-                <button
-                    onClick={() => setShowInviteModal(true)}
-                    className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 w-full sm:w-auto"
-                >
-                    + Invite
-                </button>
+
+                {/* ACTIONS CONTAINER: Link and Button together on the right */}
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <Link
+                        href="/settings/team"
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center justify-center whitespace-nowrap flex-1 sm:flex-none"
+                    >
+                        <Users className="w-4 h-4 mr-2" />
+                        View Active Members
+                    </Link>
+
+                    <button
+                        onClick={() => setShowInviteModal(true)}
+                        className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 flex-1 sm:flex-none"
+                    >
+                        + Invite
+                    </button>
+                </div>
             </header>
 
             {/* Users List */}

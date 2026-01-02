@@ -7,12 +7,13 @@ import {
     Clock,
     X,
     FileX,
+    Calendar,
+    CreditCard,
 } from "lucide-react";
 import { Invoice } from "@/utils/typesDefinitions";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
-// Extend the Invoice interface
 interface ExtendedInvoice extends Invoice {
     totalQuantity?: number;
 }
@@ -33,24 +34,94 @@ export default function InvoicesTable({
     const router = useRouter();
     const [currentPage, setCurrentPage] = useState(1);
 
-    // 1. Internal Filter State
-    const [filterStatus, setFilterStatus] = useState<
-        "ALL" | "PAID" | "PENDING" | "CANCELLED"
-    >("ALL");
+    // --- Filter States ---
+    const [filterStatus, setFilterStatus] = useState<string>("all");
+    const [filterTime, setFilterTime] = useState<string>("today");
+    const [filterPayment, setFilterPayment] = useState<string>("all");
 
-    // 2. Filter Logic
+    // --- Filter Logic ---
     const filteredInvoices = invoices.filter((inv) => {
-        if (filterStatus === "ALL") return true;
-        return inv.status?.toLowerCase() === filterStatus.toLowerCase();
+        // 1. Status Filter
+        if (filterStatus !== "all") {
+            if (inv.status?.toLowerCase() !== filterStatus.toLowerCase()) {
+                return false;
+            }
+        }
+
+        // 2. Payment Filter
+        if (filterPayment !== "all") {
+            const pType = inv.paymentType?.toLowerCase() || "";
+            if (pType !== filterPayment.toLowerCase()) {
+                return false;
+            }
+        }
+
+        // 3. Time Filter
+        if (filterTime === "all_time") return true;
+
+        const invDate = new Date(inv.createdAt);
+        const now = new Date();
+
+        switch (filterTime) {
+            case "today":
+                return invDate.toDateString() === now.toDateString();
+
+            case "7_days": {
+                const sevenDaysAgo = new Date(now);
+                sevenDaysAgo.setDate(now.getDate() - 7);
+                // Reset time to ensure we get the full range starting from 7 days ago
+                sevenDaysAgo.setHours(0, 0, 0, 0);
+                return invDate >= sevenDaysAgo;
+            }
+
+            case "30_days": {
+                const thirtyDaysAgo = new Date(now);
+                thirtyDaysAgo.setDate(now.getDate() - 30);
+                // Reset time to ensure we get the full range starting from 30 days ago
+                thirtyDaysAgo.setHours(0, 0, 0, 0);
+                return invDate >= thirtyDaysAgo;
+            }
+
+            default:
+                return true;
+        }
     });
 
-    // 3. Reset to Page 1 when filter changes
+    // Reset pagination when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [filterStatus]);
+    }, [filterStatus, filterTime, filterPayment]);
 
+    // --- Pagination Logic ---
+    const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedInvoices = filteredInvoices.slice(startIndex, endIndex);
+
+    // --- Handlers ---
     const handleRowClick = (invoiceId: string) => {
         router.push(`/invoice?id=${invoiceId}`);
+    };
+
+    const handlePreviousPage = () =>
+        setCurrentPage((prev) => Math.max(prev - 1, 1));
+    const handleNextPage = () =>
+        setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+    const handlePageClick = (page: number) => setCurrentPage(page);
+
+    const getPageNumbers = () => {
+        const pages = [];
+        const maxPagesToShow = 5;
+        let startPage = Math.max(
+            1,
+            currentPage - Math.floor(maxPagesToShow / 2)
+        );
+        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+        if (endPage - startPage + 1 < maxPagesToShow) {
+            startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        }
+        for (let i = startPage; i <= endPage; i++) pages.push(i);
+        return pages;
     };
 
     const getStatusBadgeColor = (status: string | undefined) => {
@@ -79,123 +150,109 @@ export default function InvoicesTable({
         }
     };
 
-    const getRoleBadgeColor = (role: string | undefined) => {
-        switch (role?.toLowerCase()) {
-            case "admin":
-                return "bg-purple-100 text-purple-800";
-            case "manager":
-                return "bg-blue-100 text-blue-800";
-            case "user":
-                return "bg-gray-100 text-gray-800";
-            default:
-                return "bg-gray-100 text-gray-800";
-        }
-    };
-
-    // 4. Calculate pagination based on FILTERED results
-    const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const paginatedInvoices = filteredInvoices.slice(startIndex, endIndex);
-
-    const handlePreviousPage = () => {
-        setCurrentPage((prev) => Math.max(prev - 1, 1));
-    };
-
-    const handleNextPage = () => {
-        setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-    };
-
-    const handlePageClick = (page: number) => {
-        setCurrentPage(page);
-    };
-
-    const getPageNumbers = () => {
-        const pages = [];
-        const maxPagesToShow = 5;
-        let startPage = Math.max(
-            1,
-            currentPage - Math.floor(maxPagesToShow / 2)
-        );
-        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-
-        if (endPage - startPage + 1 < maxPagesToShow) {
-            startPage = Math.max(1, endPage - maxPagesToShow + 1);
-        }
-
-        for (let i = startPage; i <= endPage; i++) {
-            pages.push(i);
-        }
-        return pages;
-    };
-
     return (
         <div className="p-4 card bg-white shadow-lg rounded-lg mt-4">
             {/* Header Area with Title & Filters */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <h1 className="text-2xl font-bold text-gray-400">{title}</h1>
+            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
+                <h1 className="text-2xl font-bold text-gray-400 whitespace-nowrap">
+                    {title}
+                </h1>
 
-                {/* Filter Tabs */}
-                <div className="flex items-center bg-gray-100 p-1 rounded-lg">
-                    {(["ALL", "PENDING", "PAID", "CANCELLED"] as const).map(
-                        (status) => (
-                            <button
-                                key={status}
-                                onClick={() => setFilterStatus(status)}
-                                className={`
-                        px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200
-                        ${
-                            filterStatus === status
-                                ? "bg-green-500 text-white shadow-sm"
-                                : "text-gray-400 hover:text-gray-700 hover:bg-gray-200/50"
-                        }
-                    `}
-                            >
-                                {status === "ALL"
-                                    ? "All"
-                                    : status.charAt(0) +
-                                      status.slice(1).toLowerCase()}
-                            </button>
-                        )
-                    )}
+                <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3 w-full xl:w-auto">
+                    {/* Status Tabs */}
+                    <div className="flex items-center bg-gray-100 p-1 rounded-lg overflow-x-auto max-w-full">
+                        {(["all", "pending", "paid", "cancelled"] as const).map(
+                            (status) => (
+                                <button
+                                    key={status}
+                                    onClick={() => setFilterStatus(status)}
+                                    className={`
+                  px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 whitespace-nowrap uppercase
+                  ${
+                      filterStatus === status
+                          ? "bg-green-500 text-white shadow-sm"
+                          : "text-gray-400 hover:text-gray-700 hover:bg-gray-200/50"
+                  }
+                `}
+                                >
+                                    {status}
+                                </button>
+                            )
+                        )}
+                    </div>
+
+                    <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
+
+                    {/* Time Filter */}
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                            <Calendar className="h-3.5 w-3.5 text-gray-400" />
+                        </div>
+                        <select
+                            value={filterTime}
+                            onChange={(e) => setFilterTime(e.target.value)}
+                            className="pl-8 pr-8 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none cursor-pointer hover:bg-gray-100 transition-colors capitalize"
+                        >
+                            <option value="today">Today</option>
+                            <option value="7_days">Last 7 Days</option>
+                            <option value="30_days">Last 30 Days</option>
+                            <option value="all_time">All Time</option>
+                        </select>
+                    </div>
+
+                    {/* Payment Filter */}
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                            <CreditCard className="h-3.5 w-3.5 text-gray-400" />
+                        </div>
+                        <select
+                            value={filterPayment}
+                            onChange={(e) => setFilterPayment(e.target.value)}
+                            className="pl-8 pr-8 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none cursor-pointer hover:bg-gray-100 transition-colors capitalize"
+                        >
+                            <option value="all">All Payments</option>
+                            <option value="cash">Cash</option>
+                            <option value="mpesa">Mpesa</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
-            {/* Table for larger screens */}
+            {/* Table */}
             <div className="hidden lg:block">
                 <div className="overflow-hidden">
-                    <div className="overflow-x-auto">
+                    <div className="overflow-hidden rounded-lg border border-gray-200">
                         <table className="min-w-full bg-white">
-                            <thead>
+                            <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-400">
+                                    <th className="py-3 px-4 border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                         Invoice Name
                                     </th>
-                                    <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-400">
+                                    <th className="py-3 px-4 border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                         Created By
                                     </th>
-                                    <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-400">
+                                    <th className="py-3 px-4 border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                         Quantity
                                     </th>
-                                    <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-400">
+                                    <th className="py-3 px-4 border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                         Amount
                                     </th>
-                                    <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-400">
+                                    <th className="py-3 px-4 border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                         Payment Type
                                     </th>
-                                    <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-400">
+                                    <th className="py-3 px-4 border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                         Status
                                     </th>
-                                    <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-400">
+                                    <th className="py-3 px-4 border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                         Actions
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="divide-y divide-gray-100">
                                 {loading ? (
                                     <tr>
                                         <td
-                                            colSpan={6}
+                                            colSpan={7}
                                             className="py-12 px-4 text-center"
                                         >
                                             <div className="flex flex-col items-center justify-center">
@@ -206,30 +263,26 @@ export default function InvoicesTable({
                                 ) : paginatedInvoices.length === 0 ? (
                                     <tr>
                                         <td
-                                            colSpan={6}
+                                            colSpan={7}
                                             className="py-16 text-center"
                                         >
                                             <div className="flex flex-col items-center justify-center">
                                                 <div className="bg-green-100 border border-gray-100 rounded-full p-4 mb-3">
                                                     <FileX className="h-6 w-6 stroke-green-500" />
                                                 </div>
-
                                                 <h3 className="text-gray-900 font-medium text-sm">
-                                                    {filterStatus === "ALL"
-                                                        ? "No Invoices Found"
-                                                        : `No ${filterStatus.toLowerCase()} invoices`}
+                                                    No Invoices Found
                                                 </h3>
-
                                                 <p className="text-gray-500 text-xs mt-1 max-w-xs mx-auto">
-                                                    {filterStatus === "ALL"
-                                                        ? "It looks like there are no invoices recorded yet."
-                                                        : `There are no invoices matching the "${filterStatus}" filter.`}
+                                                    {filterTime === "today"
+                                                        ? "No invoices recorded today. Try changing the time filter."
+                                                        : "Adjust your filters to see more results."}
                                                 </p>
                                             </div>
                                         </td>
                                     </tr>
                                 ) : (
-                                    paginatedInvoices?.map((invoice, index) => (
+                                    paginatedInvoices.map((invoice, index) => (
                                         <tr
                                             key={index}
                                             className="hover:bg-gray-50 cursor-pointer transition-colors"
@@ -243,6 +296,11 @@ export default function InvoicesTable({
                                                 <p className="font-medium">
                                                     {invoice.invoiceName}
                                                 </p>
+                                                <span className="text-[10px] text-gray-400">
+                                                    {new Date(
+                                                        invoice.createdAt
+                                                    ).toLocaleDateString()}
+                                                </span>
                                             </td>
                                             <td className="py-3 px-4 border-b text-black text-sm border-gray-100">
                                                 {invoice.creator ? (
@@ -257,7 +315,7 @@ export default function InvoicesTable({
                                                                 }
                                                                 width={32}
                                                                 height={32}
-                                                                alt={`${invoice.creator.firstName} Profile`}
+                                                                alt="Profile"
                                                                 className="object-cover rounded-full"
                                                             />
                                                         </div>
@@ -342,26 +400,18 @@ export default function InvoicesTable({
             <div className="block lg:hidden">
                 {loading ? (
                     <div className="w-full py-12 flex flex-col items-center justify-center">
-                        <div className="flex flex-col items-center justify-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-                        </div>
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                     </div>
                 ) : paginatedInvoices.length === 0 ? (
                     <div className="flex flex-col items-center justify-center my-8">
                         <div className="bg-green-100 border border-gray-100 rounded-full p-4 mb-3">
                             <FileX className="h-6 w-6 stroke-green-500" />
                         </div>
-
                         <h3 className="text-gray-900 font-medium text-sm">
-                            {filterStatus === "ALL"
-                                ? "No Invoices Found"
-                                : `No ${filterStatus.toLowerCase()} invoices`}
+                            No Invoices Found
                         </h3>
-
-                        <p className="text-gray-500 text-xs mt-1 max-w-xs mx-auto">
-                            {filterStatus === "ALL"
-                                ? "It looks like there are no invoices recorded yet."
-                                : `There are no invoices matching the "${filterStatus}" filter.`}
+                        <p className="text-gray-500 text-xs mt-1">
+                            Try changing the Time filter.
                         </p>
                     </div>
                 ) : (
@@ -374,18 +424,18 @@ export default function InvoicesTable({
                                     handleRowClick(String(invoice.id))
                                 }
                             >
-                                {/* TOP SECTION: Name, Quantity, Status */}
                                 <div className="flex justify-between items-start">
                                     <div className="flex flex-col min-w-0 mr-2">
                                         <h3 className="font-bold text-base text-gray-900 truncate">
                                             {invoice.invoiceName}
                                         </h3>
                                         <span className="text-xs text-gray-500 mt-1">
-                                            {invoice.totalQuantity} Items
+                                            {invoice.totalQuantity} Items •{" "}
+                                            {new Date(
+                                                invoice.createdAt
+                                            ).toLocaleDateString()}
                                         </span>
                                     </div>
-
-                                    {/* Status Badge */}
                                     <span
                                         className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium shrink-0 ${getStatusBadgeColor(
                                             invoice.status
@@ -395,10 +445,7 @@ export default function InvoicesTable({
                                         {invoice.status || "Unknown"}
                                     </span>
                                 </div>
-
                                 <div className="border-t border-gray-200 my-1"></div>
-
-                                {/* MIDDLE SECTION: Creator Info */}
                                 <div className="flex items-center justify-between">
                                     {invoice.creator ? (
                                         <div className="flex flex-1 items-center gap-2">
@@ -419,13 +466,6 @@ export default function InvoicesTable({
                                                     {invoice.creator.firstName}{" "}
                                                     {invoice.creator.lastName}
                                                 </span>
-                                                <span
-                                                    className={`px-1.5 py-0.5 rounded-[4px] text-[10px] font-semibold ${getRoleBadgeColor(
-                                                        invoice.creator.role
-                                                    )}`}
-                                                >
-                                                    {invoice.creator.role}
-                                                </span>
                                             </div>
                                         </div>
                                     ) : (
@@ -434,12 +474,15 @@ export default function InvoicesTable({
                                         </span>
                                     )}
                                 </div>
-
-                                {/* BOTTOM SECTION: Price & Actions */}
                                 <div className="flex justify-between items-center mt-1 bg-white p-2 rounded border border-gray-100">
-                                    <p className="text-green-600 font-bold text-lg">
-                                        Ksh {invoice.totalAmount}
-                                    </p>
+                                    <div className="flex flex-col">
+                                        <p className="text-green-600 font-bold text-lg">
+                                            Ksh {invoice.totalAmount}
+                                        </p>
+                                        <span className="text-[10px] text-gray-400 uppercase">
+                                            {invoice.paymentType}
+                                        </span>
+                                    </div>
                                     <button
                                         className="btn btn-sm btn-ghost text-gray-500 hover:text-red-600"
                                         onClick={(e) => {
@@ -469,7 +512,6 @@ export default function InvoicesTable({
                             Back
                         </span>
                     </button>
-
                     <div className="flex space-x-1 sm:space-x-2">
                         {getPageNumbers().map((page) => (
                             <button
@@ -485,7 +527,6 @@ export default function InvoicesTable({
                             </button>
                         ))}
                     </div>
-
                     <button
                         className="btn btn-xs btn-ghost flex items-center bg-green-400 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
                         onClick={handleNextPage}
@@ -505,9 +546,7 @@ export default function InvoicesTable({
                     Page {currentPage} of {totalPages} | Showing{" "}
                     {startIndex + 1}-
                     {Math.min(endIndex, filteredInvoices.length)} of{" "}
-                    {filteredInvoices.length}{" "}
-                    {filterStatus === "ALL" ? "" : filterStatus.toLowerCase()}{" "}
-                    invoices
+                    {filteredInvoices.length} invoices
                 </div>
             )}
         </div>

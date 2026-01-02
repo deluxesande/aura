@@ -205,7 +205,8 @@ export default function Navbar({
         const filteredProducts = originalProducts.filter(
             (product: any) =>
                 product.name.toLowerCase().includes(searchTerm) ||
-                product.description.toLowerCase().includes(searchTerm)
+                product.description.toLowerCase().includes(searchTerm) ||
+                product.sku.toLowerCase().includes(searchTerm)
         );
 
         if (filteredProducts.length === 0) {

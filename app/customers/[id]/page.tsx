@@ -3,7 +3,14 @@
 import Navbar from "@/components/Navbar";
 import InvoicesTable from "@/components/InvoicesTable";
 import axios from "axios";
-import { ArrowLeft, CreditCard, Mail, Phone, Receipt } from "lucide-react";
+import {
+    ArrowLeft,
+    Briefcase,
+    CreditCard,
+    Mail,
+    Phone,
+    Receipt,
+} from "lucide-react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -47,7 +54,7 @@ export default function CustomerDetailsPage() {
 
     // Stats
     const totalSpent = invoices.reduce(
-        (acc, curr) => acc + curr.totalAmount,
+        (acc, curr) => (curr.status === "PAID" ? acc + curr.totalAmount : acc),
         0
     );
     const totalOrders = invoices.length;
@@ -57,11 +64,10 @@ export default function CustomerDetailsPage() {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const customerRes = await axios.get(`/api/customer`);
-                const foundCustomer = customerRes.data.find(
-                    (c: Customer) => c.id === customerId
+                const customerRes = await axios.get(
+                    `/api/customer/${customerId}`
                 );
-
+                const foundCustomer = customerRes.data;
                 if (foundCustomer) {
                     setCustomer(foundCustomer);
                 } else {
@@ -69,7 +75,6 @@ export default function CustomerDetailsPage() {
                     router.push("/customers");
                 }
             } catch (error) {
-                console.error(error);
                 toast.error("Failed to load customer details");
             } finally {
                 setLoading(false);
@@ -113,6 +118,7 @@ export default function CustomerDetailsPage() {
                     `/api/invoice/customer?customerId=${customerId}`
                 );
                 setInvoices(response.data);
+                console.log(response.data);
             } catch (error) {
                 // console.error("Error fetching invoices:", error);
             } finally {
@@ -258,6 +264,9 @@ export default function CustomerDetailsPage() {
                             <p className="text-2xl font-bold text-gray-900 mt-1">
                                 {formatCurrency(totalSpent)}
                             </p>
+                            <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                                <Briefcase className="w-5 h-5 stroke-green-500" />
+                            </div>
                         </div>
                     </div>
                     <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">

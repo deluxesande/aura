@@ -1,4 +1,4 @@
-import { getAuth } from "@clerk/nextjs/server";
+import { clerkClient, getAuth } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
 import { updateCustomer } from "./update";
 import { deleteCustomer } from "./delete";
@@ -30,7 +30,6 @@ async function getCustomerById(req: NextApiRequest, res: NextApiResponse) {
                 .json({ error: "Invalid or missing customer ID" });
         }
 
-        // Fetch using findFirst with businessId constraint
         const customer = await prisma.customer.findFirst({
             where: {
                 id: id,
@@ -42,6 +41,7 @@ async function getCustomerById(req: NextApiRequest, res: NextApiResponse) {
                         firstName: true,
                         lastName: true,
                         role: true,
+                        clerkId: true,
                     },
                 },
             },
@@ -51,7 +51,35 @@ async function getCustomerById(req: NextApiRequest, res: NextApiResponse) {
             return res.status(404).json({ error: "Customer not found" });
         }
 
-        res.status(200).json(customer);
+        let imageUrl = "/images/user.png";
+
+        if (customer.CreatedBy?.clerkId) {
+            try {
+                const client = await clerkClient();
+                const clerkUser = await client.users.getUser(
+                    customer.CreatedBy.clerkId
+                );
+                if (clerkUser.imageUrl) {
+                    imageUrl = clerkUser.imageUrl;
+                }
+            } catch (error) {
+                console.warn(
+                    `Could not fetch image for user ${customer.CreatedBy.clerkId}`
+                );
+            }
+        }
+
+        const customerWithImage = {
+            ...customer,
+            CreatedBy: customer.CreatedBy
+                ? {
+                      ...customer.CreatedBy,
+                      imageUrl: imageUrl,
+                  }
+                : null,
+        };
+
+        res.status(200).json(customerWithImage);
     } catch (error) {
         console.error("Get Customer Error:", error);
         res.status(500).json({ error: "Failed to fetch customer" });

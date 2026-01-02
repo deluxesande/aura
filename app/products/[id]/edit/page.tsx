@@ -73,26 +73,24 @@ export default function EditProductPage() {
     // Fetch Logic
     useEffect(() => {
         const fetchData = async () => {
-            // Prevent double fetch if we already started/finished
             if (!id) return;
 
             setIsDataLoading(true);
             try {
-                // 1. Check Redux Store first (Fastest)
                 const productFromStore = originalProducts.find(
-                    (p) => p.id === id
+                    (p: Product) => p.id === id
                 );
 
                 if (productFromStore) {
                     setFormData(productFromStore);
                     setImagePreview(productFromStore.image);
 
-                    // Fetch categories separately if needed
-                    const categoriesRes = await axios.get("/api/category");
-                    setCategories(categoriesRes.data);
+                    // const categoriesRes = await axios.get("/api/category");
+                    // setCategories(categoriesRes.data);
+                    const categoriesRes = productFromStore.Category;
+                    setIsDataLoading(false);
                 } else {
-                    // 2. Fetch from API if not in store
-                    if (hasFetched.current) return; // Prevent double API call
+                    if (hasFetched.current) return;
                     hasFetched.current = true;
 
                     const [productRes, categoriesRes] = await Promise.all([
@@ -104,7 +102,6 @@ export default function EditProductPage() {
                     setImagePreview(productRes.data.image);
                     setCategories(categoriesRes.data);
 
-                    // Update Redux so we don't fetch again next time
                     dispatch(
                         setProducts([...originalProducts, productRes.data])
                     );
@@ -119,7 +116,6 @@ export default function EditProductPage() {
         fetchData();
     }, [id, originalProducts, dispatch]);
 
-    // Handle input changes
     const handleChange = (
         e: React.ChangeEvent<
             HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -251,7 +247,6 @@ export default function EditProductPage() {
 
         const promise = async () => {
             try {
-                // Ensure SKU is present
                 const finalData = {
                     ...formData,
                     sku: formData.sku || generateSKU(formData.name),
@@ -262,7 +257,6 @@ export default function EditProductPage() {
                     finalData
                 );
 
-                // Update local list in Redux
                 const updatedProducts = originalProducts.map((p) =>
                     p.id === id ? response.data : p
                 );
@@ -283,17 +277,15 @@ export default function EditProductPage() {
         });
     };
 
-    if (isDataLoading) {
-        return (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/80">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-            </div>
-        );
-    }
-
     return (
         <Navbar>
             <div className="max-w-5xl mx-auto px-4 py-8 relative">
+                {/* Loading Spinner */}
+                {isDataLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                    </div>
+                )}
                 {/* Header Section */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                     <div className="flex items-center gap-4">
@@ -344,7 +336,6 @@ export default function EditProductPage() {
                         {/* General Info Card */}
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                <Layers className="w-5 h-5 text-gray-500" />
                                 General Information
                             </h2>
                             <div className="space-y-4">
@@ -426,7 +417,6 @@ export default function EditProductPage() {
                         {/* Pricing & Inventory Card */}
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                <DollarSign className="w-5 h-5 text-gray-500" />
                                 Pricing & Inventory
                             </h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
