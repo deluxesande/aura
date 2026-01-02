@@ -62,6 +62,8 @@ export default function InvoicesTable({
         const invDate = new Date(inv.createdAt);
         const now = new Date();
 
+        const invTime = invDate.getTime();
+
         switch (filterTime) {
             case "today":
                 return invDate.toDateString() === now.toDateString();
@@ -69,17 +71,15 @@ export default function InvoicesTable({
             case "7_days": {
                 const sevenDaysAgo = new Date(now);
                 sevenDaysAgo.setDate(now.getDate() - 7);
-                // Reset time to ensure we get the full range starting from 7 days ago
                 sevenDaysAgo.setHours(0, 0, 0, 0);
-                return invDate >= sevenDaysAgo;
+                return invTime >= sevenDaysAgo.getTime();
             }
 
             case "30_days": {
                 const thirtyDaysAgo = new Date(now);
                 thirtyDaysAgo.setDate(now.getDate() - 30);
-                // Reset time to ensure we get the full range starting from 30 days ago
                 thirtyDaysAgo.setHours(0, 0, 0, 0);
-                return invDate >= thirtyDaysAgo;
+                return invTime >= thirtyDaysAgo.getTime();
             }
 
             default:
@@ -150,6 +150,62 @@ export default function InvoicesTable({
         }
     };
 
+    // --- Dynamic Empty State Logic ---
+    const getEmptyStateContent = () => {
+        // 1. Case: Database is completely empty
+        if (invoices.length === 0) {
+            return {
+                title: "No invoices created",
+                description:
+                    "There are no invoices recorded in the system yet.",
+            };
+        }
+
+        // 2. Case: No results due to filters
+        let timeText = "";
+        switch (filterTime) {
+            case "today":
+                timeText = "today";
+                break;
+            case "7_days":
+                timeText = "in the last 7 days";
+                break;
+            case "30_days":
+                timeText = "in the last 30 days";
+                break;
+            case "all_time":
+                timeText = "at all";
+                break;
+        }
+
+        const statusText =
+            filterStatus !== "all" ? filterStatus.toLowerCase() : "";
+        const paymentText = filterPayment !== "all" ? filterPayment : ""; // Keep payment casing (e.g. Mpesa)
+
+        let title = "No invoices found";
+
+        if (statusText && paymentText) {
+            // e.g. "No pending Mpesa invoices"
+            title = `No ${statusText} ${paymentText} invoices`;
+        } else if (statusText) {
+            // e.g. "No paid invoices"
+            title = `No ${statusText} invoices`;
+        } else if (paymentText) {
+            // e.g. "No Mpesa invoices"
+            title = `No ${paymentText} invoices`;
+        }
+
+        // Capitalize first letter of title
+        title = title.charAt(0).toUpperCase() + title.slice(1);
+
+        return {
+            title,
+            description: `We couldn't find any results matching your filters ${timeText}.`,
+        };
+    };
+
+    const emptyState = getEmptyStateContent();
+
     return (
         <div className="p-4 card bg-white shadow-lg rounded-lg mt-4">
             {/* Header Area with Title & Filters */}
@@ -213,6 +269,7 @@ export default function InvoicesTable({
                             <option value="all">All Payments</option>
                             <option value="cash">Cash</option>
                             <option value="mpesa">Mpesa</option>
+                            <option value="card">Card</option>
                         </select>
                     </div>
                 </div>
@@ -271,12 +328,10 @@ export default function InvoicesTable({
                                                     <FileX className="h-6 w-6 stroke-green-500" />
                                                 </div>
                                                 <h3 className="text-gray-900 font-medium text-sm">
-                                                    No Invoices Found
+                                                    {emptyState.title}
                                                 </h3>
                                                 <p className="text-gray-500 text-xs mt-1 max-w-xs mx-auto">
-                                                    {filterTime === "today"
-                                                        ? "No invoices recorded today. Try changing the time filter."
-                                                        : "Adjust your filters to see more results."}
+                                                    {emptyState.description}
                                                 </p>
                                             </div>
                                         </td>
@@ -408,10 +463,10 @@ export default function InvoicesTable({
                             <FileX className="h-6 w-6 stroke-green-500" />
                         </div>
                         <h3 className="text-gray-900 font-medium text-sm">
-                            No Invoices Found
+                            {emptyState.title}
                         </h3>
-                        <p className="text-gray-500 text-xs mt-1">
-                            Try changing the Time filter.
+                        <p className="text-gray-500 text-xs mt-1 max-w-xs mx-auto text-center px-4">
+                            {emptyState.description}
                         </p>
                     </div>
                 ) : (
