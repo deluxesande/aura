@@ -3,7 +3,6 @@ import { getAuth } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
 import { clerkClient } from "@clerk/nextjs/server";
 
-// Delete an invitation
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse
@@ -13,70 +12,81 @@ export default async function handler(
     }
 
     try {
-        const { userId } = getAuth(req);
-        if (!userId) {
+        const { userId: clerkUserId } = getAuth(req);
+        if (!clerkUserId) {
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const { invitationId } = req.body;
+        const idToDelete = req.body.id as string;
+        console.log("ID to delete:", idToDelete);
 
-        if (!invitationId || typeof invitationId !== "string") {
-            return res.status(400).json({ error: "Invitation ID required" });
+        if (!idToDelete) {
+            return res.status(400).json({ error: "ID parameter is required" });
         }
 
-        // Get current user
         const currentUser = await prisma.user.findUnique({
-            where: { clerkId: userId },
+            where: { clerkId: clerkUserId },
         });
 
         if (!currentUser) {
-            return res.status(404).json({ error: "User not found" });
+            return res.status(404).json({ error: "Current user not found" });
         }
 
-        // Check if the invitation exists and belongs to the user's business
         const invitation = await prisma.userInvitation.findUnique({
-            where: { id: invitationId },
+            where: { id: idToDelete },
         });
 
         if (!invitation) {
-            return res.status(404).json({ error: "Invitation not found" });
+            return res
+                .status(404)
+                .json({ error: "Invitation not found in database" });
         }
 
-        // Verify the invitation belongs to the user's business
         if (invitation.businessId !== currentUser.businessId) {
-            return res.status(403).json({ error: "Forbidden" });
+            return res.status(403).json({ error: "Forbidden: Wrong business" });
         }
 
-        // Role-based access control
         if (currentUser.role === "manager" && invitation.role === "manager") {
             return res.status(403).json({
                 error: "Managers cannot delete other managers",
             });
         }
+        try {
+            const client = await clerkClient();
 
-        // Revoke the invitation on Clerk if clerkInvitationId exists
-        if (invitation.clerkInvitationId) {
-            try {
-                const client = await clerkClient();
-                await client.invitations.revokeInvitation(
-                    invitation.clerkInvitationId
+            const clerkInvitations = await client.invitations.getInvitationList(
+                {
+                    status: "pending",
+                }
+            );
+
+            // Filter for matches based on Email OR the specific Clerk ID
+            const invitesToRevoke = clerkInvitations.data.filter(
+                (inv) =>
+                    inv.emailAddress === invitation.email ||
+                    inv.id === invitation.clerkInvitationId
+            );
+
+            if (invitesToRevoke.length > 0) {
+                await Promise.all(
+                    invitesToRevoke.map((inv) =>
+                        client.invitations.revokeInvitation(inv.id)
+                    )
                 );
-            } catch (clerkError) {
-                // Continue with local deletion even if Clerk revocation fails
             }
+        } catch (clerkError) {
+            console.error("Clerk cleanup warning (non-fatal):", clerkError);
         }
 
-        // Delete the invitation
         await prisma.userInvitation.delete({
-            where: { id: invitationId },
+            where: { id: idToDelete },
         });
 
-        return res.status(204).json({
+        return res.status(200).json({
             message: "Invitation deleted successfully",
-            deletedId: invitationId,
+            deletedId: idToDelete,
         });
     } catch (error) {
-        // console.error("Delete invitation error:", error);
         return res.status(500).json({
             error: "Internal server error",
         });

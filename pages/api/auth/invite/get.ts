@@ -2,7 +2,6 @@ import { prisma } from "@/utils/lib/client";
 import { getAuth } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
 
-// Get invitations for a business
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse
@@ -52,10 +51,11 @@ export default async function handler(
             orderBy: { createdAt: "desc" },
         });
 
-        // Remove token from each invitation and fetch inviter details
         const sanitizedInvitations = await Promise.all(
             invitations.map(async ({ token, ...invitation }) => {
                 let inviterDetails = null;
+                let linkedClerkId = null;
+
                 if (invitation.invitedBy) {
                     const inviter = await prisma.user.findUnique({
                         where: { id: invitation.invitedBy },
@@ -67,16 +67,28 @@ export default async function handler(
                     inviterDetails = inviter;
                 }
 
+                // If accepted, fetch the User's Clerk ID
+                if (invitation.status === "accepted") {
+                    const linkedUser = await prisma.user.findUnique({
+                        where: { email: invitation.email },
+                        select: { clerkId: true },
+                    });
+
+                    if (linkedUser) {
+                        linkedClerkId = linkedUser.clerkId;
+                    }
+                }
+
                 return {
                     ...invitation,
                     inviter: inviterDetails,
+                    clerkUserId: linkedClerkId,
                 };
             })
         );
 
         return res.status(200).json({ invitations: sanitizedInvitations });
     } catch (error) {
-        console.error("Get invitations error:", error);
         return res.status(500).json({
             error: "Internal server error",
         });

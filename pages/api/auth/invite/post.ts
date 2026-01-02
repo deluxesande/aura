@@ -7,7 +7,7 @@ import crypto from "crypto";
 // Validation schema
 const inviteSchema = z.object({
     email: z.string().email("Invalid email address"),
-    role: z.enum(["admin", "manager", "user"]).default("user"),
+    role: z.enum(["manager", "user"]).default("user"),
     businessId: z.string().uuid("Invalid business ID").optional(),
 });
 

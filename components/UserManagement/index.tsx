@@ -33,6 +33,7 @@ interface User {
         firstName: string;
         lastName: string;
     };
+    clerkUserId: string | null;
 }
 
 interface Invitation extends User {
@@ -144,30 +145,35 @@ const UserManagement: React.FC = () => {
     };
 
     const confirmDeleteUser = () => {
-        const deleteInvitation = async () => {
-            const response = await axios.delete(
-                `/api/auth/delete/${userToDelete?.id}`
-            );
+        if (!userToDelete) return;
+
+        const deleteProcess = async () => {
+            let response;
+
+            if (userToDelete.status === "accepted") {
+                response = await axios.delete(
+                    `/api/auth/delete/${userToDelete.clerkUserId}`
+                );
+            } else {
+                response = await axios.delete("/api/auth/invite/delete", {
+                    data: { id: userToDelete.id },
+                });
+            }
 
             if (response.status === 200) {
-                // Update Redux store
                 dispatch(
                     setInvitations(
-                        invitations.filter((inv) => inv.id !== userToDelete?.id)
+                        invitations.filter((inv) => inv.id !== userToDelete.id)
                     )
                 );
 
-                // Update invitations data store
-                dispatch(removeInvitation(userToDelete?.id || ""));
-
-                // Redirect to login page
-                // router.push("/sign-in");
+                dispatch(removeInvitation(userToDelete.id));
             }
         };
 
-        toast.promise(deleteInvitation(), {
-            loading: "Deleting Invitation.",
-            success: "Invitation deleted successfully.",
+        toast.promise(deleteProcess(), {
+            loading: "Deleting User...",
+            success: "User deleted successfully.",
             error: (error) => {
                 if (error?.response?.data?.error) {
                     return error.response.data.error;
@@ -356,7 +362,6 @@ const UserManagement: React.FC = () => {
                                 >
                                     <option value="user">User</option>
                                     <option value="manager">Manager</option>
-                                    <option value="admin">Admin</option>
                                 </select>
                                 <button
                                     onClick={() => handleDeleteUser(user)}
@@ -408,7 +413,6 @@ const UserManagement: React.FC = () => {
                                 >
                                     <option value="user">User</option>
                                     <option value="manager">Manager</option>
-                                    <option value="admin">Admin</option>
                                 </select>
                             </div>
 

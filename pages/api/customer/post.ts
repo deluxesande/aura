@@ -44,11 +44,18 @@ const addCustomerHandler = async (
 
         res.status(201).json(newCustomer);
     } catch (error: any) {
-        console.error("Add Customer Error:", error);
-
         if (error.code === "P2002") {
+            const target = error.meta?.target;
+            let field = "field";
+
+            if (Array.isArray(target)) {
+                field = target.includes("email") ? "email" : "phone number";
+            } else {
+                field = target;
+            }
+
             return res.status(409).json({
-                error: `A customer with this ${error.meta?.target} already exists.`,
+                error: `A customer with this ${field} already exists in this business.`,
             });
         }
 
