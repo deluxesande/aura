@@ -228,7 +228,9 @@ export default async function handler(
                 )
                     // @ts-ignore
                     .map((sale: any) => ({
-                        ...sale.product,
+                        id: sale.product.id,
+                        name: sale.product.name,
+                        price: sale.product.price,
                         soldQuantity: sale.quantity,
                         totalRevenue: sale.revenue,
                     }))
@@ -243,7 +245,6 @@ export default async function handler(
                     products: periodProducts,
                 };
             });
-
             return res.status(200).json(result);
         } catch (error) {
             return res.status(500).json({ error: "Failed to fetch data" });

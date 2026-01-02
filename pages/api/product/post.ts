@@ -6,7 +6,7 @@ import { prisma } from "@/utils/lib/client";
 import fs from "fs";
 
 const convertToBoolean = (value: string): boolean => {
-    return value.toLowerCase() === "true";
+    return value?.toLowerCase() === "true";
 };
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -33,26 +33,34 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         const file = files.file[0];
         const filePath = file.filepath;
 
-        // Read file and convert to base64
         const fileBuffer = fs.readFileSync(filePath);
         const base64Image = `data:${file.mimetype};base64,${fileBuffer.toString(
             "base64"
         )}`;
 
-        // Extract strings from lists and convert to appropriate types
-        const { name, description, price, quantity, inStock, categoryId } = {
+        const {
+            name,
+            description,
+            price,
+            quantity,
+            inStock,
+            categoryId,
+            incomingSku,
+        } = {
             name: fields.name[0],
             description: fields.description[0],
             price: parseFloat(fields.price[0]),
             quantity: parseInt(fields.quantity[0], 10),
             inStock: convertToBoolean(fields.inStock[0]),
             categoryId: fields.categoryId[0],
+            incomingSku: fields.sku ? fields.sku[0] : null,
         };
 
-        // Generate SKU for the new product
-        const sku = generateSKU(name);
+        const finalSku =
+            incomingSku && incomingSku.trim() !== ""
+                ? incomingSku
+                : generateSKU(name);
 
-        // Check if a product with the same name exists in the specified category
         const existingProduct = await prisma.product.findFirst({
             where: {
                 name,
@@ -61,7 +69,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         });
 
         if (existingProduct) {
-            // If the product exists, update the quantity
             const updatedProduct = await prisma.product.update({
                 where: { id: existingProduct.id },
                 data: {
@@ -71,13 +78,23 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
             res.status(200).json(updatedProduct);
         } else {
+            const skuCheck = await prisma.product.findUnique({
+                where: { sku: finalSku },
+            });
+
+            if (skuCheck) {
+                return res.status(409).json({
+                    error: "A product with this SKU/Barcode already exists.",
+                });
+            }
+
             // If the product does not exist, create a new product
             const newProduct = await prisma.product.create({
                 data: {
                     name,
                     description,
                     price,
-                    sku,
+                    sku: finalSku,
                     quantity,
                     image: base64Image,
                     inStock: inStock,

@@ -1,5 +1,11 @@
-export const generateSKU = (name: string): string => {
-    const uniquePart = Date.now().toString(36); // Generates a unique part based on the current timestamp
-    const namePart = name.replace(/\s+/g, '-').toUpperCase(); // Converts name to uppercase and replaces spaces with hyphens
-    return `${namePart}-${uniquePart}`;
+export const generateSKU = (name: string, prefix = "ITEM"): string => {
+    // Take first 3 letters of name or default prefix
+    const shortName =
+        name.slice(0, 3).toUpperCase().replace(/\s+/g, "") || prefix;
+
+    // Use a shorter random string (timestamp is okay, but randomBytes is shorter/safer)
+    const uniquePart = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+    // Result: "APP-X7Z2P1" (Much easier to print and scan than the full name)
+    return `${shortName}-${uniquePart}`;
 };

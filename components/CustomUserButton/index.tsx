@@ -80,6 +80,14 @@ const CustomUserButton = () => {
         // If not in store, fetch from API
         const fetchUsers = async () => {
             try {
+                if (
+                    user?.role?.toLowerCase() !== "admin" &&
+                    user?.role?.toLowerCase() !== "manager"
+                ) {
+                    setIsLoading(false);
+                    return;
+                }
+
                 const response = await axios.get("/api/auth/invite/get");
                 if (response.data.invitations) {
                     dispatch(setInvitations(response.data.invitations));
@@ -129,7 +137,7 @@ const CustomUserButton = () => {
         };
 
         fetchUsers();
-    }, [dispatch, userInvitations.length]);
+    }, [dispatch, userInvitations.length, user?.role]);
 
     const handleInviteUser = async (e: React.FormEvent) => {
         e.preventDefault();

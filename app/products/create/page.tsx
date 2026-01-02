@@ -4,17 +4,18 @@ import ImageCropperModal from "@/components/ImageCropperModal";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import { Category } from "@/utils/typesDefinitions";
+import { generateSKU } from "@/utils/generateSKU";
 import axios from "axios";
 import {
     CloudUpload,
     PlusCircle,
     ArrowLeft,
-    Layers,
-    DollarSign,
-    Package,
     Save,
     Loader2,
     Info,
+    ScanBarcode,
+    RefreshCw,
+    Package,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -30,19 +31,16 @@ export default function CreateProductPage() {
     const router = useRouter();
     const [categories, setCategories] = useState<Category[]>([]);
 
-    // State for Cropping
     const [isCropModalOpen, setIsCropModalOpen] = useState(false);
     const [tempImageSrc, setTempImageSrc] = useState<string | null>(null);
-
-    // State for Final Image
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [productImage, setProductImage] = useState<File | null>(null);
-
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     const [formData, setFormData] = useState({
         name: "",
+        sku: "",
         description: "",
         price: "",
         quantity: "",
@@ -79,33 +77,36 @@ export default function CreateProductPage() {
         setFormData((prev) => ({ ...prev, [id]: value }));
     };
 
+    const handleGenerateSKU = () => {
+        const newSku = generateSKU(formData.name);
+        setFormData((prev) => ({ ...prev, sku: newSku }));
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+        }
+    };
+
     const toggleStock = () => {
         setFormData((prev) => ({ ...prev, inStock: !prev.inStock }));
     };
 
-    // 1. Triggered when user selects a file
     const handleImageFileSelect = (
         event: React.ChangeEvent<HTMLInputElement>
     ) => {
         const file = event.target.files?.[0];
         if (file) {
-            // Create a URL for the selected file to pass to the cropper
             const objectUrl = URL.createObjectURL(file);
             setTempImageSrc(objectUrl);
             setIsCropModalOpen(true);
-
-            // Reset the input value so the same file can be selected again if needed
             event.target.value = "";
         }
     };
 
-    // 2. Triggered when user finishes cropping
     const handleCropComplete = (croppedBlob: Blob) => {
-        // Create a preview URL from the cropped blob
         const previewUrl = URL.createObjectURL(croppedBlob);
         setImagePreview(previewUrl);
-
-        // Convert Blob to File to be compatible with your existing submit logic
         const croppedFile = new File([croppedBlob], "product-image.jpg", {
             type: "image/jpeg",
         });
@@ -135,6 +136,11 @@ export default function CreateProductPage() {
         event.preventDefault();
         setIsLoading(true);
 
+        let finalSku = formData.sku;
+        if (!finalSku) {
+            finalSku = generateSKU(formData.name);
+        }
+
         if (
             !formData.name ||
             !formData.description ||
@@ -153,13 +159,13 @@ export default function CreateProductPage() {
 
         const submitData = new FormData();
         submitData.append("name", formData.name);
+        submitData.append("sku", finalSku);
         submitData.append("description", formData.description);
         submitData.append("price", formData.price);
         submitData.append("quantity", formData.quantity);
         submitData.append("categoryId", formData.categoryId);
         submitData.append("inStock", finalInStock.toString());
 
-        // Append the cropped file
         if (productImage) {
             submitData.append("file", productImage);
         }
@@ -219,7 +225,7 @@ export default function CreateProductPage() {
                             className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                         >
                             {isLoading ? (
-                                <Loader2 className="w-4 h-4 animate- stroke-white" />
+                                <Loader2 className="w-4 h-4 animate-spin stroke-white" />
                             ) : (
                                 <Save className="w-4 h-4 stroke-white" />
                             )}
@@ -254,6 +260,45 @@ export default function CreateProductPage() {
                                         required
                                     />
                                 </div>
+
+                                {/* SKU / Barcode Field */}
+                                <div>
+                                    <label
+                                        htmlFor="sku"
+                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                    >
+                                        SKU / Barcode:
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <div className="relative flex-1">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <ScanBarcode className="h-4 w-4 text-gray-400" />
+                                            </div>
+                                            <input
+                                                id="sku"
+                                                type="text"
+                                                className={`${inputStyle} pl-10`}
+                                                value={formData.sku}
+                                                onChange={handleChange}
+                                                onKeyDown={handleKeyDown}
+                                                placeholder="Scan barcode or auto-generate"
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={handleGenerateSKU}
+                                            className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 text-gray-700 transition-colors"
+                                            title="Generate Random SKU"
+                                        >
+                                            <RefreshCw className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Scan a physical product now or click the
+                                        button to generate an ID.
+                                    </p>
+                                </div>
+
                                 <div>
                                     <label
                                         htmlFor="description"
@@ -263,7 +308,7 @@ export default function CreateProductPage() {
                                     </label>
                                     <textarea
                                         id="description"
-                                        rows={5}
+                                        rows={1}
                                         className={inputStyle}
                                         value={formData.description}
                                         onChange={handleChange}
@@ -273,6 +318,7 @@ export default function CreateProductPage() {
                             </div>
                         </div>
 
+                        {/* Pricing & Inventory */}
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                                 Pricing & Inventory
@@ -325,6 +371,7 @@ export default function CreateProductPage() {
                             </div>
                         </div>
 
+                        {/* Instructions */}
                         <div className="bg-green-50 p-5 rounded-xl shadow-sm border border-green-100">
                             <div className="flex items-center gap-2 mb-3">
                                 <Info className="w-5 h-5 text-green-600" />
@@ -346,6 +393,7 @@ export default function CreateProductPage() {
                     </div>
 
                     <div className="space-y-6">
+                        {/* Status */}
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                             <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
                                 Status
@@ -379,6 +427,7 @@ export default function CreateProductPage() {
                             </div>
                         </div>
 
+                        {/* Organization */}
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                             <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
                                 Organization
@@ -422,20 +471,18 @@ export default function CreateProductPage() {
                             </div>
                         </div>
 
-                        {/* Media Card with Crop Trigger */}
+                        {/* Image */}
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                             <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
                                 Product Image
                             </h2>
                             <div className="relative w-full aspect-square border-2 border-dashed border-gray-300 rounded-xl hover:border-green-500 transition-colors group bg-gray-50 overflow-hidden cursor-pointer">
-                                {/* Input handles file selection, triggers modal via handler */}
                                 <input
                                     id="productImage"
                                     type="file"
                                     accept="image/png, image/jpeg, image/jpg"
                                     onChange={handleImageFileSelect}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                    // required only if no image is currently set
                                     required={!productImage}
                                 />
 
@@ -472,14 +519,12 @@ export default function CreateProductPage() {
                 </form>
             </div>
 
-            {/* Category Modal */}
             <CreateCategoryModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSubmit={handleCreateNewCategory}
             />
 
-            {/* Image Cropper Modal */}
             <FloatingPortal>
                 <ImageCropperModal
                     isOpen={isCropModalOpen}
