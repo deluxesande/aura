@@ -5,12 +5,13 @@ import {
     Edit,
     PlusCircle,
     Trash,
-    Filter, // Added Filter icon
+    Filter,
+    Search,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react"; // Added useEffect
+import { useState, useEffect } from "react";
 
 export default function ProductList({
     products,
@@ -23,38 +24,45 @@ export default function ProductList({
 }) {
     const router = useRouter();
     const [currentPage, setCurrentPage] = useState(1);
-    const [selectedCategory, setSelectedCategory] = useState("All"); // 1. Filter State
+    const [selectedCategory, setSelectedCategory] = useState("All");
+
+    const [searchQuery, setSearchQuery] = useState("");
+
     const itemsPerPage = 10;
 
     const handleEditClick = (productId: string) => {
         router.push(`/products/${productId}/edit`);
     };
 
-    // 2. Extract Unique Categories from products
-    // We use a Set to ensure unique values
+    // Extract Unique Categories
     const categories = [
         "All",
         ...Array.from(
-            new Set(
-                products
-                    .map((p: any) => p.Category?.name) // Assumes product has Category object with name
-                    .filter(Boolean) // Remove null/undefined categories
-            )
+            new Set(products.map((p: any) => p.Category?.name).filter(Boolean))
         ),
     ];
 
-    // 3. Filter Logic
     const filteredProducts = products.filter((product: any) => {
-        if (selectedCategory === "All") return true;
-        return product.Category?.name === selectedCategory;
+        // 1. Check Category
+        const matchesCategory =
+            selectedCategory === "All" ||
+            product.Category?.name === selectedCategory;
+
+        // 2. Check Search (Name, Description, or SKU)
+        const query = searchQuery.toLowerCase();
+        const matchesSearch =
+            product.name.toLowerCase().includes(query) ||
+            product.description?.toLowerCase().includes(query) ||
+            product.sku?.toLowerCase().includes(query);
+
+        return matchesCategory && matchesSearch;
     });
 
-    // Reset to page 1 when category changes
     useEffect(() => {
         setCurrentPage(1);
-    }, [selectedCategory]);
+    }, [selectedCategory, searchQuery]);
 
-    // 4. Calculate pagination based on FILTERED products
+    // Calculate pagination based on FILTERED products
     const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -100,10 +108,25 @@ export default function ProductList({
                     </h1>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+                    {!loading && products.length > 0 && (
+                        <div className="relative w-full sm:w-64">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Search className="h-4 w-4 stroke-green-500" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Search products..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-9 pr-4 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none bg-gray-50 text-gray-700 placeholder-gray-400 transition-colors"
+                            />
+                        </div>
+                    )}
+
                     {/* CATEGORY FILTER DROPDOWN */}
                     {!loading && products.length > 0 && (
-                        <div className="relative">
+                        <div className="relative w-full sm:w-auto">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Filter className="h-4 w-4 text-gray-400" />
                             </div>
@@ -112,7 +135,7 @@ export default function ProductList({
                                 onChange={(e) =>
                                     setSelectedCategory(e.target.value)
                                 }
-                                className="pl-9 pr-8 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none bg-gray-50 text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors appearance-none"
+                                className="w-full sm:w-auto pl-9 pr-8 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none bg-gray-50 text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors appearance-none"
                             >
                                 {categories.map((category: any) => (
                                     <option key={category} value={category}>
@@ -123,8 +146,8 @@ export default function ProductList({
                         </div>
                     )}
                     <Link href="/products/create">
-                        <button className="btn btn-sm btn-ghost flex items-center bg-green-500 text-white hover:bg-green-600">
-                            <PlusCircle className="w-4 h-4 stroke-white" />
+                        <button className="btn btn-sm btn-ghost flex items-center bg-green-500 text-white hover:bg-green-600 whitespace-nowrap">
+                            <PlusCircle className="w-4 h-4 stroke-white mr-2" />
                             Add Product
                         </button>
                     </Link>
@@ -178,19 +201,30 @@ export default function ProductList({
                                         {products.length > 0 ? (
                                             <div className="flex flex-col items-center gap-2">
                                                 <p className="text-lg">
-                                                    No products found in this
-                                                    category
+                                                    No products found matching
+                                                    your filters
                                                 </p>
-                                                <button
-                                                    onClick={() =>
-                                                        setSelectedCategory(
-                                                            "All"
-                                                        )
-                                                    }
-                                                    className="text-sm text-green-600 hover:underline"
-                                                >
-                                                    Clear filter
-                                                </button>
+                                                <div className="flex gap-2 text-sm">
+                                                    <button
+                                                        onClick={() =>
+                                                            setSearchQuery("")
+                                                        }
+                                                        className="text-green-600 hover:underline"
+                                                    >
+                                                        Clear search
+                                                    </button>
+                                                    <span>or</span>
+                                                    <button
+                                                        onClick={() =>
+                                                            setSelectedCategory(
+                                                                "All"
+                                                            )
+                                                        }
+                                                        className="text-green-600 hover:underline"
+                                                    >
+                                                        Clear category
+                                                    </button>
+                                                </div>
                                             </div>
                                         ) : (
                                             "No Products"
@@ -203,7 +237,7 @@ export default function ProductList({
                                         key={index}
                                         className="hover:bg-gray-50 border-b border-gray-100 last:border-0"
                                     >
-                                        {/* 2. Product Name & Description (Stacked) */}
+                                        {/* Product Details (Image, Name, Desc, Qty) */}
                                         <td className="py-3 px-4 max-w-xs">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-12 h-12 relative rounded-md overflow-hidden bg-gray-100 border border-gray-200">
@@ -234,8 +268,8 @@ export default function ProductList({
                                                         className={`text-[10px] px-2 py-0.5 rounded-full mt-1 inline-block font-medium ${
                                                             product.quantity <=
                                                             5
-                                                                ? "bg-red-100 text-red-600" // Low Stock Warning
-                                                                : "bg-green-100 text-green-600" // Good Stock
+                                                                ? "bg-red-100 text-red-600"
+                                                                : "bg-green-100 text-green-600"
                                                         }`}
                                                     >
                                                         Qty: {product.quantity}
@@ -244,14 +278,14 @@ export default function ProductList({
                                             </div>
                                         </td>
 
-                                        {/* 3. Category */}
+                                        {/* Category */}
                                         <td className="py-3 px-4 text-black text-sm">
                                             {product.Category
                                                 ? product.Category.name
                                                 : "Un-categorized"}
                                         </td>
 
-                                        {/* 4. Created By */}
+                                        {/* Created By */}
                                         <td className="py-3 px-4 text-black text-sm">
                                             {product.creator ? (
                                                 <div className="flex items-center gap-2">
@@ -260,7 +294,7 @@ export default function ProductList({
                                                             src={
                                                                 product.creator
                                                                     .imageUrl ||
-                                                                "https://www.svgrepo.com/show/535711/user.svg"
+                                                                "/images/user.png"
                                                             }
                                                             fill
                                                             alt={`${product.creator.firstName} Profile`}
@@ -293,12 +327,12 @@ export default function ProductList({
                                             )}
                                         </td>
 
-                                        {/* 4. Price */}
+                                        {/* Price */}
                                         <td className="py-3 px-4 text-sm font-medium text-gray-900">
                                             Ksh {product.price}
                                         </td>
 
-                                        {/* 5. Actions */}
+                                        {/* Actions */}
                                         <td className="py-3 px-4">
                                             <div className="flex items-center">
                                                 <button
@@ -329,10 +363,9 @@ export default function ProductList({
                     </table>
                 </div>
 
-                {/* Pagination - Shows only if products exist in filter */}
+                {/* Pagination */}
                 {!loading && filteredProducts.length > 0 && (
                     <div className="flex justify-center items-center pt-4 my-4 space-x-4">
-                        {/* Previous Button */}
                         <button
                             className="btn btn-xs btn-ghost flex items-center bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
                             onClick={handlePreviousPage}
@@ -344,7 +377,6 @@ export default function ProductList({
                             </span>
                         </button>
 
-                        {/* Page Numbers */}
                         <div className="flex space-x-2">
                             {getPageNumbers().map((page) => (
                                 <button
@@ -361,7 +393,6 @@ export default function ProductList({
                             ))}
                         </div>
 
-                        {/* Next Button */}
                         <button
                             className="btn btn-xs btn-ghost flex items-center bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
                             onClick={handleNextPage}

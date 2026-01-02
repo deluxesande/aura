@@ -191,6 +191,51 @@ export default function CreateProductPage() {
         });
     };
 
+    useEffect(() => {
+        let buffer = "";
+        let lastKeyTime = Date.now();
+
+        const handleGlobalKeyDown = (e: KeyboardEvent) => {
+            const currentTime = Date.now();
+            const target = e.target as HTMLElement;
+
+            // Safety Check: If the user is manually typing in an input field
+            // (other than the SKU field), do not hijack their keystrokes.
+            if (
+                (target.tagName === "INPUT" || target.tagName === "TEXTAREA") &&
+                target.id !== "sku"
+            ) {
+                return;
+            }
+
+            // Timeout Reset: If it's been more than 100ms since the last key,
+            // it's likely a new input or a slow human typing. Reset the buffer.
+            if (currentTime - lastKeyTime > 100) {
+                buffer = "";
+            }
+            lastKeyTime = currentTime;
+
+            // Handle "Enter": Scanners end with Enter.
+            if (e.key === "Enter") {
+                // If we have a buffer with sufficient length, treat it as a scan
+                if (buffer.length > 3) {
+                    e.preventDefault();
+                    setFormData((prev) => ({ ...prev, sku: buffer }));
+                    toast.success("Product scanned successfully");
+                    buffer = "";
+                }
+            } else if (e.key.length === 1) {
+                buffer += e.key;
+            }
+        };
+
+        window.addEventListener("keydown", handleGlobalKeyDown);
+
+        return () => {
+            window.removeEventListener("keydown", handleGlobalKeyDown);
+        };
+    }, []); // Empty dependency array means this runs once on mount
+
     return (
         <Navbar>
             <div className="max-w-5xl mx-auto px-4 py-8">
@@ -281,6 +326,7 @@ export default function CreateProductPage() {
                                                 value={formData.sku}
                                                 onChange={handleChange}
                                                 onKeyDown={handleKeyDown}
+                                                autoFocus
                                                 placeholder="Scan barcode or auto-generate"
                                             />
                                         </div>
@@ -463,9 +509,9 @@ export default function CreateProductPage() {
                                 <button
                                     type="button"
                                     onClick={() => setIsModalOpen(true)}
-                                    className="btn btn-sm btn-ghost w-full text-black flex items-center justify-center bg-green-400 hover:bg-green-500"
+                                    className="btn btn-sm btn-ghost w-full text-white flex items-center justify-center bg-green-500 hover:bg-green-600"
                                 >
-                                    <PlusCircle className="w-4 h-4 mr-2" />
+                                    <PlusCircle className="w-4 h-4 mr-2 stroke-white" />
                                     Create New Category
                                 </button>
                             </div>

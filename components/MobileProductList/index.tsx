@@ -5,11 +5,12 @@ import {
     Trash,
     ChevronLeft,
     ChevronRight,
+    Search,
 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image"; // Import Image
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function MobileProductList({
     products,
@@ -22,17 +23,31 @@ export default function MobileProductList({
 }) {
     const router = useRouter();
     const [currentPage, setCurrentPage] = useState(1);
+    const [searchQuery, setSearchQuery] = useState("");
     const itemsPerPage = 10;
 
     const handleEditClick = (productId: string) => {
         router.push(`/products/${productId}/edit`);
     };
 
-    // Calculate pagination
-    const totalPages = Math.ceil(products.length / itemsPerPage);
+    const filteredProducts = products.filter((product) => {
+        const query = searchQuery.toLowerCase();
+        return (
+            product.name.toLowerCase().includes(query) ||
+            product.description?.toLowerCase().includes(query) ||
+            product.sku?.toLowerCase().includes(query)
+        );
+    });
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
+
+    // Calculate pagination based on FILTERED products
+    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const paginatedProducts = products.slice(startIndex, endIndex);
+    const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
 
     const handlePreviousPage = () => {
         setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -49,7 +64,7 @@ export default function MobileProductList({
     // Generate page numbers to display
     const getPageNumbers = () => {
         const pages = [];
-        const maxPagesToShow = 3; // Reduced for mobile
+        const maxPagesToShow = 3;
         let startPage = Math.max(
             1,
             currentPage - Math.floor(maxPagesToShow / 2)
@@ -68,13 +83,31 @@ export default function MobileProductList({
 
     return (
         <div className="p-4 card bg-white shadow-lg rounded-lg mt-4">
-            <div className="flex flex-wrap space-y-4 lg:space-y-0 justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-400">
-                    All Products
-                </h1>
+            <div className="flex flex-col space-y-4 mb-6">
+                <div className="flex justify-between items-center">
+                    <h1 className="text-2xl font-bold text-gray-400">
+                        All Products
+                    </h1>
+                </div>
+
+                {!loading && products.length > 0 && (
+                    <div className="relative w-full">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search className="h-4 w-4 stroke-green-500" />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Search by name..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none bg-gray-50 text-gray-700 placeholder-gray-400 transition-colors"
+                        />
+                    </div>
+                )}
+
                 <Link className="w-full" href="/products/create">
-                    <button className="btn btn-sm btn-ghost lg:w-auto flex items-center bg-green-500 text-white hover:bg-green-600 w-full">
-                        <PlusCircle className="w-4 h-4 stroke-white" />
+                    <button className="btn btn-sm btn-ghost flex items-center justify-center bg-green-500 text-white hover:bg-green-600 w-full">
+                        <PlusCircle className="w-4 h-4 stroke-white mr-2" />
                         Add Product
                     </button>
                 </Link>
@@ -85,9 +118,26 @@ export default function MobileProductList({
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                 </div>
             ) : paginatedProducts.length === 0 ? (
-                <p className="p-4 text-black text-lg text-center">
-                    No Products
-                </p>
+                <div className="p-8 text-center">
+                    {products.length > 0 ? (
+                        // No results from search
+                        <div className="flex flex-col items-center gap-2">
+                            <p className="text-gray-500">
+                                No products found matching &quot;{searchQuery}
+                                &quot;
+                            </p>
+                            <button
+                                onClick={() => setSearchQuery("")}
+                                className="text-sm text-green-600 hover:underline"
+                            >
+                                Clear search
+                            </button>
+                        </div>
+                    ) : (
+                        // No products in DB
+                        <p className="text-black text-lg">No Products</p>
+                    )}
+                </div>
             ) : (
                 <div className="flex flex-col space-y-4">
                     {paginatedProducts.map((product, index) => (
@@ -149,7 +199,7 @@ export default function MobileProductList({
                                             <Image
                                                 src={
                                                     product.creator.imageUrl ||
-                                                    "https://www.svgrepo.com/show/535711/user.svg"
+                                                    "/images/user.png"
                                                 }
                                                 fill
                                                 alt="Creator"
@@ -195,8 +245,8 @@ export default function MobileProductList({
                 </div>
             )}
 
-            {/* Pagination */}
-            {!loading && products.length > 0 && (
+            {/* Pagination - Only show if we have filtered items */}
+            {!loading && filteredProducts.length > 0 && (
                 <div className="flex justify-center items-center pt-4 my-4 space-x-4">
                     {/* Previous Button */}
                     <button
@@ -238,11 +288,12 @@ export default function MobileProductList({
             )}
 
             {/* Page info */}
-            {!loading && products.length > 0 && (
+            {!loading && filteredProducts.length > 0 && (
                 <div className="text-center text-sm text-gray-500 mt-2">
                     Page {currentPage} of {totalPages} | Showing{" "}
-                    {startIndex + 1}-{Math.min(endIndex, products.length)} of{" "}
-                    {products.length} products
+                    {startIndex + 1}-
+                    {Math.min(endIndex, filteredProducts.length)} of{" "}
+                    {filteredProducts.length} products
                 </div>
             )}
         </div>

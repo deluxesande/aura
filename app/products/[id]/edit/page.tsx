@@ -2,13 +2,14 @@
 import Navbar from "@/components/Navbar";
 import { Category, Product } from "@/utils/typesDefinitions";
 import axios from "axios";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
 import { setProducts } from "@/store/slices/productSlice";
 import { AppState } from "@/store";
+import { generateSKU } from "@/utils/generateSKU";
 import {
     ArrowLeft,
     UploadCloud,
@@ -17,8 +18,10 @@ import {
     Layers,
     Save,
     Loader2,
-    Plus, // Imported Plus icon
-    X, // Imported X for modal close
+    Plus,
+    X,
+    ScanBarcode,
+    RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import ImageCropperModal from "@/components/ImageCropperModal";
@@ -48,6 +51,9 @@ export default function EditProductPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isDataLoading, setIsDataLoading] = useState(true);
 
+    // Ref to prevent double fetching in React Strict Mode
+    const hasFetched = useRef(false);
+
     const [formData, setFormData] = useState<Product>({
         id: "",
         name: "",
@@ -67,8 +73,12 @@ export default function EditProductPage() {
     // Fetch Logic
     useEffect(() => {
         const fetchData = async () => {
+            // Prevent double fetch if we already started/finished
+            if (!id) return;
+
             setIsDataLoading(true);
             try {
+                // 1. Check Redux Store first (Fastest)
                 const productFromStore = originalProducts.find(
                     (p) => p.id === id
                 );
@@ -76,17 +86,25 @@ export default function EditProductPage() {
                 if (productFromStore) {
                     setFormData(productFromStore);
                     setImagePreview(productFromStore.image);
+
+                    // Fetch categories separately if needed
                     const categoriesRes = await axios.get("/api/category");
                     setCategories(categoriesRes.data);
                 } else {
+                    // 2. Fetch from API if not in store
+                    if (hasFetched.current) return; // Prevent double API call
+                    hasFetched.current = true;
+
                     const [productRes, categoriesRes] = await Promise.all([
                         axios.get(`/api/product/${id}`),
                         axios.get("/api/category"),
                     ]);
+
                     setFormData(productRes.data);
                     setImagePreview(productRes.data.image);
                     setCategories(categoriesRes.data);
 
+                    // Update Redux so we don't fetch again next time
                     dispatch(
                         setProducts([...originalProducts, productRes.data])
                     );
@@ -98,7 +116,7 @@ export default function EditProductPage() {
             }
         };
 
-        if (id) fetchData();
+        fetchData();
     }, [id, originalProducts, dispatch]);
 
     // Handle input changes
@@ -119,6 +137,64 @@ export default function EditProductPage() {
         }));
     };
 
+    const handleGenerateSKU = () => {
+        const newSku = generateSKU(formData.name);
+        setFormData((prev) => ({ ...prev, sku: newSku }));
+    };
+
+    // Global Barcode Listener
+    useEffect(() => {
+        let buffer = "";
+        let lastKeyTime = Date.now();
+
+        const handleGlobalKeyDown = (e: KeyboardEvent) => {
+            const currentTime = Date.now();
+            const target = e.target as HTMLElement;
+
+            // Safety Check: If user is typing in inputs, ignore scan
+            // UNLESS they are specifically in the SKU input (handled by normal input)
+            // or if the SKU input is focused, we let the input handle it to show typing
+            if (
+                (target.tagName === "INPUT" || target.tagName === "TEXTAREA") &&
+                target.id !== "sku"
+            ) {
+                return;
+            }
+
+            // Reset buffer if typing is too slow (human typing)
+            if (currentTime - lastKeyTime > 100) {
+                buffer = "";
+            }
+            lastKeyTime = currentTime;
+
+            // Handle "Enter": Scanner finished scanning
+            if (e.key === "Enter") {
+                // If buffer has content, it's a scan
+                if (buffer.length > 3) {
+                    e.preventDefault(); // Stop form submit
+                    setFormData((prev) => ({ ...prev, sku: buffer }));
+                    toast.success("New barcode scanned successfully");
+                    buffer = "";
+                }
+            } else if (e.key.length === 1) {
+                // Capture characters
+                buffer += e.key;
+            }
+        };
+
+        window.addEventListener("keydown", handleGlobalKeyDown);
+
+        return () => {
+            window.removeEventListener("keydown", handleGlobalKeyDown);
+        };
+    }, []);
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+        }
+    };
+
     const toggleStock = () => {
         setFormData((prev) => ({ ...prev, inStock: !prev.inStock }));
     };
@@ -133,7 +209,7 @@ export default function EditProductPage() {
         setFormData((prev) => ({
             ...prev,
             quantity: (prev.quantity || 0) + amountToAdd,
-            inStock: true, // Auto set to in-stock if we add items
+            inStock: true,
         }));
 
         toast.success(`Added ${amountToAdd} units to stock count.`);
@@ -175,14 +251,23 @@ export default function EditProductPage() {
 
         const promise = async () => {
             try {
+                // Ensure SKU is present
+                const finalData = {
+                    ...formData,
+                    sku: formData.sku || generateSKU(formData.name),
+                };
+
                 const response = await axios.put(
                     `/api/product/${id}`,
-                    formData
+                    finalData
                 );
+
+                // Update local list in Redux
                 const updatedProducts = originalProducts.map((p) =>
                     p.id === id ? response.data : p
                 );
                 dispatch(setProducts(updatedProducts));
+
                 router.push("/products/list");
             } catch (error) {
                 throw error;
@@ -279,6 +364,46 @@ export default function EditProductPage() {
                                         required
                                     />
                                 </div>
+
+                                {/* SKU / Barcode Field */}
+                                <div>
+                                    <label
+                                        htmlFor="sku"
+                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                    >
+                                        SKU / Barcode:
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <div className="relative flex-1">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <ScanBarcode className="h-4 w-4 text-gray-400" />
+                                            </div>
+                                            <input
+                                                id="sku"
+                                                type="text"
+                                                className="w-full pl-10 pr-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-green-400 border-2 transition-colors"
+                                                value={formData.sku || ""}
+                                                onChange={handleChange}
+                                                // Prevent scanner enter key from submitting form
+                                                onKeyDown={handleKeyDown}
+                                                placeholder="Scan new barcode to update"
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={handleGenerateSKU}
+                                            className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 text-gray-700 transition-colors"
+                                            title="Generate Random SKU"
+                                        >
+                                            <RefreshCw className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Scan a new barcode to link it, or
+                                        generate a new ID.
+                                    </p>
+                                </div>
+
                                 <div>
                                     <label
                                         htmlFor="description"
@@ -330,7 +455,6 @@ export default function EditProductPage() {
                                     </div>
                                 </div>
 
-                                {/* MODIFIED: Stock Quantity with Restock Button */}
                                 <div>
                                     <div className="flex items-center justify-between mb-1">
                                         <label

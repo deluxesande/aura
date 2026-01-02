@@ -8,29 +8,27 @@ import Navbar from "@/components/Navbar";
 import NoProductsFound from "@/components/NoProducts";
 import OrderCard from "@/components/OrderCard";
 import ProductCard from "@/components/ProductCard";
+import QuicKRestockModal from "@/components/QuickRestockModal";
 import SelectCustomerModal from "@/components/SelectCustomerModal";
 import { AppState } from "@/store";
 import { addItem, clearCart } from "@/store/slices/cartSlice";
 import { setProducts } from "@/store/slices/productSlice";
+import { hide } from "@/store/slices/visibilitySlice";
 import { formatPhoneNumber } from "@/utils/formatPhoneNumber";
 import { Product } from "@/utils/typesDefinitions";
 import { SignedIn, useUser } from "@clerk/nextjs";
 import axios from "axios";
 import {
     ChevronRight,
-    User as UserIcon,
     Plus,
-    X,
-    Loader2,
     ShoppingCart,
-} from "lucide-react"; // Added Icons
+    User as UserIcon,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import React, { useEffect, useRef, useState } from "react";
-import { hide } from "@/store/slices/visibilitySlice";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
-import QuicKRestockModal from "@/components/QuickRestockModal";
 
 interface Category {
     id: string;
@@ -89,8 +87,6 @@ export default function Page() {
         email: "",
         phoneNumber: "",
     });
-
-    // --- Restock Modal State ---
     const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
     const [productToRestock, setProductToRestock] = useState<Product | null>(
         null
@@ -223,7 +219,6 @@ export default function Page() {
 
         setIsRestocking(true);
         try {
-            // Calculate new total
             const newQuantity = (productToRestock.quantity || 0) + amountToAdd;
             const updatedProduct = {
                 ...productToRestock,
@@ -231,19 +226,16 @@ export default function Page() {
                 inStock: true,
             };
 
-            // Call API
             await axios.put(
                 `/api/product/${productToRestock.id}`,
                 updatedProduct
             );
 
-            // Update Redux Store
             const updatedProductsList = productsData.map((p) =>
                 p.id === productToRestock.id ? updatedProduct : p
             );
             dispatch(setProducts(updatedProductsList));
 
-            // Update Local State (if needed, though redux sync usually handles this via useEffect)
             setLocalProducts((prev) =>
                 prev.map((p) =>
                     p.id === productToRestock.id ? updatedProduct : p
@@ -261,21 +253,25 @@ export default function Page() {
         }
     };
 
-    const handleAddToCart = (product: Product) => {
-        const cartItem = cartItems.find((item) => item.id === product.id);
-        if (product.quantity > 0) {
-            if (
-                product.quantity &&
-                product.quantity > (cartItem?.cartQuantity || 0)
-            ) {
-                dispatch(addItem(product));
+    const handleAddToCart = useCallback(
+        (product: Product) => {
+            const cartItem = cartItems.find((item) => item.id === product.id);
+
+            if (product.quantity > 0) {
+                if (
+                    product.quantity &&
+                    product.quantity > (cartItem?.cartQuantity || 0)
+                ) {
+                    dispatch(addItem(product));
+                } else {
+                    toast.warning("Insufficient product quantity available.");
+                }
             } else {
-                toast.warning("Insufficient product quantity available.");
+                toast.warning("Product cannot be added to the cart.");
             }
-        } else {
-            toast.warning("Product cannot be added to the cart.");
-        }
-    };
+        },
+        [cartItems, dispatch]
+    );
 
     const handleOrder = async (
         paymentTypeOverride?: string,
@@ -534,6 +530,58 @@ export default function Page() {
         }
     };
 
+    useEffect(() => {
+        let buffer = "";
+        let lastKeyTime = Date.now();
+
+        const handleGlobalKeyDown = (e: KeyboardEvent) => {
+            const currentTime = Date.now();
+            const target = e.target as HTMLElement;
+
+            // Safety Check: If user is typing in a search box or input, ignore scan
+            if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+                return;
+            }
+
+            // Timeout Reset (Scanner Speed Check)
+            if (currentTime - lastKeyTime > 100) {
+                buffer = "";
+            }
+            lastKeyTime = currentTime;
+
+            if (e.key === "Enter") {
+                // Minimum length to avoid accidental single key triggers
+                if (buffer.length > 2) {
+                    e.preventDefault();
+
+                    // We search the 'products' state which contains all loaded products
+                    const scannedProduct = products.find(
+                        (p) =>
+                            p.sku === buffer ||
+                            p.sku?.toUpperCase() === buffer.toUpperCase()
+                    );
+
+                    if (scannedProduct) {
+                        handleAddToCart(scannedProduct);
+                        toast.success(`Added ${scannedProduct.name}`);
+                    } else {
+                        toast.error(`Product not found: ${buffer}`);
+                    }
+
+                    buffer = "";
+                }
+            } else if (e.key.length === 1) {
+                buffer += e.key;
+            }
+        };
+
+        window.addEventListener("keydown", handleGlobalKeyDown);
+
+        return () => {
+            window.removeEventListener("keydown", handleGlobalKeyDown);
+        };
+    }, [products, dispatch, cartItems, handleAddToCart]);
+
     return (
         <div className="flex h-screen overflow-hidden">
             {/* Main Content */}
@@ -600,7 +648,11 @@ export default function Page() {
                                             e.stopPropagation();
                                             openRestockModal(product);
                                         }}
-                                        className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-sm hover:bg-green-100 hover:text-green-600 text-gray-400 transition-all border border-gray-100 z-10"
+                                        className={`${
+                                            product.quantity <= 5
+                                                ? "block"
+                                                : "hidden"
+                                        } absolute top-2 right-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-sm hover:bg-green-100 hover:text-green-600 text-gray-400 transition-all border border-gray-100 z-10`}
                                         title="Quick Restock"
                                     >
                                         <Plus size={16} />
