@@ -108,23 +108,28 @@ export default function TopProducts({
                 product2Data: [] as number[],
                 product1Name: "Product 1",
                 product2Name: "Product 2",
+                product1Revenues: [] as number[],
+                product2Revenues: [] as number[],
                 periodData: [] as any[],
                 hasData: false,
             };
         }
 
-        // Check if data has period property (API format)
         const isPeriodFormat = products[0].period !== undefined;
 
         if (isPeriodFormat) {
             let chartLabels: string[] = [];
+            const product1Data: number[] = [];
+            const product2Data: number[] = [];
+            const product1Revenues: number[] = [];
+            const product2Revenues: number[] = [];
+            let product1Name = "Product 1";
+            let product2Name = "Product 2";
 
-            // For 30-day period, group into weeks
             if (timePeriod === 30) {
                 const weeks: { [weekStart: string]: any[] } = {};
                 const weekStarts: string[] = [];
 
-                // Group products by week
                 products.forEach((p: any) => {
                     const date = new Date(p.period);
                     const dayOfWeek = date.getDay();
@@ -139,23 +144,10 @@ export default function TopProducts({
                     weeks[weekStartStr].push(p);
                 });
 
-                // Generate labels and aggregate data by week
-                const product1Data: number[] = [];
-                const product2Data: number[] = [];
-                const product1Revenues: number[] = [];
-                const product2Revenues: number[] = [];
-                let product1Name = "Product 1";
-                let product2Name = "Product 2";
-
                 weekStarts.forEach((weekStart) => {
                     chartLabels.push(generateWeekRangeLabel(weekStart));
-
                     const weekProducts = weeks[weekStart];
-                    const allProductsInWeek: {
-                        [productId: string]: any;
-                    } = {};
-
-                    // Aggregate all products across the week
+                    const allProductsInWeek: { [productId: string]: any } = {};
                     weekProducts.forEach((dayData: any) => {
                         if (
                             dayData.products &&
@@ -177,34 +169,29 @@ export default function TopProducts({
                         }
                     });
 
-                    // Sort and get top 2
                     const sortedProducts = Object.values(
                         allProductsInWeek
                     ).sort(
                         (a, b) => (b.soldQuantity || 0) - (a.soldQuantity || 0)
                     );
 
-                    // First product
                     if (sortedProducts[0]) {
                         const prod1 = sortedProducts[0];
                         product1Data.push(prod1.soldQuantity || 0);
                         product1Revenues.push(prod1.totalRevenue || 0);
-                        if (product1Name === "Product 1") {
+                        if (product1Name === "Product 1")
                             product1Name = prod1.name || "Product 1";
-                        }
                     } else {
                         product1Data.push(0);
                         product1Revenues.push(0);
                     }
 
-                    // Second product
                     if (sortedProducts[1]) {
                         const prod2 = sortedProducts[1];
                         product2Data.push(prod2.soldQuantity || 0);
                         product2Revenues.push(prod2.totalRevenue || 0);
-                        if (product2Name === "Product 2") {
+                        if (product2Name === "Product 2")
                             product2Name = prod2.name || "Product 2";
-                        }
                     } else {
                         product2Data.push(0);
                         product2Revenues.push(0);
@@ -224,14 +211,12 @@ export default function TopProducts({
                     hasData: true,
                 };
             } else if (timePeriod === 365) {
-                // For 365-day period, create month map
                 const monthMap: { [monthKey: string]: any[] } = {};
 
-                // Group products by month
                 products.forEach((p: any) => {
                     const date = new Date(p.period);
-                    const monthKey = `${date.getFullYear()}-${String(
-                        date.getMonth() + 1
+                    const monthKey = `${date.getUTCFullYear()}-${String(
+                        date.getUTCMonth() + 1
                     ).padStart(2, "0")}`;
 
                     if (!monthMap[monthKey]) {
@@ -240,45 +225,34 @@ export default function TopProducts({
                     monthMap[monthKey].push(p);
                 });
 
-                // Generate all 12 months starting from January of the year
-                const monthLabels: string[] = [];
                 const monthKeys: string[] = [];
+                const today = new Date();
+                const iteratorDate = new Date(today);
+                iteratorDate.setMonth(today.getMonth() - 11);
 
-                if (Object.keys(monthMap).length > 0) {
-                    // Get the first month's year
-                    const firstMonthKey = Object.keys(monthMap).sort()[0];
-                    const year = parseInt(firstMonthKey.split("-")[0]);
+                for (let i = 0; i < 12; i++) {
+                    const year = iteratorDate.getFullYear();
+                    const month = String(iteratorDate.getMonth() + 1).padStart(
+                        2,
+                        "0"
+                    );
+                    const monthKey = `${year}-${month}`;
 
-                    // Generate all months for that year starting from January
-                    for (let month = 1; month <= 12; month++) {
-                        const monthKey = `${year}-${String(month).padStart(
-                            2,
-                            "0"
-                        )}`;
-                        monthKeys.push(monthKey);
+                    monthKeys.push(monthKey);
 
-                        const date = new Date(year, month - 1, 1);
-                        const monthLabel = date.toLocaleDateString("en-US", {
-                            month: "short",
-                        });
-                        monthLabels.push(monthLabel);
-                    }
+                    const monthLabel = iteratorDate.toLocaleDateString(
+                        "en-US",
+                        { month: "short" }
+                    );
+                    chartLabels.push(monthLabel);
+
+                    iteratorDate.setMonth(iteratorDate.getMonth() + 1);
                 }
-
-                const product1Data: number[] = [];
-                const product2Data: number[] = [];
-                const product1Revenues: number[] = [];
-                const product2Revenues: number[] = [];
-                let product1Name = "Product 1";
-                let product2Name = "Product 2";
 
                 monthKeys.forEach((monthKey) => {
                     const monthProducts = monthMap[monthKey] || [];
-                    const allProductsInMonth: {
-                        [productId: string]: any;
-                    } = {};
+                    const allProductsInMonth: { [productId: string]: any } = {};
 
-                    // Aggregate all products across the month
                     monthProducts.forEach((dayData: any) => {
                         if (
                             dayData.products &&
@@ -300,34 +274,29 @@ export default function TopProducts({
                         }
                     });
 
-                    // Sort and get top 2
                     const sortedProducts = Object.values(
                         allProductsInMonth
                     ).sort(
                         (a, b) => (b.soldQuantity || 0) - (a.soldQuantity || 0)
                     );
 
-                    // First product
                     if (sortedProducts[0]) {
                         const prod1 = sortedProducts[0];
                         product1Data.push(prod1.soldQuantity || 0);
                         product1Revenues.push(prod1.totalRevenue || 0);
-                        if (product1Name === "Product 1") {
+                        if (product1Name === "Product 1")
                             product1Name = prod1.name || "Product 1";
-                        }
                     } else {
                         product1Data.push(0);
                         product1Revenues.push(0);
                     }
 
-                    // Second product
                     if (sortedProducts[1]) {
                         const prod2 = sortedProducts[1];
                         product2Data.push(prod2.soldQuantity || 0);
                         product2Revenues.push(prod2.totalRevenue || 0);
-                        if (product2Name === "Product 2") {
+                        if (product2Name === "Product 2")
                             product2Name = prod2.name || "Product 2";
-                        }
                     } else {
                         product2Data.push(0);
                         product2Revenues.push(0);
@@ -335,7 +304,7 @@ export default function TopProducts({
                 });
 
                 return {
-                    labels: monthLabels,
+                    labels: chartLabels,
                     product1Data,
                     product2Data,
                     product1Name,
@@ -347,44 +316,32 @@ export default function TopProducts({
                     hasData: true,
                 };
             } else {
-                // For 7 and 90 day periods
                 chartLabels = products.map((p: any) =>
                     generatePeriodLabel(p.period, timePeriod)
                 );
-
-                const product1Data: number[] = [];
-                const product2Data: number[] = [];
-                const product1Revenues: number[] = [];
-                const product2Revenues: number[] = [];
-                let product1Name = "Product 1";
-                let product2Name = "Product 2";
 
                 products.forEach((periodData: any) => {
                     if (
                         periodData.products &&
                         Array.isArray(periodData.products)
                     ) {
-                        // Get first product
                         if (periodData.products[0]) {
                             const prod1 = periodData.products[0];
                             product1Data.push(prod1.soldQuantity || 0);
                             product1Revenues.push(prod1.totalRevenue || 0);
-                            if (product1Name === "Product 1") {
+                            if (product1Name === "Product 1")
                                 product1Name = prod1.name || "Product 1";
-                            }
                         } else {
                             product1Data.push(0);
                             product1Revenues.push(0);
                         }
 
-                        // Get second product
                         if (periodData.products[1]) {
                             const prod2 = periodData.products[1];
                             product2Data.push(prod2.soldQuantity || 0);
                             product2Revenues.push(prod2.totalRevenue || 0);
-                            if (product2Name === "Product 2") {
+                            if (product2Name === "Product 2")
                                 product2Name = prod2.name || "Product 2";
-                            }
                         } else {
                             product2Data.push(0);
                             product2Revenues.push(0);
@@ -413,13 +370,13 @@ export default function TopProducts({
         }
 
         return {
-            labels: ["Current Period"] as string[],
-            product1Data: [products[0]?.soldQuantity || 0] as number[],
-            product2Data: [products[1]?.soldQuantity || 0] as number[],
+            labels: ["Current Period"],
+            product1Data: [products[0]?.soldQuantity || 0],
+            product2Data: [products[1]?.soldQuantity || 0],
             product1Name: products[0]?.name || "Product 1",
             product2Name: products[1]?.name || "Product 2",
-            product1Revenues: [products[0]?.totalRevenue || 0] as number[],
-            product2Revenues: [products[1]?.totalRevenue || 0] as number[],
+            product1Revenues: [products[0]?.totalRevenue || 0],
+            product2Revenues: [products[1]?.totalRevenue || 0],
             periodData: [],
             isPeriodFormat: false,
             hasData: true,
