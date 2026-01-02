@@ -10,6 +10,7 @@ import { usePathname } from "next/navigation";
 import { Analytics } from "@vercel/analytics/react";
 
 import { metadata } from "./metadata";
+import RoleGuard from "@/components/auth/RoleGuard";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -39,10 +40,12 @@ export default function RootLayout({
                             transition={{ duration: 0.5 }}
                         >
                             <ReduxProvider>
-                                <ToastProvider>
-                                    {children}
-                                    <Analytics />
-                                </ToastProvider>
+                                <RoleGuard>
+                                    <ToastProvider>
+                                        {children}
+                                        <Analytics />
+                                    </ToastProvider>
+                                </RoleGuard>
                             </ReduxProvider>
                         </motion.div>
                     </AnimatePresence>

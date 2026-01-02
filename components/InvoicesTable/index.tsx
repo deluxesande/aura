@@ -269,7 +269,6 @@ export default function InvoicesTable({
                             <option value="all">All Payments</option>
                             <option value="cash">Cash</option>
                             <option value="mpesa">Mpesa</option>
-                            <option value="card">Card</option>
                         </select>
                     </div>
                 </div>
