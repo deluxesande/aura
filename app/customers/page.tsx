@@ -7,6 +7,7 @@ import axios from "axios";
 import {
     ChevronLeft,
     ChevronRight,
+    ListFilter,
     Mail,
     Phone,
     Plus,
@@ -49,7 +50,28 @@ export default function Page() {
     const [currentPage, setCurrentPage] = React.useState(1);
     const [itemsPerPage] = React.useState(10);
     const [searchTerm, setSearchTerm] = React.useState("");
+
+    // New State for "Created By" Filter
+    const [filterCreator, setFilterCreator] = React.useState<string>("All");
+
     const router = useRouter();
+
+    // Extract unique creators for the dropdown
+    const uniqueCreators = React.useMemo(() => {
+        const creators = new Set<string>();
+        customers.forEach((c) => {
+            if (c.CreatedBy?.firstName) {
+                creators.add(
+                    `${c.CreatedBy.firstName} ${
+                        c.CreatedBy.lastName || ""
+                    }`.trim()
+                );
+            } else {
+                creators.add("Unknown");
+            }
+        });
+        return ["All", ...Array.from(creators)];
+    }, [customers]);
 
     const handleDelete = async (customerId: string) => {
         const promise = async () => {
@@ -138,17 +160,31 @@ export default function Page() {
 
     const filteredCustomers = customers.filter((customer) => {
         const searchLower = searchTerm.toLowerCase();
-        return (
+
+        // 1. Search Filter
+        const matchesSearch =
             customer.firstName.toLowerCase().includes(searchLower) ||
             customer.lastName.toLowerCase().includes(searchLower) ||
             customer.phoneNumber.includes(searchLower) ||
             (customer.email &&
-                customer.email.toLowerCase().includes(searchLower))
-        );
+                customer.email.toLowerCase().includes(searchLower));
+
+        // 2. Creator Filter
+        const creatorName = customer.CreatedBy
+            ? `${customer.CreatedBy.firstName} ${
+                  customer.CreatedBy.lastName || ""
+              }`.trim()
+            : "Unknown";
+
+        const matchesCreator =
+            filterCreator === "All" || creatorName === filterCreator;
+
+        return matchesSearch && matchesCreator;
     });
+
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm]);
+    }, [searchTerm, filterCreator]);
 
     const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -169,8 +205,6 @@ export default function Page() {
 
     const getPageNumbers = () => {
         const pages = [];
-        // Simple logic to show all pages if total is small, or a window if large
-        // For simplicity based on your snippet, we'll list all, or you can limit strictly
         for (let i = 1; i <= totalPages; i++) {
             if (
                 i === 1 ||
@@ -180,7 +214,6 @@ export default function Page() {
                 pages.push(i);
             }
         }
-        // Remove duplicates and sort
         return Array.from(new Set(pages)).sort((a, b) => a - b);
     };
 
@@ -204,7 +237,7 @@ export default function Page() {
                                 </span>
                             </div>
 
-                            <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+                            <div className="flex items-center gap-3 w-full md:w-auto justify-end flex-wrap md:flex-nowrap">
                                 {/* Search Bar */}
                                 <div className="relative w-full md:w-64">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -221,11 +254,36 @@ export default function Page() {
                                     />
                                 </div>
 
+                                {/* Creator Filter Dropdown */}
+                                <div className="relative w-full md:w-48">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <ListFilter className="h-4 w-4 text-gray-400" />
+                                    </div>
+                                    <select
+                                        value={filterCreator}
+                                        onChange={(e) =>
+                                            setFilterCreator(e.target.value)
+                                        }
+                                        className="pl-10 pr-8 py-2 w-full bg-slate-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all appearance-none cursor-pointer text-gray-600"
+                                    >
+                                        {uniqueCreators.map((creator) => (
+                                            <option
+                                                key={creator}
+                                                value={creator}
+                                            >
+                                                {creator === "All"
+                                                    ? "All Creators"
+                                                    : creator}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
                                 <button
                                     onClick={() =>
                                         setShowAddCustomerModal(true)
                                     }
-                                    className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
+                                    className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap w-full md:w-auto justify-center"
                                 >
                                     <Plus size={16} className="stroke-white" />
                                     <span className="hidden md:inline text-white">
@@ -297,6 +355,11 @@ export default function Page() {
                                                                     customer.lastName
                                                                 }
                                                             </p>
+                                                            <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                                                                {new Date(
+                                                                    customer.createdAt
+                                                                ).toLocaleDateString()}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </td>
@@ -333,7 +396,7 @@ export default function Page() {
                                                                         customer
                                                                             .CreatedBy
                                                                             .imageUrl ||
-                                                                        "https://www.svgrepo.com/show/535711/user.svg"
+                                                                        "/images/user.png"
                                                                     }
                                                                     width={32}
                                                                     height={32}
@@ -379,11 +442,12 @@ export default function Page() {
 
                                                 <td className="p-4">
                                                     <button
-                                                        onClick={() =>
+                                                        onClick={(e) => {
+                                                            e.stopPropagation(); // Prevent row click
                                                             handleDelete(
                                                                 customer.id
-                                                            )
-                                                        }
+                                                            );
+                                                        }}
                                                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                                                         title="Delete Customer"
                                                     >
@@ -406,8 +470,9 @@ export default function Page() {
                                                         <User className="h-8 w-8 stroke-green-500" />
                                                     </div>
                                                     <p>
-                                                        {searchTerm
-                                                            ? "No customers found matching search."
+                                                        {searchTerm ||
+                                                        filterCreator !== "All"
+                                                            ? "No customers found matching filters."
                                                             : "No customers found in this business."}
                                                     </p>
                                                 </div>
@@ -454,9 +519,10 @@ export default function Page() {
                                                 </div>
                                             </div>
                                             <button
-                                                onClick={() =>
-                                                    handleDelete(customer.id)
-                                                }
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDelete(customer.id);
+                                                }}
                                                 className="p-2 text-gray-400 hover:text-red-600 bg-gray-50 rounded-lg"
                                             >
                                                 <Trash2
@@ -503,7 +569,7 @@ export default function Page() {
                                                                 customer
                                                                     .CreatedBy
                                                                     .imageUrl ||
-                                                                "https://www.svgrepo.com/show/535711/user.svg"
+                                                                "/images/user.png"
                                                             }
                                                             width={24}
                                                             height={24}
@@ -537,8 +603,9 @@ export default function Page() {
                                             <User className="h-8 w-8 stroke-green-500" />
                                         </div>
                                         <p>
-                                            {searchTerm
-                                                ? "No customers found matching search."
+                                            {searchTerm ||
+                                            filterCreator !== "All"
+                                                ? "No customers found matching filters."
                                                 : "No customers found."}
                                         </p>
                                     </div>
