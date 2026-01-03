@@ -3,15 +3,13 @@ import axios from "axios";
 import { AppState } from "@/store";
 import { Plus } from "lucide-react";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import {
     setInvitationsWithImages,
     addInvitation,
-    updateInvitation,
-    removeInvitation,
 } from "@/store/slices/invitationsDataSlice";
 import { setInvitations } from "@/store/slices/invitationSlice";
 import { FloatingPortal } from "@floating-ui/react";
@@ -54,7 +52,6 @@ const CustomUserButton = () => {
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteRole, setInviteRole] = useState("user");
-    const [isLoading, setIsLoading] = useState(true);
     const dispatch = useDispatch();
 
     const invitations = useSelector(
@@ -68,33 +65,34 @@ const CustomUserButton = () => {
     const user = useSelector(
         (state: AppState) => state.auth.user
     ) as StoreUser | null;
+    const [isLoading, setIsLoading] = useState(userInvitations.length === 0);
+
+    const hasFetched = useRef(false);
 
     useEffect(() => {
-        // Check if invitations data exists in Redux store first
-        if (userInvitations.length > 0) {
-            // Data already in store, use it
+        if (
+            user?.role?.toLowerCase() !== "admin" &&
+            user?.role?.toLowerCase() !== "manager"
+        ) {
             setIsLoading(false);
             return;
         }
 
-        // If not in store, fetch from API
+        if (hasFetched.current) return;
+
         const fetchUsers = async () => {
+            if (userInvitations.length === 0) setIsLoading(true);
+
             try {
-                if (
-                    user?.role?.toLowerCase() !== "admin" &&
-                    user?.role?.toLowerCase() !== "manager"
-                ) {
-                    setIsLoading(false);
-                    return;
-                }
-
                 const response = await axios.get("/api/auth/invite/get");
-                if (response.data.invitations) {
-                    dispatch(setInvitations(response.data.invitations));
 
-                    // Fetch profile images for all users
-                    const usersWithImages = await Promise.all(
-                        response.data.invitations.map(async (user: User) => {
+                if (response.data.invitations) {
+                    const rawInvitations = response.data.invitations;
+
+                    dispatch(setInvitations(rawInvitations));
+
+                    const imagePromises = rawInvitations.map(
+                        async (user: User) => {
                             try {
                                 const imageResponse = await axios.get(
                                     "/api/auth/user/image",
@@ -102,7 +100,6 @@ const CustomUserButton = () => {
                                         params: { userId: user.id },
                                     }
                                 );
-
                                 return {
                                     ...user,
                                     imageUrl:
@@ -115,13 +112,23 @@ const CustomUserButton = () => {
                                     imageUrl: undefined,
                                 } as Invitation;
                             }
-                        })
+                        }
                     );
-                    // Update invitations data store with users including image URLs
+
+                    const results = await Promise.allSettled(imagePromises);
+
+                    const usersWithImages = results.map((result, index) => {
+                        if (result.status === "fulfilled") return result.value;
+                        return {
+                            ...rawInvitations[index],
+                            imageUrl: undefined,
+                        } as Invitation;
+                    });
+
                     dispatch(setInvitationsWithImages(usersWithImages));
                 }
 
-                if (response.status === 404) {
+                if (response.status === 404 && userInvitations.length === 0) {
                     toast.warning("No Invitations sent by you yet.");
                 }
             } catch (error) {
@@ -129,15 +136,19 @@ const CustomUserButton = () => {
                     axios.isAxiosError(error) &&
                     error.response?.status !== 404
                 ) {
-                    toast.error("Failed to fetch Invitations.");
+                    if (userInvitations.length === 0)
+                        toast.error("Failed to fetch Invitations.");
                 }
             } finally {
                 setIsLoading(false);
+                hasFetched.current = true;
             }
         };
 
         fetchUsers();
-    }, [dispatch, userInvitations.length, user?.role]);
+        // Removed userInvitations.length to prevent loops, relying on hasFetched ref
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dispatch, user?.role]);
 
     const handleInviteUser = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -155,10 +166,8 @@ const CustomUserButton = () => {
 
                 const newInvitation = response.data.invitation;
 
-                // Update Redux store
                 dispatch(setInvitations([...invitations, newInvitation]));
 
-                // Update invitations data store with the new invitation
                 const newInvitationWithImage = {
                     ...newInvitation,
                     imageUrl: undefined,
@@ -181,28 +190,23 @@ const CustomUserButton = () => {
         setShowInviteModal(false);
     };
 
-    // Check if user is admin or manager
     const isAdminOrManager =
         user?.role?.toLowerCase() === "admin" ||
         user?.role?.toLowerCase() === "manager";
 
-    // Don't render anything if user is not admin or manager
     if (!isAdminOrManager) {
         return null;
     }
 
-    // Get only accepted users (first 3)
     const acceptedUsers = userInvitations
         .filter((invitation) => invitation.status === "accepted")
         .slice(0, 3);
 
-    // Default placeholder image
     const defaultImage = "https://placehold.co/100x100/94a3b8/ffffff?text=U";
 
     return (
         <>
             <div className="flex items-center space-x-2 pr-10">
-                {/* User avatars group */}
                 {isLoading ? (
                     <div className="flex items-center -space-x-2">
                         {[1, 2, 3].map((i) => (
@@ -218,7 +222,6 @@ const CustomUserButton = () => {
                         <p className="text-sm truncate text-gray-500">
                             No team members
                         </p>
-                        {/* Add user button */}
                         <button
                             onClick={() => setShowInviteModal(true)}
                             className="h-8 w-8 min-h-8 min-w-8 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center border-2 border-white cursor-pointer transition-colors"
@@ -232,21 +235,20 @@ const CustomUserButton = () => {
                         {acceptedUsers.map((acceptedUser, index) => (
                             <div
                                 key={acceptedUser.id}
-                                className="h-8 w-8 rounded-full overflow-hidden border-2 border-white cursor-pointer hover:scale-110 transition-transform"
+                                className="h-8 w-8 rounded-full overflow-hidden border-2 border-white cursor-pointer hover:scale-110 transition-transform relative"
                                 style={{ zIndex: acceptedUsers.length - index }}
                                 title={acceptedUser.email}
                             >
                                 <Image
                                     src={acceptedUser.imageUrl || defaultImage}
-                                    width={32}
-                                    height={32}
+                                    fill
+                                    sizes="32px"
                                     alt={acceptedUser.email}
-                                    className="rounded-full object-cover"
+                                    className="object-cover"
                                 />
                             </div>
                         ))}
 
-                        {/* Add user button */}
                         <button
                             onClick={() => setShowInviteModal(true)}
                             className="h-8 w-8 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center border-2 border-white cursor-pointer transition-colors"
@@ -259,7 +261,6 @@ const CustomUserButton = () => {
                 )}
             </div>
 
-            {/* Invite User Modal */}
             {showInviteModal && (
                 <FloatingPortal>
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

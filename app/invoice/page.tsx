@@ -1,7 +1,8 @@
 "use client";
+
 import Navbar from "@/components/Navbar";
 import { useSearchParams } from "next/navigation";
-import React, { Suspense, useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState, useMemo } from "react";
 import { Invoice, Product } from "@/utils/typesDefinitions";
 import axios from "axios";
 import { format } from "date-fns";
@@ -19,14 +20,27 @@ import {
 import { toast } from "sonner";
 import Link from "next/link";
 import Image from "next/image";
+import { useSelector } from "react-redux";
+import { AppState } from "@/store";
 
 function InvoicePageContent() {
     const searchParams = useSearchParams();
     const id = searchParams ? searchParams.get("id") : null;
+
+    const storedInvoices = useSelector(
+        (state: AppState) => state.invoice.invoices
+    );
+
+    const cachedInvoice = useMemo(() => {
+        return storedInvoices.find((inv) => inv.id === id);
+    }, [storedInvoices, id]);
+
+    const [invoice, setInvoice] = useState<Invoice | undefined>(cachedInvoice);
+
     const [invoiceItems, setInvoiceItems] = useState<
         { Product: Product; quantity: number }[]
-    >([]);
-    const [invoice, setInvoice] = useState<Invoice>();
+    >(cachedInvoice?.invoiceItems || []);
+
     const [isUpdating, setIsUpdating] = useState(false);
     const [isRetrying, setIsRetrying] = useState(false);
 
@@ -40,7 +54,7 @@ function InvoicePageContent() {
             case "completed":
                 return "bg-blue-100 text-blue-700 border-blue-200";
             case "cancelled":
-            case "failed": // Added failed styling
+            case "failed":
                 return "bg-red-100 text-red-700 border-red-200";
             default:
                 return "bg-gray-100 text-gray-700 border-gray-200";
@@ -56,11 +70,9 @@ function InvoicePageContent() {
 
     const handleStatusChange = async (newStatus: string) => {
         if (!invoice || isUpdating) return;
-
         const previousStatus = invoice.status;
         setInvoice({ ...invoice, status: newStatus });
         setIsUpdating(true);
-
         try {
             await axios.put(`/api/invoice/${invoice.id}`, {
                 status: newStatus,
@@ -76,18 +88,14 @@ function InvoicePageContent() {
 
     const handleRetryPayment = async () => {
         if (!invoice || isRetrying) return;
-
         setIsRetrying(true);
         const toastId = toast.loading("Initiating payment retry...");
-
         try {
             await axios.post("/api/safaricom/c2b/payment/retry", {
                 invoiceId: invoice.id,
             });
-
             toast.success("Payment prompt sent to customer", { id: toastId });
         } catch (error: any) {
-            console.error("Retry failed", error);
             toast.error(
                 error?.response?.data?.error || "Failed to retry payment",
                 { id: toastId }
@@ -103,21 +111,19 @@ function InvoicePageContent() {
             try {
                 const response = await axios.get(`/api/invoice/${id}`);
                 const invoiceData = response.data;
-
                 setInvoice({
                     ...invoiceData,
                     createdAt: new Date(invoiceData.createdAt),
                     updatedAt: new Date(invoiceData.updatedAt),
                 });
-
                 setInvoiceItems(response.data.invoiceItems);
             } catch (error) {
-                toast.error("Error fetching invoice");
+                if (!cachedInvoice) toast.error("Error fetching invoice");
             }
         };
 
         fetchInvoice();
-    }, [id]);
+    }, [id, cachedInvoice]);
 
     if (!invoice) {
         return (
@@ -171,7 +177,7 @@ function InvoicePageContent() {
                     </div>
 
                     <div className="flex gap-2 flex-wrap w-full sm:w-auto shrink-0">
-                        {/* 1. RETRY BUTTON: Shows if Failed or Cancelled */}
+                        {/* 1. RETRY BUTTON */}
                         {(status === "failed" || status === "cancelled") && (
                             <button
                                 onClick={handleRetryPayment}
@@ -188,7 +194,7 @@ function InvoicePageContent() {
                             </button>
                         )}
 
-                        {/* 2. MARK PAID: Only if Cash */}
+                        {/* 2. MARK PAID */}
                         {status !== "paid" &&
                             status !== "completed" &&
                             invoice.paymentType === "CASH" && (
@@ -205,7 +211,7 @@ function InvoicePageContent() {
                                 </button>
                             )}
 
-                        {/* 3. CANCEL: Only if Pending */}
+                        {/* 3. CANCEL */}
                         {status === "pending" && (
                             <button
                                 onClick={() => handleStatusChange("CANCELLED")}
@@ -226,7 +232,6 @@ function InvoicePageContent() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* ... (Rest of the component remains exactly the same) ... */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                             <div className="p-6 border-b border-gray-100 flex justify-between items-center">

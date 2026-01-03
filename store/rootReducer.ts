@@ -8,6 +8,7 @@ import invitationsReducer from "./slices/invitationSlice";
 import businessReducer from "./slices/businessSlice";
 import invitationsDataReducer from "./slices/invitationsDataSlice";
 import invoiceReducer from "./slices/invoiceSlice";
+import analyticsReducer from "./slices/analyticsSlice";
 
 const rootReducer = combineReducers({
     product: productReducer,
@@ -19,6 +20,7 @@ const rootReducer = combineReducers({
     business: businessReducer,
     invitationsData: invitationsDataReducer,
     invoice: invoiceReducer,
+    analytics: analyticsReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

@@ -3,15 +3,15 @@ import {
     ChevronLeft,
     ChevronRight,
     Edit,
+    ListFilter,
     PlusCircle,
-    Trash,
-    Filter,
     Search,
+    Trash,
 } from "lucide-react";
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function ProductList({
     products,
@@ -128,7 +128,7 @@ export default function ProductList({
                     {!loading && products.length > 0 && (
                         <div className="relative w-full sm:w-auto">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Filter className="h-4 w-4 text-gray-400" />
+                                <ListFilter className="h-4 w-4 text-gray-400" />
                             </div>
                             <select
                                 value={selectedCategory}

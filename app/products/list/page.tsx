@@ -5,82 +5,61 @@ import Navbar from "@/components/Navbar";
 import ProductList from "@/components/ProductList";
 import { AppState } from "@/store";
 import { setProducts } from "@/store/slices/productSlice";
-import { Product } from "@/utils/typesDefinitions";
 import axios from "axios";
-import { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
-import { useSelector } from "react-redux";
+import { useEffect, useState, useRef } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 
 export default function Page() {
-    const [products, setLocalProducts] = useState<Product[]>([]);
-    const originalProducts = useSelector(
-        (state: AppState) => state.product.products
-    );
-    const [loading, setLoading] = useState<boolean>(false);
     const dispatch = useDispatch();
 
+    const products = useSelector((state: AppState) => state.product.products);
+
+    const [loading, setLoading] = useState(products.length === 0);
+
+    // Prevent double-fetching in React Strict Mode
+    const hasFetched = useRef(false);
+
     const handleDelete = async (productId: string) => {
-        const promise = async () => {
-            try {
-                await axios.delete(`/api/product/${productId}`);
+        const previousProducts = [...products];
 
-                // Update the products state after deletion
-                setLocalProducts((prevProducts) =>
-                    prevProducts.filter((product) => product.id !== productId)
-                );
-                dispatch(
-                    setProducts(
-                        originalProducts.filter(
-                            (product: Product) => product.id !== productId
-                        )
-                    )
-                );
-            } catch (error) {
-                throw new Error("Error deleting product");
-            }
-        };
+        const optimisticList = products.filter(
+            (product) => product.id !== productId
+        );
+        dispatch(setProducts(optimisticList));
 
-        toast.promise(promise(), {
-            loading: "Deleting product...",
-            success: "Product deleted successfully",
-            error: "Error deleting product",
-        });
+        try {
+            await axios.delete(`/api/product/${productId}`);
+            toast.success("Product deleted successfully");
+        } catch (error) {
+            dispatch(setProducts(previousProducts));
+            toast.error("Error deleting product, changes reverted");
+        }
     };
 
     useEffect(() => {
-        const fetchProductsAndUpdateStore = async () => {
+        if (hasFetched.current) return;
+
+        const fetchProducts = async () => {
+            if (products.length === 0) setLoading(true);
+
             try {
                 const response = await axios.get("/api/product");
                 const fetchedProducts = Array.isArray(response.data)
                     ? response.data
                     : [];
-
-                // Update both local state and the Redux store with the latest data
-                setLocalProducts(fetchedProducts);
                 dispatch(setProducts(fetchedProducts));
             } catch (error) {
-                // console.error("Error fetching products:", error);
-                toast.error("Failed to fetch latest products.");
+                console.error("Background update failed");
             } finally {
-                // Ensure loading is turned off after the fetch completes
                 setLoading(false);
+                hasFetched.current = true;
             }
         };
 
-        // Check if products are already in the Redux store
-        if (originalProducts.length > 0) {
-            // If yes, display them immediately from the store
-            setLocalProducts(originalProducts);
-            setLoading(false); // We have data, so we are not in an initial loading state
-        } else {
-            // If not, show the loading indicator while we fetch
-            setLoading(true);
-        }
-
-        // Always fetch in the background to get the latest updates
-        fetchProductsAndUpdateStore();
-    }, [dispatch, originalProducts]);
+        fetchProducts();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dispatch]); // Removed 'products' dependency to prevent fetch loops
 
     return (
         <Navbar>

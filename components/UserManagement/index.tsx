@@ -1,20 +1,18 @@
 import { AppState } from "@/store";
 import { setInvitations } from "@/store/slices/invitationSlice";
 import {
-    setInvitationsWithImages,
     addInvitation,
-    updateInvitation,
     removeInvitation,
+    setInvitationsWithImages,
+    updateInvitation,
 } from "@/store/slices/invitationsDataSlice";
 import axios from "axios";
-import { Trash, Users } from "lucide-react"; // Changed icon to Users for context
-import React, { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
-import { useSelector } from "react-redux";
-import { toast } from "sonner";
+import { Trash, Users } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import React, { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "sonner";
 
 interface User {
     id: string;
@@ -47,16 +45,92 @@ const UserManagement: React.FC = () => {
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteRole, setInviteRole] = useState("user");
-    const [isLoading, setIsLoading] = useState(true);
 
     const dispatch = useDispatch();
+
     const invitations = useSelector(
         (state: AppState) => state.invitations.invitations
     ) as User[];
+
     const userInvitations = useSelector(
         (state: AppState) => state.invitationsData.invitationsWithImages
     ) as Invitation[];
-    const router = useRouter();
+
+    const [isLoading, setIsLoading] = useState(userInvitations.length === 0);
+
+    const hasFetched = useRef(false);
+
+    useEffect(() => {
+        if (hasFetched.current) return;
+
+        const fetchUsers = async () => {
+            if (userInvitations.length === 0) setIsLoading(true);
+
+            try {
+                const response = await axios.get("/api/auth/invite/get");
+
+                if (response.data.invitations) {
+                    const rawInvitations = response.data.invitations;
+
+                    dispatch(setInvitations(rawInvitations));
+                    const imagePromises = rawInvitations.map(
+                        async (user: User) => {
+                            try {
+                                const imageResponse = await axios.get(
+                                    "/api/auth/user/image",
+                                    {
+                                        params: { userId: user.id },
+                                    }
+                                );
+                                return {
+                                    ...user,
+                                    imageUrl:
+                                        imageResponse.data.imageUrl ||
+                                        "/images/user.png",
+                                } as Invitation;
+                            } catch (error) {
+                                return {
+                                    ...user,
+                                    imageUrl: "/images/user.png",
+                                } as Invitation;
+                            }
+                        }
+                    );
+
+                    const results = await Promise.allSettled(imagePromises);
+
+                    const usersWithImages = results.map((result, index) => {
+                        if (result.status === "fulfilled") return result.value;
+                        return {
+                            ...rawInvitations[index],
+                            imageUrl: null,
+                        } as Invitation;
+                    });
+
+                    dispatch(setInvitationsWithImages(usersWithImages));
+                }
+
+                if (response.status === 404 && userInvitations.length === 0) {
+                    toast.warning("No Invitations sent by you yet.");
+                }
+            } catch (error) {
+                if (
+                    axios.isAxiosError(error) &&
+                    error.response?.status !== 404
+                ) {
+                    if (userInvitations.length === 0)
+                        toast.error("Failed to fetch Invitations.");
+                }
+            } finally {
+                setIsLoading(false);
+                hasFetched.current = true;
+            }
+        };
+
+        fetchUsers();
+        // Removed userInvitations.length from dependency array to prevent infinite re-fetching loops
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dispatch]);
 
     const handleInviteUser = (e: React.FormEvent) => {
         e.preventDefault();
@@ -74,10 +148,8 @@ const UserManagement: React.FC = () => {
 
                 const newInvitation = response.data.invitation;
 
-                // Update Redux store
                 dispatch(setInvitations([...invitations, newInvitation]));
 
-                // Update invitations data store with the new invitation
                 const newInvitationWithImage = {
                     ...newInvitation,
                     imageUrl: null,
@@ -202,63 +274,6 @@ const UserManagement: React.FC = () => {
             : "bg-red-100 text-red-800";
     };
 
-    useEffect(() => {
-        if (userInvitations.length > 0) {
-            setIsLoading(false);
-            return;
-        }
-
-        const fetchUsers = async () => {
-            try {
-                const response = await axios.get("/api/auth/invite/get");
-                if (response.data.invitations) {
-                    dispatch(setInvitations(response.data.invitations));
-
-                    const usersWithImages = await Promise.all(
-                        response.data.invitations.map(async (user: User) => {
-                            try {
-                                const imageResponse = await axios.get(
-                                    "/api/auth/user/image",
-                                    {
-                                        params: { userId: user.id },
-                                    }
-                                );
-
-                                return {
-                                    ...user,
-                                    imageUrl:
-                                        imageResponse.data.imageUrl || null,
-                                } as Invitation;
-                            } catch (error) {
-                                return {
-                                    ...user,
-                                    imageUrl: undefined,
-                                } as Invitation;
-                            }
-                        })
-                    );
-
-                    dispatch(setInvitationsWithImages(usersWithImages));
-                }
-
-                if (response.status === 404) {
-                    toast.warning("No Invitations sent by you yet.");
-                }
-            } catch (error) {
-                if (
-                    axios.isAxiosError(error) &&
-                    error.response?.status !== 404
-                ) {
-                    toast.error("Failed to fetch Invitations.");
-                }
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchUsers();
-    }, [dispatch, userInvitations.length]);
-
     return (
         <section className="relative">
             <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -272,7 +287,6 @@ const UserManagement: React.FC = () => {
                     </p>
                 </div>
 
-                {/* ACTIONS CONTAINER: Link and Button together on the right */}
                 <div className="flex items-center gap-3 w-full sm:w-auto">
                     <Link
                         href="/settings/team"
@@ -298,25 +312,27 @@ const UserManagement: React.FC = () => {
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                     </div>
                 )}
+
                 {userInvitations.length === 0 && !isLoading && (
-                    <div className="text-gray-500">
+                    <div className="text-gray-500 text-center py-8">
                         No users found. Invite new users to get started.
                     </div>
                 )}
+
                 {(userInvitations as Invitation[]).map((user) => (
                     <div
                         key={user.id}
                         className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm gap-4"
                     >
                         <div className="flex items-center space-x-4 flex-1">
-                            <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
+                            <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0 relative overflow-hidden">
                                 {user.imageUrl ? (
                                     <Image
                                         src={user.imageUrl}
                                         alt={user.email}
-                                        className="w-full h-full object-cover rounded-full"
-                                        width={40}
-                                        height={40}
+                                        className="object-cover"
+                                        fill
+                                        sizes="40px"
                                     />
                                 ) : (
                                     <span className="text-sm font-medium text-gray-600">
@@ -453,8 +469,7 @@ const UserManagement: React.FC = () => {
                         <p className="text-sm text-gray-600 mb-6">
                             Are you sure you want to delete{" "}
                             <strong>{userToDelete.email}</strong>? This action
-                            cannot be undone and will permanently remove the
-                            user from your system.
+                            cannot be undone.
                         </p>
 
                         <div className="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-3">

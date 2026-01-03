@@ -34,21 +34,17 @@ export default function InvoicesTable({
     const router = useRouter();
     const [currentPage, setCurrentPage] = useState(1);
 
-    // --- Filter States ---
     const [filterStatus, setFilterStatus] = useState<string>("all");
-    const [filterTime, setFilterTime] = useState<string>("today");
+    const [filterTime, setFilterTime] = useState<string>("30_days");
     const [filterPayment, setFilterPayment] = useState<string>("all");
 
-    // --- Filter Logic ---
     const filteredInvoices = invoices.filter((inv) => {
-        // 1. Status Filter
         if (filterStatus !== "all") {
             if (inv.status?.toLowerCase() !== filterStatus.toLowerCase()) {
                 return false;
             }
         }
 
-        // 2. Payment Filter
         if (filterPayment !== "all") {
             const pType = inv.paymentType?.toLowerCase() || "";
             if (pType !== filterPayment.toLowerCase()) {
@@ -56,7 +52,6 @@ export default function InvoicesTable({
             }
         }
 
-        // 3. Time Filter
         if (filterTime === "all_time") return true;
 
         const invDate = new Date(inv.createdAt);
@@ -87,18 +82,15 @@ export default function InvoicesTable({
         }
     });
 
-    // Reset pagination when filters change
     useEffect(() => {
         setCurrentPage(1);
     }, [filterStatus, filterTime, filterPayment]);
 
-    // --- Pagination Logic ---
     const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const paginatedInvoices = filteredInvoices.slice(startIndex, endIndex);
 
-    // --- Handlers ---
     const handleRowClick = (invoiceId: string) => {
         router.push(`/invoice?id=${invoiceId}`);
     };
@@ -150,9 +142,7 @@ export default function InvoicesTable({
         }
     };
 
-    // --- Dynamic Empty State Logic ---
     const getEmptyStateContent = () => {
-        // 1. Case: Database is completely empty
         if (invoices.length === 0) {
             return {
                 title: "No invoices created",
@@ -161,7 +151,6 @@ export default function InvoicesTable({
             };
         }
 
-        // 2. Case: No results due to filters
         let timeText = "";
         switch (filterTime) {
             case "today":
@@ -180,22 +169,18 @@ export default function InvoicesTable({
 
         const statusText =
             filterStatus !== "all" ? filterStatus.toLowerCase() : "";
-        const paymentText = filterPayment !== "all" ? filterPayment : ""; // Keep payment casing (e.g. Mpesa)
+        const paymentText = filterPayment !== "all" ? filterPayment : "";
 
         let title = "No invoices found";
 
         if (statusText && paymentText) {
-            // e.g. "No pending Mpesa invoices"
             title = `No ${statusText} ${paymentText} invoices`;
         } else if (statusText) {
-            // e.g. "No paid invoices"
             title = `No ${statusText} invoices`;
         } else if (paymentText) {
-            // e.g. "No Mpesa invoices"
             title = `No ${paymentText} invoices`;
         }
 
-        // Capitalize first letter of title
         title = title.charAt(0).toUpperCase() + title.slice(1);
 
         return {

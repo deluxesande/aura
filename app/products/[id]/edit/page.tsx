@@ -1,8 +1,9 @@
 "use client";
+
 import Navbar from "@/components/Navbar";
 import { Category, Product } from "@/utils/typesDefinitions";
 import axios from "axios";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -13,13 +14,10 @@ import { generateSKU } from "@/utils/generateSKU";
 import {
     ArrowLeft,
     UploadCloud,
-    DollarSign,
     Package,
-    Layers,
     Save,
     Loader2,
     Plus,
-    X,
     ScanBarcode,
     RefreshCw,
 } from "lucide-react";
@@ -36,25 +34,27 @@ export default function EditProductPage() {
     const originalProducts = useSelector(
         (state: AppState) => state.product.products
     );
+    const cachedProduct = useMemo(() => {
+        return originalProducts.find((p) => p.id === id);
+    }, [originalProducts, id]);
 
     const [categories, setCategories] = useState<Category[]>([]);
 
-    // Image State
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(
+        cachedProduct?.image || null
+    );
     const [isCropModalOpen, setIsCropModalOpen] = useState(false);
     const [tempImageSrc, setTempImageSrc] = useState<string | null>(null);
 
-    // Restock Modal State
     const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
     const [restockAmount, setRestockAmount] = useState<string>("");
 
     const [isLoading, setIsLoading] = useState(false);
-    const [isDataLoading, setIsDataLoading] = useState(true);
+    const [isDataLoading, setIsDataLoading] = useState(!cachedProduct);
 
-    // Ref to prevent double fetching in React Strict Mode
     const hasFetched = useRef(false);
 
-    const [formData, setFormData] = useState<Product>({
+    const initialFormState: Product = {
         id: "",
         name: "",
         description: "",
@@ -68,53 +68,64 @@ export default function EditProductPage() {
         updatedAt: new Date(),
         Category: { id: "", name: "", products: [] },
         invoiceItems: [],
-    });
+    };
 
-    // Fetch Logic
+    const [formData, setFormData] = useState<Product>(
+        cachedProduct || initialFormState
+    );
+
     useEffect(() => {
+        if (!id || hasFetched.current) return;
+
         const fetchData = async () => {
-            if (!id) return;
+            if (!cachedProduct) setIsDataLoading(true);
 
-            setIsDataLoading(true);
             try {
-                const productFromStore = originalProducts.find(
-                    (p: Product) => p.id === id
-                );
+                const [productRes, categoriesRes] = await Promise.allSettled([
+                    axios.get(`/api/product/${id}`),
+                    axios.get("/api/category"),
+                ]);
 
-                if (productFromStore) {
-                    setFormData(productFromStore);
-                    setImagePreview(productFromStore.image);
+                if (productRes.status === "fulfilled") {
+                    const freshProductData = productRes.value.data;
 
-                    // const categoriesRes = await axios.get("/api/category");
-                    // setCategories(categoriesRes.data);
-                    const categoriesRes = productFromStore.Category;
-                    setIsDataLoading(false);
-                } else {
-                    if (hasFetched.current) return;
-                    hasFetched.current = true;
+                    setFormData((prev) => ({ ...prev, ...freshProductData }));
 
-                    const [productRes, categoriesRes] = await Promise.all([
-                        axios.get(`/api/product/${id}`),
-                        axios.get("/api/category"),
-                    ]);
+                    if (
+                        freshProductData.image &&
+                        imagePreview === cachedProduct?.image
+                    ) {
+                        setImagePreview(freshProductData.image);
+                    }
 
-                    setFormData(productRes.data);
-                    setImagePreview(productRes.data.image);
-                    setCategories(categoriesRes.data);
+                    const updatedList = originalProducts.some(
+                        (p) => p.id === freshProductData.id
+                    )
+                        ? originalProducts.map((p) =>
+                              p.id === freshProductData.id
+                                  ? freshProductData
+                                  : p
+                          )
+                        : [...originalProducts, freshProductData];
 
-                    dispatch(
-                        setProducts([...originalProducts, productRes.data])
-                    );
+                    dispatch(setProducts(updatedList));
+                }
+
+                if (categoriesRes.status === "fulfilled") {
+                    setCategories(categoriesRes.value.data);
                 }
             } catch (error) {
-                toast.error("Error fetching product details");
+                console.error("Background fetch error", error);
+                if (!cachedProduct)
+                    toast.error("Error fetching product details");
             } finally {
                 setIsDataLoading(false);
+                hasFetched.current = true;
             }
         };
 
         fetchData();
-    }, [id, originalProducts, dispatch]);
+    }, [id, dispatch, cachedProduct, imagePreview, originalProducts]);
 
     const handleChange = (
         e: React.ChangeEvent<
@@ -147,9 +158,6 @@ export default function EditProductPage() {
             const currentTime = Date.now();
             const target = e.target as HTMLElement;
 
-            // Safety Check: If user is typing in inputs, ignore scan
-            // UNLESS they are specifically in the SKU input (handled by normal input)
-            // or if the SKU input is focused, we let the input handle it to show typing
             if (
                 (target.tagName === "INPUT" || target.tagName === "TEXTAREA") &&
                 target.id !== "sku"
@@ -157,29 +165,24 @@ export default function EditProductPage() {
                 return;
             }
 
-            // Reset buffer if typing is too slow (human typing)
             if (currentTime - lastKeyTime > 100) {
                 buffer = "";
             }
             lastKeyTime = currentTime;
 
-            // Handle "Enter": Scanner finished scanning
             if (e.key === "Enter") {
-                // If buffer has content, it's a scan
                 if (buffer.length > 3) {
-                    e.preventDefault(); // Stop form submit
+                    e.preventDefault();
                     setFormData((prev) => ({ ...prev, sku: buffer }));
                     toast.success("New barcode scanned successfully");
                     buffer = "";
                 }
             } else if (e.key.length === 1) {
-                // Capture characters
                 buffer += e.key;
             }
         };
 
         window.addEventListener("keydown", handleGlobalKeyDown);
-
         return () => {
             window.removeEventListener("keydown", handleGlobalKeyDown);
         };
@@ -209,7 +212,6 @@ export default function EditProductPage() {
         }));
 
         toast.success(`Added ${amountToAdd} units to stock count.`);
-
         setIsRestockModalOpen(false);
         setRestockAmount("");
     };
@@ -280,12 +282,13 @@ export default function EditProductPage() {
     return (
         <Navbar>
             <div className="max-w-5xl mx-auto px-4 py-8 relative">
-                {/* Loading Spinner */}
+                {/* Loading Spinner - Only shows if data is NOT in Redux and fetching */}
                 {isDataLoading && (
                     <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                     </div>
                 )}
+
                 {/* Header Section */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                     <div className="flex items-center gap-4">
@@ -314,7 +317,7 @@ export default function EditProductPage() {
                         </button>
                         <button
                             onClick={(e) => handleSubmit(e as any)}
-                            disabled={isLoading}
+                            disabled={isLoading || isDataLoading}
                             className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                         >
                             {isLoading ? (
@@ -375,7 +378,6 @@ export default function EditProductPage() {
                                                 className="w-full pl-10 pr-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-green-400 border-2 transition-colors"
                                                 value={formData.sku || ""}
                                                 onChange={handleChange}
-                                                // Prevent scanner enter key from submitting form
                                                 onKeyDown={handleKeyDown}
                                                 placeholder="Scan new barcode to update"
                                             />

@@ -1,10 +1,11 @@
 "use client";
+
 import InfoCard from "@/components/InfoCard";
 import InvoicesTable from "@/components/InvoicesTable";
 import LineChart from "@/components/LineChart";
 import TopProductsChart from "@/components/TopProductsChart";
 import { AppState } from "@/store";
-import Navbar from "@components/Navbar";
+import Navbar from "@/components/Navbar";
 import axios from "axios";
 import {
     BadgeDollarSign,
@@ -14,24 +15,15 @@ import {
     CheckCircle2,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import {
+    startFetching,
+    setAnalyticsData,
+    setAnalyticsError,
+    setTimeRange,
+} from "@/store/slices/analyticsSlice";
+import { setInvoices } from "@/store/slices/invoiceSlice";
 import { toast } from "sonner";
-
-interface DashboardData {
-    stats: {
-        totalInvoices: number;
-        totalRevenue: number;
-        paidInvoices: number;
-        profit: number;
-    };
-    percentageChanges: {
-        totalInvoices: number;
-        totalRevenue: number;
-        paidInvoices: number;
-        profit: number;
-    };
-    mpesaBalance: number;
-}
 
 interface TopProduct {
     id: string;
@@ -43,54 +35,64 @@ interface TopProduct {
 }
 
 export default function Page() {
-    // Get User Role
-    const user = useSelector((state: AppState) => state.auth.user);
-    const userRole = user?.role || "user";
-    const isAdminOrManager = userRole === "admin" || userRole === "manager";
+    const dispatch = useDispatch();
 
-    const [dashboardData, setDashboardData] = useState<DashboardData | null>(
-        null
-    );
-    const [products, setLocalProducts] = useState<TopProduct[]>([]);
-    const [invoices, setInvoices] = useState([]);
+    const { user } = useSelector((state: AppState) => state.auth);
+    const invoices = useSelector((state: AppState) => state.invoice.invoices);
+    const {
+        data: analyticsData,
+        loading: analyticsLoading,
+        timeRange,
+    } = useSelector((state: AppState) => state.analytics);
 
-    // Filters
-    const [timePeriod, setTimePeriod] = useState<number>(7);
+    const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
     const [topProductsTimePeriod, setTopProductsTimePeriod] =
         useState<number>(7);
     const [topProductsLoading, setTopProductsLoading] = useState<boolean>(true);
-    const [invoicesLoading, setInvoicesLoading] = useState<boolean>(true);
+    const [invoicesLoading, setInvoicesLoading] = useState<boolean>(
+        invoices.length === 0
+    );
 
-    // 1. Fetch Stats
+    const userRole = user?.role || "user";
+    const isAdminOrManager = userRole === "admin" || userRole === "manager";
+
     useEffect(() => {
         const fetchStats = async () => {
+            dispatch(startFetching());
+
             try {
-                const response = await axios.get("/api/analytics/stats");
-                setDashboardData(response.data);
+                const response = await axios.get("/api/analytics/stats", {
+                    params: { timePeriod: timeRange },
+                });
+
+                dispatch(setAnalyticsData(response.data));
             } catch (error) {
                 console.error("Failed to fetch stats");
+                dispatch(setAnalyticsError("Failed to fetch dashboard stats"));
             }
         };
-        fetchStats();
-    }, []);
 
-    // 2. Fetch Invoices
+        fetchStats();
+    }, [dispatch, timeRange]);
+
     useEffect(() => {
-        setInvoicesLoading(true);
         const fetchInvoices = async () => {
+            if (invoices.length === 0) setInvoicesLoading(true);
+
             try {
                 const response = await axios.get("/api/invoice");
-                setInvoices(response.data);
+                dispatch(setInvoices(response.data));
             } catch (error) {
-                setInvoices([]);
+                // Handle error
             } finally {
                 setInvoicesLoading(false);
             }
         };
-        fetchInvoices();
-    }, []);
 
-    // 3. Fetch Top Products
+        fetchInvoices();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dispatch]);
+
     useEffect(() => {
         setTopProductsLoading(true);
         const fetchTopProducts = async () => {
@@ -98,11 +100,11 @@ export default function Page() {
                 const response = await axios.get("/api/product/topProduct", {
                     params: { timePeriod: topProductsTimePeriod },
                 });
-                setLocalProducts(
+                setTopProducts(
                     Array.isArray(response.data) ? response.data : []
                 );
             } catch (error) {
-                setLocalProducts([]);
+                setTopProducts([]);
             } finally {
                 setTopProductsLoading(false);
             }
@@ -114,34 +116,37 @@ export default function Page() {
         toast.info("Withdrawal Initiated (Feature Coming Soon)");
     };
 
+    const handleTimeRangeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        dispatch(setTimeRange(e.target.value));
+    };
+
+    const stats = analyticsData?.stats;
+    const percentageChanges = analyticsData?.percentageChanges;
+
     const infoCards = [
         {
             title: "Total Invoices",
-            number: dashboardData?.stats.totalInvoices || 0,
+            number: stats?.totalInvoices || 0,
             icon: ReceiptText,
-            percentageChange: dashboardData?.percentageChanges.totalInvoices,
+            percentageChange: percentageChanges?.totalInvoices || 0,
         },
         {
             title: "Total Revenue",
-            number: `Ksh ${(
-                dashboardData?.stats.totalRevenue || 0
-            ).toLocaleString()}`,
+            number: `Ksh ${(stats?.totalRevenue || 0).toLocaleString()}`,
             icon: BadgeDollarSign,
-            percentageChange: dashboardData?.percentageChanges.totalRevenue,
+            percentageChange: percentageChanges?.totalRevenue || 0,
         },
         {
             title: "Paid Invoices",
-            number: dashboardData?.stats.paidInvoices || 0,
+            number: stats?.paidInvoices || 0,
             icon: ReceiptText,
-            percentageChange: dashboardData?.percentageChanges.paidInvoices,
+            percentageChange: percentageChanges?.paidInvoices || 0,
         },
         {
             title: "Profit",
-            number: `Ksh ${(
-                dashboardData?.stats.profit || 0
-            ).toLocaleString()}`,
+            number: `Ksh ${(stats?.profit || 0).toLocaleString()}`,
             icon: BadgeDollarSign,
-            percentageChange: dashboardData?.percentageChanges.profit,
+            percentageChange: percentageChanges?.profit || 0,
         },
     ];
 
@@ -150,15 +155,15 @@ export default function Page() {
             <div
                 className={`grid gap-4 my-4 ${
                     isAdminOrManager
-                        ? "grid-cols-1 lg:grid-cols-3" // Admin Layout
-                        : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" // User Layout
+                        ? "grid-cols-1 lg:grid-cols-3"
+                        : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
                 }`}
             >
                 <div
                     className={`grid gap-4 ${
                         isAdminOrManager
-                            ? "lg:col-span-2 grid-cols-1 sm:grid-cols-2" // 2x2 Grid for Admin
-                            : "contents" // Flattens the grid for users so they flow naturally
+                            ? "lg:col-span-2 grid-cols-1 sm:grid-cols-2"
+                            : "contents"
                     }`}
                 >
                     {infoCards.map((card, index) => (
@@ -168,6 +173,8 @@ export default function Page() {
                             number={card.number}
                             icon={card.icon}
                             percentageChange={card.percentageChange}
+                            // You can pass a loading prop to InfoCard if you want skeleton loaders
+                            // loading={analyticsLoading}
                         />
                     ))}
                 </div>
@@ -175,7 +182,6 @@ export default function Page() {
                 {isAdminOrManager && (
                     <div className="lg:col-span-1 h-full">
                         <div className="bg-white rounded-lg p-6 h-full flex flex-col justify-between shadow-sm border border-transparent hover:shadow-md transition-all duration-200">
-                            {/* Header Section */}
                             <div>
                                 <div className="flex items-start justify-between">
                                     <div>
@@ -185,7 +191,7 @@ export default function Page() {
                                         <p className="font-bold text-3xl text-black mt-2">
                                             Ksh{" "}
                                             {(
-                                                dashboardData?.mpesaBalance || 0
+                                                analyticsData?.mpesaBalance || 0
                                             ).toLocaleString()}
                                         </p>
                                     </div>
@@ -197,7 +203,6 @@ export default function Page() {
                                     </div>
                                 </div>
 
-                                {/* Contextual Info */}
                                 <div className="mt-6 space-y-3">
                                     <div className="flex items-start gap-3">
                                         <CheckCircle2
@@ -246,10 +251,8 @@ export default function Page() {
                         </h1>
                         <select
                             className="select select-sm outline-none bg-green-50 appearance-none rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 disabled:opacity-50 text-green-500"
-                            value={timePeriod}
-                            onChange={(e) =>
-                                setTimePeriod(Number(e.target.value))
-                            }
+                            value={timeRange}
+                            onChange={handleTimeRangeChange}
                         >
                             <option value="7">Last 7 days</option>
                             <option value="30">Last 30 days</option>
@@ -257,7 +260,7 @@ export default function Page() {
                             <option value="365">Last 1 year</option>
                         </select>
                     </div>
-                    <LineChart timePeriod={timePeriod} />
+                    <LineChart timePeriod={Number(timeRange)} />
                 </div>
 
                 <div className="px-6 py-4 rounded-lg gap-4 bg-white w-full lg:w-[48%] relative">
@@ -280,12 +283,12 @@ export default function Page() {
                     </div>
 
                     {topProductsLoading ? (
-                        <div className="absolute inset-0 flex items-center justify-center bg-white/80">
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                         </div>
                     ) : (
                         <TopProductsChart
-                            products={products}
+                            products={topProducts}
                             timePeriod={topProductsTimePeriod}
                         />
                     )}
