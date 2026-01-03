@@ -1,12 +1,13 @@
 "use client";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import axios from "axios";
 import { Loader2, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
-export default function PaymentCheckingPage() {
+// 1. Move your logic into a sub-component
+function PaymentCheckingContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const checkoutRequestId = searchParams?.get("id");
@@ -44,7 +45,6 @@ export default function PaymentCheckingPage() {
         }
     }, [checkoutRequestId]);
 
-    // 2. Automated Polling logic
     useEffect(() => {
         if (!checkoutRequestId) return;
 
@@ -179,5 +179,20 @@ export default function PaymentCheckingPage() {
                 )}
             </motion.div>
         </div>
+    );
+}
+
+// 2. Wrap the component in Suspense for the export
+export default function PaymentCheckingPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                    <Loader2 className="h-10 w-10 animate-spin text-green-600" />
+                </div>
+            }
+        >
+            <PaymentCheckingContent />
+        </Suspense>
     );
 }
