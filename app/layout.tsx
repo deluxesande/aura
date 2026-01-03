@@ -5,12 +5,12 @@ import { Inter } from "next/font/google";
 import ReduxProvider from "@/components/ReduxProvider";
 import ToastProvider from "@/components/ToastProvider";
 import { ClerkProvider } from "@clerk/nextjs";
-import { AnimatePresence, motion } from "framer-motion";
-import { usePathname } from "next/navigation";
 import { Analytics } from "@vercel/analytics/react";
 
 import { metadata } from "./metadata";
 import RoleGuard from "@/components/auth/RoleGuard";
+import AuthProvider from "@/components/auth/AuthProvider";
+import PageTransition from "@/components/PageTransitions";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,7 +19,6 @@ export default function RootLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-    const pathName = usePathname();
     return (
         <ClerkProvider>
             <html lang="en">
@@ -31,22 +30,18 @@ export default function RootLayout({
                     <link rel="icon" href="/logos/salesense-icon.png" />
                 </head>
                 <body className={`${inter.className} bg-[#f4f4f4]`}>
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={pathName}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.5 }}
-                        >
-                            <ReduxProvider>
+                    <ReduxProvider>
+                        <AuthProvider>
+                            <RoleGuard>
                                 <ToastProvider>
-                                    {children}
-                                    <Analytics />
+                                    <PageTransition>
+                                        {children}
+                                        <Analytics />
+                                    </PageTransition>
                                 </ToastProvider>
-                            </ReduxProvider>
-                        </motion.div>
-                    </AnimatePresence>
+                            </RoleGuard>
+                        </AuthProvider>
+                    </ReduxProvider>
                 </body>
             </html>
         </ClerkProvider>

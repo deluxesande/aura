@@ -23,7 +23,7 @@ interface AuthState {
 const initialState: AuthState = {
     isSignedIn: false,
     user: null,
-    loading: false,
+    loading: true,
 };
 
 const authSlice = createSlice({
