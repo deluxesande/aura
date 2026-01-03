@@ -149,6 +149,10 @@ const CustomUserButton = () => {
         // Added userInvitations.length and user?.role to satisfy ESLint
     }, [dispatch, user?.role, userInvitations.length]);
 
+    if (plan === "STARTER") {
+        return null;
+    }
+
     const handleInviteUser = async (e: React.FormEvent) => {
         e.preventDefault();
 
