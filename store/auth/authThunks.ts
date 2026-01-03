@@ -7,24 +7,33 @@ export const fetchUser = createAsyncThunk(
         try {
             const response = await fetch("/api/auth/user/profile");
 
-            if (!response.ok) {
-                throw new Error("Session invalid");
+            // Handle 401 specifically (Guest user)
+            // This is NOT an error, it just means "no user logged in"
+            if (response.status === 401) {
+                dispatch(signOut());
+                return rejectWithValue("Guest");
             }
+
+            // if (!response.ok) {
+            //     throw new Error(`Server error: ${response.statusText}`);
+            // }
 
             const data = await response.json();
-
             const userPayload = data.user || data.data || data;
 
-            if (!userPayload.role) {
-                console.warn("User payload is missing 'role':", userPayload);
-            }
+            // if (!userPayload.role) {
+            //     console.warn("User payload is missing 'role':", userPayload);
+            // }
 
             dispatch(setUser(userPayload));
             return userPayload;
-        } catch (error) {
-            console.error("Fetch user failed:", error);
+        } catch (error: any) {
+            // if (error.message !== "Guest") {
+            //     console.error("Fetch user failed:", error);
+            // }
+
             dispatch(signOut());
-            return rejectWithValue("Failed to fetch user");
+            return rejectWithValue(error.message || "Failed to fetch user");
         }
     }
 );

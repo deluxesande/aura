@@ -6,6 +6,7 @@ import { AppState } from "@/store";
 import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
 
+// 1. Keep exact matches here
 const PUBLIC_ROUTES = new Set([
     "/",
     "/sign-in",
@@ -14,7 +15,12 @@ const PUBLIC_ROUTES = new Set([
     "/integrations",
     "/about",
     "/pricing",
+    "/password-reset",
+    "/verify",
 ]);
+
+// 2. Define routes that should be public regardless of what follows (e.g. tokens)
+const PUBLIC_PREFIXES = ["/auth/accept-invitation"];
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
     "/settings/team": ["admin", "manager"],
@@ -36,7 +42,10 @@ export default function RoleGuard({ children }: { children: React.ReactNode }) {
 
     const { user, loading } = useSelector((state: AppState) => state.auth);
 
-    const isPublicRoute = PUBLIC_ROUTES.has(pathname);
+    const isPublicRoute = useMemo(() => {
+        if (PUBLIC_ROUTES.has(pathname)) return true;
+        return PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+    }, [pathname]);
 
     const { isAuthorized, redirectPath } = useMemo(() => {
         if (isPublicRoute) return { isAuthorized: true, redirectPath: null };
@@ -63,9 +72,7 @@ export default function RoleGuard({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (!loading && !isAuthorized && redirectPath) {
             if (user) {
-                toast.error(
-                    "Access Denied: You do not have permission to view this page."
-                );
+                toast.error("Access Denied: You do not have permission.");
             } else if (pathname !== "/sign-in") {
                 toast.error("Please sign in to access this page.");
             }
