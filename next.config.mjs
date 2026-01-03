@@ -39,6 +39,11 @@ const nextConfig = {
                 hostname: "zvtwhlkghglvxeaaemkk.supabase.co",
                 pathname: "/storage/v1/object/public/**",
             },
+            {
+                protocol: "https",
+                hostname: "utfs.io",
+                pathname: "/f/*", // Allow specific path or remove this line to allow all
+            },
         ],
     },
 };

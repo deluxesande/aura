@@ -19,13 +19,13 @@ import {
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { AppState } from "@/store";
-import { useDispatch } from "react-redux";
 import { setProducts } from "@/store/slices/productSlice";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FloatingPortal } from "@floating-ui/react";
+import { useUploadThing } from "@/utils/uploadthing";
 
 export default function CreateProductPage() {
     const router = useRouter();
@@ -37,6 +37,7 @@ export default function CreateProductPage() {
     const [productImage, setProductImage] = useState<File | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const { startUpload } = useUploadThing("productImage");
 
     const [formData, setFormData] = useState({
         name: "",
@@ -82,9 +83,10 @@ export default function CreateProductPage() {
         setFormData((prev) => ({ ...prev, sku: newSku }));
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
+    const handleInputKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === "Enter") {
-            e.preventDefault();
+            e.preventDefault(); // Stop form submission
+            toast.success("Barcode captured");
         }
     };
 
@@ -157,37 +159,50 @@ export default function CreateProductPage() {
         const finalInStock =
             Number(formData.quantity) > 0 ? true : formData.inStock;
 
-        const submitData = new FormData();
-        submitData.append("name", formData.name);
-        submitData.append("sku", finalSku);
-        submitData.append("description", formData.description);
-        submitData.append("price", formData.price);
-        submitData.append("quantity", formData.quantity);
-        submitData.append("categoryId", formData.categoryId);
-        submitData.append("inStock", finalInStock.toString());
-
-        if (productImage) {
-            submitData.append("file", productImage);
-        }
-
-        const promise = async () => {
+        // Async operation definition
+        const createProductOperation = async () => {
             try {
-                const response = await axios.post("/api/product", submitData, {
-                    headers: { "Content-Type": "multipart/form-data" },
-                });
+                // Step A: Upload to UploadThing
+                const uploadRes = await startUpload([productImage]);
+
+                if (!uploadRes || !uploadRes[0]?.url) {
+                    throw new Error("Failed to upload image to storage");
+                }
+
+                const imageUrl = uploadRes[0].url;
+
+                // Step B: Send Data to Backend
+                const payload = {
+                    name: formData.name,
+                    sku: finalSku,
+                    description: formData.description,
+                    price: formData.price,
+                    quantity: formData.quantity,
+                    categoryId: formData.categoryId,
+                    inStock: finalInStock,
+                    image: imageUrl,
+                };
+
+                const response = await axios.post("/api/product", payload);
+
                 dispatch(setProducts([...originalProducts, response.data]));
                 router.push("/products/list");
+
+                return response.data;
             } catch (error) {
+                console.error(error);
                 throw error;
             } finally {
                 setIsLoading(false);
             }
         };
 
-        toast.promise(promise(), {
-            loading: "Creating product...",
+        toast.promise(createProductOperation(), {
+            loading: "Uploading image and creating product...",
             success: "Product added to inventory.",
-            error: "Error adding product.",
+            error: (err) => {
+                return err?.message || "Error adding product.";
+            },
         });
     };
 
@@ -199,25 +214,16 @@ export default function CreateProductPage() {
             const currentTime = Date.now();
             const target = e.target as HTMLElement;
 
-            // Safety Check: If the user is manually typing in an input field
-            // (other than the SKU field), do not hijack their keystrokes.
-            if (
-                (target.tagName === "INPUT" || target.tagName === "TEXTAREA") &&
-                target.id !== "sku"
-            ) {
+            if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
                 return;
             }
 
-            // Timeout Reset: If it's been more than 100ms since the last key,
-            // it's likely a new input or a slow human typing. Reset the buffer.
             if (currentTime - lastKeyTime > 100) {
                 buffer = "";
             }
             lastKeyTime = currentTime;
 
-            // Handle "Enter": Scanners end with Enter.
             if (e.key === "Enter") {
-                // If we have a buffer with sufficient length, treat it as a scan
                 if (buffer.length > 3) {
                     e.preventDefault();
                     setFormData((prev) => ({ ...prev, sku: buffer }));
@@ -234,7 +240,7 @@ export default function CreateProductPage() {
         return () => {
             window.removeEventListener("keydown", handleGlobalKeyDown);
         };
-    }, []); // Empty dependency array means this runs once on mount
+    }, []);
 
     return (
         <Navbar>
@@ -274,7 +280,7 @@ export default function CreateProductPage() {
                             ) : (
                                 <Save className="w-4 h-4 stroke-white" />
                             )}
-                            Save Product
+                            {isLoading ? "Saving..." : "Save Product"}
                         </button>
                     </div>
                 </div>
@@ -325,7 +331,7 @@ export default function CreateProductPage() {
                                                 className={`${inputStyle} pl-10`}
                                                 value={formData.sku}
                                                 onChange={handleChange}
-                                                onKeyDown={handleKeyDown}
+                                                onKeyDown={handleInputKeyDown} // Uses dedicated handler
                                                 autoFocus
                                                 placeholder="Scan barcode or auto-generate"
                                             />

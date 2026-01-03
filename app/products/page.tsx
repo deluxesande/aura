@@ -13,7 +13,7 @@ import SelectCustomerModal from "@/components/SelectCustomerModal";
 import { AppState } from "@/store";
 import { addItem, clearCart } from "@/store/slices/cartSlice";
 import { setProducts } from "@/store/slices/productSlice";
-import { hide } from "@/store/slices/visibilitySlice";
+import { hide, show } from "@/store/slices/visibilitySlice";
 import { formatPhoneNumber } from "@/utils/formatPhoneNumber";
 import { Product } from "@/utils/typesDefinitions";
 import { SignedIn, useUser } from "@clerk/nextjs";
@@ -222,6 +222,14 @@ export default function Page() {
             if (product.quantity > 0) {
                 if (product.quantity > currentCartQty) {
                     dispatch(addItem(product));
+
+                    // ONLY dispatch show() if screen width is >= 768px (Tablet & PC)
+                    if (
+                        typeof window !== "undefined" &&
+                        window.innerWidth >= 768
+                    ) {
+                        dispatch(show());
+                    }
                 } else {
                     toast.warning("Insufficient product quantity available.");
                 }
@@ -417,6 +425,7 @@ export default function Page() {
 
         const handleGlobalKeyDown = (e: KeyboardEvent) => {
             const target = e.target as HTMLElement;
+            // Don't scan if user is typing in an input
             if (target.tagName === "INPUT" || target.tagName === "TEXTAREA")
                 return;
 
@@ -437,6 +446,11 @@ export default function Page() {
                     if (scannedProduct) {
                         dispatch(addItem(scannedProduct));
                         toast.success(`Added ${scannedProduct.name}`);
+
+                        // Only open sidebar automatically on Tablet (768px) and larger
+                        if (window.innerWidth >= 768) {
+                            dispatch(show());
+                        }
                     } else {
                         toast.error(`Product not found: ${buffer}`);
                     }

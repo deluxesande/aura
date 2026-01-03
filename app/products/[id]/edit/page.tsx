@@ -149,7 +149,6 @@ export default function EditProductPage() {
         setFormData((prev) => ({ ...prev, sku: newSku }));
     };
 
-    // Global Barcode Listener
     useEffect(() => {
         let buffer = "";
         let lastKeyTime = Date.now();
@@ -157,14 +156,11 @@ export default function EditProductPage() {
         const handleGlobalKeyDown = (e: KeyboardEvent) => {
             const currentTime = Date.now();
             const target = e.target as HTMLElement;
-
-            if (
-                (target.tagName === "INPUT" || target.tagName === "TEXTAREA") &&
-                target.id !== "sku"
-            ) {
+            if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
                 return;
             }
 
+            // Reset buffer if typing/scanning is too slow (manual entry vs scanner)
             if (currentTime - lastKeyTime > 100) {
                 buffer = "";
             }
@@ -188,7 +184,7 @@ export default function EditProductPage() {
         };
     }, []);
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
+    const handleInputKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === "Enter") {
             e.preventDefault();
         }
@@ -378,7 +374,7 @@ export default function EditProductPage() {
                                                 className="w-full pl-10 pr-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-green-400 border-2 transition-colors"
                                                 value={formData.sku || ""}
                                                 onChange={handleChange}
-                                                onKeyDown={handleKeyDown}
+                                                onKeyDown={handleInputKeyDown}
                                                 placeholder="Scan new barcode to update"
                                             />
                                         </div>

@@ -21,6 +21,7 @@
         "@radix-ui/react-popover": "^1.1.15",
         "@reduxjs/toolkit": "^2.2.7",
         "@supabase/supabase-js": "^2.78.0",
+        "@uploadthing/react": "^7.3.3",
         "@vercel/analytics": "^1.5.0",
         "axios": "^1.7.7",
         "body-parser": "^1.20.3",
@@ -47,6 +48,7 @@
         "react-redux": "^9.1.2",
         "redux-persist": "^6.0.0",
         "sonner": "^1.7.1",
+        "uploadthing": "^7.7.4",
         "uuid": "^11.0.3",
         "xlsx": "^0.18.5",
         "zod": "^4.0.5"
