@@ -20,13 +20,11 @@ export default async function handler(
     }
 
     try {
-        // Check authentication
         const { userId } = getAuth(req);
         if (!userId) {
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        // Get current user from database
         const currentUser = await prisma.user.findUnique({
             where: { clerkId: userId },
             include: { Business: true },
@@ -36,41 +34,58 @@ export default async function handler(
             return res.status(404).json({ error: "User not found" });
         }
 
-        // Parse request body
         const validatedData = inviteSchema.parse(req.body);
         const { email, role } = validatedData;
-
-        // Use provided businessId or fallback to current user's businessId
         const businessId = validatedData.businessId || currentUser.businessId;
 
         if (!businessId) {
             return res.status(400).json({ error: "Business ID is required" });
         }
 
-        // Check if user has permission to invite to this business
         if (currentUser.businessId !== businessId) {
             return res
                 .status(403)
                 .json({ error: "Forbidden: Cannot invite to this business" });
         }
 
-        // Check if user has permission to invite (only admin/manager can invite)
         if (!["admin", "manager"].includes(currentUser.role)) {
             return res
                 .status(403)
                 .json({ error: "Forbidden: Insufficient permissions" });
         }
 
-        // Check if business exists
         const business = await prisma.business.findUnique({
             where: { id: businessId },
+            include: {
+                subscription: true,
+                _count: {
+                    select: {
+                        users: true,
+                        invitations: { where: { status: "pending" } },
+                    },
+                },
+            },
         });
 
         if (!business) {
             return res.status(404).json({ error: "Business not found" });
         }
 
-        // Check if user is already registered in database
+        const plan = business.subscription?.plan || "STARTER";
+        const currentTotal =
+            business._count.users + business._count.invitations;
+
+        let limit = 1;
+        if (plan === "STANDARD") limit = 5;
+        if (plan === "PREMIUM") limit = Infinity;
+
+        if (currentTotal >= limit) {
+            return res.status(403).json({
+                error: `Invitation limit reached for the ${plan} plan.`,
+                details: `Current plan allows a maximum of ${limit} team members (including pending invites). Please upgrade your subscription.`,
+            });
+        }
+
         const existingUser = await prisma.user.findUnique({
             where: { email },
         });
@@ -81,7 +96,6 @@ export default async function handler(
                 .json({ error: "User already exists in the system" });
         }
 
-        // Check if email is linked to any Clerk account
         try {
             const clerk = await clerkClient();
             const clerkUsers = await clerk.users.getUserList({
@@ -97,7 +111,6 @@ export default async function handler(
             console.error("Error checking Clerk users:", clerkError);
         }
 
-        // Check if invitation already exists
         const existingInvitation = await prisma.userInvitation.findFirst({
             where: {
                 email,
@@ -110,11 +123,9 @@ export default async function handler(
             return res.status(409).json({ error: "Invitation already sent" });
         }
 
-        // Generate unique token
         const token = crypto.randomBytes(32).toString("hex");
-        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-        // Create invitation record in database
         const invitation = await prisma.userInvitation.create({
             data: {
                 email,
@@ -130,7 +141,6 @@ export default async function handler(
             },
         });
 
-        // Create invitation in Clerk using SDK
         try {
             const clerk = await clerkClient();
 
@@ -145,7 +155,6 @@ export default async function handler(
                 },
             });
 
-            // Update invitation with Clerk invitation ID
             await prisma.userInvitation.update({
                 where: { id: invitation.id },
                 data: {
@@ -166,15 +175,8 @@ export default async function handler(
                 },
             });
         } catch (clerkError: any) {
-            // If Clerk invitation fails, delete the database record
             await prisma.userInvitation.delete({
                 where: { id: invitation.id },
-            });
-
-            console.error("Clerk invitation error details:", {
-                message: clerkError.message,
-                errors: clerkError.errors,
-                clerkTraceId: clerkError.clerkTraceId,
             });
 
             return res.status(500).json({
@@ -183,17 +185,12 @@ export default async function handler(
             });
         }
     } catch (error) {
-        console.error("Invitation error:", error);
-
         if (error instanceof z.ZodError) {
             return res.status(400).json({
                 error: "Validation failed",
                 details: error.issues,
             });
         }
-
-        return res.status(500).json({
-            error: "Internal server error",
-        });
+        return res.status(500).json({ error: "Internal server error" });
     }
 }

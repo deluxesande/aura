@@ -288,12 +288,39 @@ export default function Navbar({
                         {/* Right Section: Icons, User, and Plan Badge */}
                         <div className="flex items-center gap-2">
                             {isProductsPage && (
-                                <button
-                                    onClick={toggleFilterPopUp}
-                                    className="p-2 hover:bg-slate-100 text-gray-600 rounded-lg transition-colors"
-                                >
-                                    <SlidersHorizontal size={18} />
-                                </button>
+                                <>
+                                    <button
+                                        onClick={toggleFilterPopUp}
+                                        className="p-2 hover:bg-slate-100 text-gray-600 rounded-lg transition-colors"
+                                    >
+                                        <SlidersHorizontal size={18} />
+                                    </button>
+                                    {filterPopUp && isDesktop && (
+                                        <FloatingPortal>
+                                            <div
+                                                ref={refs.setFloating}
+                                                style={{
+                                                    ...floatingStyles,
+                                                    zIndex: 9999,
+                                                }}
+                                            >
+                                                <FilterOverlay
+                                                    filterPopUp={filterPopUp}
+                                                    setFilterPopUp={
+                                                        setFilterPopUp
+                                                    }
+                                                    setFilteredProducts={
+                                                        setFilteredProducts ||
+                                                        (() => {})
+                                                    }
+                                                    toggleFilterPopUp={
+                                                        toggleFilterPopUp
+                                                    }
+                                                />
+                                            </div>
+                                        </FloatingPortal>
+                                    )}
+                                </>
                             )}
 
                             {mounted && isDesktop && (
@@ -303,6 +330,11 @@ export default function Navbar({
                                             .NEXT_PUBLIC_APPLICATION_IDENTIFIER!
                                     }
                                     subscriberId={user.clerkId}
+                                    appearance={{
+                                        variables: {
+                                            colorPrimary: "#4ade80",
+                                        },
+                                    }}
                                 >
                                     <Popover>
                                         <PopoverTrigger asChild>
@@ -532,24 +564,6 @@ export default function Navbar({
                     <BusinessOnboardingModal />
                     {children}
                 </main>
-
-                {filterPopUp && isDesktop && (
-                    <FloatingPortal>
-                        <div
-                            ref={refs.setFloating}
-                            style={{ ...floatingStyles, zIndex: 9999 }}
-                        >
-                            <FilterOverlay
-                                filterPopUp={filterPopUp}
-                                setFilterPopUp={setFilterPopUp}
-                                setFilteredProducts={
-                                    setFilteredProducts || (() => {})
-                                }
-                                toggleFilterPopUp={toggleFilterPopUp}
-                            />
-                        </div>
-                    </FloatingPortal>
-                )}
             </div>
         </div>
     );

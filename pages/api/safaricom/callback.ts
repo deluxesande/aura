@@ -55,21 +55,21 @@ export default async function handler(
         while (retries > 0) {
             pendingPayment = await prisma.mpesaPayment.findUnique({
                 where: { checkoutRequestId: CheckoutRequestID },
+                include: {
+                    Business: {
+                        include: { subscription: true },
+                    },
+                },
             });
 
-            if (pendingPayment) {
-                break;
-            }
+            if (pendingPayment) break;
 
             await wait(500);
             retries--;
         }
 
         if (!pendingPayment) {
-            console.warn(
-                `Orphaned Callback (Record missing after retry): ${CheckoutRequestID}`
-            );
-
+            console.warn(`Orphaned Callback: ${CheckoutRequestID}`);
             if (ResultCode !== 0) {
                 await storeFailedCallbackInDb({
                     MerchantRequestID,
@@ -81,6 +81,7 @@ export default async function handler(
             return res.status(200).json({ result: "orphaned_record" });
         }
 
+        // Handle Failed Transaction
         if (ResultCode !== 0) {
             await storeFailedCallbackInDb({
                 MerchantRequestID,
@@ -90,7 +91,6 @@ export default async function handler(
                 invoiceId: pendingPayment?.invoiceId,
             });
 
-            // 1032 = User Cancelled, others are FAILED
             const newStatus = ResultCode === 1032 ? "CANCELLED" : "FAILED";
 
             await prisma.$transaction([
@@ -111,28 +111,61 @@ export default async function handler(
         const getMetaValue = (name: string) =>
             metaItems.find((i) => i.Name === name)?.Value;
 
-        const amount = Number(getMetaValue("Amount"));
+        const amountPaid = Number(getMetaValue("Amount"));
         const receiptNumber = String(getMetaValue("MpesaReceiptNumber"));
         const phoneNumber = String(getMetaValue("PhoneNumber"));
-        const tDateVal = getMetaValue("TransactionDate");
-        const transactionDate = tDateVal ? String(tDateVal) : "0";
+        const transactionDate = String(getMetaValue("TransactionDate") || "0");
+
+        const biz = pendingPayment.Business;
+        const sub = biz.subscription;
+
+        let commissionDeducted = 0;
+        let netAmount = amountPaid;
+
+        if (sub?.plan === "STARTER") {
+            commissionDeducted = amountPaid * 0.02;
+            netAmount = amountPaid - commissionDeducted;
+
+            // Check transaction cap (100 tx per period)
+            const currentTxCount = await prisma.invoice.count({
+                where: {
+                    businessId: biz.id,
+                    status: "PAID",
+                    createdAt: {
+                        gte: sub.currentPeriodStart,
+                        lte: sub.currentPeriodEnd,
+                    },
+                },
+            });
+
+            if (currentTxCount >= 100) {
+                console.error(
+                    `Cap Reached for Business ${biz.id}. Payment accepted but limit exceeded.`
+                );
+                return res
+                    .status(401)
+                    .json({ result: "Cap Reached for Business." });
+            }
+        }
 
         await storeSuccessfulCallbackInDb({
             MerchantRequestID,
             CheckoutRequestID,
             ResultCode,
             ResultDesc,
-            Amount: amount,
+            Amount: amountPaid,
             MpesaReceiptNumber: receiptNumber,
             PhoneNumber: phoneNumber,
             TransactionDate: transactionDate,
-            invoiceId: pendingPayment?.invoiceId,
+            invoiceId: pendingPayment.invoiceId,
         });
 
         await prisma.$transaction([
             prisma.mpesaPayment.update({
                 where: { id: pendingPayment.id },
-                data: { status: "COMPLETED" },
+                data: {
+                    status: "COMPLETED",
+                },
             }),
             prisma.invoice.update({
                 where: { id: pendingPayment.invoiceId },

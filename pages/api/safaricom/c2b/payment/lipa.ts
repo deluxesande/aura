@@ -56,17 +56,54 @@ export default async function handler(
 
         const user = await prisma.user.findUnique({
             where: { clerkId: userId },
-            select: { id: true, businessId: true },
+            select: {
+                id: true,
+                businessId: true,
+                Business: {
+                    include: {
+                        subscription: true,
+                    },
+                },
+            },
         });
 
-        if (!user || !user.businessId) {
+        if (!user || !user.businessId || !user.Business) {
             return res
                 .status(400)
-                .json({ error: "User is not linked to a business" });
+                .json({ error: "User is not linked to a valid business" });
+        }
+
+        const subscription = user.Business.subscription;
+
+        if (subscription && subscription.plan === "STARTER") {
+            const currentTxCount = await prisma.invoice.count({
+                where: {
+                    businessId: user.businessId,
+                    status: "PAID",
+                    createdAt: {
+                        gte: subscription.currentPeriodStart,
+                        lte: subscription.currentPeriodEnd,
+                    },
+                },
+            });
+
+            if (currentTxCount >= 100) {
+                return res.status(403).json({
+                    error: "Transaction limit reached",
+                    message:
+                        "You have reached the 100-transaction monthly limit for the STARTER plan.",
+                    usage: {
+                        current: currentTxCount,
+                        limit: 100,
+                        resetDate: subscription.currentPeriodEnd,
+                    },
+                    suggestion:
+                        "Please upgrade to the STANDARD or PREMIUM plan to continue processing payments.",
+                });
+            }
         }
 
         const token = await getAccessToken();
-
         const date = new Date();
         const timestamp =
             date.getFullYear() +
@@ -83,7 +120,6 @@ export default async function handler(
         const password = Buffer.from(
             `${SHORTCODE}${PASS_KEY}${timestamp}`
         ).toString("base64");
-
         const formattedPhone = formatPhoneNumber(phoneNumber);
 
         const stkData = {
@@ -124,12 +160,30 @@ export default async function handler(
         return res.status(200).json({
             data: stkResponse.data,
             message: "STK Push sent",
+            usageRemaining:
+                subscription?.plan === "STARTER"
+                    ? 100 -
+                      (await getInvoiceCount(user.businessId, subscription))
+                    : "Unlimited",
         });
     } catch (error: any) {
         console.error("STK API Error:", error?.response?.data || error.message);
         return res.status(500).json({
             error: "Payment initiation failed",
-            details: error?.response?.data,
+            details: error?.response?.data || error.message,
         });
     }
+}
+
+async function getInvoiceCount(businessId: string, subscription: any) {
+    return await prisma.invoice.count({
+        where: {
+            businessId,
+            status: "PAID",
+            createdAt: {
+                gte: subscription.currentPeriodStart,
+                lte: subscription.currentPeriodEnd,
+            },
+        },
+    });
 }

@@ -1,3 +1,4 @@
+"use client";
 import { AppState } from "@/store";
 import { setInvitations } from "@/store/slices/invitationSlice";
 import {
@@ -7,7 +8,7 @@ import {
     updateInvitation,
 } from "@/store/slices/invitationsDataSlice";
 import axios from "axios";
-import { Trash, Users } from "lucide-react";
+import { Trash, Users, AlertCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
@@ -48,6 +49,7 @@ const UserManagement: React.FC = () => {
 
     const dispatch = useDispatch();
 
+    // Selectors
     const invitations = useSelector(
         (state: AppState) => state.invitations.invitations
     ) as User[];
@@ -56,9 +58,22 @@ const UserManagement: React.FC = () => {
         (state: AppState) => state.invitationsData.invitationsWithImages
     ) as Invitation[];
 
-    const [isLoading, setIsLoading] = useState(userInvitations.length === 0);
+    // Fetch Business Data from Redux for the limit check
+    const businessDetails = useSelector(
+        (state: AppState) => state.businessData?.businessDetails
+    );
 
+    const [isLoading, setIsLoading] = useState(userInvitations.length === 0);
     const hasFetched = useRef(false);
+
+    // --- Limit Calculation Logic ---
+    const plan = businessDetails?.subscription?.plan || "STARTER";
+    const staffCount = businessDetails?.usage?.staffCount || 0;
+
+    // Calculate if they can invite more
+    const teamLimit =
+        plan === "STARTER" ? 1 : plan === "STANDARD" ? 5 : Infinity;
+    const canInvite = staffCount < teamLimit;
 
     useEffect(() => {
         if (hasFetched.current) return;
@@ -128,12 +143,17 @@ const UserManagement: React.FC = () => {
         };
 
         fetchUsers();
-        // Removed userInvitations.length from dependency array to prevent infinite re-fetching loops
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dispatch]);
 
     const handleInviteUser = (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Double check limit before submitting
+        if (!canInvite) {
+            toast.error("Team limit reached. Please upgrade your plan.");
+            return;
+        }
+
         if (!inviteEmail) {
             toast.error("Please enter an email address");
             return;
@@ -147,9 +167,7 @@ const UserManagement: React.FC = () => {
                 });
 
                 const newInvitation = response.data.invitation;
-
                 dispatch(setInvitations([...invitations, newInvitation]));
-
                 const newInvitationWithImage = {
                     ...newInvitation,
                     imageUrl: null,
@@ -164,7 +182,8 @@ const UserManagement: React.FC = () => {
         toast.promise(sendInvitation(), {
             loading: "Sending Invitation.",
             success: "Invitation sent.",
-            error: "Sending Invitation Failed. Ensure the email is valid.",
+            error: (err) =>
+                err.response?.data?.error || "Failed to send invitation.",
         });
 
         setInviteEmail("");
@@ -201,12 +220,8 @@ const UserManagement: React.FC = () => {
         toast.promise(updateRole(), {
             loading: "Updating role.",
             success: "Role updated successfully.",
-            error: (error) => {
-                if (error?.response?.data?.error) {
-                    return error.response.data.error;
-                }
-                return "Failed to update role.";
-            },
+            error: (error) =>
+                error?.response?.data?.error || "Failed to update role.",
         });
     };
 
@@ -220,7 +235,6 @@ const UserManagement: React.FC = () => {
 
         const deleteProcess = async () => {
             let response;
-
             if (userToDelete.status === "accepted") {
                 response = await axios.delete(
                     `/api/auth/delete/${userToDelete.clerkUserId}`
@@ -237,7 +251,6 @@ const UserManagement: React.FC = () => {
                         invitations.filter((inv) => inv.id !== userToDelete.id)
                     )
                 );
-
                 dispatch(removeInvitation(userToDelete.id));
             }
         };
@@ -245,12 +258,8 @@ const UserManagement: React.FC = () => {
         toast.promise(deleteProcess(), {
             loading: "Deleting User...",
             success: "User deleted successfully.",
-            error: (error) => {
-                if (error?.response?.data?.error) {
-                    return error.response.data.error;
-                }
-                return "Failed to delete user.";
-            },
+            error: (error) =>
+                error?.response?.data?.error || "Failed to delete user.",
         });
 
         setShowDeleteModal(false);
@@ -296,12 +305,22 @@ const UserManagement: React.FC = () => {
                         View Active Members
                     </Link>
 
-                    <button
-                        onClick={() => setShowInviteModal(true)}
-                        className="flex items-center justify-center w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 whitespace-nowrap"
-                    >
-                        + Invite
-                    </button>
+                    {/* Check if user can invite based on Redux businessData */}
+                    {canInvite ? (
+                        <button
+                            onClick={() => setShowInviteModal(true)}
+                            className="flex items-center justify-center w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 whitespace-nowrap"
+                        >
+                            + Invite
+                        </button>
+                    ) : (
+                        <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-md border border-amber-200">
+                            <AlertCircle size={16} />
+                            <span className="text-xs font-semibold">
+                                Team Limit Reached
+                            </span>
+                        </div>
+                    )}
                 </div>
             </header>
 
@@ -356,7 +375,6 @@ const UserManagement: React.FC = () => {
                                         {user.status}
                                     </span>
                                 </div>
-
                                 <p className="text-xs text-gray-500">
                                     Invited by: {user.inviter?.firstName}
                                 </p>
