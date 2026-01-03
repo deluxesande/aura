@@ -1,291 +1,329 @@
 "use client";
-import React, { useState } from "react";
-import { useSelector } from "react-redux";
-import { AppState } from "@/store";
-import {
-    CreditCard,
-    ArrowUpCircle,
-    CheckCircle2,
-    Zap,
-    Calendar,
-    RefreshCcw,
-    X,
-    Loader2,
-    Phone,
-    Receipt,
-} from "lucide-react";
-import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+
+import Navbar from "@/components/Navbar";
+import InvoicesTable from "@/components/InvoicesTable";
 import axios from "axios";
-import { useRouter } from "next/navigation";
+import {
+    ArrowLeft,
+    Briefcase,
+    Calendar,
+    Mail,
+    Receipt,
+    UserPlus,
+} from "lucide-react";
+import Image from "next/image";
+import { useParams, useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
+import Link from "next/link";
+import { Invoice } from "@/utils/typesDefinitions";
 
-const SubscriptionManagement: React.FC = () => {
+// 1. Update Interface to match the Object returned by API
+interface StaffUser {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    clerkId: string;
+    role: "MANAGER" | "ADMIN" | "USER";
+    imageUrl?: string;
+    createdAt: string;
+    invitedBy: {
+        name: string;
+        imageUrl: string;
+    };
+}
+
+interface ExtendedInvoice extends Invoice {
+    totalQuantity?: number;
+}
+
+export default function UserDetailsPage() {
+    const params = useParams();
     const router = useRouter();
-    const [isRenewModalOpen, setIsRenewModalOpen] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [phoneNumber, setPhoneNumber] = useState("");
+    const userId = params?.id as string;
 
-    const businessDetails = useSelector(
-        (state: AppState) => state.businessData.businessDetails
+    const [staffUser, setStaffUser] = useState<StaffUser | null>(null);
+    const [invoices, setInvoices] = useState<ExtendedInvoice[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    // --- Stats Calculation ---
+    const totalRevenue = invoices.reduce(
+        (acc, curr) => (curr.status === "PAID" ? acc + curr.totalAmount : acc),
+        0
     );
 
-    if (!businessDetails) return null;
+    const totalSalesCount = invoices.length;
 
-    const { subscription, usage } = businessDetails;
-    const plan = subscription?.plan || "STARTER";
+    const todaysSales = invoices.reduce((acc, curr) => {
+        if (curr.status !== "PAID") return acc;
 
-    // --- Logic Calculations ---
-    const calculateDaysLeft = () => {
-        if (!subscription?.currentPeriodEnd) return 0;
-        const end = new Date(subscription.currentPeriodEnd);
+        const invDate = new Date(curr.createdAt);
         const today = new Date();
-        const diff = end.getTime() - today.getTime();
-        return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-    };
 
-    const daysLeft = calculateDaysLeft();
-    const txLimit = plan === "STARTER" ? 100 : Infinity;
-    const txRemaining =
-        plan === "STARTER"
-            ? Math.max(0, 100 - usage.transactionCount)
-            : "Unlimited";
+        const isToday =
+            invDate.getDate() === today.getDate() &&
+            invDate.getMonth() === today.getMonth() &&
+            invDate.getFullYear() === today.getFullYear();
 
-    const handleRenewSub = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        try {
-            const amount = plan === "STANDARD" ? 1000 : 1500;
-            const res = await axios.post("/api/subscription/stk-push", {
-                phoneNumber,
-                amount,
-                planId: plan,
-            });
+        return isToday ? acc + curr.totalAmount : acc;
+    }, 0);
 
-            if (res.data.data.CheckoutRequestID) {
-                toast.success("STK Push sent! Redirecting...");
-                router.push(
-                    `/payment/checking?id=${res.data.data.CheckoutRequestID}`
-                );
+    useEffect(() => {
+        const fetchUser = async () => {
+            setLoading(true);
+            try {
+                const userRes = await axios.get(`/api/users/${userId}`);
+
+                if (userRes.data) {
+                    setStaffUser(userRes.data);
+                } else {
+                    toast.error("User not found");
+                    router.push("/settings");
+                }
+            } catch (error) {
+                toast.error("Failed to load user details");
+            } finally {
+                setLoading(false);
             }
-        } catch (error: any) {
-            toast.error(
-                error.response?.data?.error || "Failed to initiate renewal"
-            );
-        } finally {
-            setLoading(false);
-        }
+        };
+
+        if (userId) fetchUser();
+    }, [userId, router]);
+
+    useEffect(() => {
+        const fetchInvoices = async () => {
+            try {
+                const response = await axios.get(
+                    `/api/invoice/user?userId=${userId}`
+                );
+                setInvoices(response.data);
+            } catch (error) {
+                console.error("Error fetching user sales:", error);
+            }
+        };
+
+        if (userId) fetchInvoices();
+    }, [userId]);
+
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat("en-KE", {
+            style: "currency",
+            currency: "KES",
+        }).format(amount);
     };
+
+    const handleInvoiceDelete = (id: string) => {
+        const promise = async () => {
+            try {
+                await axios.delete(`/api/invoice/${id}`);
+                setInvoices((prev) => prev.filter((inv) => inv.id !== id));
+            } catch (error) {
+                throw error;
+            }
+        };
+
+        toast.promise(promise(), {
+            loading: "Deleting record...",
+            success: "Record deleted",
+            error: "Could not delete record",
+        });
+    };
+
+    if (loading) {
+        return (
+            <Navbar>
+                <div className="h-[80vh] flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+                </div>
+            </Navbar>
+        );
+    }
+
+    if (!staffUser) return null;
 
     return (
-        <div className="bg-white p-4 sm:p-8 shadow sm:rounded-lg border border-gray-100">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-8">
-                <div>
-                    <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                        <CreditCard className="text-green-600" size={20} />
-                        Subscription Plan
-                    </h3>
-                    <p className="mt-1 text-sm text-gray-600">
-                        Manage your billing and view usage limits.
-                    </p>
-                </div>
-                <div className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-bold uppercase tracking-wider border border-green-100">
-                    {plan}
-                </div>
-            </div>
-
-            <div className="space-y-8">
-                {/* Usage Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Days Left Card */}
-                    <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                Days Remaining
-                            </p>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">
-                                {daysLeft}
-                            </p>
-                        </div>
-                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                            <Calendar className="w-5 h-5 stroke-blue-500" />
-                        </div>
+        <Navbar>
+            <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
+                {/* Back Button */}
+                <Link href="/settings/team">
+                    <div className="w-10 h-10 items-center justify-center flex bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors">
+                        <ArrowLeft className="w-5 h-5 text-gray-600" />
                     </div>
+                </Link>
 
-                    {/* Allowance Left Card */}
-                    <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                Allowance Left
-                            </p>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">
-                                {txRemaining}
-                            </p>
-                        </div>
-                        <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center">
-                            <Zap className="w-5 h-5 stroke-orange-500" />
-                        </div>
-                    </div>
-
-                    {/* Billing Status Card */}
-                    <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                Billing Status
-                            </p>
-                            <p
-                                className={`text-2xl font-bold mt-1 ${
-                                    subscription?.status === "ACTIVE"
-                                        ? "text-green-600"
-                                        : "text-orange-600"
-                                }`}
-                            >
-                                {subscription?.status || "ACTIVE"}
-                            </p>
-                        </div>
-                        <div
-                            className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                                subscription?.status === "ACTIVE"
-                                    ? "bg-green-100"
-                                    : "bg-orange-100"
-                            }`}
-                        >
-                            <CheckCircle2
-                                className={`w-5 h-5 ${
-                                    subscription?.status === "ACTIVE"
-                                        ? "stroke-green-500"
-                                        : "stroke-orange-500"
-                                }`}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Progress Bar (Visible only for Starter) */}
-                {plan === "STARTER" && (
-                    <div>
-                        <div className="flex justify-between items-end mb-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-tighter">
-                                Monthly Progress
-                            </label>
-                            <span className="text-xs font-bold text-gray-900">
-                                {usage.transactionCount} / 100
-                            </span>
-                        </div>
-                        <div className="w-full bg-gray-100 rounded-full h-2">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{
-                                    width: `${Math.min(
-                                        (usage.transactionCount / 100) * 100,
-                                        100
-                                    )}%`,
-                                }}
-                                className={`h-2 rounded-full ${
-                                    usage.isLimitReached
-                                        ? "bg-red-500"
-                                        : "bg-green-500"
-                                }`}
-                            />
-                        </div>
-                    </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="pt-6 border-t border-gray-100 flex flex-wrap gap-4">
-                    {plan !== "STARTER" && (
-                        <button
-                            onClick={() => setIsRenewModalOpen(true)}
-                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-50 transition-all shadow-sm"
-                        >
-                            <RefreshCcw size={18} />
-                            Renew Current Plan
-                        </button>
-                    )}
-
-                    <Link
-                        href="/payment"
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white text-sm font-bold rounded-xl hover:bg-green-700 transition-all shadow-md shadow-green-100"
-                    >
-                        <ArrowUpCircle size={18} />
-                        Change / Upgrade Plan
-                    </Link>
-                </div>
-            </div>
-
-            {/* Renewal Modal */}
-            <AnimatePresence>
-                {isRenewModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl"
-                        >
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-2xl font-black text-gray-900 tracking-tight">
-                                    Renew Plan
-                                </h3>
-                                <button
-                                    onClick={() => setIsRenewModalOpen(false)}
-                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                                >
-                                    <X size={24} className="text-gray-400" />
-                                </button>
-                            </div>
-
-                            <p className="text-gray-500 text-sm mb-8 leading-relaxed">
-                                You are about to renew your{" "}
-                                <strong>{plan}</strong> subscription. Please
-                                confirm your phone number below.
-                            </p>
-
-                            <form
-                                onSubmit={handleRenewSub}
-                                className="space-y-6"
-                            >
-                                <div>
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
-                                        M-Pesa Number
-                                    </label>
-                                    <div className="relative mt-2">
-                                        <Phone
-                                            className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"
-                                            size={20}
+                {/* Profile Card */}
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="p-6 md:p-8">
+                        <div className="flex flex-col lg:flex-row justify-between gap-8">
+                            <div className="flex flex-col sm:flex-row gap-6 items-start">
+                                {/* Avatar */}
+                                <div className="h-20 w-20 rounded-full bg-gray-100 border border-gray-200 relative overflow-hidden flex items-center justify-center">
+                                    {staffUser.imageUrl ? (
+                                        <Image
+                                            src={staffUser.imageUrl}
+                                            alt={staffUser.firstName}
+                                            fill
+                                            className="object-cover"
                                         />
-                                        <input
-                                            type="text"
-                                            required
-                                            placeholder="0712..."
-                                            className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all font-medium"
-                                            value={phoneNumber}
-                                            onChange={(e) =>
-                                                setPhoneNumber(e.target.value)
-                                            }
-                                        />
-                                    </div>
+                                    ) : (
+                                        <span className="text-2xl font-bold text-gray-500">
+                                            {staffUser.firstName.charAt(0)}
+                                            {staffUser.lastName.charAt(0)}
+                                        </span>
+                                    )}
                                 </div>
 
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="w-full py-4 bg-green-600 text-white font-black rounded-2xl hover:bg-green-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50 shadow-lg shadow-green-200"
-                                >
-                                    {loading ? (
-                                        <Loader2 className="animate-spin" />
-                                    ) : (
-                                        "Request STK Push"
-                                    )}
-                                </button>
-                            </form>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
-};
+                                <div className="space-y-4 flex-1">
+                                    <div>
+                                        <div className="flex items-center gap-3">
+                                            <h1 className="text-2xl font-bold text-gray-900">
+                                                {staffUser.firstName}{" "}
+                                                {staffUser.lastName}
+                                            </h1>
+                                            {/* Role Badge */}
+                                            <span
+                                                className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+                                                    staffUser.role === "ADMIN"
+                                                        ? "bg-purple-100 text-purple-700 border-purple-200"
+                                                        : staffUser.role ===
+                                                          "MANAGER"
+                                                        ? "bg-blue-100 text-blue-700 border-blue-200"
+                                                        : "bg-gray-100 text-gray-700 border-gray-200"
+                                                }`}
+                                            >
+                                                {staffUser.role}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                                            <span className="flex items-center font-light gap-1">
+                                                Joined{" "}
+                                                {new Date(
+                                                    staffUser.createdAt
+                                                ).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                    </div>
 
-export default SubscriptionManagement;
+                                    {/* Contact Grid */}
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-8 w-8 rounded-full bg-white flex items-center justify-center border border-gray-200">
+                                                <Mail className="w-4 h-4 stroke-green-500" />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500 font-medium">
+                                                    Email Address
+                                                </p>
+                                                <p className="text-sm font-medium text-gray-900">
+                                                    {staffUser.email}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Invited By Section */}
+                            <div className="lg:border-l lg:pl-8 lg:w-72 flex flex-col justify-center space-y-3">
+                                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                    Invited By
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    {/* Inviter Image */}
+                                    <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100 overflow-hidden relative">
+                                        {staffUser.invitedBy &&
+                                        staffUser.invitedBy.imageUrl &&
+                                        staffUser.invitedBy.imageUrl !==
+                                            "/images/user.png" ? (
+                                            <Image
+                                                src={
+                                                    staffUser.invitedBy.imageUrl
+                                                }
+                                                alt={staffUser.invitedBy.name}
+                                                fill
+                                                className="object-cover"
+                                            />
+                                        ) : (
+                                            <UserPlus className="w-5 h-5 text-blue-500" />
+                                        )}
+                                    </div>
+
+                                    {/* Inviter Details */}
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-900">
+                                            {staffUser.invitedBy?.name}
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                            {staffUser.invitedBy?.name ===
+                                            "Direct Join"
+                                                ? "System Admin"
+                                                : "Team Invitation"}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* --- Analytics Cards (Sales Performance) --- */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Total Revenue */}
+                    <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                Total Revenue Generated
+                            </p>
+                            <p className="text-2xl font-bold text-gray-900 mt-1">
+                                {formatCurrency(totalRevenue)}
+                            </p>
+                        </div>
+                        <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                            <Briefcase className="w-5 h-5 stroke-green-500" />
+                        </div>
+                    </div>
+
+                    {/* Sales Count */}
+                    <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                Orders Processed
+                            </p>
+                            <p className="text-2xl font-bold text-gray-900 mt-1">
+                                {totalSalesCount}
+                            </p>
+                        </div>
+                        <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                            <Receipt className="w-5 h-5 stroke-green-500" />
+                        </div>
+                    </div>
+
+                    {/* Today's Sales */}
+                    <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                Today&apos;s Sales
+                            </p>
+                            <p className="text-2xl font-bold text-gray-900 mt-1">
+                                {formatCurrency(todaysSales)}
+                            </p>
+                        </div>
+                        <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                            <Calendar className="w-5 h-5 stroke-green-500" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Sales History Table */}
+                <InvoicesTable
+                    title={`${staffUser.firstName}'s Sales History`}
+                    invoices={invoices}
+                    handleDelete={handleInvoiceDelete}
+                    loading={loading}
+                    itemsPerPage={10}
+                />
+            </div>
+        </Navbar>
+    );
+}
