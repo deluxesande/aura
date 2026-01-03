@@ -23,9 +23,10 @@ export default function SignupPage() {
     const dispatch = useDispatch();
 
     // Check if the user is already signed in
+    // Updated: Redirects to /payment
     useEffect(() => {
         if (isSignedIn) {
-            router.push("/settings");
+            router.push("/payment");
         }
     }, [isSignedIn, router]);
 
@@ -70,14 +71,11 @@ export default function SignupPage() {
                 });
 
                 if (result.status === "complete") {
-                    // Set the session active
                     await setActive({ session: result.createdSessionId });
 
-                    // Dispatch your redux action
                     dispatch(signInAction());
 
-                    // FORCE REDIRECT TO SETTINGS
-                    router.push("/settings");
+                    router.push("/payment");
                 } else {
                     // console.error(JSON.stringify(result, null, 2));
                 }
@@ -93,7 +91,7 @@ export default function SignupPage() {
 
         toast.promise(promise(), {
             loading: "Verifying code...",
-            success: "Code verified successfully! Redirecting...",
+            success: "Code verified successfully! Redirecting to payment...",
             error: "Verification failed. Please try again.",
         });
     };
@@ -104,7 +102,7 @@ export default function SignupPage() {
             await signUp.authenticateWithRedirect({
                 strategy: "oauth_google",
                 redirectUrl: "/sso-callback",
-                redirectUrlComplete: "/settings",
+                redirectUrlComplete: "/payment",
             });
             dispatch(signInAction());
         } catch (err: any) {

@@ -21,86 +21,55 @@ const addBusinessHandler = async (
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        // Check if user already owns a business
+        // 1. Check if user already owns a business
         const existingBusiness = await prisma.business.findUnique({
-            where: {
-                createdBy: user.userId,
-            },
+            where: { createdBy: user.userId },
         });
 
         if (existingBusiness) {
             return res.status(409).json({
                 error: "User already has a business associated with their account",
-                existingBusiness: {
-                    id: existingBusiness.id,
-                    name: existingBusiness.name,
-                },
             });
         }
 
-        // Get full user details from Clerk
-        const clerk = await clerkClient();
-        const clerkUser = await clerk.users.getUser(user.userId);
-
-        // Check if user already exists in database
-        const existingUser = await prisma.user.findUnique({
-            where: { clerkId: user.userId },
+        // 2. Find the most recent successful subscription payment for this Clerk User
+        // This ensures they have actually paid before creating the business
+        const latestPayment = await prisma.subscriptionPayment.findFirst({
+            where: {
+                userId: user.userId,
+                status: "COMPLETED",
+            },
+            orderBy: { createdAt: "desc" },
         });
 
-        if (existingUser) {
-            return res.status(409).json({
-                error: "User already exists in the system",
-                user: {
-                    id: existingUser.id,
-                    email: existingUser.email,
-                },
-            });
-        }
-
         const form = formidable({ multiples: true });
-
         const { fields, files } = await new Promise<{
             fields: any;
             files: any;
         }>((resolve, reject) => {
             form.parse(req, (err, fields, files) => {
-                if (err) {
-                    reject(new Error("Error parsing form"));
-                } else {
-                    resolve({ fields, files });
-                }
+                if (err) reject(new Error("Error parsing form"));
+                else resolve({ fields, files });
             });
         });
 
-        // Extract business name from form fields
         const name = fields.name[0];
-
-        if (!name) {
+        if (!name)
             return res.status(400).json({ error: "Business name is required" });
-        }
 
         let logoBase64 = null;
-
-        // Handle logo upload if file is provided
         if (files.logo && files.logo[0]) {
             const file = files.logo[0];
-            const filePath = file.filepath;
-
-            try {
-                // Read file and convert to base64
-                const fileBuffer = readFileSync(filePath);
-                logoBase64 = `data:${
-                    file.mimetype || "image/png"
-                };base64,${fileBuffer.toString("base64")}`;
-            } catch (error) {
-                // Continue without logo rather than failing the entire request
-                logoBase64 = null;
-            }
+            const fileBuffer = readFileSync(file.filepath);
+            logoBase64 = `data:${
+                file.mimetype || "image/png"
+            };base64,${fileBuffer.toString("base64")}`;
         }
 
-        // Use database transaction to create both business and user
+        const clerk = await clerkClient();
+        const clerkUser = await clerk.users.getUser(user.userId);
+
         const result = await prisma.$transaction(async (tx) => {
-            // Create business with Clerk user ID as owner
             const newBusiness = await tx.business.create({
                 data: {
                     name,
@@ -109,47 +78,69 @@ const addBusinessHandler = async (
                 },
             });
 
-            // Create user record for the business creator
             const newUser = await tx.user.create({
                 data: {
                     clerkId: user.userId,
                     email: clerkUser.emailAddresses[0]?.emailAddress || "",
                     firstName: clerkUser.firstName || "",
                     lastName: clerkUser.lastName || "",
-                    role: "admin", // Business creators are admins
+                    role: "admin",
                     businessId: newBusiness.id,
                 },
             });
 
-            return { business: newBusiness, user: newUser };
+            // Determine the Plan based on the payment, default to STARTER if no payment found
+            const planToSet = (latestPayment?.planId as any) || "STARTER";
+
+            const newSubscription = await tx.subscription.create({
+                data: {
+                    businessId: newBusiness.id,
+                    plan: planToSet,
+                    status: "ACTIVE",
+                    currentPeriodStart: new Date(),
+                    currentPeriodEnd: new Date(
+                        new Date().setMonth(new Date().getMonth() + 1)
+                    ),
+                },
+            });
+
+            // Link the successful payment to this new subscription if it exists
+            if (latestPayment) {
+                await tx.subscriptionPayment.update({
+                    where: { id: latestPayment.id },
+                    data: { subscriptionId: newSubscription.id },
+                });
+            }
+
+            return {
+                business: newBusiness,
+                user: newUser,
+                subscription: newSubscription,
+            };
         });
 
         try {
-            console.log(result.user.clerkId);
             await novu.trigger({
                 workflowId: "welcome",
-                to: {
-                    subscriberId: result.user.clerkId,
-                },
+                to: { subscriberId: result.user.clerkId },
                 payload: {
                     firstName: result.user.firstName || "User",
                     organizationName: result.business.name,
+                    plan: result.subscription.plan,
                 },
             });
         } catch (notificationError) {
-            // Log the error but DO NOT crash the request. The business was created successfully.
-            console.error(
-                "Failed to trigger welcome notification:",
-                notificationError
-            );
+            console.error("Notification failed:", notificationError);
         }
 
         res.status(201).json({
             business: result.business,
             user: result.user,
-            message: "Business and user created successfully",
+            subscription: result.subscription,
+            message: "Business and subscription created successfully",
         });
     } catch (error) {
+        console.error("Add Business Error:", error);
         res.status(500).json({ error: "Failed to create business" });
     }
 };

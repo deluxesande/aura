@@ -26,6 +26,8 @@ import ImageCropperModal from "@/components/ImageCropperModal";
 import { FloatingPortal } from "@floating-ui/react";
 import QuicKRestockModal from "@/components/QuickRestockModal";
 
+const MAX_SIZE = 200 * 1024; // 200KB
+
 export default function EditProductPage() {
     const params = useParams();
     const router = useRouter();
@@ -216,12 +218,24 @@ export default function EditProductPage() {
         event: React.ChangeEvent<HTMLInputElement>
     ) => {
         const file = event.target.files?.[0];
-        if (file) {
-            const objectUrl = URL.createObjectURL(file);
-            setTempImageSrc(objectUrl);
-            setIsCropModalOpen(true);
+        if (!file) return;
+
+        if (file.type !== "image/png") {
+            toast.error("Only PNG images are allowed");
             event.target.value = "";
+            return;
         }
+
+        if (file.size > MAX_SIZE) {
+            toast.error("Image must be under 200KB");
+            event.target.value = "";
+            return;
+        }
+
+        const objectUrl = URL.createObjectURL(file);
+        setTempImageSrc(objectUrl);
+        setIsCropModalOpen(true);
+        event.target.value = "";
     };
 
     const handleCropComplete = (croppedBlob: Blob) => {
@@ -556,7 +570,7 @@ export default function EditProductPage() {
                             <div className="relative w-full aspect-square border-2 border-dashed border-gray-300 rounded-xl hover:border-green-500 transition-colors group bg-gray-50 overflow-hidden cursor-pointer">
                                 <input
                                     type="file"
-                                    accept="image/png, image/jpeg, image/jpg"
+                                    accept="image/png"
                                     onChange={handleImageFileSelect}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                 />

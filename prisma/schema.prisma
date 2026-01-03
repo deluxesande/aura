@@ -1,59 +1,72 @@
 generator client {
   provider = "prisma-client-js"
 }
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum PlanTier {
+  STARTER // Free
+  STANDARD // 1000 KSh
+  PREMIUM // 1500 KSh
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+}
+
 model MpesaPayment {
   id                String   @id @default(uuid()) @map("_id") @db.Uuid
   amount            Float
   phoneNumber       String
-  accountReference  String   // E.g. "Salesense"
+  accountReference  String
   transactionDesc   String?
-  
-  // Identifiers from Safaricom to link Callbacks later
   merchantRequestId String
-  checkoutRequestId String   @unique 
-  
-  status            String   @default("PENDING") // PENDING, COMPLETED, FAILED
+  checkoutRequestId String   @unique
+  status            String   @default("PENDING")
 
   // Relations
-  invoiceId         String   @db.Uuid
-  Invoice           Invoice  @relation(fields: [invoiceId], references: [id])
-  businessId        String   @db.Uuid
-  Business          Business @relation(fields: [businessId], references: [id])
-  userId            String   @db.Uuid
-  User              User     @relation(fields: [userId], references: [id])
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  invoiceId  String   @db.Uuid
+  Invoice    Invoice  @relation(fields: [invoiceId], references: [id])
+  businessId String   @db.Uuid
+  Business   Business @relation(fields: [businessId], references: [id])
+  userId     String   @db.Uuid
+  User       User     @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Product {
-  id          String   @id @default(uuid()) @map("_id") @db.Uuid
-  name        String
-  description String
-  price       Float
-  sku         String   @unique
-  quantity    Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  categoryId  String   @db.Uuid
-  Category    Category @relation(fields: [categoryId], references: [id])
-  inStock     Boolean  @default(false)
+  id           String        @id @default(uuid()) @map("_id") @db.Uuid
+  name         String
+  description  String
+  price        Float
+  sku          String        @unique
+  quantity     Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  categoryId   String        @db.Uuid
+  Category     Category      @relation(fields: [categoryId], references: [id])
+  inStock      Boolean       @default(false)
   invoiceItems InvoiceItem[]
-  image       String?  @default("/images/default-product.png") @db.Text
-  createdBy   String?   
+  image        String?       @default("/images/default-product.png") @db.Text
+  createdBy    String?
 }
 
 model Category {
   id          String    @id @default(uuid()) @map("_id") @db.Uuid
-  name        String       
+  name        String
   description String?
   products    Product[]
-  createdBy   String?   
-  
-  @@unique([name, createdBy]) 
+  createdBy   String?
+
+  @@unique([name, createdBy])
 }
 
 model Invoice {
@@ -65,13 +78,15 @@ model Invoice {
   invoiceItems  InvoiceItem[]
   totalAmount   Float
   paymentType   String   @default("CASH")
-  status        String   @default("PENDING") 
-  stockRestored   Boolean  @default(false)
+  status        String   @default("PENDING")
+  stockRestored Boolean  @default(false)
   createdBy     String?
-  invoiceName   String   @default("") 
-  mpesaPayments       MpesaPayment[]
+  invoiceName   String   @default("")
+  mpesaPayments      MpesaPayment[]
   successfulCallbacks SuccessfulCallback[]
-  failedCallbacks     FailedCallback[]
+  failedCallbacks    FailedCallback[]
+  businessId    String?   @db.Uuid
+  Business      Business? @relation(fields: [businessId], references: [id])
 }
 
 model InvoiceItem {
@@ -82,23 +97,20 @@ model InvoiceItem {
   Product   Product  @relation(fields: [productId], references: [id])
   invoiceId String?  @db.Uuid
   Invoice   Invoice? @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  createdBy String?   
+  createdBy String?
 }
 
 model Customer {
   id          String   @id @default(uuid()) @map("_id") @db.Uuid
   firstName   String?
   lastName    String?
-  email       String?  
-  phoneNumber String   
-
+  email       String?
+  phoneNumber String
   invoices    Invoice[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
   businessId  String   @db.Uuid
   Business    Business @relation(fields: [businessId], references: [id])
-
   createdById String   @db.Uuid
   CreatedBy   User     @relation("CustomerCreator", fields: [createdById], references: [id])
 
@@ -133,34 +145,44 @@ model SuccessfulCallback {
 }
 
 model User {
-  id            String    @id @default(uuid()) @map("_id") @db.Uuid
-  clerkId       String    @unique  
-  email         String    @unique
-  firstName     String?
-  lastName      String?
-  role          String    @default("user") 
-  status        String    @default("active") 
-  businessId    String?   @db.Uuid
-  Business      Business? @relation(fields: [businessId], references: [id])
-  createdCustomers Customer[] @relation("CustomerCreator")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  lastLogin     DateTime?
-  mpesaPayments MpesaPayment[]
+  id                 String           @id @default(uuid()) @map("_id") @db.Uuid
+  clerkId            String           @unique
+  email              String           @unique
+  firstName          String?
+  lastName           String?
+  role               String           @default("user") // admin, manager, user
+  status             String           @default("active")
+  businessId         String?          @db.Uuid
+  Business           Business?        @relation(fields: [businessId], references: [id])
+  createdCustomers   Customer[]       @relation("CustomerCreator")
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  lastLogin          DateTime?
+  mpesaPayments      MpesaPayment[]
 }
 
 model Business {
-  id            String   @id @default(uuid()) @map("_id") @db.Uuid
-  name          String
-  logo          String?  @db.Text
-  users         User[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id        String   @id @default(uuid()) @map("_id") @db.Uuid
+  name      String
+  logo      String?  @db.Text
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
   invitations   UserInvitation[]
-  createdBy     String?  @unique 
-  mpesaPayoutNumber String?  // Number for B2C payouts
-  mpesaPayments     MpesaPayment[]
-  customers         Customer[]
+  createdBy     String?          @unique
+  
+  // Required for Standard & Premium tiers to use their own Paybill/Till
+  mpesaConsumerKey    String?
+  mpesaConsumerSecret String?
+  mpesaPassKey        String?
+  mpesaShortCode      String? 
+  
+  // Relations
+  mpesaPayments MpesaPayment[]
+  customers     Customer[]
+  invoices      Invoice[]
+  subscription  Subscription?
 }
 
 model Response {
@@ -174,24 +196,24 @@ model Response {
 }
 
 model ResultResponse {
-  id                       Int            @id @default(autoincrement())
+  id                       Int           @id @default(autoincrement())
   resultType               Int
   resultCode               Int
   resultDesc               String
   originatorConversationID String
   conversationID           String
   transactionID            String
-  referenceDataId          Int       
-  referenceData            ReferenceData  @relation(fields: [referenceDataId], references: [id])
-  createdAt                DateTime       @default(now())
+  referenceDataId          Int
+  referenceData            ReferenceData @relation(fields: [referenceDataId], references: [id])
+  createdAt                DateTime      @default(now())
 }
 
 model ReferenceData {
-  id              Int              @id @default(autoincrement())
-  referenceItemId Int       
-  referenceItem   ReferenceItem    @relation(fields: [referenceItemId], references: [id])
+  id              Int             @id @default(autoincrement())
+  referenceItemId Int
+  referenceItem   ReferenceItem   @relation(fields: [referenceItemId], references: [id])
   resultResponse  ResultResponse[]
-  createdAt       DateTime         @default(now())
+  createdAt       DateTime        @default(now())
 }
 
 model ReferenceItem {
@@ -205,7 +227,7 @@ model ReferenceItem {
 model ContactFormMessage {
   id      Int    @id @default(autoincrement())
   name    String
-  email   String       
+  email   String
   message String
 }
 
@@ -216,10 +238,49 @@ model UserInvitation {
   businessId        String   @db.Uuid
   Business          Business @relation(fields: [businessId], references: [id])
   invitedBy         String   @db.Uuid
-  status            String   @default("pending") 
+  status            String   @default("pending")
   token             String   @unique
   clerkInvitationId String?  @unique
   expiresAt         DateTime
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+}
+
+model Subscription {
+  id                 String   @id @default(uuid()) @map("_id") @db.Uuid
+  
+  businessId         String   @unique @db.Uuid
+  Business           Business @relation(fields: [businessId], references: [id])
+  
+  plan               PlanTier @default(STARTER)
+  status             SubscriptionStatus @default(ACTIVE)
+  
+  currentPeriodStart DateTime @default(now())
+  currentPeriodEnd   DateTime
+  
+  payments           SubscriptionPayment[] 
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+model SubscriptionPayment {
+  id                 String   @id @default(uuid()) @map("_id") @db.Uuid
+  userId             String   // Clerk ID
+  
+  amount             Float
+  phoneNumber        String
+  planId             String
+  
+  merchantRequestId  String
+  checkoutRequestId  String   @unique
+  mpesaReceiptNumber String?
+  
+  status             String   @default("PENDING")
+
+  // Optional because payment is created BEFORE the subscription exists
+  subscriptionId     String?       @db.Uuid
+  Subscription       Subscription? @relation(fields: [subscriptionId], references: [id])
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }

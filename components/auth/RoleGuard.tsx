@@ -17,6 +17,8 @@ const PUBLIC_ROUTES = new Set([
     "/pricing",
     "/password-reset",
     "/verify",
+    "/payment",
+    "/payment/checking",
 ]);
 
 // 2. Define routes that should be public regardless of what follows (e.g. tokens)
