@@ -113,7 +113,7 @@ export default function PaymentPage() {
 
                 try {
                     const response = await axios.post(
-                        "/api/business/add",
+                        "/api/business",
                         formData,
                         {
                             headers: { "Content-Type": "multipart/form-data" },
