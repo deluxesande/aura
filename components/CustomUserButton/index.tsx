@@ -189,7 +189,7 @@ const CustomUserButton = () => {
     const handleOpenModal = () => {
         if (!canInviteMore) {
             toast.warning(
-                `Team full: Your ${plan} plan is limited to ${teamLimit} member(s). Upgrade to add more.`
+                `Team full: Your ${plan} plan is limited to ${teamLimit} member(s).`
             );
             return;
         }

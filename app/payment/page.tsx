@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import axios from "axios";
+import { useSelector } from "react-redux"; // Added
+import { AppState } from "@/store"; // Added
 
 type Plan = {
     id: string;
@@ -91,24 +93,47 @@ const PLANS: Plan[] = [
 export default function PaymentPage() {
     const router = useRouter();
 
-    // 2. Fix: Explicitly type the state to allow 'Plan' or 'null'
+    const user = useSelector((state: AppState) => state.auth.user);
+
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [loading, setLoading] = useState(false);
-
     const [phoneNumber, setPhoneNumber] = useState("");
 
     const handlePlanSelect = (plan: Plan) => {
         if (plan.price === 0) {
-            // Logic for Free Tier (No Payment Needed)
-            // Ideally, you should hit an API here to register the "STARTER" subscription in DB
-            toast.promise(new Promise((resolve) => setTimeout(resolve, 2000)), {
-                loading: "Setting up your free account...",
-                success: () => {
-                    router.push("/create-business"); // Redirect to onboarding
+            const createFreeSubscription = async () => {
+                const formData = new FormData();
+
+                const businessName = user?.firstName
+                    ? `${user.firstName}'s Business`
+                    : "My New Business";
+
+                formData.append("name", businessName);
+
+                try {
+                    const response = await axios.post(
+                        "/api/business/add",
+                        formData,
+                        {
+                            headers: { "Content-Type": "multipart/form-data" },
+                        }
+                    );
+
+                    if (response.status === 200) router.push("/settings");
                     return "Welcome to Salesense Starter!";
-                },
-                error: "Something went wrong",
+                } catch (error: any) {
+                    throw new Error(
+                        error.response?.data?.error ||
+                            "Failed to set up account"
+                    );
+                }
+            };
+
+            toast.promise(createFreeSubscription(), {
+                loading: "Setting up your free account...",
+                success: (data) => data,
+                error: (err) => err.message,
             });
         } else {
             setSelectedPlan(plan);
@@ -137,20 +162,12 @@ export default function PaymentPage() {
             });
 
             const checkoutRequestId = response.data.data.CheckoutRequestID;
-
             router.push(`/payment/checking?id=${checkoutRequestId}`);
         } catch (error: any) {
             console.error("Payment Error:", error);
-
             const message =
-                error.response?.data?.error ||
-                "Payment request failed. Please check your connection.";
-
-            toast.error(message, {
-                description:
-                    error.response?.data?.details?.errorMessage ||
-                    "Please try again.",
-            });
+                error.response?.data?.error || "Payment request failed.";
+            toast.error(message);
         } finally {
             setLoading(false);
         }

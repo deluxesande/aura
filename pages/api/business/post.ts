@@ -16,10 +16,8 @@ const addBusinessHandler = async (
 ) => {
     try {
         const user = getAuth(req);
-
-        if (!user.userId) {
+        if (!user.userId)
             return res.status(401).json({ error: "Unauthorized" });
-        }
 
         // 1. Check if user already owns a business
         const existingBusiness = await prisma.business.findUnique({
@@ -27,20 +25,8 @@ const addBusinessHandler = async (
         });
 
         if (existingBusiness) {
-            return res.status(409).json({
-                error: "User already has a business associated with their account",
-            });
+            return res.status(409).json({ error: "Business already exists" });
         }
-
-        // 2. Find the most recent successful subscription payment for this Clerk User
-        // This ensures they have actually paid before creating the business
-        const latestPayment = await prisma.subscriptionPayment.findFirst({
-            where: {
-                userId: user.userId,
-                status: "COMPLETED",
-            },
-            orderBy: { createdAt: "desc" },
-        });
 
         const form = formidable({ multiples: true });
         const { fields, files } = await new Promise<{
@@ -53,17 +39,29 @@ const addBusinessHandler = async (
             });
         });
 
-        const name = fields.name[0];
+        const name = fields.name?.[0];
         if (!name)
             return res.status(400).json({ error: "Business name is required" });
 
+        // 2. Determine Plan Logic
+        // Look for a successful payment. If none exists, this is a STARTER registration.
+        const latestPayment = await prisma.subscriptionPayment.findFirst({
+            where: {
+                userId: user.userId,
+                status: "COMPLETED",
+                subscriptionId: null,
+            },
+            orderBy: { createdAt: "desc" },
+        });
+
+        const planToSet = (latestPayment?.planId as any) || "STARTER";
+
         let logoBase64 = null;
-        if (files.logo && files.logo[0]) {
+        if (files.logo?.[0]) {
             const file = files.logo[0];
-            const fileBuffer = readFileSync(file.filepath);
             logoBase64 = `data:${
                 file.mimetype || "image/png"
-            };base64,${fileBuffer.toString("base64")}`;
+            };base64,${readFileSync(file.filepath).toString("base64")}`;
         }
 
         const clerk = await clerkClient();
@@ -89,9 +87,6 @@ const addBusinessHandler = async (
                 },
             });
 
-            // Determine the Plan based on the payment, default to STARTER if no payment found
-            const planToSet = (latestPayment?.planId as any) || "STARTER";
-
             const newSubscription = await tx.subscription.create({
                 data: {
                     businessId: newBusiness.id,
@@ -104,7 +99,6 @@ const addBusinessHandler = async (
                 },
             });
 
-            // Link the successful payment to this new subscription if it exists
             if (latestPayment) {
                 await tx.subscriptionPayment.update({
                     where: { id: latestPayment.id },
@@ -119,6 +113,7 @@ const addBusinessHandler = async (
             };
         });
 
+        // Trigger Welcome Notification via Novu
         try {
             await novu.trigger({
                 workflowId: "welcome",
@@ -129,16 +124,11 @@ const addBusinessHandler = async (
                     plan: result.subscription.plan,
                 },
             });
-        } catch (notificationError) {
-            console.error("Notification failed:", notificationError);
+        } catch (e) {
+            console.error("Novu error:", e);
         }
 
-        res.status(201).json({
-            business: result.business,
-            user: result.user,
-            subscription: result.subscription,
-            message: "Business and subscription created successfully",
-        });
+        return res.status(201).json(result);
     } catch (error) {
         console.error("Add Business Error:", error);
         res.status(500).json({ error: "Failed to create business" });
