@@ -150,7 +150,7 @@ const CustomUserButton = () => {
     }, [dispatch, user?.role, userInvitations.length]);
 
     if (plan === "STARTER") {
-        return null;
+        return <div className="mr-8"></div>;
     }
 
     const handleInviteUser = async (e: React.FormEvent) => {
