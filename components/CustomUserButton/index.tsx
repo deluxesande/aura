@@ -1,11 +1,10 @@
 "use client";
 import axios from "axios";
 import { AppState } from "@/store";
-import { Plus } from "lucide-react";
+import { Plus, AlertCircle } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
-import { useDispatch } from "react-redux";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import {
     setInvitationsWithImages,
@@ -54,6 +53,7 @@ const CustomUserButton = () => {
     const [inviteRole, setInviteRole] = useState("user");
     const dispatch = useDispatch();
 
+    // Redux Selectors
     const invitations = useSelector(
         (state: AppState) => state.invitations.invitations
     ) as User[];
@@ -65,11 +65,25 @@ const CustomUserButton = () => {
     const user = useSelector(
         (state: AppState) => state.auth.user
     ) as StoreUser | null;
-    const [isLoading, setIsLoading] = useState(userInvitations.length === 0);
 
+    const businessDetails = useSelector(
+        (state: AppState) => state.businessData?.businessDetails
+    );
+
+    const [isLoading, setIsLoading] = useState(userInvitations.length === 0);
     const hasFetched = useRef(false);
 
+    // --- Subscription Limit Logic ---
+    const plan = businessDetails?.subscription?.plan || "STARTER";
+    const staffCount = businessDetails?.usage?.staffCount || 0;
+
+    // Starter: 1 | Standard: 5 | Premium: Unlimited
+    const teamLimit =
+        plan === "STARTER" ? 1 : plan === "STANDARD" ? 5 : Infinity;
+    const canInviteMore = staffCount < teamLimit;
+
     useEffect(() => {
+        // Only Admin or Manager can fetch/manage team members
         if (
             user?.role?.toLowerCase() !== "admin" &&
             user?.role?.toLowerCase() !== "manager"
@@ -78,37 +92,35 @@ const CustomUserButton = () => {
             return;
         }
 
+        // Prevent redundant fetching if already successful
         if (hasFetched.current) return;
 
         const fetchUsers = async () => {
             if (userInvitations.length === 0) setIsLoading(true);
-
             try {
                 const response = await axios.get("/api/auth/invite/get");
-
                 if (response.data.invitations) {
                     const rawInvitations = response.data.invitations;
-
                     dispatch(setInvitations(rawInvitations));
 
                     const imagePromises = rawInvitations.map(
-                        async (user: User) => {
+                        async (inv: User) => {
                             try {
                                 const imageResponse = await axios.get(
                                     "/api/auth/user/image",
                                     {
-                                        params: { userId: user.id },
+                                        params: { userId: inv.id },
                                     }
                                 );
                                 return {
-                                    ...user,
+                                    ...inv,
                                     imageUrl:
                                         imageResponse.data.imageUrl ||
                                         undefined,
                                 } as Invitation;
                             } catch (error) {
                                 return {
-                                    ...user,
+                                    ...inv,
                                     imageUrl: undefined,
                                 } as Invitation;
                             }
@@ -116,7 +128,6 @@ const CustomUserButton = () => {
                     );
 
                     const results = await Promise.allSettled(imagePromises);
-
                     const usersWithImages = results.map((result, index) => {
                         if (result.status === "fulfilled") return result.value;
                         return {
@@ -124,21 +135,10 @@ const CustomUserButton = () => {
                             imageUrl: undefined,
                         } as Invitation;
                     });
-
                     dispatch(setInvitationsWithImages(usersWithImages));
                 }
-
-                if (response.status === 404 && userInvitations.length === 0) {
-                    toast.warning("No Invitations sent by you yet.");
-                }
             } catch (error) {
-                if (
-                    axios.isAxiosError(error) &&
-                    error.response?.status !== 404
-                ) {
-                    if (userInvitations.length === 0)
-                        toast.error("Failed to fetch Invitations.");
-                }
+                console.error("Fetch team error", error);
             } finally {
                 setIsLoading(false);
                 hasFetched.current = true;
@@ -146,43 +146,39 @@ const CustomUserButton = () => {
         };
 
         fetchUsers();
-        // Removed userInvitations.length to prevent loops, relying on hasFetched ref
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dispatch, user?.role]);
+        // Added userInvitations.length and user?.role to satisfy ESLint
+    }, [dispatch, user?.role, userInvitations.length]);
 
     const handleInviteUser = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!canInviteMore) {
+            toast.error(
+                `Team limit reached. Your ${plan} plan allows only ${teamLimit} member(s).`
+            );
+            return;
+        }
+
         if (!inviteEmail) {
             toast.error("Please enter an email address");
             return;
         }
 
         const sendInvitation = async () => {
-            try {
-                const response = await axios.post("/api/auth/invite/post", {
-                    email: inviteEmail,
-                    role: inviteRole,
-                });
-
-                const newInvitation = response.data.invitation;
-
-                dispatch(setInvitations([...invitations, newInvitation]));
-
-                const newInvitationWithImage = {
-                    ...newInvitation,
-                    imageUrl: undefined,
-                } as Invitation;
-
-                dispatch(addInvitation(newInvitationWithImage));
-            } catch (error) {
-                throw error;
-            }
+            const response = await axios.post("/api/auth/invite/post", {
+                email: inviteEmail,
+                role: inviteRole,
+            });
+            const newInvitation = response.data.invitation;
+            dispatch(setInvitations([...invitations, newInvitation]));
+            dispatch(addInvitation({ ...newInvitation, imageUrl: undefined }));
         };
 
         toast.promise(sendInvitation(), {
             loading: "Sending Invitation.",
-            success: "Invitation sent.",
-            error: "Sending Invitation Failed. Ensure the email is valid.",
+            success: "Invitation sent successfully.",
+            error: (err) =>
+                err.response?.data?.error || "Sending Invitation Failed.",
         });
 
         setInviteEmail("");
@@ -190,13 +186,21 @@ const CustomUserButton = () => {
         setShowInviteModal(false);
     };
 
+    const handleOpenModal = () => {
+        if (!canInviteMore) {
+            toast.warning(
+                `Team full: Your ${plan} plan is limited to ${teamLimit} member(s). Upgrade to add more.`
+            );
+            return;
+        }
+        setShowInviteModal(true);
+    };
+
     const isAdminOrManager =
         user?.role?.toLowerCase() === "admin" ||
         user?.role?.toLowerCase() === "manager";
 
-    if (!isAdminOrManager) {
-        return null;
-    }
+    if (!isAdminOrManager) return null;
 
     const acceptedUsers = userInvitations
         .filter((invitation) => invitation.status === "accepted")
@@ -213,7 +217,6 @@ const CustomUserButton = () => {
                             <div
                                 key={i}
                                 className="h-8 w-8 rounded-full border-2 border-white bg-gray-200 animate-pulse"
-                                style={{ zIndex: 4 - i }}
                             />
                         ))}
                     </div>
@@ -223,11 +226,26 @@ const CustomUserButton = () => {
                             No team members
                         </p>
                         <button
-                            onClick={() => setShowInviteModal(true)}
-                            className="h-8 w-8 min-h-8 min-w-8 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center border-2 border-white cursor-pointer transition-colors"
-                            title="Add user"
+                            onClick={handleOpenModal}
+                            className={`h-8 w-8 min-h-8 min-w-8 rounded-full flex items-center justify-center border-2 border-white cursor-pointer transition-colors ${
+                                canInviteMore
+                                    ? "bg-green-500 hover:bg-green-600"
+                                    : "bg-gray-400 cursor-not-allowed"
+                            }`}
+                            title={
+                                canInviteMore
+                                    ? "Add team member"
+                                    : "Limit reached"
+                            }
                         >
-                            <Plus size={16} className="stroke-white" />
+                            {canInviteMore ? (
+                                <Plus size={16} className="stroke-white" />
+                            ) : (
+                                <AlertCircle
+                                    size={14}
+                                    className="stroke-white"
+                                />
+                            )}
                         </button>
                     </div>
                 ) : (
@@ -250,12 +268,27 @@ const CustomUserButton = () => {
                         ))}
 
                         <button
-                            onClick={() => setShowInviteModal(true)}
-                            className="h-8 w-8 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center border-2 border-white cursor-pointer transition-colors"
+                            onClick={handleOpenModal}
+                            className={`h-8 w-8 rounded-full flex items-center justify-center border-2 border-white cursor-pointer transition-colors ${
+                                canInviteMore
+                                    ? "bg-green-500 hover:bg-green-600"
+                                    : "bg-gray-400 cursor-not-allowed"
+                            }`}
                             style={{ zIndex: 0 }}
-                            title="Add user"
+                            title={
+                                canInviteMore
+                                    ? "Add team member"
+                                    : "Limit reached"
+                            }
                         >
-                            <Plus size={16} className="stroke-white" />
+                            {canInviteMore ? (
+                                <Plus size={16} className="stroke-white" />
+                            ) : (
+                                <AlertCircle
+                                    size={14}
+                                    className="stroke-white"
+                                />
+                            )}
                         </button>
                     </div>
                 )}
@@ -264,9 +297,12 @@ const CustomUserButton = () => {
             {showInviteModal && (
                 <FloatingPortal>
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4">
-                                Invite New User
+                        <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
+                            <h3 className="text-lg font-medium text-gray-900 mb-4 text-center">
+                                Invite New Team Member <br />
+                                <span className="text-xs text-gray-400">
+                                    ({staffCount} / {teamLimit} seats occupied)
+                                </span>
                             </h3>
 
                             <form
@@ -283,7 +319,7 @@ const CustomUserButton = () => {
                                         onChange={(e) =>
                                             setInviteEmail(e.target.value)
                                         }
-                                        className="outline-none appearance-none bg-slate-50 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
+                                        className="outline-none bg-slate-50 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
                                         placeholder="Enter email address"
                                         required
                                     />
@@ -298,7 +334,7 @@ const CustomUserButton = () => {
                                         onChange={(e) =>
                                             setInviteRole(e.target.value)
                                         }
-                                        className="outline-none bg-slate-50 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
+                                        className="outline-none bg-slate-50 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
                                     >
                                         <option value="user">User</option>
                                         <option value="manager">Manager</option>

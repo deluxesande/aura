@@ -16,12 +16,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
-import {
-    setInvitationsWithImages,
-    addInvitation,
-    updateInvitation,
-    removeInvitation,
-} from "@/store/slices/invitationsDataSlice";
+import { addInvitation } from "@/store/slices/invitationsDataSlice";
 import { setInvitations } from "@/store/slices/invitationSlice";
 import { AppState } from "@/store";
 
@@ -72,9 +67,22 @@ export default function TeamPage() {
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteRole, setInviteRole] = useState("user");
     const [isInviting, setIsInviting] = useState(false);
+
+    // Redux Selectors
     const invitations = useSelector(
         (state: AppState) => state.invitations.invitations
     ) as User[];
+
+    const businessDetails = useSelector(
+        (state: AppState) => state.businessData?.businessDetails
+    );
+
+    // --- Team Cap Logic ---
+    const plan = businessDetails?.subscription?.plan || "STARTER";
+    const staffCount = businessDetails?.usage?.staffCount || 0;
+    const teamLimit =
+        plan === "STARTER" ? 1 : plan === "STANDARD" ? 5 : Infinity;
+    const canInviteMore = staffCount < teamLimit;
 
     // Search & Filter State
     const [searchQuery, setSearchQuery] = useState("");
@@ -101,11 +109,18 @@ export default function TeamPage() {
 
     const handleInviteUser = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!canInviteMore) {
+            toast.error(`Team limit reached for ${plan} plan.`);
+            return;
+        }
+
         if (!inviteEmail) {
             toast.error("Please enter an email address");
             return;
         }
 
+        setIsInviting(true);
         const sendInvitation = async () => {
             try {
                 const response = await axios.post("/api/auth/invite/post", {
@@ -114,19 +129,16 @@ export default function TeamPage() {
                 });
 
                 const newInvitation = response.data.invitation;
-
-                // Update Redux store
                 dispatch(setInvitations([...invitations, newInvitation]));
-
-                // Update invitations data store with the new invitation
                 const newInvitationWithImage = {
                     ...newInvitation,
                     imageUrl: undefined,
                 } as Invitation;
-
                 dispatch(addInvitation(newInvitationWithImage));
             } catch (error) {
                 throw error;
+            } finally {
+                setIsInviting(false);
             }
         };
 
@@ -148,7 +160,6 @@ export default function TeamPage() {
             member.lastName?.toLowerCase().includes(query) ||
             member.email?.toLowerCase().includes(query);
 
-        // FIX: Convert both to lowercase to ensure case-insensitive matching
         const matchesRole =
             filterRole === "All"
                 ? true
@@ -206,9 +217,7 @@ export default function TeamPage() {
     return (
         <Navbar>
             <div className="p-4 md:p-8  mx-auto min-h-screen">
-                {/* Main Content Card */}
                 <div className="bg-white shadow-lg rounded-lg p-4">
-                    {/* Header Area */}
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                         <div>
                             <h1 className="text-2xl font-bold text-gray-900">
@@ -218,18 +227,19 @@ export default function TeamPage() {
                                 Manage access and view team performance.
                             </p>
                         </div>
-                        {/* UPDATED: Connected onClick handler */}
-                        <button
-                            onClick={() => setShowInviteModal(true)}
-                            className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors font-medium text-sm"
-                        >
-                            <Plus className="w-4 h-4 stroke-white" />
-                            Invite Member
-                        </button>
+                        {/* Only show button if cap not reached */}
+                        {canInviteMore && (
+                            <button
+                                onClick={() => setShowInviteModal(true)}
+                                className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors font-medium text-sm"
+                            >
+                                <Plus className="w-4 h-4 stroke-white" />
+                                Invite Member
+                            </button>
+                        )}
                     </div>
-                    {/* Controls: Search & Filter Tabs */}
+
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                        {/* Search */}
                         <div className="relative w-full md:w-72">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <Search className="h-4 w-4 stroke-green-500" />
@@ -243,7 +253,6 @@ export default function TeamPage() {
                             />
                         </div>
 
-                        {/* Filter Tabs */}
                         <div className="flex items-center bg-gray-100 p-1 rounded-lg overflow-x-auto">
                             {(["All", "Manager", "Admin", "User"] as const).map(
                                 (role) => (
@@ -269,7 +278,6 @@ export default function TeamPage() {
                         </div>
                     </div>
 
-                    {/* TABLE VIEW (Hidden on Mobile) */}
                     <div className="hidden lg:block">
                         <div className="overflow-hidden rounded-lg border border-gray-200">
                             <table className="min-w-full bg-white">
@@ -406,7 +414,6 @@ export default function TeamPage() {
                         </div>
                     </div>
 
-                    {/* CARD VIEW (Visible on Mobile) */}
                     <div className="block lg:hidden space-y-4">
                         {paginatedMembers.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-10">
@@ -465,7 +472,6 @@ export default function TeamPage() {
 
                                     <div className="border-t border-gray-200 my-3"></div>
 
-                                    {/* Mobile Stats Row */}
                                     <div className="flex justify-between items-center mb-3">
                                         <div className="flex flex-col">
                                             <span className="text-[10px] text-gray-400 uppercase tracking-wide">
@@ -502,7 +508,6 @@ export default function TeamPage() {
                         )}
                     </div>
 
-                    {/* Pagination Controls */}
                     {!loading && paginatedMembers.length > 0 && (
                         <div className="flex flex-wrap justify-center items-center pt-4 my-4 gap-2 sm:gap-4">
                             <button
@@ -545,7 +550,6 @@ export default function TeamPage() {
                         </div>
                     )}
 
-                    {/* Pagination Info Text */}
                     {!loading && filteredMembers.length > 0 && (
                         <div className="text-center text-xs text-gray-400 mt-4 pb-2">
                             Showing {startIndex + 1} to{" "}
@@ -556,12 +560,16 @@ export default function TeamPage() {
                 </div>
             </div>
 
-            {showInviteModal && (
+            {/* Modal - only show if cap not reached */}
+            {showInviteModal && canInviteMore && (
                 <FloatingPortal>
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                         <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
                             <h3 className="text-lg font-medium text-gray-900 mb-4">
-                                Invite New User
+                                Invite New User <br />
+                                <span className="text-xs text-gray-400">
+                                    ({staffCount} / {teamLimit} slots used)
+                                </span>
                             </h3>
 
                             <form
@@ -578,7 +586,7 @@ export default function TeamPage() {
                                         onChange={(e) =>
                                             setInviteEmail(e.target.value)
                                         }
-                                        className="outline-none appearance-none bg-slate-50 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 text-sm"
+                                        className="outline-none appearance-none bg-slate-50 block w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
                                         placeholder="Enter email address"
                                         required
                                     />
@@ -593,7 +601,7 @@ export default function TeamPage() {
                                         onChange={(e) =>
                                             setInviteRole(e.target.value)
                                         }
-                                        className="outline-none bg-slate-50 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 text-sm"
+                                        className="outline-none bg-slate-50 block w-full px-3 py-2 border border-gray-200 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 text-sm"
                                     >
                                         <option value="user">User</option>
                                         <option value="manager">Manager</option>

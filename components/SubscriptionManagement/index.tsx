@@ -100,7 +100,7 @@ const SubscriptionManagement: React.FC = () => {
                         Manage your billing and view usage limits.
                     </p>
                 </div>
-                <div className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-bold uppercase tracking-wider border border-green-100">
+                <div className="px-3 py-1 bg-green-50 text-green-500 rounded-full text-xs font-bold uppercase tracking-wider border border-green-100">
                     {plan}
                 </div>
             </div>
@@ -108,30 +108,32 @@ const SubscriptionManagement: React.FC = () => {
             <div className="space-y-8">
                 {/* Usage Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {/* Days Left Card */}
+                    {/* Days Left Card - Updated for Starter */}
                     <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
                         <div>
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                                 Days Remaining
                             </p>
                             <p
-                                className={`text-xl font-bold mt-1 ${
-                                    daysLeft <= 5
+                                className={`text-2xl font-bold mt-1 ${
+                                    plan !== "STARTER" && daysLeft <= 5
                                         ? "text-red-600"
                                         : "text-gray-900"
                                 }`}
                             >
-                                {daysLeft}
+                                {plan === "STARTER" ? "FREE" : daysLeft}
                             </p>
                         </div>
                         <div
                             className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                                daysLeft <= 5 ? "bg-red-100" : "bg-green-100"
+                                plan !== "STARTER" && daysLeft <= 5
+                                    ? "bg-red-100"
+                                    : "bg-green-100"
                             }`}
                         >
                             <Calendar
                                 className={`w-5 h-5 ${
-                                    daysLeft <= 5
+                                    plan !== "STARTER" && daysLeft <= 5
                                         ? "stroke-red-500"
                                         : "stroke-green-500"
                                 }`}
@@ -145,7 +147,7 @@ const SubscriptionManagement: React.FC = () => {
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                                 Allowance Left
                             </p>
-                            <p className="text-xl font-bold text-gray-900 mt-1">
+                            <p className="text-2xl font-bold text-gray-900 mt-1">
                                 {txRemaining}
                             </p>
                         </div>
@@ -160,7 +162,7 @@ const SubscriptionManagement: React.FC = () => {
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                                 Team Invites
                             </p>
-                            <p className="text-xl font-bold text-gray-900 mt-1">
+                            <p className="text-2xl font-bold text-gray-900 mt-1">
                                 {invitesRemaining}
                             </p>
                         </div>
@@ -178,8 +180,8 @@ const SubscriptionManagement: React.FC = () => {
                             <p
                                 className={`text-xl font-bold mt-1 ${
                                     subscription?.status === "ACTIVE"
-                                        ? "text-green-600"
-                                        : "text-orange-600"
+                                        ? "text-green-500"
+                                        : "text-orange-500"
                                 }`}
                             >
                                 {subscription?.status || "ACTIVE"}
@@ -284,11 +286,13 @@ const SubscriptionManagement: React.FC = () => {
                                     <X size={24} className="text-gray-400" />
                                 </button>
                             </div>
+
                             <p className="text-gray-500 text-sm mb-8 leading-relaxed">
                                 You are about to renew your{" "}
                                 <strong>{plan}</strong> subscription. Please
                                 confirm your phone number below.
                             </p>
+
                             <form
                                 onSubmit={handleRenewSub}
                                 className="space-y-6"
@@ -316,6 +320,7 @@ const SubscriptionManagement: React.FC = () => {
                                         />
                                     </div>
                                 </div>
+
                                 <button
                                     type="submit"
                                     disabled={loading}
