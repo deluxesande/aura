@@ -13,9 +13,14 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
     }
 
     try {
+        // Fetch business with subscription and staff count
         const business = await prisma.business.findUnique({
-            where: {
-                id: id,
+            where: { id: id },
+            include: {
+                subscription: true,
+                _count: {
+                    select: { users: true },
+                },
             },
         });
 
@@ -23,8 +28,36 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
             return res.status(404).json({ error: "Business not found" });
         }
 
-        res.status(200).json(business);
+        // Count transactions for the current billing period
+        let currentPeriodTransactions = 0;
+        if (business.subscription) {
+            currentPeriodTransactions = await prisma.invoice.count({
+                where: {
+                    businessId: id,
+                    createdAt: {
+                        gte: business.subscription.currentPeriodStart,
+                        lte: business.subscription.currentPeriodEnd,
+                    },
+                },
+            });
+        }
+
+        const businessWithUsage = {
+            ...business,
+            usage: {
+                transactionCount: currentPeriodTransactions,
+                staffCount: business._count.users,
+                isLimitReached:
+                    business.subscription?.plan === "STARTER" &&
+                    currentPeriodTransactions >= 100,
+                canExportData: business.subscription?.plan === "PREMIUM",
+                hasCustomBranding: business.subscription?.plan === "PREMIUM",
+            },
+        };
+
+        res.status(200).json(businessWithUsage);
     } catch (error) {
+        console.error("Error fetching business details:", error);
         res.status(500).json({ error: "Failed to fetch Business" });
     }
 }
@@ -38,7 +71,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         case "DELETE":
             return deleteBusiness(req, res);
         default:
-            res.setHeader("Allow", ["GET"]);
+            res.setHeader("Allow", ["GET", "PUT", "DELETE"]);
             res.status(405).end(`Method ${req.method} Not Allowed`);
     }
 }

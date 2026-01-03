@@ -12,7 +12,7 @@ import {
     X,
     Loader2,
     Phone,
-    Receipt,
+    UserPlus,
 } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -45,11 +45,22 @@ const SubscriptionManagement: React.FC = () => {
     };
 
     const daysLeft = calculateDaysLeft();
+
+    // Logic to show buttons (daysLeft <= 5)
+    const showUpgradeActions = daysLeft <= 5 || usage.isLimitReached;
+
     const txLimit = plan === "STARTER" ? 100 : Infinity;
     const txRemaining =
         plan === "STARTER"
             ? Math.max(0, 100 - usage.transactionCount)
             : "Unlimited";
+
+    const teamLimit =
+        plan === "STARTER" ? 1 : plan === "STANDARD" ? 5 : Infinity;
+    const invitesRemaining =
+        teamLimit === Infinity
+            ? "Unlimited"
+            : Math.max(0, teamLimit - usage.staffCount);
 
     const handleRenewSub = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -83,7 +94,6 @@ const SubscriptionManagement: React.FC = () => {
             <div className="flex items-center justify-between mb-8">
                 <div>
                     <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                        <CreditCard className="text-green-600" size={20} />
                         Subscription Plan
                     </h3>
                     <p className="mt-1 text-sm text-gray-600">
@@ -97,19 +107,35 @@ const SubscriptionManagement: React.FC = () => {
 
             <div className="space-y-8">
                 {/* Usage Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {/* Days Left Card */}
                     <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
                         <div>
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                                 Days Remaining
                             </p>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">
+                            <p
+                                className={`text-xl font-bold mt-1 ${
+                                    daysLeft <= 5
+                                        ? "text-red-600"
+                                        : "text-gray-900"
+                                }`}
+                            >
                                 {daysLeft}
                             </p>
                         </div>
-                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                            <Calendar className="w-5 h-5 stroke-blue-500" />
+                        <div
+                            className={`h-10 w-10 rounded-full flex items-center justify-center ${
+                                daysLeft <= 5 ? "bg-red-100" : "bg-green-100"
+                            }`}
+                        >
+                            <Calendar
+                                className={`w-5 h-5 ${
+                                    daysLeft <= 5
+                                        ? "stroke-red-500"
+                                        : "stroke-green-500"
+                                }`}
+                            />
                         </div>
                     </div>
 
@@ -119,12 +145,27 @@ const SubscriptionManagement: React.FC = () => {
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                                 Allowance Left
                             </p>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">
+                            <p className="text-xl font-bold text-gray-900 mt-1">
                                 {txRemaining}
                             </p>
                         </div>
-                        <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center">
-                            <Zap className="w-5 h-5 stroke-orange-500" />
+                        <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                            <Zap className="w-5 h-5 stroke-green-500" />
+                        </div>
+                    </div>
+
+                    {/* Team Invites Card */}
+                    <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                Team Invites
+                            </p>
+                            <p className="text-xl font-bold text-gray-900 mt-1">
+                                {invitesRemaining}
+                            </p>
+                        </div>
+                        <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                            <UserPlus className="w-5 h-5 stroke-green-500" />
                         </div>
                     </div>
 
@@ -135,7 +176,7 @@ const SubscriptionManagement: React.FC = () => {
                                 Billing Status
                             </p>
                             <p
-                                className={`text-2xl font-bold mt-1 ${
+                                className={`text-xl font-bold mt-1 ${
                                     subscription?.status === "ACTIVE"
                                         ? "text-green-600"
                                         : "text-orange-600"
@@ -192,37 +233,45 @@ const SubscriptionManagement: React.FC = () => {
                     </div>
                 )}
 
-                {/* Action Buttons */}
-                <div className="pt-6 border-t border-gray-100 flex flex-wrap gap-4">
-                    {plan !== "STARTER" && (
-                        <button
-                            onClick={() => setIsRenewModalOpen(true)}
-                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-50 transition-all shadow-sm"
-                        >
-                            <RefreshCcw size={18} />
-                            Renew Current Plan
-                        </button>
-                    )}
-
-                    <Link
-                        href="/payment"
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white text-sm font-bold rounded-xl hover:bg-green-700 transition-all shadow-md shadow-green-100"
+                {/* Action Buttons - Only visible if <= 5 days or limit reached */}
+                {showUpgradeActions && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="pt-6 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4"
                     >
-                        <ArrowUpCircle size={18} />
-                        Change / Upgrade Plan
-                    </Link>
-                </div>
+                        {plan !== "STARTER" ? (
+                            <button
+                                onClick={() => setIsRenewModalOpen(true)}
+                                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-50 transition-all shadow-sm w-full"
+                            >
+                                <RefreshCcw size={18} />
+                                Renew Current Plan
+                            </button>
+                        ) : (
+                            <div className="hidden sm:block" />
+                        )}
+
+                        <Link
+                            href="/payment"
+                            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-green-500 text-white text-sm font-bold rounded-xl hover:bg-green-700 transition-all shadow-md shadow-green-100 w-full text-center"
+                        >
+                            <ArrowUpCircle size={18} className="stroke-white" />
+                            Upgrade Plan
+                        </Link>
+                    </motion.div>
+                )}
             </div>
 
             {/* Renewal Modal */}
             <AnimatePresence>
                 {isRenewModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl"
+                            className="bg-white rounded-lg p-8 w-full max-w-md shadow-2xl"
                         >
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-2xl font-black text-gray-900 tracking-tight">
@@ -235,13 +284,11 @@ const SubscriptionManagement: React.FC = () => {
                                     <X size={24} className="text-gray-400" />
                                 </button>
                             </div>
-
                             <p className="text-gray-500 text-sm mb-8 leading-relaxed">
                                 You are about to renew your{" "}
                                 <strong>{plan}</strong> subscription. Please
                                 confirm your phone number below.
                             </p>
-
                             <form
                                 onSubmit={handleRenewSub}
                                 className="space-y-6"
@@ -250,28 +297,29 @@ const SubscriptionManagement: React.FC = () => {
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
                                         M-Pesa Number
                                     </label>
-                                    <div className="relative mt-2">
-                                        <Phone
-                                            className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"
-                                            size={20}
-                                        />
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <Phone
+                                                size={18}
+                                                className="h-5 w-5 stroke-green-500"
+                                            />
+                                        </div>
                                         <input
-                                            type="text"
+                                            type="tel"
                                             required
-                                            placeholder="0712..."
-                                            className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all font-medium"
+                                            placeholder="07XXXXXXXX"
                                             value={phoneNumber}
                                             onChange={(e) =>
                                                 setPhoneNumber(e.target.value)
                                             }
+                                            className="block w-full pl-10 pr-3 py-3 bg-slate-50 outline-none border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 transition-colors"
                                         />
                                     </div>
                                 </div>
-
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full py-4 bg-green-600 text-white font-black rounded-2xl hover:bg-green-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50 shadow-lg shadow-green-200"
+                                    className="w-full py-3 px-4 bg-green-600 text-white font-black rounded-2xl hover:bg-green-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50 shadow-lg shadow-green-200"
                                 >
                                     {loading ? (
                                         <Loader2 className="animate-spin" />
