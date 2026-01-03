@@ -371,7 +371,7 @@ export default function ProductList({
                             onClick={handlePreviousPage}
                             disabled={currentPage === 1}
                         >
-                            <ChevronLeft className="w-4 h-4" />
+                            <ChevronLeft className="w-4 h-4 stroke-white" />
                             <span className="hidden sm:inline text-sm text-white">
                                 Back
                             </span>
@@ -401,7 +401,7 @@ export default function ProductList({
                             <span className="hidden sm:inline text-sm text-white">
                                 Next
                             </span>
-                            <ChevronRight className="w-4 h-4" />
+                            <ChevronRight className="w-4 h-4 stroke-white" />
                         </button>
                     </div>
                 )}

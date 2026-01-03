@@ -12,6 +12,19 @@ export const config = {
     },
 };
 
+const normalize = (val: any) => {
+    if (val === null || val === undefined) return "";
+    return String(val).trim().toLowerCase();
+};
+
+const cleanString = (val: any) => (val ? String(val).trim() : "");
+
+const parseAmount = (val: any) => {
+    if (!val) return 0;
+    const str = String(val).replace(/,/g, "").trim();
+    return parseFloat(str) || 0;
+};
+
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse
@@ -21,20 +34,22 @@ export default async function handler(
     }
 
     try {
-        const { userId } = getAuth(req);
-        if (!userId) return res.status(401).json({ error: "Unauthorized" });
+        const { userId: clerkUserId } = getAuth(req);
+        if (!clerkUserId)
+            return res.status(401).json({ error: "Unauthorized" });
 
-        // 1. Get Context
         const currentUser = await prisma.user.findUnique({
-            where: { clerkId: userId },
-            select: { businessId: true },
+            where: { clerkId: clerkUserId },
+            select: { id: true, businessId: true },
         });
 
         if (!currentUser || !currentUser.businessId) {
-            return res.status(404).json({ error: "Business not found" });
+            return res.status(404).json({ error: "Business/User not found" });
         }
 
-        // 2. Parse File
+        const internalUserId = currentUser.id;
+        const businessId = currentUser.businessId;
+
         const form = formidable({});
         const [fields, files] = await form.parse(req);
         const uploadedFile = files.file?.[0];
@@ -43,7 +58,6 @@ export default async function handler(
             return res.status(400).json({ error: "No file uploaded" });
         }
 
-        // 3. Read Excel Data
         const fileBuffer = fs.readFileSync(uploadedFile.filepath);
         const workbook = XLSX.read(fileBuffer, { type: "buffer" });
 
@@ -57,57 +71,70 @@ export default async function handler(
         const productsData = getSheetData("Products");
         const invoicesData = getSheetData("Invoices");
         const invoiceItemsData = getSheetData("Invoice Items");
+        const mpesaPaymentsData = getSheetData("Mpesa Payments");
+        const successCallbacksData = getSheetData("Success Callbacks");
+        const failedCallbacksData = getSheetData("Failed Callbacks");
 
-        // 4. DATABASE TRANSACTION (Pure Bulk Operations)
         await prisma.$transaction(
             async (tx) => {
-                // --- A. BULK CATEGORIES ---
-                const uniqueCatNames = Array.from(
-                    new Set(
-                        categoriesData
-                            .map((c: any) =>
-                                c["Category Name"]?.toString().trim()
-                            )
-                            .filter(Boolean)
-                    )
-                );
+                const categoryNames = new Set<string>();
+                categoryNames.add("Uncategorized");
 
-                if (uniqueCatNames.length > 0) {
+                categoriesData.forEach((c: any) => {
+                    const n = c["Category Name"] || c["Name"];
+                    if (n) categoryNames.add(cleanString(n));
+                });
+
+                productsData.forEach((p: any) => {
+                    const n = p["Category"] || p["Category Name"];
+                    if (n) categoryNames.add(cleanString(n));
+                });
+
+                if (categoryNames.size > 0) {
                     await tx.category.createMany({
-                        data: uniqueCatNames.map((name) => ({
+                        data: Array.from(categoryNames).map((name) => ({
                             name,
                             description: "Imported",
-                            createdBy: userId,
+                            createdBy: clerkUserId,
                         })),
                         skipDuplicates: true,
                     });
                 }
 
-                // Fetch IDs for linking
                 const allCategories = await tx.category.findMany({
-                    where: {
-                        name: { in: uniqueCatNames as string[] },
-                        createdBy: userId,
-                    },
+                    where: { createdBy: clerkUserId },
                     select: { id: true, name: true },
                 });
                 const categoryMap = new Map<string, string>();
-                allCategories.forEach((c) => categoryMap.set(c.name, c.id));
+                allCategories.forEach((c) =>
+                    categoryMap.set(normalize(c.name), c.id)
+                );
+                const defaultCatId = categoryMap.get("uncategorized")!;
 
-                // --- B. BULK CUSTOMERS ---
+                const customersToInsert = customersData.map((c: any) => {
+                    let firstName = cleanString(c["First Name"]);
+                    let lastName = cleanString(c["Last Name"]);
 
-                const customersToInsert = customersData
-                    .filter((c: any) => c["Email"] || c["Phone Number"])
-                    .map((c: any) => ({
-                        // Use || "" to ensure these are never undefined, which Prisma hates
-                        firstName: c["First Name"]?.toString().trim() || "",
-                        lastName: c["Last Name"]?.toString().trim() || "",
-                        email: c["Email"]?.toString().trim() || null,
-                        phoneNumber: c["Phone Number"]?.toString().trim() || "",
-                        // Ensure these are passed as strings (assuming checks passed earlier)
-                        businessId: currentUser.businessId!,
-                        createdById: userId!,
-                    }));
+                    if (!firstName && c["Name"]) {
+                        const parts = cleanString(c["Name"]).split(" ");
+                        firstName = parts[0];
+                        lastName = parts.slice(1).join(" ");
+                    }
+
+                    let phone = cleanString(c["Phone Number"] || c["Phone"]);
+                    if (!phone) {
+                        phone = `no-phone-${randomUUID()}`;
+                    }
+
+                    return {
+                        firstName,
+                        lastName,
+                        email: cleanString(c["Email"]) || null,
+                        phoneNumber: phone,
+                        businessId,
+                        createdById: internalUserId,
+                    };
+                });
 
                 if (customersToInsert.length > 0) {
                     await tx.customer.createMany({
@@ -116,7 +143,6 @@ export default async function handler(
                     });
                 }
 
-                // Fetch IDs for linking
                 const contactKeys = customersToInsert
                     .map((c) => c.email)
                     .filter(Boolean) as string[];
@@ -126,44 +152,45 @@ export default async function handler(
 
                 const allCustomers = await tx.customer.findMany({
                     where: {
+                        businessId,
                         OR: [
                             { email: { in: contactKeys } },
                             { phoneNumber: { in: phoneKeys } },
                         ],
-                        createdById: userId,
                     },
                     select: { id: true, email: true, phoneNumber: true },
                 });
                 const customerMap = new Map<string, string>();
                 allCustomers.forEach((c) => {
-                    if (c.email) customerMap.set(c.email, c.id);
-                    if (c.phoneNumber) customerMap.set(c.phoneNumber, c.id);
+                    if (c.email) customerMap.set(normalize(c.email), c.id);
+                    if (c.phoneNumber)
+                        customerMap.set(normalize(c.phoneNumber), c.id);
                 });
 
-                // --- C. BULK PRODUCTS ---
                 const productsToInsert = productsData
                     .filter((p: any) => p["SKU"])
                     .map((p: any) => {
+                        const catName = p["Category"] || p["Category Name"];
                         const catId =
-                            categoryMap.get(p["Category"]?.toString().trim()) ||
-                            categoryMap.get("Uncategorized");
-                        if (!catId) return null;
+                            categoryMap.get(normalize(catName)) || defaultCatId;
 
                         return {
-                            name: p["Product Name"],
-                            description: p["Description"] || "",
-                            price: parseFloat(p["Price"]) || 0,
-                            sku: p["SKU"].toString().trim(),
-                            quantity: parseInt(p["Quantity"]) || 0,
-                            inStock: p["In Stock"] === "Yes",
+                            name: cleanString(
+                                p["Product Name"] || p["Name"] || "Unknown"
+                            ),
+                            description: cleanString(
+                                p["Description"] || p["Desc"]
+                            ),
+                            price: parseAmount(p["Price"]),
+                            sku: cleanString(p["SKU"]),
+                            quantity: parseInt(p["Quantity"] || p["Qty"]) || 0,
+                            inStock:
+                                p["In Stock"] === "Yes" ||
+                                p["In Stock"] === true,
                             categoryId: catId,
-                            createdBy: userId,
+                            createdBy: clerkUserId,
                         };
-                    })
-                    .filter(
-                        (item): item is NonNullable<typeof item> =>
-                            item !== null
-                    );
+                    });
 
                 if (productsToInsert.length > 0) {
                     await tx.product.createMany({
@@ -172,50 +199,52 @@ export default async function handler(
                     });
                 }
 
-                // Fetch IDs for linking
-                const skuKeys = productsToInsert.map((p) => p.sku);
+                const skuList = productsToInsert.map((p) => p.sku);
                 const allProducts = await tx.product.findMany({
-                    where: { sku: { in: skuKeys } },
+                    where: { sku: { in: skuList } },
                     select: { id: true, sku: true },
                 });
                 const productMap = new Map<string, string>();
-                allProducts.forEach((p) => productMap.set(p.sku, p.id));
+                allProducts.forEach((p) =>
+                    productMap.set(normalize(p.sku), p.id)
+                );
 
-                // --- D. BULK INVOICES (OPTIMIZED: PRE-GENERATE UUIDs) ---
-                // Instead of loop + create, we generate IDs here and bulk insert.
                 const invoiceIdMap = new Map<string, string>();
+                const invoiceNameMap = new Map<string, string>();
                 const invoicesToCreate: any[] = [];
 
-                for (const row of invoicesData) {
-                    const oldExcelId = row["Invoice ID"];
-                    if (!oldExcelId) continue;
+                invoicesData.forEach((row: any) => {
+                    const newId = randomUUID();
+                    const oldId = cleanString(row["Invoice ID"]);
+                    const name = cleanString(row["Invoice Name"]);
 
-                    // 1. Generate ID in memory
-                    const newInvoiceId = randomUUID();
-                    invoiceIdMap.set(oldExcelId, newInvoiceId);
+                    if (oldId) invoiceIdMap.set(normalize(oldId), newId);
+                    if (name) invoiceNameMap.set(normalize(name), newId);
 
-                    const customerEmail = row["Customer Email"]
-                        ?.toString()
-                        .trim();
-                    const customerId = customerMap.get(customerEmail);
+                    const email = cleanString(
+                        row["Customer Email"] || row["Email"]
+                    );
+                    const customerId = customerMap.get(normalize(email));
 
-                    // 2. Prepare object with explicit ID
                     invoicesToCreate.push({
-                        id: newInvoiceId, // Explicitly set ID
-                        invoiceName: row["Invoice Name"] || "Imported Invoice",
-                        totalAmount: parseFloat(row["Total Amount"]) || 0,
+                        id: newId,
+                        invoiceName: name || "Imported Invoice",
+                        totalAmount: parseAmount(
+                            row["Total Amount"] || row["Amount"]
+                        ),
                         status: row["Status"] || "PENDING",
-                        paymentType: row["Payment Type"] || "CASH",
+                        paymentType:
+                            row["Payment Type"] || row["Type"] || "CASH",
+                        stockRestored: row["Stock Restored"] === "Yes",
                         customerId: customerId || null,
-                        createdBy: userId,
+                        createdBy: clerkUserId,
                         createdAt: row["Date Issued"]
                             ? new Date(row["Date Issued"])
                             : new Date(),
                         updatedAt: new Date(),
                     });
-                }
+                });
 
-                // 3. Single DB Call for ALL Invoices
                 if (invoicesToCreate.length > 0) {
                     await tx.invoice.createMany({
                         data: invoicesToCreate,
@@ -223,31 +252,148 @@ export default async function handler(
                     });
                 }
 
-                // --- E. BULK INVOICE ITEMS ---
-                // Now we can link items because we already decided the Invoice IDs above.
-                const itemsToCreate: any[] = [];
+                const itemsToCreate = invoiceItemsData
+                    .map((row: any) => {
+                        const invKeyId = cleanString(row["Invoice ID"]);
+                        const invKeyName = cleanString(
+                            row["Invoice Name"] || row["Invoice"]
+                        );
 
-                for (const row of invoiceItemsData) {
-                    const newInvoiceId = invoiceIdMap.get(row["Invoice ID"]);
-                    const productId = productMap.get(
-                        row["Product SKU"]?.toString().trim()
-                    );
+                        const invoiceId =
+                            invoiceIdMap.get(normalize(invKeyId)) ||
+                            invoiceNameMap.get(normalize(invKeyName));
 
-                    if (newInvoiceId && productId) {
-                        itemsToCreate.push({
-                            invoiceId: newInvoiceId,
-                            productId: productId,
-                            quantity: parseInt(row["Quantity"]) || 1,
-                            price: parseFloat(row["Unit Price"]) || 0,
-                            createdBy: userId,
-                        });
-                    }
+                        const skuKey = cleanString(
+                            row["Product SKU"] || row["SKU"]
+                        );
+                        const productId = productMap.get(normalize(skuKey));
+
+                        if (!invoiceId || !productId) return null;
+
+                        return {
+                            invoiceId,
+                            productId,
+                            quantity:
+                                parseInt(row["Quantity"] || row["Qty"]) || 1,
+                            price: parseAmount(
+                                row["Unit Price"] || row["Price"]
+                            ),
+                            createdBy: clerkUserId,
+                        };
+                    })
+                    .filter((i): i is NonNullable<typeof i> => i !== null);
+
+                if (itemsToCreate.length > 0) {
+                    await tx.invoiceItem.createMany({ data: itemsToCreate });
                 }
 
-                // 4. Single DB Call for ALL Items
-                if (itemsToCreate.length > 0) {
-                    await tx.invoiceItem.createMany({
-                        data: itemsToCreate,
+                const paymentsToCreate = mpesaPaymentsData
+                    .map((row: any) => {
+                        const invKey = cleanString(
+                            row["Invoice Name"] || row["Invoice"]
+                        );
+                        const invoiceId = invoiceNameMap.get(normalize(invKey));
+
+                        if (!invoiceId) return null;
+
+                        return {
+                            amount: parseAmount(row["Amount"]),
+                            phoneNumber: cleanString(
+                                row["Phone Number"] || row["Phone"]
+                            ),
+                            accountReference: row["Reference"] || "Salesense",
+                            transactionDesc: cleanString(
+                                row["Transaction Desc"] || row["Code"]
+                            ),
+                            merchantRequestId:
+                                row["Merchant Request ID"] || randomUUID(),
+                            checkoutRequestId:
+                                row["Checkout Request ID"] || randomUUID(),
+                            status: row["Status"] || "PENDING",
+                            invoiceId,
+                            businessId,
+                            userId: internalUserId,
+                            createdAt: row["Date Initiated"]
+                                ? new Date(row["Date Initiated"])
+                                : new Date(),
+                        };
+                    })
+                    .filter((p): p is NonNullable<typeof p> => p !== null);
+
+                if (paymentsToCreate.length > 0) {
+                    await tx.mpesaPayment.createMany({
+                        data: paymentsToCreate,
+                        skipDuplicates: true,
+                    });
+                }
+
+                const successCallbacksToCreate = successCallbacksData
+                    .map((row: any) => {
+                        const invKey = cleanString(
+                            row["Invoice Name"] || row["Invoice"]
+                        );
+                        const invoiceId = invoiceNameMap.get(normalize(invKey));
+                        if (!invoiceId) return null;
+
+                        return {
+                            merchantRequestId: row["Merchant Request ID"] || "",
+                            checkoutRequestId: row["Checkout Request ID"] || "",
+                            resultCode: parseInt(row["Result Code"]) || 0,
+                            resultDesc: row["Result Desc"] || "",
+                            amount: parseAmount(row["Amount"]),
+                            mpesaReceiptNumber: cleanString(
+                                row["Receipt Number"] || row["Receipt"]
+                            ),
+                            transactionDate: BigInt(
+                                row["Transaction Date"]?.toString() || "0"
+                            ),
+                            phoneNumber: BigInt(
+                                row["Phone Number"]?.toString() ||
+                                    row["Phone"]?.toString() ||
+                                    "0"
+                            ),
+                            invoiceId,
+                            createdAt: row["Callback Received At"]
+                                ? new Date(row["Callback Received At"])
+                                : new Date(),
+                        };
+                    })
+                    .filter((c): c is NonNullable<typeof c> => c !== null);
+
+                if (successCallbacksToCreate.length > 0) {
+                    await tx.successfulCallback.createMany({
+                        data: successCallbacksToCreate,
+                    });
+                }
+
+                const failedCallbacksToCreate = failedCallbacksData
+                    .map((row: any) => {
+                        const invKey = cleanString(
+                            row["Invoice Name"] || row["Invoice"]
+                        );
+                        const invoiceId = invoiceNameMap.get(normalize(invKey));
+                        if (!invoiceId) return null;
+
+                        return {
+                            merchantRequestId: row["Merchant Request ID"] || "",
+                            checkoutRequestId: row["Checkout Request ID"] || "",
+                            resultCode:
+                                parseInt(row["Result Code"] || row["Code"]) ||
+                                1,
+                            resultDesc: cleanString(
+                                row["Result Desc"] || row["Reason"] || "Failed"
+                            ),
+                            invoiceId,
+                            createdAt: row["Callback Received At"]
+                                ? new Date(row["Callback Received At"])
+                                : new Date(),
+                        };
+                    })
+                    .filter((c): c is NonNullable<typeof c> => c !== null);
+
+                if (failedCallbacksToCreate.length > 0) {
+                    await tx.failedCallback.createMany({
+                        data: failedCallbacksToCreate,
                     });
                 }
             },

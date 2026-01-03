@@ -287,10 +287,10 @@ const UserManagement: React.FC = () => {
                     </p>
                 </div>
 
-                <div className="flex items-center gap-3 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                     <Link
                         href="/settings/team"
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center justify-center whitespace-nowrap flex-1 sm:flex-none"
+                        className="flex items-center justify-center w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 whitespace-nowrap"
                     >
                         <Users className="w-4 h-4 mr-2" />
                         View Active Members
@@ -298,7 +298,7 @@ const UserManagement: React.FC = () => {
 
                     <button
                         onClick={() => setShowInviteModal(true)}
-                        className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 flex-1 sm:flex-none"
+                        className="flex items-center justify-center w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 whitespace-nowrap"
                     >
                         + Invite
                     </button>
