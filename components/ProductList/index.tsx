@@ -12,6 +12,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import NoProductsFound from "../NoProducts";
 
 export default function ProductList({
     products,
@@ -227,7 +228,7 @@ export default function ProductList({
                                                 </div>
                                             </div>
                                         ) : (
-                                            "No Products"
+                                            <NoProductsFound />
                                         )}
                                     </td>
                                 </tr>

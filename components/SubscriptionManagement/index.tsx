@@ -46,8 +46,9 @@ const SubscriptionManagement: React.FC = () => {
 
     const daysLeft = calculateDaysLeft();
 
-    // Logic to show buttons (daysLeft <= 5)
-    const showUpgradeActions = daysLeft <= 5 || usage.isLimitReached;
+    // UPDATED LOGIC: Always show actions for STARTER, or if PAID plan is expiring/limit hit
+    const showUpgradeActions =
+        plan === "STARTER" || daysLeft <= 5 || usage.isLimitReached;
 
     const txLimit = plan === "STARTER" ? 100 : Infinity;
     const txRemaining =
@@ -100,7 +101,7 @@ const SubscriptionManagement: React.FC = () => {
                         Manage your billing and view usage limits.
                     </p>
                 </div>
-                <div className="px-3 py-1 bg-green-50 text-green-500 rounded-full text-xs font-bold uppercase tracking-wider border border-green-100">
+                <div className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-bold uppercase tracking-wider border border-green-100">
                     {plan}
                 </div>
             </div>
@@ -108,7 +109,7 @@ const SubscriptionManagement: React.FC = () => {
             <div className="space-y-8">
                 {/* Usage Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {/* Days Left Card - Updated for Starter */}
+                    {/* Days Left Card */}
                     <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
                         <div>
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
@@ -180,8 +181,8 @@ const SubscriptionManagement: React.FC = () => {
                             <p
                                 className={`text-xl font-bold mt-1 ${
                                     subscription?.status === "ACTIVE"
-                                        ? "text-green-500"
-                                        : "text-orange-500"
+                                        ? "text-green-600"
+                                        : "text-orange-600"
                                 }`}
                             >
                                 {subscription?.status || "ACTIVE"}
@@ -235,13 +236,14 @@ const SubscriptionManagement: React.FC = () => {
                     </div>
                 )}
 
-                {/* Action Buttons - Only visible if <= 5 days or limit reached */}
+                {/* Action Buttons */}
                 {showUpgradeActions && (
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="pt-6 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4"
                     >
+                        {/* HIDE RENEW MODAL FOR STARTER: Only show for Standard/Premium */}
                         {plan !== "STARTER" ? (
                             <button
                                 onClick={() => setIsRenewModalOpen(true)}
@@ -254,6 +256,7 @@ const SubscriptionManagement: React.FC = () => {
                             <div className="hidden sm:block" />
                         )}
 
+                        {/* ALWAYS SHOW UPGRADE LINK */}
                         <Link
                             href="/payment"
                             className="flex items-center justify-center gap-2 px-5 py-2.5 bg-green-500 text-white text-sm font-bold rounded-xl hover:bg-green-700 transition-all shadow-md shadow-green-100 w-full text-center"
