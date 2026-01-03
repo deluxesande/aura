@@ -13,6 +13,77 @@ export const getInvoices = async (
             return res.status(401).json({ error: "Unauthorized" });
         }
 
+        // SELF-HEALING LOGIC: Handle Inventory Sync (Restock & Re-deduct)
+
+        // Find FAILED/CANCELLED invoices where stock hasn't been returned yet
+        const failedInvoices = await prisma.invoice.findMany({
+            where: {
+                status: { in: ["FAILED", "CANCELLED"] },
+                stockRestored: false,
+            },
+            include: { invoiceItems: true },
+        });
+
+        if (failedInvoices.length > 0) {
+            await prisma.$transaction(async (tx) => {
+                for (const invoice of failedInvoices) {
+                    for (const item of invoice.invoiceItems) {
+                        await tx.product.update({
+                            where: { id: item.productId },
+                            data: {
+                                quantity: { increment: item.quantity },
+                                inStock: true,
+                            },
+                        });
+                    }
+                    await tx.invoice.update({
+                        where: { id: invoice.id },
+                        data: { stockRestored: true },
+                    });
+                }
+            });
+        }
+
+        // Find PAID invoices that were previously restocked (e.g. late payment)
+        const recoveredInvoices = await prisma.invoice.findMany({
+            where: {
+                status: { in: ["PAID", "COMPLETED"] },
+                stockRestored: true, // This means we previously put items back! We must take them again.
+            },
+            include: { invoiceItems: true },
+        });
+
+        if (recoveredInvoices.length > 0) {
+            await prisma.$transaction(async (tx) => {
+                for (const invoice of recoveredInvoices) {
+                    for (const item of invoice.invoiceItems) {
+                        const product = await tx.product.findUnique({
+                            where: { id: item.productId },
+                        });
+
+                        if (product) {
+                            const newQuantity =
+                                product.quantity - item.quantity;
+                            const isStillInStock = newQuantity > 0;
+
+                            await tx.product.update({
+                                where: { id: item.productId },
+                                data: {
+                                    quantity: { decrement: item.quantity },
+                                    inStock: isStillInStock,
+                                },
+                            });
+                        }
+                    }
+                    // Mark stockRestored as false because the items are "sold" again
+                    await tx.invoice.update({
+                        where: { id: invoice.id },
+                        data: { stockRestored: false },
+                    });
+                }
+            });
+        }
+
         // Get current user with their business
         const currentUser = await prisma.user.findUnique({
             where: { clerkId: userId },

@@ -202,12 +202,19 @@ export default function InvoicesTable({
                 <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3 w-full xl:w-auto">
                     {/* Status Tabs */}
                     <div className="flex items-center bg-gray-100 p-1 rounded-lg overflow-x-auto max-w-full">
-                        {(["all", "pending", "paid", "cancelled"] as const).map(
-                            (status) => (
-                                <button
-                                    key={status}
-                                    onClick={() => setFilterStatus(status)}
-                                    className={`
+                        {(
+                            [
+                                "all",
+                                "pending",
+                                "paid",
+                                "cancelled",
+                                "failed",
+                            ] as const
+                        ).map((status) => (
+                            <button
+                                key={status}
+                                onClick={() => setFilterStatus(status)}
+                                className={`
                   px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 whitespace-nowrap uppercase
                   ${
                       filterStatus === status
@@ -215,11 +222,10 @@ export default function InvoicesTable({
                           : "text-gray-400 hover:text-gray-700 hover:bg-gray-200/50"
                   }
                 `}
-                                >
-                                    {status}
-                                </button>
-                            )
-                        )}
+                            >
+                                {status}
+                            </button>
+                        ))}
                     </div>
 
                     <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>

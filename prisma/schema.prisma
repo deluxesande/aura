@@ -66,6 +66,7 @@ model Invoice {
   totalAmount   Float
   paymentType   String   @default("CASH")
   status        String   @default("PENDING") 
+  stockRestored   Boolean  @default(false)
   createdBy     String?
   invoiceName   String   @default("") 
   mpesaPayments       MpesaPayment[]

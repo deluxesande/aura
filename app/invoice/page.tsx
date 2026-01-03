@@ -178,21 +178,24 @@ function InvoicePageContent() {
 
                     <div className="flex gap-2 flex-wrap w-full sm:w-auto shrink-0">
                         {/* 1. RETRY BUTTON */}
-                        {(status === "failed" || status === "cancelled") && (
-                            <button
-                                onClick={handleRetryPayment}
-                                disabled={isRetrying || isUpdating}
-                                className="w-full sm:w-auto justify-center flex btn-sm items-center gap-2 px-4 py-2 bg-orange-500 border border-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 disabled:opacity-50 transition-colors"
-                            >
-                                <RefreshCcw
-                                    size={16}
-                                    className={`stroke-white ${
-                                        isRetrying ? "animate-spin" : ""
-                                    }`}
-                                />
-                                {isRetrying ? "Sending..." : "Retry Payment"}
-                            </button>
-                        )}
+                        {(status === "failed" || status === "cancelled") &&
+                            invoice.paymentType === "MPESA" && (
+                                <button
+                                    onClick={handleRetryPayment}
+                                    disabled={isRetrying || isUpdating}
+                                    className="w-full sm:w-auto justify-center flex btn-sm items-center gap-2 px-4 py-2 bg-orange-500 border border-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 disabled:opacity-50 transition-colors"
+                                >
+                                    <RefreshCcw
+                                        size={16}
+                                        className={`stroke-white ${
+                                            isRetrying ? "animate-spin" : ""
+                                        }`}
+                                    />
+                                    {isRetrying
+                                        ? "Sending..."
+                                        : "Retry Payment"}
+                                </button>
+                            )}
 
                         {/* 2. MARK PAID */}
                         {status !== "paid" &&
