@@ -112,15 +112,10 @@ export default function PaymentPage() {
                 formData.append("name", businessName);
 
                 try {
-                    const response = await axios.post(
-                        "/api/business",
-                        formData,
-                        {
-                            headers: { "Content-Type": "multipart/form-data" },
-                        }
-                    );
-
-                    if (response.status === 200) router.push("/settings");
+                    await axios.post("/api/business", formData, {
+                        headers: { "Content-Type": "multipart/form-data" },
+                    });
+                    router.push("/settings");
                     return "Welcome to Salesense Starter!";
                 } catch (error: any) {
                     throw new Error(
