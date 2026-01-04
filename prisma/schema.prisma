@@ -182,7 +182,7 @@ model Business {
   mpesaPayments MpesaPayment[]
   customers     Customer[]
   invoices      Invoice[]
-  subscription  Subscription?
+  subscriptions  Subscription[]
 }
 
 model Response {
@@ -249,7 +249,7 @@ model UserInvitation {
 model Subscription {
   id                 String   @id @default(uuid()) @map("_id") @db.Uuid
   
-  businessId         String   @unique @db.Uuid
+  businessId         String   @db.Uuid
   Business           Business @relation(fields: [businessId], references: [id])
   
   plan               PlanTier @default(STARTER)

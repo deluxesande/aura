@@ -13,11 +13,15 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
     }
 
     try {
-        // Fetch business with subscription and staff count
+        // Fetch business with the LATEST ACTIVE subscription
         const business = await prisma.business.findUnique({
             where: { id: id },
             include: {
-                subscription: true,
+                subscriptions: {
+                    where: { status: "ACTIVE" },
+                    orderBy: { createdAt: "desc" },
+                    take: 1,
+                },
                 _count: {
                     select: { users: true },
                 },
@@ -28,30 +32,34 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
             return res.status(404).json({ error: "Business not found" });
         }
 
-        // Count transactions for the current billing period
+        const activeSubscription = business.subscriptions[0] || null;
+
         let currentPeriodTransactions = 0;
-        if (business.subscription) {
+        if (activeSubscription) {
             currentPeriodTransactions = await prisma.invoice.count({
                 where: {
                     businessId: id,
                     createdAt: {
-                        gte: business.subscription.currentPeriodStart,
-                        lte: business.subscription.currentPeriodEnd,
+                        gte: activeSubscription.currentPeriodStart,
+                        lte: activeSubscription.currentPeriodEnd,
                     },
                 },
             });
         }
 
+        const { subscriptions, ...businessData } = business;
+
         const businessWithUsage = {
-            ...business,
+            ...businessData,
+            subscription: activeSubscription,
             usage: {
                 transactionCount: currentPeriodTransactions,
                 staffCount: business._count.users,
                 isLimitReached:
-                    business.subscription?.plan === "STARTER" &&
+                    activeSubscription?.plan === "STARTER" &&
                     currentPeriodTransactions >= 100,
-                canExportData: business.subscription?.plan === "PREMIUM",
-                hasCustomBranding: business.subscription?.plan === "PREMIUM",
+                canExportData: activeSubscription?.plan === "PREMIUM",
+                hasCustomBranding: activeSubscription?.plan === "PREMIUM",
             },
         };
 
