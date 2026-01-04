@@ -169,7 +169,7 @@ export default async function handler(
                 data: {
                     status: "COMPLETED",
                     amount: amountPaid,
-                    mpesaReceiptNumber: receiptNumber,
+                    phoneNumber: receiptNumber,
                 },
             }),
             prisma.invoice.update({
