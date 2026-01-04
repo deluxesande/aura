@@ -1,12 +1,13 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Check, X, AlertCircle, Loader2, Phone } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import axios from "axios";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { AppState } from "@/store";
+import { setBusiness } from "@/store/slices/businessSlice";
 
 type Plan = {
     id: string;
@@ -55,7 +56,6 @@ const PLANS: Plan[] = [
     {
         id: "STANDARD",
         name: "Standard",
-        // !! Change price to 1000
         price: 1,
         description: "For busy hardware stores & cafes",
         features: [
@@ -76,7 +76,6 @@ const PLANS: Plan[] = [
     {
         id: "PREMIUM",
         name: "Premium",
-        // !! Change price to 1500
         price: 1,
         description: "For shops that need data & scaling",
         features: [
@@ -94,19 +93,42 @@ const PLANS: Plan[] = [
 
 export default function PaymentPage() {
     const router = useRouter();
+    const dispatch = useDispatch();
 
     const user = useSelector((state: AppState) => state.auth.user);
-    // Get existing business/subscription data
     const businessDetails = useSelector(
         (state: AppState) => state.businessData.businessDetails
     );
 
-    const currentPlanId = businessDetails?.subscription?.plan || null;
-
+    const [isFetching, setIsFetching] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [phoneNumber, setPhoneNumber] = useState("");
+
+    useEffect(() => {
+        const rehydrateBusiness = async () => {
+            if (user && !businessDetails) {
+                setIsFetching(true);
+                try {
+                    const response = await axios.get(
+                        `/api/business/${user.businessId}}`
+                    );
+                    if (response.data) {
+                        dispatch(setBusiness(response.data));
+                    }
+                } catch (error) {
+                    console.error("Failed to restore business details:", error);
+                } finally {
+                    setIsFetching(false);
+                }
+            }
+        };
+
+        rehydrateBusiness();
+    }, [user, businessDetails, dispatch]);
+
+    const currentPlanId = businessDetails?.subscription?.plan || null;
 
     const handlePlanSelect = (plan: Plan) => {
         if (plan.id === currentPlanId) {
@@ -154,8 +176,7 @@ export default function PaymentPage() {
         if (!selectedPlan) return;
 
         try {
-            // If user already has a businessDetails (meaning they have a businessId),
-            // we use the upgrade endpoint. Otherwise, first-time STK push.
+            // Determine endpoint based on whether business already exists
             const endpoint = businessDetails?.id
                 ? "/api/subscription/upgrade"
                 : "/api/subscription/stk-push";
@@ -168,7 +189,6 @@ export default function PaymentPage() {
             });
 
             setIsModalOpen(false);
-
             toast.success("STK Push Sent!", {
                 description: `Check your phone (${phoneNumber}) to enter your PIN.`,
                 duration: 8000,
@@ -186,17 +206,34 @@ export default function PaymentPage() {
         }
     };
 
+    // Render a skeleton or loader during rehydration to prevent UI flickering
+    if (isFetching) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="h-10 w-10 animate-spin stroke-green-600" />
+                    <p className="text-gray-500 animate-pulse">
+                        Syncing your plan details...
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
-            {/* Header section... */}
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-12">
                     <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
                         Select Your Plan
                     </h2>
+                    <p className="mt-4 text-xl text-gray-600">
+                        Choose the plan that fits your business stage.
+                    </p>
                     {currentPlanId && (
-                        <div className="mt-2 inline-block px-4 py-1 rounded-full bg-green-100 text-green-700 text-sm font-medium">
-                            Current Plan: {currentPlanId}
+                        <div className="mt-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-100 text-green-700 text-sm font-bold border border-green-200">
+                            <AlertCircle size={14} />
+                            Active Plan: {currentPlanId}
                         </div>
                     )}
                 </div>
@@ -210,13 +247,18 @@ export default function PaymentPage() {
                                 whileHover={{ y: -5 }}
                                 className={`relative bg-white rounded-2xl shadow-sm border ${
                                     isCurrent
-                                        ? "border-green-500 ring-2 ring-green-500/20"
+                                        ? "border-green-500 ring-2 ring-green-500/20 shadow-lg"
                                         : plan.popular
                                         ? "border-green-500 shadow-md ring-1 ring-green-500"
                                         : "border-gray-200"
                                 } flex flex-col p-8 h-full`}
                             >
-                                {/* Plan content logic remains same... */}
+                                {plan.popular && !isCurrent && (
+                                    <div className="absolute top-0 right-1/2 transform translate-x-1/2 -translate-y-1/2 bg-green-600 text-white px-4 py-1 rounded-full text-sm font-medium shadow-sm">
+                                        Most Popular
+                                    </div>
+                                )}
+
                                 <div className="mb-6">
                                     <h3 className="text-xl font-semibold text-gray-900">
                                         {plan.name}
@@ -273,11 +315,11 @@ export default function PaymentPage() {
                                 <button
                                     onClick={() => handlePlanSelect(plan)}
                                     disabled={isCurrent}
-                                    className={`w-full py-3 px-4 rounded-lg font-medium transition-colors duration-200 ${
+                                    className={`w-full py-3 px-4 rounded-lg font-bold transition-all duration-200 ${
                                         isCurrent
-                                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                            ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
                                             : plan.popular
-                                            ? "bg-green-600 text-white hover:bg-green-700 shadow-sm"
+                                            ? "bg-green-600 text-white hover:bg-green-700 shadow-md"
                                             : "bg-white text-green-600 border border-green-600 hover:bg-green-50"
                                     }`}
                                 >
@@ -289,33 +331,25 @@ export default function PaymentPage() {
                 </div>
             </div>
 
-            {/* Confirmation Modal logic remains same... */}
             <AnimatePresence>
                 {isModalOpen && selectedPlan && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setIsModalOpen(false)}
-                            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                        />
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                         <motion.div
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
                             className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden z-10"
                         >
-                            <div className="p-6 text-center">
-                                <h3 className="text-2xl font-bold">
+                            <div className="p-6 text-center border-b border-gray-100">
+                                <h3 className="text-2xl font-bold text-gray-900">
                                     {currentPlanId
                                         ? "Confirm Upgrade"
                                         : "Confirm Payment"}
                                 </h3>
-                                <p className="opacity-90 mt-1">
+                                <p className="text-gray-500 mt-1 italic">
                                     Subscribe to {selectedPlan.name}
                                 </p>
-                                <div className="mt-4 text-3xl font-bold">
+                                <div className="mt-4 text-3xl font-black text-green-600">
                                     KSh {selectedPlan.price.toLocaleString()}
                                 </div>
                             </div>
@@ -325,7 +359,7 @@ export default function PaymentPage() {
                                     className="space-y-6"
                                 >
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
                                             M-Pesa Phone Number
                                         </label>
                                         <div className="relative">
@@ -345,14 +379,14 @@ export default function PaymentPage() {
                                                         e.target.value
                                                     )
                                                 }
-                                                className="block w-full pl-10 pr-3 py-3 bg-slate-50 outline-none border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 transition-colors"
+                                                className="block w-full pl-10 pr-3 py-3 bg-slate-50 outline-none border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                                             />
                                         </div>
                                     </div>
                                     <button
                                         type="submit"
                                         disabled={loading || !phoneNumber}
-                                        className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 transition-all"
+                                        className="w-full flex justify-center items-center py-4 px-4 rounded-xl shadow-lg text-sm font-black text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 transition-all shadow-green-100"
                                     >
                                         {loading ? (
                                             <Loader2 className="animate-spin mr-2 h-4 w-4" />
@@ -361,6 +395,12 @@ export default function PaymentPage() {
                                         )}
                                     </button>
                                 </form>
+                                <button
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="mt-4 w-full text-center text-sm font-medium text-gray-400 hover:text-gray-600 transition-colors"
+                                >
+                                    Cancel
+                                </button>
                             </div>
                         </motion.div>
                     </div>

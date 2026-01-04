@@ -100,7 +100,6 @@ export default function Navbar({
     const router = useRouter();
     const dispatch = useDispatch();
 
-    // --- State ---
     const [showPopup, setShowPopup] = useState(false);
     const [filterPopUp, setFilterPopUp] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -108,7 +107,6 @@ export default function Navbar({
     const [mounted, setMounted] = useState(false);
     const [inputValue, setInputValue] = useState<string>("");
 
-    // --- Redux Selectors ---
     const originalProducts = useSelector(
         (state: AppState) => state.product.products
     );
@@ -122,7 +120,6 @@ export default function Navbar({
         (state: AppState) => state.visibility.isVisible
     );
 
-    // FIX: Using optional chaining to prevent the TypeError if state is not ready
     const businessDetails = useSelector(
         (state: AppState) => state.businessData?.businessDetails
     );
@@ -140,9 +137,6 @@ export default function Navbar({
         whileElementsMounted: autoUpdate,
     });
 
-    // --- Effects ---
-
-    // 1. Initial Mount & Screen Resize
     useEffect(() => {
         setMounted(true);
         const checkScreenSize = () => {
@@ -153,7 +147,6 @@ export default function Navbar({
         return () => window.removeEventListener("resize", checkScreenSize);
     }, []);
 
-    // 2. Fetch User Profile if missing
     useEffect(() => {
         if (user === null) {
             const fetchUser = async () => {
@@ -168,7 +161,6 @@ export default function Navbar({
         }
     }, [user, dispatch]);
 
-    // 3. Fetch Business Details (Redux Integrated)
     useEffect(() => {
         if (user?.businessId && !businessDetails && !isFetchingBusiness) {
             const fetchBusinessDetails = async () => {
@@ -186,8 +178,6 @@ export default function Navbar({
             fetchBusinessDetails();
         }
     }, [user?.businessId, businessDetails, isFetchingBusiness, dispatch]);
-
-    // --- Handlers ---
 
     const links = user
         ? allLinks.filter((link) =>
