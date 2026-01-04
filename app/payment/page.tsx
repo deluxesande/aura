@@ -1,6 +1,7 @@
 "use client";
 import { AppState } from "@/store";
 import { setBusinessDetails } from "@/store/slices/businessDataSlice";
+import { formatPhoneNumber } from "@/utils/formatPhoneNumber";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, Check, Loader2, Phone, X } from "lucide-react";
@@ -183,7 +184,7 @@ export default function PaymentPage() {
 
         try {
             const response = await axios.post("/api/subscription/stk-push", {
-                phoneNumber: phoneNumber,
+                phoneNumber: formatPhoneNumber(phoneNumber),
                 amount: selectedPlan.price,
                 planId: selectedPlan.id,
                 businessId: businessDetails?.id,
