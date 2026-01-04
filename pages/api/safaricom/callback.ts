@@ -130,11 +130,6 @@ export default async function handler(
                     businessId: biz.id,
                     status: "PAID",
                     paymentType: "MPESA",
-                    mpesaPayments: {
-                        some: {
-                            status: "COMPLETED",
-                        },
-                    },
                     createdAt: {
                         gte: sub.currentPeriodStart,
                         lte: sub.currentPeriodEnd,
@@ -146,11 +141,10 @@ export default async function handler(
                 console.error(
                     `Cap Reached for Business ${biz.id}. Payment accepted but limit exceeded.`
                 );
-                // Note: We generally still record the payment if money was taken,
-                // but you might want to flag this for manual review.
             }
         }
 
+        // Store full details in the dedicated Callback table (which DOES have the receipt number field)
         await storeSuccessfulCallbackInDb({
             MerchantRequestID,
             CheckoutRequestID,
@@ -163,13 +157,13 @@ export default async function handler(
             invoiceId: pendingPayment.invoiceId,
         });
 
+        // Update the Payment and Invoice
         await prisma.$transaction([
             prisma.mpesaPayment.update({
                 where: { id: pendingPayment.id },
                 data: {
                     status: "COMPLETED",
                     amount: amountPaid,
-                    phoneNumber: receiptNumber,
                 },
             }),
             prisma.invoice.update({
