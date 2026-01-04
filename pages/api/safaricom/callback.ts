@@ -57,7 +57,12 @@ export default async function handler(
                 where: { checkoutRequestId: CheckoutRequestID },
                 include: {
                     Business: {
-                        include: { subscription: true },
+                        include: {
+                            subscriptions: {
+                                where: { status: "ACTIVE" },
+                                take: 1,
+                            },
+                        },
                     },
                 },
             });
@@ -117,20 +122,19 @@ export default async function handler(
         const transactionDate = String(getMetaValue("TransactionDate") || "0");
 
         const biz = pendingPayment.Business;
-        const sub = biz.subscription;
-
-        let commissionDeducted = 0;
-        let netAmount = amountPaid;
+        const sub = biz.subscriptions?.[0];
 
         if (sub?.plan === "STARTER") {
-            commissionDeducted = amountPaid * 0.02;
-            netAmount = amountPaid - commissionDeducted;
-
-            // Check transaction cap (100 tx per period)
             const currentTxCount = await prisma.invoice.count({
                 where: {
                     businessId: biz.id,
                     status: "PAID",
+                    paymentType: "MPESA",
+                    mpesaPayments: {
+                        some: {
+                            status: "COMPLETED",
+                        },
+                    },
                     createdAt: {
                         gte: sub.currentPeriodStart,
                         lte: sub.currentPeriodEnd,
@@ -142,9 +146,8 @@ export default async function handler(
                 console.error(
                     `Cap Reached for Business ${biz.id}. Payment accepted but limit exceeded.`
                 );
-                return res
-                    .status(401)
-                    .json({ result: "Cap Reached for Business." });
+                // Note: We generally still record the payment if money was taken,
+                // but you might want to flag this for manual review.
             }
         }
 
@@ -165,6 +168,8 @@ export default async function handler(
                 where: { id: pendingPayment.id },
                 data: {
                     status: "COMPLETED",
+                    amount: amountPaid,
+                    mpesaReceiptNumber: receiptNumber,
                 },
             }),
             prisma.invoice.update({
