@@ -57,7 +57,11 @@ export default async function handler(
         const business = await prisma.business.findUnique({
             where: { id: businessId },
             include: {
-                subscription: true,
+                subscriptions: {
+                    where: { status: "ACTIVE" },
+                    orderBy: { createdAt: "desc" },
+                    take: 1,
+                },
                 _count: {
                     select: {
                         users: true,
@@ -71,7 +75,8 @@ export default async function handler(
             return res.status(404).json({ error: "Business not found" });
         }
 
-        const plan = business.subscription?.plan || "STARTER";
+        const activeSub = business.subscriptions[0];
+        const plan = activeSub?.plan || "STARTER";
         const currentTotal =
             business._count.users + business._count.invitations;
 
@@ -82,7 +87,7 @@ export default async function handler(
         if (currentTotal >= limit) {
             return res.status(403).json({
                 error: `Invitation limit reached for the ${plan} plan.`,
-                details: `Current plan allows a maximum of ${limit} team members (including pending invites). Please upgrade your subscription.`,
+                details: `Current plan allows a maximum of ${limit} team members. Please upgrade your subscription.`,
             });
         }
 
