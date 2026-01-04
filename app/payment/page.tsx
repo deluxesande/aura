@@ -1,13 +1,13 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { Check, X, AlertCircle, Loader2, Phone } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import axios from "axios";
-import { useSelector, useDispatch } from "react-redux";
 import { AppState } from "@/store";
-import { setBusiness } from "@/store/slices/businessSlice";
+import { setBusinessDetails } from "@/store/slices/businessDataSlice";
+import axios from "axios";
+import { AnimatePresence, motion } from "framer-motion";
+import { AlertCircle, Check, Loader2, Phone, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "sonner";
 
 type Plan = {
     id: string;
@@ -106,21 +106,27 @@ export default function PaymentPage() {
     const [loading, setLoading] = useState(false);
     const [phoneNumber, setPhoneNumber] = useState("");
 
+    const fetchAttempted = useRef(false);
+
     useEffect(() => {
         const rehydrateBusiness = async () => {
-            if (user && !businessDetails) {
+            if (user && !businessDetails && !fetchAttempted.current) {
+                fetchAttempted.current = true;
                 setIsFetching(true);
                 try {
                     const response = await axios.get(
-                        `/api/business/${user.businessId}}`
+                        `/api/business/${user.businessId}`
                     );
                     if (response.data) {
-                        dispatch(setBusiness(response.data));
+                        dispatch(setBusinessDetails(response.data));
                     }
-                } catch (error) {
-                    console.error("Failed to restore business details:", error);
+                } catch (error: any) {
+                    if (error.response?.status !== 404) {
+                        // console.error("Rehydration error:", error);
+                    }
                 } finally {
-                    setIsFetching(false);
+                    // Give Redux a tiny window to propagate the change before hiding loader
+                    setTimeout(() => setIsFetching(false), 100);
                 }
             }
         };
