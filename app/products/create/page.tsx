@@ -27,6 +27,8 @@ import { useRouter } from "next/navigation";
 import { FloatingPortal } from "@floating-ui/react";
 import { useUploadThing } from "@/utils/uploadthing";
 
+const MAX_SIZE = 200 * 1024; // 200KB
+
 export default function CreateProductPage() {
     const router = useRouter();
     const [categories, setCategories] = useState<Category[]>([]);
@@ -85,7 +87,7 @@ export default function CreateProductPage() {
 
     const handleInputKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === "Enter") {
-            e.preventDefault(); // Stop form submission
+            e.preventDefault();
             toast.success("Barcode captured");
         }
     };
@@ -98,12 +100,24 @@ export default function CreateProductPage() {
         event: React.ChangeEvent<HTMLInputElement>
     ) => {
         const file = event.target.files?.[0];
-        if (file) {
-            const objectUrl = URL.createObjectURL(file);
-            setTempImageSrc(objectUrl);
-            setIsCropModalOpen(true);
+        if (!file) return;
+
+        if (file.type !== "image/png") {
+            toast.error("Only PNG images are allowed");
             event.target.value = "";
+            return;
         }
+
+        if (file.size > MAX_SIZE) {
+            toast.error("Image must be under 200KB");
+            event.target.value = "";
+            return;
+        }
+
+        const objectUrl = URL.createObjectURL(file);
+        setTempImageSrc(objectUrl);
+        setIsCropModalOpen(true);
+        event.target.value = "";
     };
 
     const handleCropComplete = (croppedBlob: Blob) => {
@@ -198,7 +212,7 @@ export default function CreateProductPage() {
         };
 
         toast.promise(createProductOperation(), {
-            loading: "Uploading image and creating product...",
+            loading: "Creating product...",
             success: "Product added to inventory.",
             error: (err) => {
                 return err?.message || "Error adding product.";
@@ -532,7 +546,7 @@ export default function CreateProductPage() {
                                 <input
                                     id="productImage"
                                     type="file"
-                                    accept="image/png, image/jpeg, image/jpg"
+                                    accept="image/png"
                                     onChange={handleImageFileSelect}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                     required={!productImage}

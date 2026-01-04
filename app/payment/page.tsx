@@ -210,7 +210,7 @@ export default function PaymentPage() {
                                 whileHover={{ y: -5 }}
                                 className={`relative bg-white rounded-2xl shadow-sm border ${
                                     isCurrent
-                                        ? "border-blue-500 ring-2 ring-blue-500/20"
+                                        ? "border-green-500 ring-2 ring-green-500/20"
                                         : plan.popular
                                         ? "border-green-500 shadow-md ring-1 ring-green-500"
                                         : "border-gray-200"
