@@ -62,11 +62,18 @@ export default async function handler(
         if (businessId) {
             const business = await prisma.business.findUnique({
                 where: { id: businessId },
-                include: { subscription: true },
+                include: {
+                    subscriptions: {
+                        where: { status: "ACTIVE" },
+                        take: 1,
+                        orderBy: { createdAt: "desc" },
+                    },
+                },
             });
 
-            if (business?.subscription) {
-                const sub = business.subscription;
+            const sub = business?.subscriptions?.[0];
+
+            if (sub) {
                 const now = new Date();
                 const expiry = new Date(sub.currentPeriodEnd);
                 const diffTime = expiry.getTime() - now.getTime();
