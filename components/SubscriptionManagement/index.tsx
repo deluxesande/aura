@@ -101,7 +101,7 @@ const SubscriptionManagement: React.FC = () => {
                         Manage your billing and view usage limits.
                     </p>
                 </div>
-                <div className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-bold uppercase tracking-wider border border-green-100">
+                <div className="px-3 py-1 bg-green-50 text-green-500 rounded-full text-xs font-bold uppercase tracking-wider border border-green-100">
                     {plan}
                 </div>
             </div>
@@ -116,7 +116,7 @@ const SubscriptionManagement: React.FC = () => {
                                 Days Remaining
                             </p>
                             <p
-                                className={`text-2xl font-bold mt-1 ${
+                                className={`text-xl font-bold mt-1 ${
                                     plan !== "STARTER" && daysLeft <= 5
                                         ? "text-red-600"
                                         : "text-gray-900"
@@ -148,7 +148,7 @@ const SubscriptionManagement: React.FC = () => {
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                                 Allowance Left
                             </p>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">
+                            <p className="text-xl font-bold text-gray-900 mt-1">
                                 {txRemaining}
                             </p>
                         </div>
@@ -163,7 +163,7 @@ const SubscriptionManagement: React.FC = () => {
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                                 Team Invites
                             </p>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">
+                            <p className="text-xl font-bold text-gray-900 mt-1">
                                 {invitesRemaining}
                             </p>
                         </div>

@@ -1,6 +1,7 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/utils/lib/client";
+import { utapi, extractFileKey } from "@/utils/server/uploadthingServer";
 
 export default async function handler(
     req: NextApiRequest,
@@ -24,6 +25,53 @@ export default async function handler(
 
         if (!user) {
             return res.status(404).json({ error: "User not found" });
+        }
+
+        // Check if admin has other users
+        if (user.role === "admin" && user.businessId) {
+            const otherUsersCount = await prisma.user.count({
+                where: {
+                    businessId: user.businessId,
+                    clerkId: { not: userId },
+                },
+            });
+
+            if (otherUsersCount > 0) {
+                return res.status(403).json({
+                    error: "Forbidden",
+                    details:
+                        "You cannot delete your account while other team members are still in the business.",
+                });
+            }
+        }
+
+        if (user.role === "admin") {
+            try {
+                // Find all products created by this user that have UploadThing URLs
+                const productsWithImages = await prisma.product.findMany({
+                    where: {
+                        createdBy: userId,
+                        image: { contains: "utfs.io" },
+                    },
+                    select: { image: true },
+                });
+
+                if (productsWithImages.length > 0) {
+                    const fileKeys = productsWithImages
+                        .map((p) => extractFileKey(p.image!))
+                        .filter(Boolean) as string[];
+
+                    if (fileKeys.length > 0) {
+                        // Delete batch from UploadThing
+                        await utapi.deleteFiles(fileKeys);
+                    }
+                }
+            } catch (utError) {
+                console.error(
+                    "Failed to clean up UploadThing images, proceeding with DB deletion:",
+                    utError
+                );
+            }
         }
 
         await prisma.$transaction(async (tx: any) => {
@@ -51,6 +99,16 @@ export default async function handler(
                     });
                 }
 
+                if (user.businessId) {
+                    await tx.subscriptionPayment.deleteMany({
+                        where: { userId: userId },
+                    });
+
+                    await tx.subscription.deleteMany({
+                        where: { businessId: user.businessId },
+                    });
+                }
+
                 await tx.invoiceItem.deleteMany({
                     where: { createdBy: userId },
                 });
@@ -70,20 +128,15 @@ export default async function handler(
                     await tx.userInvitation.deleteMany({
                         where: { businessId: user.businessId },
                     });
-                    await tx.user.deleteMany({
-                        where: {
-                            businessId: user.businessId,
-                            clerkId: { not: userId },
-                        },
-                    });
+
                     await tx.business.delete({
                         where: { id: user.businessId },
                     });
                 }
             } else {
+                // REGULAR USER LOGIC (Reassignment)
                 let assignee = null;
 
-                // Try to find the Inviter
                 if (user.email && user.businessId) {
                     const invitation = await tx.userInvitation.findFirst({
                         where: {
@@ -99,7 +152,6 @@ export default async function handler(
                     }
                 }
 
-                // Fallback to Business Admin
                 if (!assignee && user.businessId) {
                     assignee = await tx.user.findFirst({
                         where: {
@@ -151,13 +203,11 @@ export default async function handler(
                 }
             }
 
-            // Finally, delete the user from Postgres
             await tx.user.delete({
                 where: { id: user.id },
             });
         });
 
-        // Only reached if the transaction above succeeds.
         const client = await clerkClient();
         try {
             await client.users.deleteUser(userId);
@@ -169,6 +219,7 @@ export default async function handler(
             message: "User deleted successfully",
         });
     } catch (error) {
+        console.error("Delete Error:", error);
         return res.status(500).json({
             error: "Error deleting user",
             details: error instanceof Error ? error.message : "Unknown error",

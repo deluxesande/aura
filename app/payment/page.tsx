@@ -55,7 +55,8 @@ const PLANS: Plan[] = [
     {
         id: "STANDARD",
         name: "Standard",
-        price: 1000,
+        // !!! Change back price to 1000
+        price: 1,
         description: "For busy hardware stores & cafes",
         features: [
             { text: "Unlimited Transactions", included: true },
@@ -75,7 +76,8 @@ const PLANS: Plan[] = [
     {
         id: "PREMIUM",
         name: "Premium",
-        price: 1500,
+        // !!! Change back price to 1500
+        price: 1,
         description: "For shops that need data & scaling",
         features: [
             { text: "Unlimited Transactions", included: true },
