@@ -52,11 +52,36 @@ export default async function handler(
     }
 
     try {
-        const { phoneNumber, amount, planId } = req.body;
+        const { phoneNumber, amount, planId, businessId } = req.body;
         const { userId } = getAuth(req);
 
         if (!userId || !amount || !phoneNumber || !planId) {
             return res.status(400).json({ error: "Missing required fields" });
+        }
+
+        if (businessId) {
+            const business = await prisma.business.findUnique({
+                where: { id: businessId },
+                include: { subscription: true },
+            });
+
+            if (business?.subscription) {
+                const sub = business.subscription;
+                const now = new Date();
+                const expiry = new Date(sub.currentPeriodEnd);
+                const diffTime = expiry.getTime() - now.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                const isStarter = sub.plan === "STARTER";
+                const isExpiringSoon = diffDays <= 5;
+
+                if (!isStarter && !isExpiringSoon) {
+                    return res.status(400).json({
+                        error: "Subscription is still active",
+                        message: `You can only renew your subscription 5 days before expiry. Your current plan expires in ${diffDays} days.`,
+                    });
+                }
+            }
         }
 
         const token = await getAccessToken();
@@ -81,7 +106,7 @@ export default async function handler(
             BusinessShortCode: SHORTCODE,
             Password: password,
             Timestamp: timestamp,
-            TransactionType: "CustomerPayBillOnline", // Ensure this matches your Sandbox Shortcode type
+            TransactionType: "CustomerPayBillOnline",
             Amount: Math.ceil(Number(amount)),
             PartyA: formattedPhone,
             PartyB: SHORTCODE,
@@ -124,18 +149,11 @@ export default async function handler(
         const safaricomError = error?.response?.data;
         console.error("M-Pesa API Error:", safaricomError || error.message);
 
-        let clientMessage =
-            "Payment initiation failed. Please check your credentials.";
-
-        if (safaricomError) {
-            clientMessage =
-                safaricomError.errorMessage ||
-                safaricomError.ResponseDescription ||
-                clientMessage;
-        }
-
         return res.status(400).json({
-            error: clientMessage,
+            error:
+                safaricomError?.errorMessage ||
+                safaricomError?.ResponseDescription ||
+                "Payment initiation failed.",
             details: safaricomError,
         });
     }

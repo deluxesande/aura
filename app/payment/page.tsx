@@ -182,12 +182,7 @@ export default function PaymentPage() {
         if (!selectedPlan) return;
 
         try {
-            // Determine endpoint based on whether business already exists
-            const endpoint = businessDetails?.id
-                ? "/api/subscription/upgrade"
-                : "/api/subscription/stk-push";
-
-            const response = await axios.post(endpoint, {
+            const response = await axios.post("/api/subscription/stk-push", {
                 phoneNumber: phoneNumber,
                 amount: selectedPlan.price,
                 planId: selectedPlan.id,
@@ -238,7 +233,6 @@ export default function PaymentPage() {
                     </p>
                     {currentPlanId && (
                         <div className="mt-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-100 text-green-700 text-sm font-bold border border-green-200">
-                            <AlertCircle size={14} />
                             Active Plan: {currentPlanId}
                         </div>
                     )}
@@ -395,7 +389,7 @@ export default function PaymentPage() {
                                         className="w-full flex justify-center items-center py-4 px-4 rounded-xl shadow-lg text-sm font-black text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 transition-all shadow-green-100"
                                     >
                                         {loading ? (
-                                            <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                                            <Loader2 className="animate-spin stroke-white mr-2 h-4 w-4" />
                                         ) : (
                                             `Pay KSh ${selectedPlan.price.toLocaleString()}`
                                         )}
