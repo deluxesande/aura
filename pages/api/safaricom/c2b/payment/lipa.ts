@@ -38,6 +38,26 @@ const formatPhoneNumber = (phone: string) => {
     return p;
 };
 
+async function getInvoiceCount(businessId: string, subscription: any) {
+    if (!subscription) return 0;
+    return await prisma.invoice.count({
+        where: {
+            businessId,
+            status: "PAID",
+            paymentType: "MPESA",
+            mpesaPayments: {
+                some: {
+                    status: "COMPLETED",
+                },
+            },
+            createdAt: {
+                gte: subscription.currentPeriodStart,
+                lte: subscription.currentPeriodEnd,
+            },
+        },
+    });
+}
+
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse
@@ -61,7 +81,11 @@ export default async function handler(
                 businessId: true,
                 Business: {
                     include: {
-                        subscription: true,
+                        subscriptions: {
+                            where: { status: "ACTIVE" },
+                            orderBy: { createdAt: "desc" },
+                            take: 1,
+                        },
                     },
                 },
             },
@@ -73,19 +97,13 @@ export default async function handler(
                 .json({ error: "User is not linked to a valid business" });
         }
 
-        const subscription = user.Business.subscription;
+        const subscription = user.Business.subscriptions[0];
 
         if (subscription && subscription.plan === "STARTER") {
-            const currentTxCount = await prisma.invoice.count({
-                where: {
-                    businessId: user.businessId,
-                    status: "PAID",
-                    createdAt: {
-                        gte: subscription.currentPeriodStart,
-                        lte: subscription.currentPeriodEnd,
-                    },
-                },
-            });
+            const currentTxCount = await getInvoiceCount(
+                user.businessId,
+                subscription
+            );
 
             if (currentTxCount >= 100) {
                 return res.status(403).json({
@@ -122,12 +140,14 @@ export default async function handler(
         ).toString("base64");
         const formattedPhone = formatPhoneNumber(phoneNumber);
 
+        const fullAmount = Math.ceil(Number(amount));
+
         const stkData = {
             BusinessShortCode: SHORTCODE,
             Password: password,
             Timestamp: timestamp,
             TransactionType: "CustomerPayBillOnline",
-            Amount: Math.ceil(Number(amount)),
+            Amount: fullAmount,
             PartyA: formattedPhone,
             PartyB: SHORTCODE,
             PhoneNumber: formattedPhone,
@@ -173,17 +193,4 @@ export default async function handler(
             details: error?.response?.data || error.message,
         });
     }
-}
-
-async function getInvoiceCount(businessId: string, subscription: any) {
-    return await prisma.invoice.count({
-        where: {
-            businessId,
-            status: "PAID",
-            createdAt: {
-                gte: subscription.currentPeriodStart,
-                lte: subscription.currentPeriodEnd,
-            },
-        },
-    });
 }
