@@ -183,8 +183,9 @@ export default function PaymentPage() {
         if (!selectedPlan) return;
 
         try {
+            const formattedNumber = formatPhoneNumber(phoneNumber);
             const response = await axios.post("/api/subscription/stk-push", {
-                phoneNumber: formatPhoneNumber(phoneNumber),
+                phoneNumber: formattedNumber,
                 amount: selectedPlan.price,
                 planId: selectedPlan.id,
                 businessId: businessDetails?.id,
