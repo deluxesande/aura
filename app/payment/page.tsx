@@ -182,8 +182,13 @@ export default function PaymentPage() {
 
         if (!selectedPlan) return;
 
+        const formattedNumber = formatPhoneNumber(phoneNumber);
+        if (!formattedNumber) {
+            toast.error("Invalid phone number.");
+            return;
+        }
+
         try {
-            const formattedNumber = formatPhoneNumber(phoneNumber);
             const response = await axios.post("/api/subscription/stk-push", {
                 phoneNumber: formattedNumber,
                 amount: selectedPlan.price,
