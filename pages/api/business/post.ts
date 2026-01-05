@@ -30,10 +30,58 @@ const addBusinessHandler = async (
             },
         });
 
-        if (existingBusiness?.subscriptions[0]) {
-            return res
-                .status(400)
-                .json({ error: "You already have an active subscription." });
+        // --- PATH A: Business Exists ---
+        if (existingBusiness) {
+            // Check if they already have an active subscription
+            if (
+                existingBusiness.subscriptions &&
+                existingBusiness.subscriptions.length > 0
+            ) {
+                return res.status(400).json({
+                    error: "You already have an active subscription.",
+                });
+            }
+
+            // Business exists but no active subscription -> Create Subscription Only
+            const latestPayment = await prisma.subscriptionPayment.findFirst({
+                where: {
+                    userId: user.userId,
+                    status: "COMPLETED",
+                    subscriptionId: null,
+                },
+                orderBy: { createdAt: "desc" },
+            });
+
+            const planToSet = (latestPayment?.planId as any) || "STARTER";
+
+            const result = await prisma.$transaction(async (tx) => {
+                const newSubscription = await tx.subscription.create({
+                    data: {
+                        businessId: existingBusiness.id,
+                        plan: planToSet,
+                        status: "ACTIVE",
+                        currentPeriodStart: new Date(),
+                        currentPeriodEnd: new Date(
+                            new Date().setMonth(new Date().getMonth() + 1)
+                        ),
+                    },
+                });
+
+                if (latestPayment) {
+                    await tx.subscriptionPayment.update({
+                        where: { id: latestPayment.id },
+                        data: { subscriptionId: newSubscription.id },
+                    });
+                }
+
+                return {
+                    business: existingBusiness,
+                    subscription: newSubscription,
+                    message: "Subscription created for existing business",
+                };
+            });
+
+            return res.status(200).json(result);
         }
 
         const form = formidable({ multiples: true });
@@ -51,8 +99,6 @@ const addBusinessHandler = async (
         if (!name)
             return res.status(400).json({ error: "Business name is required" });
 
-        // 2. Determine Plan Logic
-        // Look for a successful payment. If none exists, this is a STARTER registration.
         const latestPayment = await prisma.subscriptionPayment.findFirst({
             where: {
                 userId: user.userId,
@@ -121,7 +167,6 @@ const addBusinessHandler = async (
             };
         });
 
-        // Trigger Welcome Notification via Novu
         try {
             await novu.trigger({
                 workflowId: "welcome",
