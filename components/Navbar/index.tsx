@@ -7,7 +7,7 @@ import {
     setBusinessLoading,
 } from "@/store/slices/businessDataSlice";
 import { hide, show } from "@/store/slices/visibilitySlice";
-import { SignedIn } from "@clerk/nextjs";
+import { SignedIn, useClerk, useUser } from "@clerk/nextjs";
 import {
     autoUpdate,
     flip,
@@ -25,6 +25,7 @@ import {
 import axios from "axios";
 import {
     AlertTriangle,
+    LogOut,
     Menu,
     Search as SearchIcon,
     ShoppingCart,
@@ -41,8 +42,8 @@ import BusinessOnboardingModal from "../BusinessOnboardingModal";
 import CustomUserButton from "../CustomUserButton";
 import FilterOverlay from "../FilterOverlay";
 import Sidebar from "./Sidebar";
+import { signOut as signOutAction } from "@/store/slices/authSlice";
 
-// --- Configuration ---
 const allLinks = [
     {
         href: "/dashboard",
@@ -105,6 +106,7 @@ export default function Navbar({
     const [isDesktop, setIsDesktop] = useState(true);
     const [mounted, setMounted] = useState(false);
     const [inputValue, setInputValue] = useState<string>("");
+    const { signOut } = useClerk();
 
     const originalProducts = useSelector(
         (state: AppState) => state.product.products
@@ -118,6 +120,11 @@ export default function Navbar({
     const isVisible = useSelector(
         (state: AppState) => state.visibility.isVisible
     );
+
+    const { user: clerkUser, isSignedIn } = useUser();
+    const profileImage = clerkUser?.hasImage
+        ? clerkUser?.imageUrl
+        : "/images/user.png";
 
     const businessDetails = useSelector(
         (state: AppState) => state.businessData?.businessDetails
@@ -216,6 +223,15 @@ export default function Navbar({
 
         if (filtered.length === 0) toast.error("No products found.");
         setFilteredProducts(filtered);
+    };
+
+    const handleSignOut = async () => {
+        if (isSignedIn) {
+            await signOut();
+
+            // Clear user state in Redux
+            dispatch(signOutAction());
+        }
     };
 
     if (user == null) return null;
@@ -533,9 +549,50 @@ export default function Navbar({
                                             )}
                                         </div>
                                     )}
+
                                     <SignedIn>
                                         <CustomUserButton />
                                     </SignedIn>
+                                </div>
+                                {/* User Details */}
+                                <div className="w-full flex justify-between items-center mt-2">
+                                    <Link
+                                        className="w-1/2 flex items-center space-x-3 px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer group"
+                                        href="/profile"
+                                    >
+                                        <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 ring-2 ring-gray-200 group-hover:ring-green-500 transition-colors">
+                                            <Image
+                                                src={profileImage}
+                                                width={30}
+                                                height={30}
+                                                alt={`${clerkUser?.firstName} Profile Image`}
+                                                className="object-cover rounded-full"
+                                            />
+                                        </div>
+                                        <div className="flex flex-col overflow-hidden">
+                                            <p className="text-sm font-semibold text-gray-900 truncate">
+                                                {clerkUser?.firstName}{" "}
+                                                {clerkUser?.lastName}
+                                            </p>
+                                            <p className="text-xs text-gray-500 truncate">
+                                                {user?.role}
+                                            </p>
+                                        </div>
+                                    </Link>
+                                    <button
+                                        onClick={handleSignOut}
+                                        className="w-1/4 flex items-center space-x-3 px-2 py-2 rounded-lg hover:bg-red-50 transition-colors cursor-pointer group"
+                                    >
+                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#fafafa] group-hover:bg-red-100 transition-colors">
+                                            <LogOut
+                                                size={18}
+                                                className="text-gray-700 stroke-red-600 group-hover:text-red-600"
+                                            />
+                                        </div>
+                                        <span className="text-sm text-red-600 group-hover:text-red-600">
+                                            Logout
+                                        </span>
+                                    </button>
                                 </div>
                             </div>
                         </>

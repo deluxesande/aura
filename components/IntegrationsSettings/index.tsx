@@ -1,73 +1,202 @@
-import React, { useState } from "react";
+import { AlertTriangle, Check, Eye, EyeOff, X, Loader2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { X, Check } from "lucide-react";
+import axios from "axios";
+import { useSelector } from "react-redux";
+import { AppState } from "@/store";
+
+type User = {
+    id: string;
+    name: string;
+    clerkId: string;
+    email: string;
+    role: string;
+    businessId: string;
+    status: string;
+    Business: {};
+};
 
 const IntegrationsSettings: React.FC = () => {
-    // State for integration status
-    const [integrations, setIntegrations] = useState({
-        mpesa: false,
+    const [integrations, setIntegrations] = useState({ mpesa: false });
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isFetching, setIsFetching] = useState(true); // Initial loading state
+    const [activeService, setActiveService] = useState<string | null>(null);
+    const [showSecrets, setShowSecrets] = useState(false);
+
+    const [mpesaConfig, setMpesaConfig] = useState({
+        consumerKey: "",
+        consumerSecret: "",
+        passKey: "",
+        shortCode: "",
+        environment: "production",
     });
 
-    // State for Modal
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [activeService, setActiveService] = useState<string | null>(null);
+    const [savedConfig, setSavedConfig] = useState<typeof mpesaConfig | null>(
+        null
+    );
 
-    // State for M-PESA Data
-    const [mpesaShortCode, setMpesaShortCode] = useState("");
-    const [savedShortCode, setSavedShortCode] = useState(""); // Stores the actual saved code
+    const user = useSelector(
+        (state: AppState) => state.auth.user
+    ) as User | null;
+
+    // --- 1. Fetch Integration Status on Mount ---
+    useEffect(() => {
+        const fetchMpesaDetails = async () => {
+            try {
+                const { data } = await axios.get("/api/auth/mpesa");
+
+                // If we get masked keys back, it means the service is configured
+                if (data.mpesaConsumerKey) {
+                    const config = {
+                        consumerKey: data.mpesaConsumerKey,
+                        consumerSecret: data.mpesaConsumerSecret,
+                        passKey: data.mpesaPassKey,
+                        shortCode: data.mpesaShortCode,
+                        environment: "production",
+                    };
+                    setSavedConfig(config);
+                    setIntegrations({ mpesa: true });
+                }
+            } catch (error) {
+                console.error("Error fetching integration status:", error);
+            } finally {
+                setIsFetching(false);
+            }
+        };
+
+        if (user) fetchMpesaDetails();
+    }, [user]);
 
     const integrationsList = [
         {
             id: "mpesa",
-            name: "M-PESA",
+            name: "M-PESA Daraja (Live)",
             description:
-                "Accept mobile money payments via Paybill or Till Number",
+                "Link your Live Daraja App to trigger real payments directly to your Paybill or Till.",
             popular: true,
         },
     ];
 
     const handleOpenModal = (serviceId: string) => {
         setActiveService(serviceId);
-        // If opening settings for an already connected service, pre-fill the input
-        if (serviceId === "mpesa") {
-            setMpesaShortCode(savedShortCode);
+        // If we have saved/masked config, populate the form so the user sees it's active
+        if (serviceId === "mpesa" && savedConfig) {
+            setMpesaConfig(savedConfig);
         }
         setIsModalOpen(true);
     };
 
-    const handleSaveMpesa = (e: React.FormEvent) => {
+    const handleChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    ) => {
+        const { name, value } = e.target;
+        setMpesaConfig((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleSaveMpesa = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!mpesaShortCode.trim()) {
-            toast.error("Please enter a valid Short Code");
+        if (
+            !mpesaConfig.consumerKey.trim() ||
+            !mpesaConfig.consumerSecret.trim() ||
+            !mpesaConfig.passKey.trim() ||
+            !mpesaConfig.shortCode.trim()
+        ) {
+            toast.error(
+                "All fields are required to enable Live Daraja integration."
+            );
             return;
         }
 
-        // Simulate API Save
-        setSavedShortCode(mpesaShortCode);
-        setIntegrations((prev) => ({ ...prev, mpesa: true }));
+        try {
+            const payload = {
+                mpesaConsumerKey: mpesaConfig.consumerKey,
+                mpesaConsumerSecret: mpesaConfig.consumerSecret,
+                mpesaPassKey: mpesaConfig.passKey,
+                mpesaShortCode: mpesaConfig.shortCode,
+            };
 
-        setIsModalOpen(false);
-        toast.success("M-PESA Short Code saved successfully!");
+            const response = await axios.put(
+                `/api/business/${user?.businessId}`,
+                payload
+            );
+
+            if (response.status === 200) {
+                // Update local state with masked values to represent saved state
+                const maskedConfig = {
+                    ...mpesaConfig,
+                    consumerKey: "***********",
+                    consumerSecret: "***********",
+                    passKey: "***********",
+                };
+                setSavedConfig(maskedConfig);
+                setIntegrations((prev) => ({ ...prev, mpesa: true }));
+                setIsModalOpen(false);
+                toast.success("Live M-PESA credentials saved successfully!");
+            }
+        } catch (error: any) {
+            const errorMessage =
+                error.response?.data?.error || "Failed to save credentials.";
+            toast.error(errorMessage);
+        }
     };
 
-    const handleDisconnect = () => {
-        setIntegrations((prev) => ({ ...prev, mpesa: false }));
-        setSavedShortCode("");
-        setMpesaShortCode("");
-        setIsModalOpen(false);
-        toast.info("M-PESA disconnected");
+    const handleDisconnect = async () => {
+        if (
+            !confirm(
+                "Are you sure you want to disconnect M-PESA? This will stop all live payments."
+            )
+        )
+            return;
+
+        try {
+            const payload = {
+                mpesaConsumerKey: null,
+                mpesaConsumerSecret: null,
+                mpesaPassKey: null,
+                mpesaShortCode: null,
+            };
+
+            const response = await axios.put(
+                `/api/business/${user?.businessId}`,
+                payload
+            );
+
+            if (response.status === 200) {
+                setIntegrations((prev) => ({ ...prev, mpesa: false }));
+                setSavedConfig(null);
+                setMpesaConfig({
+                    consumerKey: "",
+                    consumerSecret: "",
+                    passKey: "",
+                    shortCode: "",
+                    environment: "production",
+                });
+                setIsModalOpen(false);
+                toast.info("M-PESA integration disconnected.");
+            }
+        } catch (error: any) {
+            toast.error("Failed to disconnect service.");
+        }
     };
+
+    if (isFetching) {
+        return (
+            <div className="flex justify-center p-12">
+                <Loader2 className="animate-spin text-gray-400" />
+            </div>
+        );
+    }
 
     return (
         <section className="bg-white p-6 rounded-lg shadow-md w-full max-w-3xl relative">
             <header>
                 <h2 className="text-lg font-medium text-gray-900">
-                    Integrations
+                    Payment Integrations
                 </h2>
                 <p className="mt-1 text-sm text-gray-600">
-                    Connect external services to accept payments and manage your
-                    business.
+                    Connect your live payment gateways to process real customer
+                    transactions.
                 </p>
             </header>
 
@@ -91,13 +220,17 @@ const IntegrationsSettings: React.FC = () => {
                             <p className="text-sm text-gray-600 mt-1">
                                 {integration.description}
                             </p>
-                            {/* Show saved code if connected */}
+
+                            {/* Status Indicator - Fixes hydration error by using div */}
                             {integrations[
                                 integration.id as keyof typeof integrations
                             ] && (
-                                <p className="text-xs text-green-600 mt-2 font-medium">
-                                    Active Short Code: {savedShortCode}
-                                </p>
+                                <div className="text-xs text-green-500 mt-2 font-medium flex items-center gap-1">
+                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                    <span>
+                                        Live Connected: {savedConfig?.shortCode}
+                                    </span>
+                                </div>
                             )}
                         </div>
 
@@ -116,7 +249,7 @@ const IntegrationsSettings: React.FC = () => {
                                         }
                                         className="px-3 py-1 text-xs font-medium text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 whitespace-nowrap"
                                     >
-                                        Settings
+                                        Configure
                                     </button>
                                 </div>
                             ) : (
@@ -124,7 +257,7 @@ const IntegrationsSettings: React.FC = () => {
                                     onClick={() =>
                                         handleOpenModal(integration.id)
                                     }
-                                    className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 whitespace-nowrap"
+                                    className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 whitespace-nowrap"
                                 >
                                     Connect
                                 </button>
@@ -134,17 +267,23 @@ const IntegrationsSettings: React.FC = () => {
                 ))}
             </div>
 
-            {/* M-PESA Configuration Modal */}
+            {/* Modal remains the same but uses mpesaConfig populated from savedConfig */}
             {isModalOpen && activeService === "mpesa" && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
-                        <div className="flex justify-between items-center p-4 border-b border-gray-100">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                                Configure M-PESA
-                            </h3>
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]">
+                        <div className="flex justify-between items-center p-5 border-b border-gray-100">
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-900">
+                                    Live M-PESA Configuration
+                                </h3>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Enter credentials from your{" "}
+                                    <strong>Production</strong> App.
+                                </p>
+                            </div>
                             <button
                                 onClick={() => setIsModalOpen(false)}
-                                className="text-gray-400 hover:text-gray-600"
+                                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-full transition-colors"
                             >
                                 <X size={20} />
                             </button>
@@ -152,50 +291,128 @@ const IntegrationsSettings: React.FC = () => {
 
                         <form
                             onSubmit={handleSaveMpesa}
-                            className="p-6 space-y-4"
+                            className="p-6 space-y-5 overflow-y-auto"
                         >
-                            <div>
-                                <label
-                                    htmlFor="shortcode"
-                                    className="block text-sm font-medium text-gray-700 mb-1"
-                                >
-                                    Short Code (Paybill or Till Number)
-                                </label>
-                                <input
-                                    type="text" // using text to allow leading zeros if necessary
-                                    id="shortcode"
-                                    value={mpesaShortCode}
-                                    onChange={(e) =>
-                                        setMpesaShortCode(
-                                            e.target.value.replace(/\D/g, "")
-                                        )
-                                    } // Only allow numbers
-                                    placeholder="e.g. 174379"
-                                    className="w-full outline-none bg-slate-50 appearance-none px-3 py-2 border border-gray-300 rounded-md focus:border-green-500 "
-                                    required
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Enter the Paybill or Buy Goods number
-                                    customers will use to pay.
-                                </p>
+                            <div className="bg-amber-50 border border-amber-200 rounded-md p-3 flex items-start gap-3">
+                                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                                <div className="text-amber-800 text-xs">
+                                    <p className="font-medium">
+                                        Production Environment
+                                    </p>
+                                    <p>
+                                        Ensure you have &quot;Gone Live&quot; on
+                                        Daraja. Do not use Sandbox credentials.
+                                    </p>
+                                </div>
                             </div>
 
-                            <div className="flex gap-3 pt-2">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Business Short Code
+                                </label>
+                                <input
+                                    type="text"
+                                    name="shortCode"
+                                    value={mpesaConfig.shortCode}
+                                    onChange={(e) =>
+                                        setMpesaConfig((prev) => ({
+                                            ...prev,
+                                            shortCode: e.target.value.replace(
+                                                /\D/g,
+                                                ""
+                                            ),
+                                        }))
+                                    }
+                                    placeholder="e.g. 174379"
+                                    className="w-full outline-none bg-slate-50 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 transition-all"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Consumer Key
+                                </label>
+                                <input
+                                    type="text"
+                                    name="consumerKey"
+                                    value={mpesaConfig.consumerKey}
+                                    onChange={handleChange}
+                                    placeholder="Consumer Key"
+                                    className="w-full outline-none bg-slate-50 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 transition-all"
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-5 border-t border-gray-100 pt-4">
+                                <div className="flex justify-between items-center">
+                                    <h4 className="text-sm font-semibold text-gray-900">
+                                        Production Secrets
+                                    </h4>
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setShowSecrets(!showSecrets)
+                                        }
+                                        className="text-xs text-green-500 font-medium flex items-center gap-1"
+                                    >
+                                        {showSecrets ? (
+                                            <>
+                                                <EyeOff size={12} /> Hide
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Eye size={12} /> Show
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Consumer Secret
+                                    </label>
+                                    <input
+                                        type={showSecrets ? "text" : "password"}
+                                        name="consumerSecret"
+                                        value={mpesaConfig.consumerSecret}
+                                        onChange={handleChange}
+                                        className="w-full outline-none bg-slate-50 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 font-mono text-sm"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Pass Key
+                                    </label>
+                                    <input
+                                        type={showSecrets ? "text" : "password"}
+                                        name="passKey"
+                                        value={mpesaConfig.passKey}
+                                        onChange={handleChange}
+                                        className="w-full outline-none bg-slate-50 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 font-mono text-sm"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 pt-4 border-t border-gray-100">
                                 {integrations.mpesa && (
                                     <button
                                         type="button"
                                         onClick={handleDisconnect}
-                                        className="flex-1 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 focus:outline-none"
+                                        className="flex-1 px-4 py-2.5 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100"
                                     >
                                         Disconnect
                                     </button>
                                 )}
                                 <button
                                     type="submit"
-                                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                    className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-700 shadow-sm"
                                 >
                                     {integrations.mpesa
-                                        ? "Update"
+                                        ? "Update Credentials"
                                         : "Save & Connect"}
                                 </button>
                             </div>

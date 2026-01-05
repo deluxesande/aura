@@ -76,12 +76,12 @@ const SettingsPage: React.FC = () => {
                                     </div>
                                     <div className="space-y-6 w-full">
                                         <div className="w-full">
+                                            <IntegrationsSettings />
+                                        </div>
+                                        <div className="w-full">
                                             <NotificationPreferencesForm
                                                 role={user.role}
                                             />
-                                        </div>
-                                        <div className="w-full">
-                                            <IntegrationsSettings />
                                         </div>
                                     </div>
                                 </div>

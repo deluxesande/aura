@@ -531,7 +531,7 @@ export default function Page() {
                                             }
                                         />
                                     </div>
-                                    {/* Restock & Cart Overlay Buttons */}
+                                    {/* Restock Button */}
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -546,6 +546,8 @@ export default function Page() {
                                     >
                                         <Plus size={16} />
                                     </button>
+
+                                    {/* Add to Cart Button */}
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();

@@ -48,10 +48,10 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
                     businessId: id,
                     status: "PAID",
                     paymentType: "MPESA",
-                    createdAt: {
-                        gte: activeSubscription.currentPeriodStart,
-                        lte: activeSubscription.currentPeriodEnd,
-                    },
+                    // updatedAt: {
+                    //     gte: activeSubscription.currentPeriodStart,
+                    //     lte: activeSubscription.currentPeriodEnd,
+                    // },
                 },
             });
         }

@@ -3,24 +3,21 @@ import { PrismaClient } from "@prisma/client";
 import axios from "axios";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { storeResponseInDb } from "@/utils/storeInDb";
-
+import { decrypt } from "@/utils/crypto";
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient();
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
-const { CONSUMER_KEY, CONSUMER_SECRET, SHORTCODE, PASS_KEY, CALLBACK_URL } =
-    process.env;
+// Callback is still likely an env variable as it's consistent across the app
+const { CALLBACK_URL } = process.env;
 
 const OAUTH_URL =
-    "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials";
+    "https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials";
 const STK_PUSH_URL =
-    "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest";
+    "https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest";
 
-const getAccessToken = async () => {
-    if (!CONSUMER_KEY || !CONSUMER_SECRET) {
-        throw new Error("Missing CONSUMER_KEY or CONSUMER_SECRET");
-    }
-    const auth = Buffer.from(`${CONSUMER_KEY}:${CONSUMER_SECRET}`).toString(
+const getAccessToken = async (consumerKey: string, consumerSecret: string) => {
+    const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString(
         "base64"
     );
     const response = await axios.get(OAUTH_URL, {
@@ -45,15 +42,10 @@ async function getInvoiceCount(businessId: string, subscription: any) {
             businessId,
             status: "PAID",
             paymentType: "MPESA",
-            mpesaPayments: {
-                some: {
-                    status: "COMPLETED",
-                },
-            },
-            createdAt: {
-                gte: subscription.currentPeriodStart,
-                lte: subscription.currentPeriodEnd,
-            },
+            // createdAt: {
+            //     gte: subscription.currentPeriodStart,
+            //     lte: subscription.currentPeriodEnd,
+            // },
         },
     });
 }
@@ -62,9 +54,8 @@ export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse
 ) {
-    if (req.method !== "POST") {
+    if (req.method !== "POST")
         return res.status(405).json({ error: "Method not allowed" });
-    }
 
     try {
         const { phoneNumber, amount, invoiceId } = req.body;
@@ -97,31 +88,40 @@ export default async function handler(
                 .json({ error: "User is not linked to a valid business" });
         }
 
-        const subscription = user.Business.subscriptions[0];
+        const biz = user.Business;
 
+        if (
+            !biz.mpesaConsumerKey ||
+            !biz.mpesaConsumerSecret ||
+            !biz.mpesaPassKey ||
+            !biz.mpesaShortCode
+        ) {
+            return res.status(403).json({
+                error: "M-Pesa integration not configured",
+                message:
+                    "Please go to Settings > Integrations and enter your M-Pesa Daraja keys to enable payments.",
+            });
+        }
+
+        const consumerKey = decrypt(biz.mpesaConsumerKey);
+        const consumerSecret = decrypt(biz.mpesaConsumerSecret);
+        const passKey = decrypt(biz.mpesaPassKey);
+        const shortCode = biz.mpesaShortCode;
+
+        const subscription = biz.subscriptions[0];
         if (subscription && subscription.plan === "STARTER") {
             const currentTxCount = await getInvoiceCount(
                 user.businessId,
                 subscription
             );
-
             if (currentTxCount >= 100) {
-                return res.status(403).json({
-                    error: "Transaction limit reached",
-                    message:
-                        "You have reached the 100-transaction monthly limit for the STARTER plan.",
-                    usage: {
-                        current: currentTxCount,
-                        limit: 100,
-                        resetDate: subscription.currentPeriodEnd,
-                    },
-                    suggestion:
-                        "Please upgrade to the STANDARD or PREMIUM plan to continue processing payments.",
-                });
+                return res
+                    .status(403)
+                    .json({ error: "Transaction limit reached" });
             }
         }
 
-        const token = await getAccessToken();
+        const token = await getAccessToken(consumerKey, consumerSecret);
         const date = new Date();
         const timestamp =
             date.getFullYear() +
@@ -131,28 +131,23 @@ export default async function handler(
             ("0" + date.getMinutes()).slice(-2) +
             ("0" + date.getSeconds()).slice(-2);
 
-        if (!SHORTCODE || !PASS_KEY || !CALLBACK_URL) {
-            throw new Error("Missing M-Pesa env variables");
-        }
-
         const password = Buffer.from(
-            `${SHORTCODE}${PASS_KEY}${timestamp}`
+            `${shortCode}${passKey}${timestamp}`
         ).toString("base64");
         const formattedPhone = formatPhoneNumber(phoneNumber);
-
         const fullAmount = Math.ceil(Number(amount));
 
         const stkData = {
-            BusinessShortCode: SHORTCODE,
+            BusinessShortCode: shortCode,
             Password: password,
             Timestamp: timestamp,
             TransactionType: "CustomerPayBillOnline",
             Amount: fullAmount,
             PartyA: formattedPhone,
-            PartyB: SHORTCODE,
+            PartyB: shortCode,
             PhoneNumber: formattedPhone,
             CallBackURL: CALLBACK_URL,
-            AccountReference: "Invoice Payment",
+            AccountReference: biz.name || "Invoice Payment",
             TransactionDesc: `Invoice ${invoiceId}`,
         };
 
@@ -161,7 +156,6 @@ export default async function handler(
         });
 
         await storeResponseInDb(stkResponse.data);
-
         await prisma.mpesaPayment.create({
             data: {
                 amount: parseFloat(amount),
@@ -177,15 +171,9 @@ export default async function handler(
             },
         });
 
-        return res.status(200).json({
-            data: stkResponse.data,
-            message: "STK Push sent",
-            usageRemaining:
-                subscription?.plan === "STARTER"
-                    ? 100 -
-                      (await getInvoiceCount(user.businessId, subscription))
-                    : "Unlimited",
-        });
+        return res
+            .status(200)
+            .json({ data: stkResponse.data, message: "STK Push sent" });
     } catch (error: any) {
         console.error("STK API Error:", error?.response?.data || error.message);
         return res.status(500).json({
