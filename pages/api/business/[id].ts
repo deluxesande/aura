@@ -13,7 +13,6 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
     }
 
     try {
-        // Fetch business with the LATEST ACTIVE subscription
         const business = await prisma.business.findUnique({
             where: { id: id },
             include: {
@@ -39,6 +38,8 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
             currentPeriodTransactions = await prisma.invoice.count({
                 where: {
                     businessId: id,
+                    status: "PAID",
+                    paymentType: "MPESA",
                     createdAt: {
                         gte: activeSubscription.currentPeriodStart,
                         lte: activeSubscription.currentPeriodEnd,
