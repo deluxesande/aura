@@ -1,8 +1,28 @@
 "use client";
 
 import { AppState } from "@/store";
+import { setUser } from "@/store/slices/authSlice";
+import {
+    setBusinessDetails,
+    setBusinessLoading,
+} from "@/store/slices/businessDataSlice";
 import { hide, show } from "@/store/slices/visibilitySlice";
 import { SignedIn } from "@clerk/nextjs";
+import {
+    autoUpdate,
+    flip,
+    FloatingPortal,
+    offset,
+    shift,
+    useFloating,
+} from "@floating-ui/react";
+import { Bell, Inbox, Notifications } from "@novu/nextjs";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@radix-ui/react-popover";
+import axios from "axios";
 import {
     AlertTriangle,
     Menu,
@@ -10,7 +30,6 @@ import {
     ShoppingCart,
     SlidersHorizontal,
     X,
-    TrendingUp,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -18,30 +37,10 @@ import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
+import BusinessOnboardingModal from "../BusinessOnboardingModal";
 import CustomUserButton from "../CustomUserButton";
 import FilterOverlay from "../FilterOverlay";
 import Sidebar from "./Sidebar";
-import axios from "axios";
-import { setUser } from "@/store/slices/authSlice";
-import {
-    setBusinessDetails,
-    setBusinessLoading,
-} from "@/store/slices/businessDataSlice";
-import { Bell, Inbox, Notifications } from "@novu/nextjs";
-import {
-    Popover,
-    PopoverTrigger,
-    PopoverContent,
-} from "@radix-ui/react-popover";
-import {
-    useFloating,
-    FloatingPortal,
-    offset,
-    flip,
-    shift,
-    autoUpdate,
-} from "@floating-ui/react";
-import BusinessOnboardingModal from "../BusinessOnboardingModal";
 
 // --- Configuration ---
 const allLinks = [

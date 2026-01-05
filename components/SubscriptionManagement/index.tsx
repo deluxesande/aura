@@ -1,25 +1,24 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
 import { AppState } from "@/store";
+import axios from "axios";
 import {
     ArrowUpCircle,
-    CheckCircle2,
-    Zap,
     Calendar,
-    RefreshCcw,
-    X,
-    Loader2,
-    Phone,
-    UserPlus,
+    CheckCircle2,
     ChevronLeft,
     ChevronRight,
     FileX,
-    Receipt,
+    Loader2,
+    Phone,
+    RefreshCcw,
+    UserPlus,
+    X,
+    Zap,
 } from "lucide-react";
 import Link from "next/link";
-import axios from "axios";
 import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import { toast } from "sonner";
 
 type BillingHistoryItem = {
@@ -347,7 +346,7 @@ const SubscriptionManagement: React.FC = () => {
                                         colSpan={5}
                                         className="py-12 px-4 text-center"
                                     >
-                                        <div className="flex flex-col items-center justify-center">
+                                        <div className="flex flex-col items-center justify-center my-10">
                                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                                         </div>
                                     </td>

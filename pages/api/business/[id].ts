@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { updateBusiness } from "./update";
 import { deleteBusiness } from "./delete";
 import { prisma } from "@/utils/lib/client";
+import { checkAndRenewStarterPlan } from "@/utils/subscription/subscription";
 
 async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
     const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
@@ -31,7 +32,14 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
             return res.status(404).json({ error: "Business not found" });
         }
 
-        const activeSubscription = business.subscriptions[0] || null;
+        let activeSubscription = business.subscriptions[0] || null;
+
+        if (activeSubscription) {
+            activeSubscription = await checkAndRenewStarterPlan(
+                id,
+                activeSubscription
+            );
+        }
 
         let currentPeriodTransactions = 0;
         if (activeSubscription) {
