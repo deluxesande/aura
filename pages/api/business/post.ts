@@ -22,10 +22,18 @@ const addBusinessHandler = async (
         // 1. Check if user already owns a business
         const existingBusiness = await prisma.business.findUnique({
             where: { createdBy: user.userId },
+            include: {
+                subscriptions: {
+                    where: { status: "ACTIVE" },
+                    take: 1,
+                },
+            },
         });
 
-        if (existingBusiness) {
-            return res.status(409).json({ error: "Business already exists" });
+        if (existingBusiness?.subscriptions[0]) {
+            return res
+                .status(400)
+                .json({ error: "You already have an active subscription." });
         }
 
         const form = formidable({ multiples: true });

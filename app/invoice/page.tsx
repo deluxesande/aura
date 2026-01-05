@@ -379,9 +379,8 @@ function InvoicePageContent() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <div className="flex items-center gap-2 text-gray-500 mb-1">
-                                            <Calendar size={14} />
                                             <span className="text-xs font-medium">
-                                                Issued
+                                                Date Issued
                                             </span>
                                         </div>
                                         <p className="text-sm text-gray-900 font-medium">
@@ -393,9 +392,8 @@ function InvoicePageContent() {
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2 text-gray-500 mb-1">
-                                            <CreditCard size={14} />
                                             <span className="text-xs font-medium">
-                                                Payment
+                                                Payment Method
                                             </span>
                                         </div>
                                         <p className="text-sm text-gray-900 font-medium">
