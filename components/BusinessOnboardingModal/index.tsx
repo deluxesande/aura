@@ -40,13 +40,11 @@ const BusinessOnboardingModal = () => {
 
         setIsLoading(true);
         try {
-            // 2. Create Business via API
-            const formData = new FormData();
-            formData.append("name", businessName);
+            const data = { name: businessName };
 
             const response = await axios.put(
                 `/api/business/${user?.businessId}`,
-                formData,
+                data,
                 {
                     headers: { "Content-Type": "multipart/form-data" },
                 }
