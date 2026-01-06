@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { clerkClient, getAuth } from "@clerk/nextjs/server";
+import { getAuth } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
 
 export default async function handler(
@@ -26,6 +26,21 @@ export default async function handler(
             return res.status(200).json({ user: { role: "admin" } });
         }
 
+        let maskedBusiness = null;
+        if (user.Business) {
+            maskedBusiness = {
+                ...user.Business,
+                mpesaConsumerKey: user.Business.mpesaConsumerKey
+                    ? "***********"
+                    : null,
+                mpesaConsumerSecret: user.Business.mpesaConsumerSecret
+                    ? "***********"
+                    : null,
+                mpesaPassKey: user.Business.mpesaPassKey ? "***********" : null,
+                mpesaShortCode: user.Business.mpesaShortCode,
+            };
+        }
+
         return res.status(200).json({
             user: {
                 id: user.id,
@@ -36,7 +51,7 @@ export default async function handler(
                 role: user.role,
                 businessId: user.businessId,
                 status: user.status,
-                Business: user.Business,
+                Business: maskedBusiness,
             },
         });
     } catch (error) {

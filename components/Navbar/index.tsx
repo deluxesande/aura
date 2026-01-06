@@ -269,7 +269,7 @@ export default function Navbar({
                             )}
 
                             {isProductsPage && (
-                                <div className="flex items-center bg-gray-100 rounded-lg shadow-sm max-w-sm w-full">
+                                <div className="flex items-center bg-gray-100 rounded-lg shadow-sm w-full">
                                     <input
                                         type="text"
                                         placeholder="Search inventory..."
@@ -284,7 +284,10 @@ export default function Navbar({
                                         className="pr-4 text-gray-400 cursor-pointer"
                                         onClick={handleSearch}
                                     >
-                                        <SearchIcon size={18} />
+                                        <SearchIcon
+                                            size={18}
+                                            className="stroke-green-500"
+                                        />
                                     </div>
                                 </div>
                             )}

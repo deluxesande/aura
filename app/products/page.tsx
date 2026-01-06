@@ -94,6 +94,10 @@ export default function Page() {
     const productsRef = useRef(productsData);
     productsRef.current = productsData;
 
+    const business = useSelector(
+        (state: AppState) => state.businessData.businessDetails
+    );
+
     const filteredProducts = useMemo(() => {
         if (selectedCategoryId === "ALL") {
             return productsData;
@@ -341,6 +345,7 @@ export default function Page() {
             toast.warning("Name fields are required.");
             return;
         }
+
         const formatted = formatPhoneNumber(newCustomerDetails.phoneNumber);
         if (!formatted) {
             toast.error("Invalid Phone Number");
@@ -348,33 +353,59 @@ export default function Page() {
         }
 
         try {
-            const res = await axios.post("/api/customer", {
-                firstName: newCustomerDetails.firstName,
-                lastName: newCustomerDetails.lastName,
-                phoneNumber: formatted,
-                email: newCustomerDetails.email || null,
-            });
-
-            if (res.status === 201 || res.status === 200) {
-                setCustomers((prev) => [...prev, res.data]);
-                handleSelectCustomer(res.data);
-                setShowAddCustomerModal(false);
-                setShowSelectCustomerModal(false);
-                setNewCustomerDetails({
-                    firstName: "",
-                    lastName: "",
-                    email: "",
-                    phoneNumber: "",
+            const promise = async () => {
+                const res = await axios.post("/api/customer", {
+                    firstName: newCustomerDetails.firstName,
+                    lastName: newCustomerDetails.lastName,
+                    phoneNumber: formatted,
+                    email: newCustomerDetails.email || null,
                 });
-                toast.success("Customer saved");
-            }
-        } catch (e) {
-            toast.error("Failed to save customer");
+
+                if (res.status === 201 || res.status === 200) {
+                    setCustomers((prev) => [...prev, res.data]);
+                    handleSelectCustomer(res.data);
+                    setShowAddCustomerModal(false);
+                    setShowSelectCustomerModal(false);
+                    setNewCustomerDetails({
+                        firstName: "",
+                        lastName: "",
+                        email: "",
+                        phoneNumber: "",
+                    });
+                    toast.success("Customer saved");
+                }
+            };
+
+            toast.promise(promise(), {
+                loading: "Saving Customer...",
+                success: "Customer saved",
+                error: (e) => {
+                    return e.response?.data?.error || "Failed to save customer";
+                },
+            });
+        } catch (e: any) {
+            const backendError =
+                e.response?.data?.error || "Failed to save customer";
+
+            toast.error(backendError);
         }
     };
 
     const handleMpesaPrompt = async (event: React.FormEvent) => {
         event.preventDefault();
+
+        // 1. Validation: Check if M-Pesa is configured in Redux business state
+        const isMpesaConfigured =
+            business?.mpesaShortCode &&
+            business?.mpesaConsumerKey === "***********";
+
+        if (!isMpesaConfigured) {
+            toast.error(
+                "M-Pesa payments are not configured for this business."
+            );
+            return;
+        }
+
         const amount = parseFloat(
             cartItems
                 .reduce((t, i) => t + i.price * i.cartQuantity, 0)
@@ -395,7 +426,9 @@ export default function Page() {
 
         setIsProcessingOrder(true);
         try {
+            // 2. Now it's safe to create the invoice
             const invoice = await handleOrder("MPESA");
+
             if (invoice?.id) {
                 const res = await axios.post(
                     "/api/safaricom/c2b/payment/lipa",
@@ -406,14 +439,17 @@ export default function Page() {
                         invoiceId: invoice.id,
                     }
                 );
+
                 if (res.status === 200) {
                     setPaymentType("MPESA");
                     toast.success("Payment Request Sent!");
                 }
             }
-        } catch (error) {
-            console.error("Mpesa Error", error);
-            toast.error("Failed to prompt M-Pesa");
+        } catch (error: any) {
+            // Fix: axios errors are usually in error.response.data
+            const message =
+                error.response?.data?.error || "Payment initiation failed";
+            toast.error(message);
         } finally {
             setIsProcessingOrder(false);
         }

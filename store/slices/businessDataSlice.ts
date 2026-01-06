@@ -9,6 +9,10 @@ type BusinessDetails = {
         currentPeriodStart: string;
         currentPeriodEnd: string;
     };
+    mpesaConsumerKey: string;
+    mpesaConsumerSecret: string;
+    mpesaPassKey: string;
+    mpesaShortCode: string;
     usage: {
         transactionCount: number;
         staffCount: number;

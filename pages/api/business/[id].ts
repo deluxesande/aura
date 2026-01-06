@@ -48,18 +48,20 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
                     businessId: id,
                     status: "PAID",
                     paymentType: "MPESA",
-                    // updatedAt: {
-                    //     gte: activeSubscription.currentPeriodStart,
-                    //     lte: activeSubscription.currentPeriodEnd,
-                    // },
                 },
             });
         }
 
+        // Destructure and mask sensitive M-Pesa fields
         const { subscriptions, ...businessData } = business;
 
         const businessWithUsage = {
             ...businessData,
+            mpesaConsumerKey: business.mpesaConsumerKey ? "***********" : null,
+            mpesaConsumerSecret: business.mpesaConsumerSecret
+                ? "***********"
+                : null,
+            mpesaPassKey: business.mpesaPassKey ? "***********" : null,
             subscription: activeSubscription,
             usage: {
                 transactionCount: currentPeriodTransactions,
@@ -78,7 +80,6 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
         res.status(500).json({ error: "Failed to fetch Business" });
     }
 }
-
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
     switch (req.method) {
         case "GET":

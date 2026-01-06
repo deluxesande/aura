@@ -18,7 +18,7 @@ function NoProductsFound() {
             </p>
 
             <Link href="/products/create">
-                <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors shadow-sm">
+                <button className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors shadow-sm">
                     <PlusCircle className="w-4 h-4 stroke-white" />
                     Add First Product
                 </button>

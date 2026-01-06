@@ -11,6 +11,8 @@ interface User {
     Business?: {
         id: string;
         name: string;
+        mpesaShortCode?: string;
+        mpesaConsumerKey?: string;
     } | null;
 }
 
@@ -32,10 +34,10 @@ const authSlice = createSlice({
     reducers: {
         signIn: (state) => {
             state.isSignedIn = true;
-            state.loading = true;
         },
-        setUser: (state, action: PayloadAction<User>) => {
+        setUser: (state, action: PayloadAction<User | null>) => {
             state.user = action.payload;
+            state.isSignedIn = !!action.payload;
             state.loading = false;
         },
         signOut: (state) => {
@@ -45,10 +47,15 @@ const authSlice = createSlice({
         },
         clearUser: (state) => {
             state.user = null;
+            state.isSignedIn = false;
             state.loading = false;
+        },
+        setLoading: (state, action: PayloadAction<boolean>) => {
+            state.loading = action.payload;
         },
     },
 });
 
-export const { signIn, setUser, signOut, clearUser } = authSlice.actions;
+export const { signIn, setUser, signOut, clearUser, setLoading } =
+    authSlice.actions;
 export default authSlice.reducer;

@@ -1,12 +1,12 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { AppState } from "@/store";
 import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
+import { signIn } from "@/store/slices/authSlice";
 
-// 1. Keep exact matches here
 const PUBLIC_ROUTES = new Set([
     "/",
     "/sign-in",
@@ -21,7 +21,6 @@ const PUBLIC_ROUTES = new Set([
     "/payment/checking",
 ]);
 
-// 2. Define routes that should be public regardless of what follows (e.g. tokens)
 const PUBLIC_PREFIXES = ["/auth/accept-invitation"];
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
@@ -40,9 +39,18 @@ const SORTED_PROTECTED_ROUTES = Object.keys(ROLE_PERMISSIONS).sort(
 
 export default function RoleGuard({ children }: { children: React.ReactNode }) {
     const router = useRouter();
+    const dispatch = useDispatch();
     const pathname = usePathname() || "";
 
-    const { user, loading } = useSelector((state: AppState) => state.auth);
+    const { user, loading, isSignedIn } = useSelector(
+        (state: AppState) => state.auth
+    );
+
+    useEffect(() => {
+        if (!loading && user && !isSignedIn) {
+            dispatch(signIn());
+        }
+    }, [user, loading, isSignedIn, dispatch]);
 
     const isPublicRoute = useMemo(() => {
         if (PUBLIC_ROUTES.has(pathname)) return true;
@@ -57,6 +65,7 @@ export default function RoleGuard({ children }: { children: React.ReactNode }) {
         if (!user) return { isAuthorized: false, redirectPath: "/sign-in" };
 
         const userRole = user.role?.toLowerCase() || "user";
+
         const matchedRoute = SORTED_PROTECTED_ROUTES.find((route) =>
             pathname.startsWith(route)
         );
