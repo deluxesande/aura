@@ -44,7 +44,7 @@ const BusinessOnboardingModal = () => {
             const formData = new FormData();
             formData.append("name", businessName);
 
-            const response = await axios.post("/api/business", formData, {
+            const response = await axios.put("/api/business", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
 
