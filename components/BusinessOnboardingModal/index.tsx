@@ -46,7 +46,7 @@ const BusinessOnboardingModal = () => {
                 `/api/business/${user?.businessId}`,
                 data,
                 {
-                    headers: { "Content-Type": "multipart/form-data" },
+                    headers: { "Content-Type": "application/json" },
                 }
             );
 
