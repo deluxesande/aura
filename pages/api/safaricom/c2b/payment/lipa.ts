@@ -12,9 +12,9 @@ if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 const { CALLBACK_URL } = process.env;
 
 const OAUTH_URL =
-    "https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials";
+    "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials";
 const STK_PUSH_URL =
-    "https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest";
+    "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest";
 
 const getAccessToken = async (consumerKey: string, consumerSecret: string) => {
     const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString(
@@ -175,7 +175,8 @@ export default async function handler(
             .status(200)
             .json({ data: stkResponse.data, message: "STK Push sent" });
     } catch (error: any) {
-        console.error("STK API Error:", error?.response?.data || error.message);
+        // console.error("STK API Error:", error?.response?.data || error.message);
+        console.error("STK API Error:", error);
         return res.status(500).json({
             error: "Payment initiation failed",
             details: error?.response?.data || error.message,

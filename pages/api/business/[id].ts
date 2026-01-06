@@ -43,9 +43,33 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
 
         let currentPeriodTransactions = 0;
         if (activeSubscription) {
+            // 1. Check total invoices for this business (Is the ID working?)
+            const step1 = await prisma.invoice.count({
+                where: { businessId: business.id },
+            });
+            console.log(`[DEBUG] Step 1 - Total Invoices: ${step1}`);
+
+            // 2. Check how many are marked PAID (Is the status updating?)
+            const step2 = await prisma.invoice.count({
+                where: {
+                    businessId: business.id,
+                    status: "PAID",
+                },
+            });
+            console.log(`[DEBUG] Step 2 - PAID Invoices: ${step2}`);
+
+            // 3. Check how many have the paymentType set (Is this field actually populated?)
+            const step3 = await prisma.invoice.count({
+                where: {
+                    businessId: business.id,
+                    paymentType: "MPESA",
+                },
+            });
+            console.log(`[DEBUG] Step 3 - MPESA Invoices: ${step3}`);
+
             currentPeriodTransactions = await prisma.invoice.count({
                 where: {
-                    businessId: id,
+                    businessId: business.id,
                     status: "PAID",
                     paymentType: "MPESA",
                 },

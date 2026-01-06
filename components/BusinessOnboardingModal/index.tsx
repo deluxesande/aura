@@ -8,10 +8,14 @@ import { setBusiness } from "@/store/slices/businessSlice";
 import { Building2, ArrowRight, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-// Define the shape of the User in your Redux store
+interface Business {
+    id: string;
+    name: string;
+}
 interface UserState {
     businessId?: string | null;
     firstName?: string;
+    Business: Business | null;
 }
 
 const BusinessOnboardingModal = () => {
@@ -25,8 +29,10 @@ const BusinessOnboardingModal = () => {
         (state: AppState) => state.auth.user
     ) as UserState | null;
 
-    // 1. Logic: If user exists BUT has no businessId, show the modal
-    const showModal = user && !user.businessId;
+    // const showModal = user && !user.businessId;
+    const showModal =
+        (user && !user.businessId) ||
+        user?.Business?.name === "My New Business";
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

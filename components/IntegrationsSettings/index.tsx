@@ -1,9 +1,9 @@
-import { AlertTriangle, Check, Eye, EyeOff, X, Loader2 } from "lucide-react";
-import React, { useState, useEffect } from "react";
-import { toast } from "sonner";
-import axios from "axios";
-import { useSelector } from "react-redux";
 import { AppState } from "@/store";
+import axios from "axios";
+import { AlertTriangle, Check, Eye, EyeOff, X } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import { toast } from "sonner";
 
 type User = {
     id: string;
@@ -180,13 +180,15 @@ const IntegrationsSettings: React.FC = () => {
         }
     };
 
-    if (isFetching) {
-        return (
-            <div className="flex justify-center p-12">
-                <Loader2 className="animate-spin text-gray-400" />
-            </div>
-        );
-    }
+    // if (isFetching) {
+    //     return (
+    //         <div className="flex justify-center p-12">
+    //             <div className="flex flex-col items-center justify-center">
+    //                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+    //             </div>
+    //         </div>
+    //     );
+    // }
 
     return (
         <section className="bg-white p-6 rounded-lg shadow-md w-full max-w-3xl relative">
@@ -199,6 +201,14 @@ const IntegrationsSettings: React.FC = () => {
                     transactions.
                 </p>
             </header>
+
+            {/* {isFetching && (
+                <div className="flex justify-center p-12">
+                    <div className="flex flex-col items-center justify-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                    </div>
+                </div>
+            )} */}
 
             <div className="mt-6 space-y-4">
                 {integrationsList.map((integration) => (

@@ -233,8 +233,8 @@ const SubscriptionManagement: React.FC = () => {
                             <p
                                 className={`text-xl font-bold mt-1 ${
                                     subscription?.status === "ACTIVE"
-                                        ? "text-green-600"
-                                        : "text-orange-600"
+                                        ? "text-green-500"
+                                        : "text-orange-500"
                                 }`}
                             >
                                 {subscription?.status || "ACTIVE"}
