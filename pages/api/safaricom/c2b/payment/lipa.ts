@@ -1,6 +1,6 @@
 import { getAuth } from "@clerk/nextjs/server";
 import { PrismaClient } from "@prisma/client";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { storeResponseInDb } from "@/utils/storeInDb";
 import { decrypt } from "@/utils/crypto";
@@ -8,7 +8,6 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient();
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
-// Callback is still likely an env variable as it's consistent across the app
 const { CALLBACK_URL } = process.env;
 
 const OAUTH_URL =
@@ -35,17 +34,17 @@ const formatPhoneNumber = (phone: string) => {
     return p;
 };
 
-async function getInvoiceCount(businessId: string, subscription: any) {
+async function getInvoiceCount(clerkIds: string[], subscription: any) {
     if (!subscription) return 0;
     return await prisma.invoice.count({
         where: {
-            businessId,
+            createdBy: { in: clerkIds },
             status: "PAID",
             paymentType: "MPESA",
-            // createdAt: {
-            //     gte: subscription.currentPeriodStart,
-            //     lte: subscription.currentPeriodEnd,
-            // },
+            createdAt: {
+                gte: subscription.currentPeriodStart,
+                lte: subscription.currentPeriodEnd,
+            },
         },
     });
 }
@@ -108,10 +107,16 @@ export default async function handler(
         const passKey = decrypt(biz.mpesaPassKey);
         const shortCode = biz.mpesaShortCode;
 
+        const users = await prisma.user.findMany({
+            where: { businessId: user.businessId },
+            select: { clerkId: true },
+        });
+        const clerkIds = users.map((u) => u.clerkId);
+
         const subscription = biz.subscriptions[0];
         if (subscription && subscription.plan === "STARTER") {
             const currentTxCount = await getInvoiceCount(
-                user.businessId,
+                clerkIds,
                 subscription
             );
             if (currentTxCount >= 100) {
@@ -174,12 +179,12 @@ export default async function handler(
         return res
             .status(200)
             .json({ data: stkResponse.data, message: "STK Push sent" });
-    } catch (error: any) {
-        // console.error("STK API Error:", error?.response?.data || error.message);
-        console.error("STK API Error:", error);
+    } catch (error) {
+        const axiosError = error as AxiosError;
+        console.error("STK API Error:", axiosError);
         return res.status(500).json({
             error: "Payment initiation failed",
-            details: error?.response?.data || error.message,
+            details: axiosError.response?.data || axiosError.message,
         });
     }
 }
