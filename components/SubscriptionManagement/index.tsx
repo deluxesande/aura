@@ -538,12 +538,6 @@ const SubscriptionManagement: React.FC = () => {
                                     M-Pesa Number
                                 </label>
                                 <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Phone
-                                            size={18}
-                                            className="h-5 w-5 stroke-green-500"
-                                        />
-                                    </div>
                                     <input
                                         type="tel"
                                         required
