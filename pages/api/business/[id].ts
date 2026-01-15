@@ -5,7 +5,8 @@ import { prisma } from "@/utils/lib/client";
 import { checkAndRenewStarterPlan } from "@/utils/subscription/subscription";
 
 async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
-    const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
+    let id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
+    id = id?.trim();
 
     if (!id) {
         return res
@@ -21,6 +22,9 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
                     where: { status: "ACTIVE" },
                     orderBy: { createdAt: "desc" },
                     take: 1,
+                },
+                users: {
+                    select: { clerkId: true },
                 },
                 _count: {
                     select: { users: true },
@@ -43,35 +47,20 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
 
         let currentPeriodTransactions = 0;
         if (activeSubscription) {
-            // 1. Check total invoices for this business (Is the ID working?)
-            const step1 = await prisma.invoice.count({
-                where: { businessId: business.id },
-            });
-            console.log(`[DEBUG] Step 1 - Total Invoices: ${step1}`);
-
-            // 2. Check how many are marked PAID (Is the status updating?)
-            const step2 = await prisma.invoice.count({
-                where: {
-                    businessId: business.id,
-                    status: "PAID",
-                },
-            });
-            console.log(`[DEBUG] Step 2 - PAID Invoices: ${step2}`);
-
-            // 3. Check how many have the paymentType set (Is this field actually populated?)
-            const step3 = await prisma.invoice.count({
-                where: {
-                    businessId: business.id,
-                    paymentType: "MPESA",
-                },
-            });
-            console.log(`[DEBUG] Step 3 - MPESA Invoices: ${step3}`);
-
+            const clerkIds = business.users.map((u) => u.clerkId);
+            // Count current period transactions for paid M-Pesa invoices
             currentPeriodTransactions = await prisma.invoice.count({
                 where: {
-                    businessId: business.id,
+                    OR: [
+                        { businessId: business.id },
+                        { createdBy: { in: clerkIds } },
+                    ],
                     status: "PAID",
                     paymentType: "MPESA",
+                    createdAt: {
+                        gte: activeSubscription.currentPeriodStart,
+                        lte: activeSubscription.currentPeriodEnd,
+                    },
                 },
             });
         }
