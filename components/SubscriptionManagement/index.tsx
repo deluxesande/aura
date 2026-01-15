@@ -17,9 +17,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { Key, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
+import useSWR from "swr";
+const fetcher = (url: string) => axios.get(url).then((res) => res.data);
 
 type BillingHistoryItem = {
     id: string;
@@ -36,8 +38,6 @@ const SubscriptionManagement: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [phoneNumber, setPhoneNumber] = useState("");
 
-    const [history, setHistory] = useState<BillingHistoryItem[]>([]);
-    const [historyLoading, setHistoryLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
@@ -45,20 +45,27 @@ const SubscriptionManagement: React.FC = () => {
         (state: AppState) => state.businessData.businessDetails
     );
 
+    const {
+        data: history,
+        error,
+        isLoading: historyLoading,
+    } = useSWR(
+        businessDetails?.id ? "/api/subscription/history" : null,
+        fetcher,
+        {
+            revalidateOnFocus: true,
+            revalidateOnReconnect: true,
+            dedupingInterval: 5000,
+            refreshInterval: 60000,
+        }
+    );
+
     useEffect(() => {
-        const fetchHistory = async () => {
-            if (!businessDetails?.id) return;
-            try {
-                const res = await axios.get("/api/subscription/history");
-                setHistory(res.data);
-            } catch (error) {
-                console.error("Failed to fetch billing history");
-            } finally {
-                setHistoryLoading(false);
-            }
-        };
-        fetchHistory();
-    }, [businessDetails?.id]);
+        if (error) {
+            console.error("Failed to fetch billing history:", error);
+            toast.error("Failed to load billing history");
+        }
+    }, [error]);
 
     if (!businessDetails) return null;
 
@@ -116,10 +123,10 @@ const SubscriptionManagement: React.FC = () => {
         }
     };
 
-    const totalPages = Math.ceil(history.length / itemsPerPage);
+    const totalPages = Math.ceil((history || []).length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const paginatedHistory = history.slice(startIndex, endIndex);
+    const paginatedHistory = (history || []).slice(startIndex, endIndex);
 
     const handlePreviousPage = () => {
         if (currentPage > 1) setCurrentPage((prev) => prev - 1);
@@ -351,7 +358,7 @@ const SubscriptionManagement: React.FC = () => {
                                         </div>
                                     </td>
                                 </tr>
-                            ) : paginatedHistory.length === 0 ? (
+                            ) : (history || []).length === 0 ? (
                                 <tr>
                                     <td
                                         colSpan={5}
@@ -372,40 +379,43 @@ const SubscriptionManagement: React.FC = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                paginatedHistory.map((item, index) => (
-                                    <tr
-                                        key={index}
-                                        className="hover:bg-gray-50 transition-colors"
-                                    >
-                                        <td className="py-3 px-4 border-b text-black text-sm border-gray-100">
-                                            {new Date(
-                                                item.paymentDate
-                                            ).toLocaleDateString()}
-                                        </td>
-                                        <td className="py-3 px-4 border-b text-black text-sm border-gray-100 font-medium">
-                                            {item.plan}
-                                        </td>
-                                        <td className="py-3 px-4 border-b text-black text-sm border-gray-100">
-                                            KSh {item.amount.toLocaleString()}
-                                        </td>
-                                        <td className="py-3 px-4 border-b text-gray-500 text-xs border-gray-100">
-                                            {item.receiptNumber !== "N/A"
-                                                ? item.receiptNumber
-                                                : "-"}
-                                        </td>
-                                        <td className="py-3 px-4 border-b text-black text-xs border-gray-100">
-                                            <span
-                                                className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                                                    item.status === "ACTIVE"
-                                                        ? "bg-green-100 text-green-700"
-                                                        : "bg-gray-100 text-gray-500"
-                                                }`}
-                                            >
-                                                {item.status}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))
+                                paginatedHistory.map(
+                                    (item: BillingHistoryItem, index: Key) => (
+                                        <tr
+                                            key={index}
+                                            className="hover:bg-gray-50 transition-colors"
+                                        >
+                                            <td className="py-3 px-4 border-b text-black text-sm border-gray-100">
+                                                {new Date(
+                                                    item.paymentDate
+                                                ).toLocaleDateString()}
+                                            </td>
+                                            <td className="py-3 px-4 border-b text-black text-sm border-gray-100 font-medium">
+                                                {item.plan}
+                                            </td>
+                                            <td className="py-3 px-4 border-b text-black text-sm border-gray-100">
+                                                KSh{" "}
+                                                {item.amount.toLocaleString()}
+                                            </td>
+                                            <td className="py-3 px-4 border-b text-gray-500 text-xs border-gray-100">
+                                                {item.receiptNumber !== "N/A"
+                                                    ? item.receiptNumber
+                                                    : "-"}
+                                            </td>
+                                            <td className="py-3 px-4 border-b text-black text-xs border-gray-100">
+                                                <span
+                                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                                        item.status === "ACTIVE"
+                                                            ? "bg-green-100 text-green-700"
+                                                            : "bg-gray-100 text-gray-500"
+                                                    }`}
+                                                >
+                                                    {item.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    )
+                                )
                             )}
                         </tbody>
                     </table>
@@ -416,7 +426,7 @@ const SubscriptionManagement: React.FC = () => {
                             <div className="flex justify-center py-8">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
                             </div>
-                        ) : paginatedHistory.length === 0 ? (
+                        ) : (history || []).length === 0 ? (
                             <div className="text-center py-8">
                                 <div className="bg-green-100 border border-gray-100 rounded-full p-4 mb-3 inline-block">
                                     <FileX className="h-6 w-6 stroke-green-500" />
@@ -426,50 +436,53 @@ const SubscriptionManagement: React.FC = () => {
                                 </h3>
                             </div>
                         ) : (
-                            paginatedHistory.map((item, index) => (
-                                <div
-                                    key={index}
-                                    className="bg-gray-50 rounded-lg p-4 border border-gray-100 flex flex-col gap-2"
-                                >
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <p className="font-bold text-gray-900">
-                                                {item.plan}
-                                            </p>
-                                            <p className="text-xs text-gray-500">
-                                                {new Date(
-                                                    item.paymentDate
-                                                ).toLocaleDateString()}
-                                            </p>
+                            paginatedHistory.map(
+                                (item: BillingHistoryItem, index: Key) => (
+                                    <div
+                                        key={index}
+                                        className="bg-gray-50 rounded-lg p-4 border border-gray-100 flex flex-col gap-2"
+                                    >
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="font-bold text-gray-900">
+                                                    {item.plan}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    {new Date(
+                                                        item.paymentDate
+                                                    ).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                            <span
+                                                className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                                    item.status === "ACTIVE"
+                                                        ? "bg-green-100 text-green-700"
+                                                        : "bg-gray-200 text-gray-500"
+                                                }`}
+                                            >
+                                                {item.status}
+                                            </span>
                                         </div>
-                                        <span
-                                            className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                                item.status === "ACTIVE"
-                                                    ? "bg-green-100 text-green-700"
-                                                    : "bg-gray-200 text-gray-500"
-                                            }`}
-                                        >
-                                            {item.status}
-                                        </span>
+                                        <div className="flex justify-between items-center border-t border-gray-200 pt-2 mt-1">
+                                            <span className="text-sm text-gray-600 flex items-center gap-1">
+                                                {item.receiptNumber !== "N/A"
+                                                    ? item.receiptNumber
+                                                    : "No Receipt"}
+                                            </span>
+                                            <span className="font-bold text-gray-900">
+                                                KSh{" "}
+                                                {item.amount.toLocaleString()}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div className="flex justify-between items-center border-t border-gray-200 pt-2 mt-1">
-                                        <span className="text-sm text-gray-600 flex items-center gap-1">
-                                            {item.receiptNumber !== "N/A"
-                                                ? item.receiptNumber
-                                                : "No Receipt"}
-                                        </span>
-                                        <span className="font-bold text-gray-900">
-                                            KSh {item.amount.toLocaleString()}
-                                        </span>
-                                    </div>
-                                </div>
-                            ))
+                                )
+                            )
                         )}
                     </div>
                 </div>
 
                 {/* Pagination */}
-                {!historyLoading && paginatedHistory.length > 0 && (
+                {!historyLoading && (history || []).length > 0 && (
                     <div className="flex flex-wrap justify-center items-center pt-4 my-4 gap-2 sm:gap-4">
                         <button
                             className="btn btn-xs btn-ghost flex items-center bg-green-400 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"

@@ -225,7 +225,7 @@ export default function Page() {
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
                     </div>
                 ) : (
-                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden px-8">
+                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden px-8 pb-8">
                         {/* Header with Search */}
                         <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-white">
                             <div className="flex items-center gap-3 w-full md:w-auto">
@@ -296,7 +296,7 @@ export default function Page() {
                             </div>
                         </div>
 
-                        <div className="hidden lg:block overflow-hidden rounded-lg border border-gray-200">
+                        <div className="hidden lg:block overflow-x-auto rounded-lg border border-gray-200">
                             <table className="min-w-full bg-white">
                                 <thead className="bg-gray-50">
                                     <tr className="bg-gray-50/50 border-b border-gray-100 text-gray-500 text-xs tracking-wider">

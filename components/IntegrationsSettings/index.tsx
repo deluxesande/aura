@@ -1,9 +1,10 @@
 import { AppState } from "@/store";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { AlertTriangle, Check, Eye, EyeOff, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
+import useSWR from "swr";
 
 type User = {
     id: string;
@@ -16,10 +17,11 @@ type User = {
     Business: {};
 };
 
+const fetcher = (url: string) => axios.get(url).then((res) => res.data);
+
 const IntegrationsSettings: React.FC = () => {
     const [integrations, setIntegrations] = useState({ mpesa: false });
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isFetching, setIsFetching] = useState(true); // Initial loading state
     const [activeService, setActiveService] = useState<string | null>(null);
     const [showSecrets, setShowSecrets] = useState(false);
 
@@ -39,33 +41,40 @@ const IntegrationsSettings: React.FC = () => {
         (state: AppState) => state.auth.user
     ) as User | null;
 
-    // --- 1. Fetch Integration Status on Mount ---
+    // Use SWR for caching and background updates
+    const { data, error, isLoading } = useSWR(
+        user ? "/api/auth/mpesa" : null,
+        fetcher,
+        {
+            revalidateOnFocus: true,
+            revalidateOnReconnect: true,
+            dedupingInterval: 5000,
+            refreshInterval: 60000, // Optional: refresh every 60 seconds
+        }
+    );
+
     useEffect(() => {
-        const fetchMpesaDetails = async () => {
-            try {
-                const { data } = await axios.get("/api/auth/mpesa");
-
-                // If we get masked keys back, it means the service is configured
-                if (data.mpesaConsumerKey) {
-                    const config = {
-                        consumerKey: data.mpesaConsumerKey,
-                        consumerSecret: data.mpesaConsumerSecret,
-                        passKey: data.mpesaPassKey,
-                        shortCode: data.mpesaShortCode,
-                        environment: "production",
-                    };
-                    setSavedConfig(config);
-                    setIntegrations({ mpesa: true });
-                }
-            } catch (error) {
-                console.error("Error fetching integration status:", error);
-            } finally {
-                setIsFetching(false);
+        if (data) {
+            if (data.mpesaConsumerKey) {
+                const config = {
+                    consumerKey: data.mpesaConsumerKey,
+                    consumerSecret: data.mpesaConsumerSecret,
+                    passKey: data.mpesaPassKey,
+                    shortCode: data.mpesaShortCode,
+                    environment: "production",
+                };
+                setSavedConfig(config);
+                setIntegrations({ mpesa: true });
             }
-        };
+        }
+    }, [data]);
 
-        if (user) fetchMpesaDetails();
-    }, [user]);
+    useEffect(() => {
+        if (error) {
+            console.error("Error fetching integration status:", error);
+            toast.error("Failed to load integration status");
+        }
+    }, [error]);
 
     const integrationsList = [
         {
@@ -134,9 +143,11 @@ const IntegrationsSettings: React.FC = () => {
                 setIsModalOpen(false);
                 toast.success("Live M-PESA credentials saved successfully!");
             }
-        } catch (error: any) {
+        } catch (error) {
+            const axiosError = error as AxiosError;
             const errorMessage =
-                error.response?.data?.error || "Failed to save credentials.";
+                (axiosError.response?.data as { error?: string })?.error ||
+                "Failed to save credentials.";
             toast.error(errorMessage);
         }
     };
@@ -175,20 +186,21 @@ const IntegrationsSettings: React.FC = () => {
                 setIsModalOpen(false);
                 toast.info("M-PESA integration disconnected.");
             }
-        } catch (error: any) {
+        } catch (error) {
+            const axiosError = error as AxiosError;
             toast.error("Failed to disconnect service.");
         }
     };
 
-    // if (isFetching) {
-    //     return (
-    //         <div className="flex justify-center p-12">
-    //             <div className="flex flex-col items-center justify-center">
-    //                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-    //             </div>
-    //         </div>
-    //     );
-    // }
+    if (isLoading) {
+        return (
+            <div className="flex justify-center p-12">
+                <div className="flex flex-col items-center justify-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <section className="bg-white p-6 rounded-lg shadow-md w-full max-w-3xl relative">
@@ -201,14 +213,6 @@ const IntegrationsSettings: React.FC = () => {
                     transactions.
                 </p>
             </header>
-
-            {/* {isFetching && (
-                <div className="flex justify-center p-12">
-                    <div className="flex flex-col items-center justify-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-                    </div>
-                </div>
-            )} */}
 
             <div className="mt-6 space-y-4">
                 {integrationsList.map((integration) => (

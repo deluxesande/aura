@@ -7,13 +7,14 @@ import {
     setInvitationsWithImages,
     updateInvitation,
 } from "@/store/slices/invitationsDataSlice";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { Trash, Users, AlertCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
+import useSWR from "swr";
 
 interface User {
     id: string;
@@ -40,6 +41,8 @@ interface Invitation extends User {
     imageUrl?: string;
 }
 
+const fetcher = (url: string) => axios.get(url).then((res) => res.data);
+
 const UserManagement: React.FC = () => {
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -63,8 +66,68 @@ const UserManagement: React.FC = () => {
         (state: AppState) => state.businessData?.businessDetails
     );
 
-    const [isLoading, setIsLoading] = useState(userInvitations.length === 0);
-    const hasFetched = useRef(false);
+    // Use SWR for caching and background updates
+    const {
+        data: invitationsData,
+        error,
+        isLoading,
+    } = useSWR("/api/auth/invite/get", fetcher, {
+        revalidateOnFocus: true,
+        revalidateOnReconnect: true,
+        dedupingInterval: 5000,
+        refreshInterval: 60000, // Optional: refresh every 60 seconds
+    });
+
+    // Process fetched data and fetch images
+    useEffect(() => {
+        if (invitationsData?.invitations) {
+            const rawInvitations = invitationsData.invitations;
+
+            dispatch(setInvitations(rawInvitations));
+            const imagePromises = rawInvitations.map(async (user: User) => {
+                try {
+                    const imageResponse = await axios.get(
+                        "/api/auth/user/image",
+                        {
+                            params: { userId: user.id },
+                        }
+                    );
+                    return {
+                        ...user,
+                        imageUrl:
+                            imageResponse.data.imageUrl || "/images/user.png",
+                    } as Invitation;
+                } catch (error) {
+                    return {
+                        ...user,
+                        imageUrl: "/images/user.png",
+                    } as Invitation;
+                }
+            });
+
+            const processImages = async () => {
+                const results = await Promise.allSettled(imagePromises);
+                const usersWithImages = results.map((result, index) => {
+                    if (result.status === "fulfilled") return result.value;
+                    return {
+                        ...rawInvitations[index],
+                        imageUrl: null,
+                    } as Invitation;
+                });
+                dispatch(setInvitationsWithImages(usersWithImages));
+            };
+
+            processImages();
+        }
+    }, [invitationsData, dispatch]);
+
+    // Handle fetch errors
+    useEffect(() => {
+        if (error) {
+            console.error("Failed to fetch invitations:", error);
+            toast.error("Failed to load invitations");
+        }
+    }, [error]);
 
     // --- Limit Calculation Logic ---
     const plan = businessDetails?.subscription?.plan || "STARTER";
@@ -74,76 +137,6 @@ const UserManagement: React.FC = () => {
     const teamLimit =
         plan === "STARTER" ? 1 : plan === "STANDARD" ? 5 : Infinity;
     const canInvite = staffCount < teamLimit;
-
-    useEffect(() => {
-        if (hasFetched.current) return;
-
-        const fetchUsers = async () => {
-            if (userInvitations.length === 0) setIsLoading(true);
-
-            try {
-                const response = await axios.get("/api/auth/invite/get");
-
-                if (response.data.invitations) {
-                    const rawInvitations = response.data.invitations;
-
-                    dispatch(setInvitations(rawInvitations));
-                    const imagePromises = rawInvitations.map(
-                        async (user: User) => {
-                            try {
-                                const imageResponse = await axios.get(
-                                    "/api/auth/user/image",
-                                    {
-                                        params: { userId: user.id },
-                                    }
-                                );
-                                return {
-                                    ...user,
-                                    imageUrl:
-                                        imageResponse.data.imageUrl ||
-                                        "/images/user.png",
-                                } as Invitation;
-                            } catch (error) {
-                                return {
-                                    ...user,
-                                    imageUrl: "/images/user.png",
-                                } as Invitation;
-                            }
-                        }
-                    );
-
-                    const results = await Promise.allSettled(imagePromises);
-
-                    const usersWithImages = results.map((result, index) => {
-                        if (result.status === "fulfilled") return result.value;
-                        return {
-                            ...rawInvitations[index],
-                            imageUrl: null,
-                        } as Invitation;
-                    });
-
-                    dispatch(setInvitationsWithImages(usersWithImages));
-                }
-
-                if (response.status === 404 && userInvitations.length === 0) {
-                    toast.warning("No Invitations sent by you yet.");
-                }
-            } catch (error) {
-                if (
-                    axios.isAxiosError(error) &&
-                    error.response?.status !== 404
-                ) {
-                    if (userInvitations.length === 0)
-                        toast.error("Failed to fetch Invitations.");
-                }
-            } finally {
-                setIsLoading(false);
-                hasFetched.current = true;
-            }
-        };
-
-        fetchUsers();
-    }, [dispatch]);
 
     const handleInviteUser = (e: React.FormEvent) => {
         e.preventDefault();
@@ -182,8 +175,9 @@ const UserManagement: React.FC = () => {
         toast.promise(sendInvitation(), {
             loading: "Sending Invitation.",
             success: "Invitation sent.",
-            error: (err) =>
-                err.response?.data?.error || "Failed to send invitation.",
+            error: (err: AxiosError) =>
+                (err.response?.data as { error?: string })?.error ||
+                "Failed to send invitation.",
         });
 
         setInviteEmail("");
@@ -220,8 +214,9 @@ const UserManagement: React.FC = () => {
         toast.promise(updateRole(), {
             loading: "Updating role.",
             success: "Role updated successfully.",
-            error: (error) =>
-                error?.response?.data?.error || "Failed to update role.",
+            error: (err: AxiosError) =>
+                (err.response?.data as { error?: string })?.error ||
+                "Failed to update role.",
         });
     };
 
@@ -258,8 +253,9 @@ const UserManagement: React.FC = () => {
         toast.promise(deleteProcess(), {
             loading: "Deleting User...",
             success: "User deleted successfully.",
-            error: (error) =>
-                error?.response?.data?.error || "Failed to delete user.",
+            error: (err: AxiosError) =>
+                (err.response?.data as { error?: string })?.error ||
+                "Failed to delete user.",
         });
 
         setShowDeleteModal(false);
