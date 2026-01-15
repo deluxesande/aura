@@ -156,23 +156,23 @@ export default function ProductList({
             </div>
 
             <div className="overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="overflow-hidden rounded-lg border border-gray-200">
                     <table className="min-w-full bg-white">
-                        <thead>
+                        <thead className="bg-gray-50">
                             <tr>
                                 {/* Combined Details Column */}
-                                <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-400">
+                                <th className="py-3 px-4 border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                     Product Details
                                 </th>
-                                <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-400">
+                                <th className="py-3 px-4 border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                     Category
                                 </th>
                                 {/* Created By Column */}
-                                <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-400">
+                                <th className="py-3 px-4 border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                     Created By
                                 </th>
                                 {/* Price Column */}
-                                <th className="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-400">
+                                <th className="py-3 px-4 border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                     Price
                                 </th>
                                 {/* Actions Column */}
@@ -181,7 +181,7 @@ export default function ProductList({
                                 </th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-gray-100">
                             {loading ? (
                                 <tr>
                                     <td

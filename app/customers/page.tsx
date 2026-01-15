@@ -225,7 +225,7 @@ export default function Page() {
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
                     </div>
                 ) : (
-                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden px-8">
                         {/* Header with Search */}
                         <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-white">
                             <div className="flex items-center gap-3 w-full md:w-auto">
@@ -296,31 +296,31 @@ export default function Page() {
                             </div>
                         </div>
 
-                        <div className="hidden lg:block overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
+                        <div className="hidden lg:block overflow-hidden rounded-lg border border-gray-200">
+                            <table className="min-w-full bg-white">
+                                <thead className="bg-gray-50">
                                     <tr className="bg-gray-50/50 border-b border-gray-100 text-gray-500 text-xs tracking-wider">
-                                        <th className="p-4 font-semibold">
+                                        <th className="py-3 px-4 border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                             Customer
                                         </th>
-                                        <th className="p-4 font-semibold">
+                                        <th className="py-3 px-4 border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                             Phone No.
                                         </th>
-                                        <th className="p-4 font-semibold">
+                                        <th className="py-3 px-4 border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                             Email
                                         </th>
-                                        <th className="p-4 font-semibold">
+                                        <th className="py-3 px-4 border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                             Added By
                                         </th>
-                                        <th className="p-4 font-semibold">
+                                        <th className="py-3 px-4 border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                             Date Added
                                         </th>
-                                        <th className="p-4 font-semibold">
+                                        <th className="py-3 px-4 border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                             Actions
                                         </th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-50">
+                                <tbody className="divide-y divide-gray-100">
                                     {paginatedCustomers.length > 0 ? (
                                         paginatedCustomers.map((customer) => (
                                             <tr
