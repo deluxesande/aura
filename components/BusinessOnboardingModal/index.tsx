@@ -62,8 +62,6 @@ const BusinessOnboardingModal = () => {
             // 4. Force a hard refresh or router refresh to update user context across app
             toast.success("Business profile created!");
             router.refresh();
-            // Optionally reload page to ensure all 'server components' re-fetch the new businessId
-            window.location.reload();
         } catch (error: any) {
             toast.error(
                 error.response?.data?.error || "Failed to create business"

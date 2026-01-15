@@ -65,7 +65,7 @@ const SettingsPage: React.FC = () => {
         return (
             <Navbar>
                 <div className="py-12">
-                    <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                    <div className="mx-auto sm:px-6 lg:px-8">
                         <div className="flex flex-col flex-wrap w-full">
                             <div className="w-full mb-6">
                                 <div className="flex flex-col lg:flex-row gap-6">

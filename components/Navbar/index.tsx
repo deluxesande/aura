@@ -188,7 +188,7 @@ export default function Navbar({
     const links = user
         ? allLinks.filter((link) =>
               link.allowedRoles.some(
-                  (role) => role.toLowerCase() === user.role.toLowerCase()
+                  (role) => role?.toLowerCase() === user?.role?.toLowerCase()
               )
           )
         : [];
@@ -204,24 +204,41 @@ export default function Navbar({
     };
 
     const handleInputValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.value.length === 0)
+        const val = e.target.value;
+
+        if (val.length === 0) {
             setFilteredProducts?.(originalProducts);
-        setInputValue(e.target.value);
+        }
+
+        console.log();
+        setInputValue(val);
     };
 
     const handleSearch = () => {
         if (pathname !== "/products") router.push("/products");
+
         if (!setFilteredProducts) return;
 
         const searchTerm = inputValue.trim().toLowerCase();
-        const filtered = originalProducts.filter(
-            (product: any) =>
-                product.name.toLowerCase().includes(searchTerm) ||
-                product.description.toLowerCase().includes(searchTerm) ||
-                product.sku.toLowerCase().includes(searchTerm)
-        );
 
-        if (filtered.length === 0) toast.error("No products found.");
+        const filtered = originalProducts.filter((product: any) => {
+            const name = product.name ? product.name.toLowerCase() : "";
+            const description = product.description
+                ? product.description.toLowerCase()
+                : "";
+            const sku = product.sku ? product.sku.toLowerCase() : "";
+
+            return (
+                name.includes(searchTerm) ||
+                description.includes(searchTerm) ||
+                sku.includes(searchTerm)
+            );
+        });
+
+        if (filtered.length === 0 && searchTerm !== "") {
+            toast.error("No products found.");
+        }
+
         setFilteredProducts(filtered);
     };
 

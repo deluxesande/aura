@@ -29,9 +29,9 @@ import Link from "next/link";
 import React, {
     useCallback,
     useEffect,
-    useMemo,
     useRef,
     useState,
+    useMemo,
 } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
@@ -90,6 +90,9 @@ export default function Page() {
     const [restockAmount, setRestockAmount] = useState("");
     const [isRestocking, setIsRestocking] = useState(false);
 
+    // RENAMED: This is now the single source of truth for the UI list
+    const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+
     const hasFetched = useRef(false);
     const productsRef = useRef(productsData);
     productsRef.current = productsData;
@@ -98,14 +101,8 @@ export default function Page() {
         (state: AppState) => state.businessData.businessDetails
     );
 
-    const filteredProducts = useMemo(() => {
-        if (selectedCategoryId === "ALL") {
-            return productsData;
-        }
-        return productsData.filter(
-            (product) => product.categoryId === selectedCategoryId
-        );
-    }, [selectedCategoryId, productsData]);
+    // Removed the conflicting useMemo here.
+    // The logic below in useEffect and toggleActiveCategory handles the filtering efficiently.
 
     useEffect(() => {
         if (hasFetched.current) return;
@@ -161,16 +158,28 @@ export default function Page() {
         };
 
         loadData();
-        // Safe to include productsData.length because hasFetched prevents loops
     }, [dispatch, productsData.length]);
 
     const handleClose = useCallback(() => {
         dispatch(hide());
     }, [dispatch]);
 
-    const toggleActiveCategory = useCallback((categoryId: string) => {
-        setSelectedCategoryId(categoryId);
-    }, []);
+    // Update the filtered list when a category is clicked
+    const toggleActiveCategory = useCallback(
+        (categoryId: string) => {
+            setSelectedCategoryId(categoryId);
+
+            if (categoryId === "ALL") {
+                setFilteredProducts(productsData);
+            } else {
+                const filtered = productsData.filter(
+                    (product) => product.categoryId === categoryId
+                );
+                setFilteredProducts(filtered);
+            }
+        },
+        [productsData]
+    );
 
     const openRestockModal = useCallback((product: Product) => {
         setProductToRestock(product);
@@ -227,7 +236,6 @@ export default function Page() {
                 if (product.quantity > currentCartQty) {
                     dispatch(addItem(product));
 
-                    // ONLY dispatch show() if screen width is >= 768px (Tablet & PC)
                     if (
                         typeof window !== "undefined" &&
                         window.innerWidth >= 768
@@ -394,7 +402,6 @@ export default function Page() {
     const handleMpesaPrompt = async (event: React.FormEvent) => {
         event.preventDefault();
 
-        // 1. Validation: Check if M-Pesa is configured in Redux business state
         const isMpesaConfigured =
             business?.mpesaShortCode &&
             business?.mpesaConsumerKey === "***********";
@@ -426,7 +433,6 @@ export default function Page() {
 
         setIsProcessingOrder(true);
         try {
-            // 2. Now it's safe to create the invoice
             const invoice = await handleOrder("MPESA");
 
             if (invoice?.id) {
@@ -446,7 +452,6 @@ export default function Page() {
                 }
             }
         } catch (error: any) {
-            // Fix: axios errors are usually in error.response.data
             const message =
                 error.response?.data?.error || "Payment initiation failed";
             toast.error(message);
@@ -461,7 +466,6 @@ export default function Page() {
 
         const handleGlobalKeyDown = (e: KeyboardEvent) => {
             const target = e.target as HTMLElement;
-            // Don't scan if user is typing in an input
             if (target.tagName === "INPUT" || target.tagName === "TEXTAREA")
                 return;
 
@@ -483,7 +487,6 @@ export default function Page() {
                         dispatch(addItem(scannedProduct));
                         toast.success(`Added ${scannedProduct.name}`);
 
-                        // Only open sidebar automatically on Tablet (768px) and larger
                         if (window.innerWidth >= 768) {
                             dispatch(show());
                         }
@@ -510,6 +513,22 @@ export default function Page() {
         [cartItems]
     );
 
+    // Initial Data Sync:
+    // This ensures that when products load, the list is populated correctly based on the current category.
+    useEffect(() => {
+        if (productsData && productsData.length > 0) {
+            if (selectedCategoryId === "ALL") {
+                setFilteredProducts(productsData);
+            } else {
+                setFilteredProducts(
+                    productsData.filter(
+                        (p) => p.categoryId === selectedCategoryId
+                    )
+                );
+            }
+        }
+    }, [productsData, selectedCategoryId]);
+
     return (
         <div className="flex h-screen overflow-hidden">
             {/* Main Content */}
@@ -517,7 +536,8 @@ export default function Page() {
                 className="flex-grow flex flex-col"
                 style={{ width: "calc(100% - 10rem)" }}
             >
-                <Navbar>
+                {/* Navbar now controls filteredProducts */}
+                <Navbar setFilteredProducts={setFilteredProducts}>
                     <div className="flex overflow-auto gap-6 mt-4 scrollbar-hide">
                         {categories.map((category) => (
                             <CategoryBox

@@ -12,7 +12,7 @@ const PUBLIC_ROUTES = new Set([
     "/sign-in",
     "/sign-up",
     "/features",
-    "/integrations",
+    "/integration",
     "/about",
     "/pricing",
     "/password-reset",
