@@ -660,7 +660,9 @@ export default function Page() {
                     <div className="mt-auto bg-white p-4 border-t border-gray-100 shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.05)]">
                         <div className="flex items-center justify-between mb-4">
                             <p className="font-bold text-xl">Total: </p>
-                            <p className="font-bold text-xl">${cartTotal}</p>
+                            <p className="font-bold text-xl text-green-500">
+                                Ksh {cartTotal}
+                            </p>
                         </div>
 
                         <button

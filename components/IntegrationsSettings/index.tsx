@@ -203,7 +203,7 @@ const IntegrationsSettings: React.FC = () => {
     }
 
     return (
-        <section className="bg-white p-6 rounded-lg shadow-md w-full max-w-3xl relative">
+        <section className="bg-white p-6 rounded-lg shadow-md w-full relative">
             <header>
                 <h2 className="text-lg font-medium text-gray-900">
                     Payment Integrations

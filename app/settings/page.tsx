@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { toast } from "sonner";
+import KraSettings from "@/components/KraSettings";
 
 const SettingsPage: React.FC = () => {
     const router = useRouter();
@@ -68,7 +69,7 @@ const SettingsPage: React.FC = () => {
                     <div className="mx-auto sm:px-6 lg:px-8">
                         <div className="flex flex-col flex-wrap w-full">
                             <div className="w-full mb-6">
-                                <div className="flex flex-col lg:flex-row gap-6">
+                                <div className="w-full flex flex-col lg:flex-row gap-6">
                                     <div className="w-full">
                                         <BusinessSettingsForm
                                             role={user.role}
@@ -79,13 +80,17 @@ const SettingsPage: React.FC = () => {
                                             <IntegrationsSettings />
                                         </div>
                                         <div className="w-full">
-                                            <NotificationPreferencesForm
+                                            {/* <NotificationPreferencesForm
                                                 role={user.role}
-                                            />
+                                            /> */}
+                                        </div>
+                                        <div className="w-full">
+                                            <KraSettings />
                                         </div>
                                     </div>
                                 </div>
                             </div>
+
                             <div className="w-full mb-6">
                                 <SubscriptionManagement />
                             </div>
