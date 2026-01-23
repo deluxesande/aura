@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppState } from "@/store";
 import { setBusiness } from "@/store/slices/businessSlice";
 import { Building2, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface Business {
     id: string;
@@ -21,6 +22,8 @@ const BusinessOnboardingModal = () => {
     const [businessName, setBusinessName] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [isOpen, setIsOpen] = useState(true);
+
+    const router = useRouter();
 
     const dispatch = useDispatch();
 
@@ -61,6 +64,7 @@ const BusinessOnboardingModal = () => {
             toast.success("Business profile created!");
 
             setIsOpen(false);
+            router.refresh();
         } catch (error: any) {
             toast.error(
                 error.response?.data?.error || "Failed to create business",
