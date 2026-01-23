@@ -152,7 +152,7 @@ const TaxReturnsPage = () => {
                                 Tax Returns (TOT)
                             </h1>
                             <p className="text-gray-500 text-sm mt-1">
-                                Monthly Turnover Tax (3%) Filing
+                                Monthly Turnover Tax Filing
                             </p>
                         </div>
 
@@ -162,7 +162,7 @@ const TaxReturnsPage = () => {
                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                             ) : kraDetails ? (
                                 <>
-                                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                                    <CheckCircle2 className="w-5 h-5 stroke-green-600" />
                                     <div>
                                         <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">
                                             KRA PIN
@@ -174,7 +174,7 @@ const TaxReturnsPage = () => {
                                 </>
                             ) : (
                                 <>
-                                    <AlertCircle className="w-5 h-5 text-red-500" />
+                                    <AlertCircle className="w-5 h-5 stroke-red-500" />
                                     <p className="text-sm text-red-600 font-medium">
                                         PIN Not Set
                                     </p>
@@ -296,23 +296,23 @@ const TaxReturnsPage = () => {
                             </div>
 
                             {/* Calculation & Action Footer */}
-                            <div className="pt-4 mt-2 border-t border-dashed border-gray-200">
-                                <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-                                    <div className="flex flex-col">
+                            <div className="pt-4 mt-2 w-full border-t border-dashed border-gray-200">
+                                <div className="flex w-full flex-col sm:flex-row items-center justify-between gap-6">
+                                    {/* <div className="flex flex-col">
                                         <span className="text-sm text-gray-500">
                                             Tax Payable (3% Rate)
                                         </span>
                                         <span className="text-3xl font-bold text-green-600">
                                             Ksh {taxPayable.toLocaleString()}
                                         </span>
-                                    </div>
+                                    </div> */}
 
                                     <button
                                         onClick={handleFileReturn}
                                         disabled={
                                             isFiling || effectiveTotalSales <= 0
                                         }
-                                        className="w-full sm:w-auto bg-green-500 text-white px-8 py-3 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all shadow-md shadow-green-100"
+                                        className="w-full bg-green-500 text-white px-8 py-3 rounded-lg font-medium hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2 transition-all shadow-md shadow-green-100"
                                     >
                                         {isFiling ? (
                                             <>

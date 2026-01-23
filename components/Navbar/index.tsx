@@ -71,6 +71,7 @@ const allLinks = [
         text: "Customers",
         allowedRoles: ["admin", "manager", "user"],
     },
+    { href: "/tax", text: "Tax Returns", allowedRoles: ["admin", "manager"] },
     { href: "/settings", text: "Settings", allowedRoles: ["admin", "manager"] },
     {
         href: "/profile",
@@ -110,16 +111,16 @@ export default function Navbar({
     const { signOut } = useClerk();
 
     const originalProducts = useSelector(
-        (state: AppState) => state.product.products
+        (state: AppState) => state.product.products,
     );
     const sideBarState = useSelector((state: AppState) => state.sidebar.isOpen);
     const cartItems = useSelector((state: AppState) => state.cart?.items || []);
     const cartCount = cartItems.length;
     const user = useSelector(
-        (state: AppState) => state.auth.user
+        (state: AppState) => state.auth.user,
     ) as User | null;
     const isVisible = useSelector(
-        (state: AppState) => state.visibility.isVisible
+        (state: AppState) => state.visibility.isVisible,
     );
 
     const { user: clerkUser, isSignedIn } = useUser();
@@ -128,10 +129,10 @@ export default function Navbar({
         : "/images/user.png";
 
     const businessDetails = useSelector(
-        (state: AppState) => state.businessData?.businessDetails
+        (state: AppState) => state.businessData?.businessDetails,
     );
     const isFetchingBusiness = useSelector(
-        (state: AppState) => state.businessData?.loading
+        (state: AppState) => state.businessData?.loading,
     );
 
     const isProductsPage = pathname === "/products";
@@ -174,7 +175,7 @@ export default function Navbar({
                 dispatch(setBusinessLoading(true));
                 try {
                     const res = await axios.get(
-                        `/api/business/${user.businessId}`
+                        `/api/business/${user.businessId}`,
                     );
                     dispatch(setBusinessDetails(res.data));
                 } catch (error) {
@@ -189,8 +190,8 @@ export default function Navbar({
     const links = user
         ? allLinks.filter((link) =>
               link.allowedRoles.some(
-                  (role) => role?.toLowerCase() === user?.role?.toLowerCase()
-              )
+                  (role) => role?.toLowerCase() === user?.role?.toLowerCase(),
+              ),
           )
         : [];
 

@@ -8,6 +8,8 @@ import {
     ChevronLeft,
     LogOut,
     Users,
+    FileText,
+    Calculator,
 } from "lucide-react";
 import React, { useEffect } from "react";
 import Image from "next/image";
@@ -78,6 +80,17 @@ const allLinks = [
         allowedRoles: ["admin", "manager", "user"],
     },
     {
+        href: "/tax",
+        icon: (isActive: boolean) => (
+            <Calculator
+                size={20}
+                className={isActive ? "stroke-white" : "stroke-green-500"}
+            />
+        ),
+        label: "Tax Returns",
+        allowedRoles: ["admin", "manager"],
+    },
+    {
         href: "/settings",
         icon: (isActive: boolean) => (
             <Settings
@@ -108,10 +121,10 @@ const Sidebar = () => {
     const dispatch = useDispatch();
     const sideBarState = useSelector(
         (state: AppState) => state.sidebar.isOpen,
-        (prev, next) => prev === next
+        (prev, next) => prev === next,
     );
     const user = useSelector(
-        (state: AppState) => state.auth.user
+        (state: AppState) => state.auth.user,
     ) as storeUser | null;
 
     const [toggleSideBar, setToggleSidebar] = React.useState(sideBarState);
@@ -146,8 +159,8 @@ const Sidebar = () => {
     // Filter links based on user role
     const links = allLinks.filter((link) =>
         link.allowedRoles.some(
-            (role) => role.toLowerCase() === user.role.toLowerCase()
-        )
+            (role) => role.toLowerCase() === user.role.toLowerCase(),
+        ),
     );
 
     const profileImage = clerkUser?.hasImage
