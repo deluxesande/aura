@@ -6,6 +6,7 @@ import ReduxProvider from "@/components/ReduxProvider";
 import ToastProvider from "@/components/ToastProvider";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import { metadata } from "./metadata";
 import RoleGuard from "@/components/auth/RoleGuard";
@@ -37,6 +38,7 @@ export default function RootLayout({
                                     <PageTransition>
                                         {children}
                                         <Analytics />
+                                        <SpeedInsights />
                                     </PageTransition>
                                 </ToastProvider>
                             </RoleGuard>
