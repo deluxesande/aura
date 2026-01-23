@@ -1,13 +1,13 @@
 import { getAuth } from "@clerk/nextjs/server";
 import axios from "axios";
 import { NextApiRequest, NextApiResponse } from "next";
+import { prisma } from "@/utils/lib/client";
 
-// Ensure GAVA_CONSUMER_KEY and GAVA_CONSUMER_SECRET are still in your .env
 const BASE_URL = "https://sbx.kra.go.ke";
 
 export default async function handler(
     req: NextApiRequest,
-    res: NextApiResponse
+    res: NextApiResponse,
 ) {
     if (req.method !== "POST") {
         return res.status(405).json({ error: "Method not allowed" });
@@ -25,12 +25,21 @@ export default async function handler(
         return res.status(400).json({ error: "KRA PIN is required" });
     }
 
-    const authUrl = `${BASE_URL}/v1/token/generate?grant_type=client_credentials`;
-    const validationUrl = `${BASE_URL}/checker/v1/pinbypin`;
-
     try {
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { businessId: true },
+        });
+
+        if (!user || !user.businessId) {
+            return res
+                .status(404)
+                .json({ error: "Business profile not found for this user." });
+        }
+
+        const authUrl = `${BASE_URL}/v1/token/generate?grant_type=client_credentials`;
         const credentials = Buffer.from(
-            `${process.env.KRA_PIN_CHECKER_CONSUMER_KEY}:${process.env.KRA_PIN_CHECKER_CONSUMER_SECRET}`
+            `${process.env.KRA_PIN_CHECKER_CONSUMER_KEY}:${process.env.KRA_PIN_CHECKER_CONSUMER_SECRET}`,
         ).toString("base64");
 
         const tokenResponse = await axios.get(authUrl, {
@@ -42,8 +51,10 @@ export default async function handler(
         const accessToken = tokenResponse.data.access_token;
 
         if (!accessToken) {
-            throw new Error("Failed to retrieve access token");
+            throw new Error("Failed to retrieve access token from KRA.");
         }
+
+        const validationUrl = `${BASE_URL}/checker/v1/pinbypin?KRAPIN=${kraPin}`;
 
         const validationResponse = await axios.post(
             validationUrl,
@@ -53,11 +64,46 @@ export default async function handler(
                     Authorization: `Bearer ${accessToken}`,
                     "Content-Type": "application/json",
                 },
-            }
+            },
         );
 
-        return res.status(200).json(validationResponse.data);
+        const kraData = validationResponse.data;
+
+        if (kraData.PINDATA) {
+            const { KRAPIN, TypeOfTaxpayer, Name, StatusOfPIN } =
+                kraData.PINDATA;
+
+            await prisma.kraDetails.upsert({
+                where: {
+                    businessId: user.businessId,
+                },
+                update: {
+                    kraPin: KRAPIN,
+                    taxpayerType: TypeOfTaxpayer,
+                    taxpayerName: Name,
+                    pinStatus: StatusOfPIN,
+                },
+                create: {
+                    kraPin: KRAPIN,
+                    taxpayerType: TypeOfTaxpayer,
+                    taxpayerName: Name,
+                    pinStatus: StatusOfPIN,
+                    businessId: user.businessId,
+                },
+            });
+        } else {
+            if (kraData.ResponseCode && kraData.ResponseCode !== "23000") {
+                return res.status(400).json({
+                    error: kraData.Message || "Validation Failed",
+                    details: kraData,
+                });
+            }
+        }
+
+        return res.status(200).json(kraData);
     } catch (error: any) {
+        console.error("KRA/DB Error:", error.response?.data || error.message);
+
         if (error.response?.status === 401) {
             return res.status(401).json({
                 error: "Authentication failed. Check Gava credentials.",

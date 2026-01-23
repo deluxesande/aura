@@ -1,6 +1,6 @@
 import axios from "axios";
-import { CloudUpload, Info } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { CloudUpload } from "lucide-react";
+import React, { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
@@ -8,7 +8,6 @@ import { AppState } from "@/store";
 import { setBusiness as setBusinessInStore } from "@/store/slices/businessSlice";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import { FloatingPortal } from "@floating-ui/react";
-import { InAppStepUpsertDto$outboundSchema } from "@novu/api/models/components";
 
 interface BusinessSettingsFormProps {
     role: string;
@@ -45,6 +44,9 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
     const storedBusiness = useSelector(
         (state: AppState) => state.business.business,
     );
+
+    // Ref to ensure we don't re-populate while user is typing
+    const isPopulated = useRef(false);
 
     const handleLogoFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -152,29 +154,40 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
         setEmail(data.email || "");
         setPhone(data.phone || "");
         setAddress(data.address || "");
+
         setHasExistingBusiness(true);
+
         setOriginalBusiness(data.name || "");
         setOriginalLogoUrl(data.logo || "");
         setOriginalEmail(data.email || "");
         setOriginalPhone(data.phone || "");
         setOriginalAddress(data.address || "");
+
+        // Mark as populated so we don't overwrite if the effect runs again
+        isPopulated.current = true;
     };
 
     useEffect(() => {
         let foundInStore = false;
-        if (storedBusiness?.id && storedBusiness?.name) {
+
+        // 1. Check Store first
+        // FIX: Depend on storedBusiness.id, NOT the whole object
+        if (storedBusiness?.id && storedBusiness?.id === user?.businessId) {
             populateState(storedBusiness);
             setIsLoading(false);
             foundInStore = true;
         }
 
-        if (user?.businessId) {
+        // 2. If not in store, fetch API
+        if (user?.businessId && !foundInStore) {
             const fetchAndStoreBusiness = async () => {
                 try {
                     const response = await axios.get("/api/business");
                     if (response.status === 200 && response.data.length > 0) {
                         const businessData = response.data[0];
                         populateState(businessData);
+
+                        // FIX: Only dispatch if we actually fetched new data
                         dispatch(
                             setBusinessInStore({
                                 id: businessData.id,
@@ -196,9 +209,13 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
             };
             fetchAndStoreBusiness();
         } else {
-            if (!foundInStore) setIsLoading(false);
+            // Case where user has no business ID (new user)
+            if (!user?.businessId) {
+                setIsLoading(false);
+            }
         }
-    }, [storedBusiness, user?.businessId, dispatch]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [storedBusiness?.id, user?.businessId, dispatch]);
 
     return (
         <section className="relative bg-white p-6 rounded-lg shadow-md w-full">
@@ -304,39 +321,21 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label
-                                    htmlFor="email"
-                                    className="block text-sm font-medium text-gray-900"
-                                >
-                                    Support Email
-                                </label>
-                                <input
-                                    type="email"
-                                    id="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="mt-1 outline-none bg-slate-50 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
-                                    placeholder="billing@company.com"
-                                />
-                            </div>
-                            <div>
-                                <label
-                                    htmlFor="phone"
-                                    className="block text-sm font-medium text-gray-900"
-                                >
-                                    Phone Number
-                                </label>
-                                <input
-                                    type="text"
-                                    id="phone"
-                                    value={phone}
-                                    onChange={(e) => setPhone(e.target.value)}
-                                    className="mt-1 outline-none bg-slate-50 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
-                                    placeholder="+254 7..."
-                                />
-                            </div>
+                        <div>
+                            <label
+                                htmlFor="email"
+                                className="block text-sm font-medium text-gray-900"
+                            >
+                                Support Email
+                            </label>
+                            <input
+                                type="email"
+                                id="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="mt-1 outline-none bg-slate-50 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
+                                placeholder="billing@company.com"
+                            />
                         </div>
 
                         <div>
@@ -364,15 +363,15 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
                 <button
                     type="submit"
                     disabled={role === "manager"}
-                    className="mt-8 btn btn-md btn-ghost flex items-center bg-green-500 text-white hover:bg-green-600 w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="mt-6 btn btn-md btn-ghost flex items-center bg-green-500 text-white hover:bg-green-600 w-full disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {hasExistingBusiness
                         ? "Update Business"
                         : "Create Business"}
                 </button>
-                <p className="mt-3 text-xs text-gray-500">
+                {/* <p className="mt-3 text-xs text-gray-500">
                     Only admins/manager can modify business settings.
-                </p>
+                </p> */}
             </form>
 
             <FloatingPortal>

@@ -1,12 +1,11 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
 import { AppState } from "@/store";
 import { setBusiness } from "@/store/slices/businessSlice";
-import { Building2, ArrowRight, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Building2, Loader2 } from "lucide-react";
 
 interface Business {
     id: string;
@@ -21,18 +20,19 @@ interface UserState {
 const BusinessOnboardingModal = () => {
     const [businessName, setBusinessName] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const router = useRouter();
+    const [isOpen, setIsOpen] = useState(true);
+
     const dispatch = useDispatch();
 
-    // Get user from Redux store to check if businessId exists
     const user = useSelector(
-        (state: AppState) => state.auth.user
+        (state: AppState) => state.auth.user,
     ) as UserState | null;
 
-    // const showModal = user && !user.businessId;
-    const showModal =
+    const shouldShow =
         (user && !user.businessId) ||
         user?.Business?.name === "My New Business";
+
+    if (!shouldShow || !isOpen) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -47,32 +47,28 @@ const BusinessOnboardingModal = () => {
                 data,
                 {
                     headers: { "Content-Type": "application/json" },
-                }
+                },
             );
 
-            // 3. Update Redux Store with new Business Details
             dispatch(
                 setBusiness({
                     id: response.data.id,
                     name: response.data.name,
                     logo: response.data.logo,
-                })
+                }),
             );
 
-            // 4. Force a hard refresh or router refresh to update user context across app
             toast.success("Business profile created!");
-            router.refresh();
+
+            setIsOpen(false);
         } catch (error: any) {
             toast.error(
-                error.response?.data?.error || "Failed to create business"
+                error.response?.data?.error || "Failed to create business",
             );
         } finally {
             setIsLoading(false);
         }
     };
-
-    // If user has a business (or isn't loaded yet), do not render anything
-    if (!showModal) return null;
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/90 backdrop-blur-sm">
@@ -83,7 +79,7 @@ const BusinessOnboardingModal = () => {
                         <Building2 className="w-8 h-8 stroke-green-600" />
                     </div>
                     <h2 className="text-2xl font-bold text-gray-900">
-                        Welcome, {user.firstName || "there"}!
+                        Welcome, {user?.firstName || "there"}!
                     </h2>
                     <p className="text-gray-500 mt-2">
                         To get started, please name your business workspace.

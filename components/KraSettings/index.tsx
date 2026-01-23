@@ -122,21 +122,8 @@ const KraSettings = () => {
             <div className="bg-slate-50 rounded-lg border-2 border-dashed border-gray-200 p-4 flex flex-col justify-center animate-in fade-in slide-in-from-top-2 duration-200 min-h-[160px]">
                 {/* STATE 1: LOADING */}
                 {isLoading && (
-                    <div className="flex flex-col items-center justify-center text-gray-400 py-6">
+                    <div className="flex flex-col items-center justify-center text-gray-400 py-[68px]">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-                    </div>
-                )}
-
-                {/* STATE 2: ERROR */}
-                {error && !isLoading && (
-                    <div className="flex items-center gap-3 text-red-500 bg-red-50 p-4 rounded-md border border-red-100 w-full mb-4">
-                        <AlertCircle size={24} className="flex-shrink-0" />
-                        <div>
-                            <p className="font-semibold">Validation Failed</p>
-                            <p className="text-sm opacity-90">
-                                {error.message}
-                            </p>
-                        </div>
                     </div>
                 )}
 

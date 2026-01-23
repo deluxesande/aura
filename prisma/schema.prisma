@@ -164,6 +164,8 @@ model User {
 model Business {
   id        String   @id @default(uuid()) @map("_id") @db.Uuid
   name      String
+  email     String?   @unique
+  address   String?
   logo      String?  @db.Text
   users     User[]
   createdAt DateTime @default(now())
@@ -172,17 +174,17 @@ model Business {
   invitations   UserInvitation[]
   createdBy     String?          @unique
   
-  // Required for Standard & Premium tiers to use their own Paybill/Till
   mpesaConsumerKey    String?
   mpesaConsumerSecret String?
   mpesaPassKey        String?
   mpesaShortCode      String? 
   
-  // Relations
   mpesaPayments MpesaPayment[]
   customers     Customer[]
   invoices      Invoice[]
   subscriptions  Subscription[]
+
+  kraDetails  KraDetails?
 }
 
 model Response {
@@ -283,4 +285,18 @@ model SubscriptionPayment {
   
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+}
+
+model KraDetails {
+  id             String   @id @default(cuid())
+  kraPin         String   @unique 
+  taxpayerType   String   
+  taxpayerName   String  
+  pinStatus      String   
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  businessId     String?  @db.Uuid @unique
+  business       Business? @relation(fields: [businessId], references: [id])
 }

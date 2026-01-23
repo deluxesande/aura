@@ -2,9 +2,10 @@ import { getAuth } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/utils/lib/client";
 import { encrypt } from "@/utils/crypto";
+
 export const updateBusiness = async (
     req: NextApiRequest,
-    res: NextApiResponse
+    res: NextApiResponse,
 ) => {
     try {
         const user = getAuth(req);
@@ -17,6 +18,9 @@ export const updateBusiness = async (
 
         const {
             name,
+            email,
+            phone,
+            address,
             logo,
             mpesaConsumerKey,
             mpesaConsumerSecret,
@@ -50,8 +54,10 @@ export const updateBusiness = async (
             data: {
                 name,
                 logo,
-                // If mpesaConsumerKey has a value, encrypt it.
-                // If it's null or empty string, set it to null in the DB.
+
+                email: email || null,
+                address: address || null,
+
                 mpesaConsumerKey: mpesaConsumerKey
                     ? encrypt(mpesaConsumerKey)
                     : null,
@@ -75,8 +81,14 @@ export const updateBusiness = async (
         };
 
         res.status(200).json(safeResponse);
-    } catch (error) {
-        console.error("Error updating business:", error);
+    } catch (error: any) {
+        console.log(error);
+        if (error.code === "P2002" && error.meta?.target?.includes("email")) {
+            return res.status(409).json({
+                error: "This email is already in use by another business.",
+            });
+        }
+
         res.status(500).json({ error: "Failed to update business" });
     }
 };
