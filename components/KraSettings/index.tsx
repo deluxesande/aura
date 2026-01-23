@@ -27,7 +27,7 @@ const fetcher = async ([url, pin]: [string, string]) => {
                 data?.Message ||
                     data?.error ||
                     data?.details?.ErrorMessage ||
-                    "Invalid KRA PIN or Data Not Found"
+                    "Invalid KRA PIN or Data Not Found",
             );
         }
 
@@ -61,7 +61,7 @@ const KraSettings = () => {
             onError: (err) => {
                 toast.error(err.message);
             },
-        }
+        },
     );
 
     const handleValidate = (e: React.FormEvent) => {
@@ -70,7 +70,12 @@ const KraSettings = () => {
         setSearchPin(inputPin);
     };
 
-    const shouldShowResult = isLoading || !!error || (!!data && !!data.PINDATA);
+    // Helper to determine status color
+    const getStatusColor = (status?: string) => {
+        if (status === "Active") return "bg-green-100 text-green-800";
+        if (!status) return "bg-gray-100 text-gray-500"; // Default for N/A
+        return "bg-yellow-100 text-yellow-800";
+    };
 
     return (
         <section className="bg-white p-6 rounded-lg shadow-md w-full mt-6">
@@ -114,100 +119,103 @@ const KraSettings = () => {
                 </button>
             </form>
 
-            {shouldShowResult && (
-                <div className="bg-slate-50 rounded-lg border-2 border-dashed border-gray-200 p-4 flex flex-col justify-center animate-in fade-in slide-in-from-top-2 duration-200">
-                    {/* STATE 1: LOADING */}
-                    {isLoading && (
-                        <div className="flex flex-col items-center justify-center text-gray-400 py-6">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-                        </div>
-                    )}
+            <div className="bg-slate-50 rounded-lg border-2 border-dashed border-gray-200 p-4 flex flex-col justify-center animate-in fade-in slide-in-from-top-2 duration-200 min-h-[160px]">
+                {/* STATE 1: LOADING */}
+                {isLoading && (
+                    <div className="flex flex-col items-center justify-center text-gray-400 py-6">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                    </div>
+                )}
 
-                    {/* STATE 2: ERROR */}
-                    {error && !isLoading && (
-                        <div className="flex items-center gap-3 text-red-500 bg-red-50 p-4 rounded-md border border-red-100 w-full">
-                            <AlertCircle size={24} className="flex-shrink-0" />
-                            <div>
-                                <p className="font-semibold">
-                                    Validation Failed
-                                </p>
-                                <p className="text-sm opacity-90">
-                                    {error.message}
-                                </p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* STATE 3: SUCCESS (Only if PINDATA exists) */}
-                    {data?.PINDATA && !isLoading && !error && (
+                {/* STATE 2: ERROR */}
+                {error && !isLoading && (
+                    <div className="flex items-center gap-3 text-red-500 bg-red-50 p-4 rounded-md border border-red-100 w-full mb-4">
+                        <AlertCircle size={24} className="flex-shrink-0" />
                         <div>
-                            <div className="flex items-start justify-between">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <span className="text-lg font-semibold text-gray-800">
+                            <p className="font-semibold">Validation Failed</p>
+                            <p className="text-sm opacity-90">
+                                {error.message}
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* STATE 3: CONTENT AREA (Always Visible when not Loading) */}
+                {!isLoading && (
+                    <div>
+                        <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-2 mb-2">
+                                {error ? (
+                                    <span className="text-lg font-semibold text-red-600">
+                                        Invalid Taxpayer
+                                    </span>
+                                ) : data?.PINDATA ? (
+                                    <span className="text-lg font-semibold text-green-600">
                                         Valid Taxpayer
                                     </span>
-                                </div>
-
-                                <button
-                                    onClick={() => mutate()}
-                                    className="text-xs text-gray-500 flex items-center gap-1 hover:text-green-500 transition-colors"
-                                    title="Refresh Data"
-                                >
-                                    <RefreshCw
-                                        size={16}
-                                        className="hover:stroke-green-500"
-                                    />
-                                </button>
+                                ) : (
+                                    <span className="text-lg font-semibold text-gray-800">
+                                        Taxpayer Details
+                                    </span>
+                                )}
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="bg-white p-3 rounded border border-gray-100 shadow-sm">
-                                    <p className="text-xs text-gray-500 uppercase font-semibold">
-                                        Taxpayer Name
-                                    </p>
-                                    <p className="text-gray-900 font-medium truncate">
-                                        {data.PINDATA.Name}
-                                    </p>
-                                </div>
+                            <button
+                                onClick={() => mutate()}
+                                className="text-xs text-gray-500 flex items-center gap-1 hover:text-green-500 transition-colors"
+                                title="Refresh Data"
+                            >
+                                <RefreshCw
+                                    size={16}
+                                    className="hover:stroke-green-500"
+                                />
+                            </button>
+                        </div>
 
-                                <div className="bg-white p-3 rounded border border-gray-100 shadow-sm">
-                                    <p className="text-xs text-gray-500 uppercase font-semibold">
-                                        PIN Status
-                                    </p>
-                                    <div
-                                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mt-1
-                                    ${
-                                        data.PINDATA.StatusOfPIN === "Active"
-                                            ? "bg-green-100 text-green-800"
-                                            : "bg-yellow-100 text-yellow-800"
-                                    }`}
-                                    >
-                                        {data.PINDATA.StatusOfPIN}
-                                    </div>
-                                </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="bg-white p-3 rounded border border-gray-100 shadow-sm">
+                                <p className="text-xs text-gray-500 uppercase font-semibold">
+                                    Taxpayer Name
+                                </p>
+                                <p className="text-gray-900 font-medium truncate">
+                                    {data?.PINDATA?.Name || "N/A"}
+                                </p>
+                            </div>
 
-                                <div className="bg-white p-3 rounded border border-gray-100 shadow-sm">
-                                    <p className="text-xs text-gray-500 uppercase font-semibold">
-                                        Taxpayer Type
-                                    </p>
-                                    <p className="text-gray-900 font-medium">
-                                        {data.PINDATA.TypeOfTaxpayer}
-                                    </p>
+                            <div className="bg-white p-3 rounded border border-gray-100 shadow-sm">
+                                <p className="text-xs text-gray-500 uppercase font-semibold">
+                                    PIN Status
+                                </p>
+                                <div
+                                    className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mt-1 ${getStatusColor(
+                                        data?.PINDATA?.StatusOfPIN,
+                                    )}`}
+                                >
+                                    {data?.PINDATA?.StatusOfPIN || "Not Set"}
                                 </div>
+                            </div>
 
-                                <div className="bg-white p-3 rounded border border-gray-100 shadow-sm">
-                                    <p className="text-xs text-gray-500 uppercase font-semibold">
-                                        PIN Number
-                                    </p>
-                                    <p className="text-gray-900 font-medium font-mono">
-                                        {data.PINDATA.KRAPIN}
-                                    </p>
-                                </div>
+                            <div className="bg-white p-3 rounded border border-gray-100 shadow-sm">
+                                <p className="text-xs text-gray-500 uppercase font-semibold">
+                                    Taxpayer Type
+                                </p>
+                                <p className="text-gray-900 font-medium">
+                                    {data?.PINDATA?.TypeOfTaxpayer || "N/A"}
+                                </p>
+                            </div>
+
+                            <div className="bg-white p-3 rounded border border-gray-100 shadow-sm">
+                                <p className="text-xs text-gray-500 uppercase font-semibold">
+                                    PIN Number
+                                </p>
+                                <p className="text-gray-900 font-medium font-mono">
+                                    {data?.PINDATA?.KRAPIN || "N/A"}
+                                </p>
                             </div>
                         </div>
-                    )}
-                </div>
-            )}
+                    </div>
+                )}
+            </div>
         </section>
     );
 };

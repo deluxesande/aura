@@ -43,7 +43,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
 
     const user = useSelector((state: AppState) => state.auth.user);
     const storedBusiness = useSelector(
-        (state: AppState) => state.business.business
+        (state: AppState) => state.business.business,
     );
 
     const handleLogoFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -180,7 +180,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
                                 id: businessData.id,
                                 name: businessData.name,
                                 logo: businessData.logo,
-                            })
+                            }),
                         );
                     }
                 } catch (error) {
@@ -364,12 +364,15 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
                 <button
                     type="submit"
                     disabled={role === "manager"}
-                    className="mt-4 btn btn-md btn-ghost flex items-center bg-green-500 text-white hover:bg-green-600 w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="mt-8 btn btn-md btn-ghost flex items-center bg-green-500 text-white hover:bg-green-600 w-full disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {hasExistingBusiness
                         ? "Update Business"
                         : "Create Business"}
                 </button>
+                <p className="mt-3 text-xs text-gray-500">
+                    Only admins/manager can modify business settings.
+                </p>
             </form>
 
             <FloatingPortal>
