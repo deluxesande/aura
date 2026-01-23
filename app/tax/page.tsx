@@ -50,8 +50,6 @@ const MOCK_FILING_HISTORY: TaxFiling[] = [
 const fetcher = (url: string) => axios.get(url).then((res) => res.data);
 
 const TaxReturnsPage = () => {
-    // Default to LAST month (standard filing practice)
-    // If testing with new data, change this to: new Date()
     const [selectedMonth, setSelectedMonth] = useState<Date>(
         subMonths(new Date(), 1),
     );
@@ -73,27 +71,22 @@ const TaxReturnsPage = () => {
         fetcher,
     );
 
-    // Filter and Sum Invoices for the Selected Month
     const calculatedTotalSales = useMemo(() => {
         if (!invoices || !Array.isArray(invoices)) return 0;
 
         const monthlyInvoices = invoices.filter((inv) => {
-            // Robust date parsing
             const dateString = inv.createdAt || (inv as any).date;
             if (!dateString) return false;
 
             const invoiceDate = parseISO(String(dateString));
             const isCorrectMonth = isSameMonth(invoiceDate, selectedMonth);
 
-            // Robust status check (case insensitive)
             const status = (inv.status || "").toUpperCase();
             const isPaid = status === "PAID" || status === "COMPLETED";
 
             return isCorrectMonth && isPaid;
         });
 
-        // FIX: Ensure we coerce values to Number() to prevent string concatenation
-        // Also checks for both 'totalAmount' and 'amount' depending on API shape
         return monthlyInvoices.reduce((sum, inv) => {
             const amount =
                 Number(inv.totalAmount) || Number((inv as any).amount) || 0;
@@ -174,8 +167,8 @@ const TaxReturnsPage = () => {
                                 </>
                             ) : (
                                 <>
-                                    <AlertCircle className="w-5 h-5 stroke-red-500" />
-                                    <p className="text-sm text-red-600 font-medium">
+                                    <AlertCircle className="w-4 h-4 stroke-red-500" />
+                                    <p className="text-sm text-red-500 font-medium">
                                         PIN Not Set
                                     </p>
                                 </>
