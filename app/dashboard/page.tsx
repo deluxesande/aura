@@ -50,7 +50,7 @@ export default function Page() {
         useState<number>(7);
     const [topProductsLoading, setTopProductsLoading] = useState<boolean>(true);
     const [invoicesLoading, setInvoicesLoading] = useState<boolean>(
-        invoices.length === 0
+        invoices.length === 0,
     );
 
     const userRole = user?.role || "user";
@@ -101,7 +101,7 @@ export default function Page() {
                     params: { timePeriod: topProductsTimePeriod },
                 });
                 setTopProducts(
-                    Array.isArray(response.data) ? response.data : []
+                    Array.isArray(response.data) ? response.data : [],
                 );
             } catch (error) {
                 setTopProducts([]);
@@ -186,7 +186,7 @@ export default function Page() {
                                 <div className="flex items-start justify-between">
                                     <div>
                                         <p className="font-light text-lg text-gray-400">
-                                            M-Pesa Balance
+                                            Total M-Pesa Collections
                                         </p>
                                         <p className="font-bold text-3xl text-black mt-2">
                                             Ksh{" "}
@@ -210,9 +210,9 @@ export default function Page() {
                                             className="stroke-green-500 mt-0.5 shrink-0"
                                         />
                                         <p className="text-sm text-gray-500">
-                                            Funds are available for immediate
-                                            withdrawal to the registered
-                                            business number.
+                                            Total value of transactions
+                                            processed successfully through the
+                                            software.
                                         </p>
                                     </div>
                                     <div className="flex items-start gap-3">
@@ -221,22 +221,13 @@ export default function Page() {
                                             className="stroke-orange-400 mt-0.5 shrink-0"
                                         />
                                         <p className="text-sm text-gray-500">
-                                            Standard M-Pesa transaction fees
-                                            apply. Max limit: Ksh 150,000 per
-                                            transaction.
+                                            Funds are settled directly to your
+                                            Paybill/Till number by Safaricom in
+                                            real-time.
                                         </p>
                                     </div>
                                 </div>
                             </div>
-                            <button
-                                onClick={handleWithdrawal}
-                                disabled={userRole === "manager"}
-                                className={`${
-                                    userRole === "manager" ? "hidden" : "block"
-                                } w-full mt-6 bg-green-500 text-white py-3 rounded-md font-semibold hover:bg-green-300 transition-colors flex items-center justify-center gap-2`}
-                            >
-                                Withdraw Funds
-                            </button>
                         </div>
                     </div>
                 )}
