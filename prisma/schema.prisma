@@ -185,6 +185,7 @@ model Business {
   subscriptions  Subscription[]
 
   kraDetails  KraDetails?
+  kraTotReturns KraTotReturn[]
 }
 
 model Response {
@@ -299,4 +300,22 @@ model KraDetails {
 
   businessId     String?  @db.Uuid @unique
   business       Business? @relation(fields: [businessId], references: [id])
+}
+
+model KraTotReturn {
+  id             String   @id @default(uuid()) @map("_id") @db.Uuid
+  
+  ackNumber      String   @unique 
+  paymentSlip    String   
+  
+  computedTax    Float   
+  taxPayable     Float   
+  utilizedCredit Float    @default(0.0) 
+  
+  period         String  
+  
+  createdAt      DateTime @default(now())
+  
+  businessId     String   @db.Uuid
+  Business       Business @relation(fields: [businessId], references: [id])
 }

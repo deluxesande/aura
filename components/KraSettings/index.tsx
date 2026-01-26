@@ -120,7 +120,7 @@ const KraSettings = () => {
             <div className="bg-slate-50 rounded-lg border-2 border-dashed border-gray-200 p-4 flex flex-col justify-center animate-in fade-in slide-in-from-top-2 duration-200 min-h-[160px]">
                 {/* STATE 1: LOADING */}
                 {isLoading ? (
-                    <div className="flex flex-col items-center justify-center text-gray-400 py-6">
+                    <div className="flex flex-col items-center justify-center text-gray-400 py-[51px]">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-2"></div>
                         <p>
                             {isValidating
@@ -131,7 +131,7 @@ const KraSettings = () => {
                 ) : (
                     <div>
                         {/* STATE 2: ERROR */}
-                        {validationError && (
+                        {/* {validationError && (
                             <div className="flex items-center gap-3 text-red-500 bg-red-50 p-4 rounded-md border border-red-100 w-full mb-4">
                                 <AlertCircle
                                     size={24}
@@ -146,7 +146,7 @@ const KraSettings = () => {
                                     </p>
                                 </div>
                             </div>
-                        )}
+                        )} */}
 
                         {/* STATE 3: CONTENT AREA */}
                         <div>
