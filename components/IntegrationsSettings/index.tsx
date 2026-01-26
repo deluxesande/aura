@@ -34,14 +34,13 @@ const IntegrationsSettings: React.FC = () => {
     });
 
     const [savedConfig, setSavedConfig] = useState<typeof mpesaConfig | null>(
-        null
+        null,
     );
 
     const user = useSelector(
-        (state: AppState) => state.auth.user
+        (state: AppState) => state.auth.user,
     ) as User | null;
 
-    // Use SWR for caching and background updates
     const { data, error, isLoading } = useSWR(
         user ? "/api/auth/mpesa" : null,
         fetcher,
@@ -49,8 +48,8 @@ const IntegrationsSettings: React.FC = () => {
             revalidateOnFocus: true,
             revalidateOnReconnect: true,
             dedupingInterval: 5000,
-            refreshInterval: 60000, // Optional: refresh every 60 seconds
-        }
+            refreshInterval: 60000,
+        },
     );
 
     useEffect(() => {
@@ -88,7 +87,6 @@ const IntegrationsSettings: React.FC = () => {
 
     const handleOpenModal = (serviceId: string) => {
         setActiveService(serviceId);
-        // If we have saved/masked config, populate the form so the user sees it's active
         if (serviceId === "mpesa" && savedConfig) {
             setMpesaConfig(savedConfig);
         }
@@ -96,7 +94,7 @@ const IntegrationsSettings: React.FC = () => {
     };
 
     const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
     ) => {
         const { name, value } = e.target;
         setMpesaConfig((prev) => ({ ...prev, [name]: value }));
@@ -112,7 +110,7 @@ const IntegrationsSettings: React.FC = () => {
             !mpesaConfig.shortCode.trim()
         ) {
             toast.error(
-                "All fields are required to enable Live Daraja integration."
+                "All fields are required to enable Live Daraja integration.",
             );
             return;
         }
@@ -127,11 +125,10 @@ const IntegrationsSettings: React.FC = () => {
 
             const response = await axios.put(
                 `/api/business/${user?.businessId}`,
-                payload
+                payload,
             );
 
             if (response.status === 200) {
-                // Update local state with masked values to represent saved state
                 const maskedConfig = {
                     ...mpesaConfig,
                     consumerKey: "***********",
@@ -155,7 +152,7 @@ const IntegrationsSettings: React.FC = () => {
     const handleDisconnect = async () => {
         if (
             !confirm(
-                "Are you sure you want to disconnect M-PESA? This will stop all live payments."
+                "Are you sure you want to disconnect M-PESA? This will stop all live payments.",
             )
         )
             return;
@@ -170,7 +167,7 @@ const IntegrationsSettings: React.FC = () => {
 
             const response = await axios.put(
                 `/api/business/${user?.businessId}`,
-                payload
+                payload,
             );
 
             if (response.status === 200) {
@@ -192,18 +189,14 @@ const IntegrationsSettings: React.FC = () => {
         }
     };
 
-    if (isLoading) {
-        return (
-            <div className="flex justify-center p-12">
-                <div className="flex flex-col items-center justify-center">
+    return (
+        <section className="bg-white p-6 rounded-lg shadow-md w-full relative min-h-[200px]">
+            {isLoading && (
+                <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center rounded-lg backdrop-blur-sm">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                 </div>
-            </div>
-        );
-    }
+            )}
 
-    return (
-        <section className="bg-white p-6 rounded-lg shadow-md w-full relative">
             <header>
                 <h2 className="text-lg font-medium text-gray-900">
                     Payment Integrations
@@ -235,7 +228,6 @@ const IntegrationsSettings: React.FC = () => {
                                 {integration.description}
                             </p>
 
-                            {/* Status Indicator - Fixes hydration error by using div */}
                             {integrations[
                                 integration.id as keyof typeof integrations
                             ] && (
@@ -281,7 +273,6 @@ const IntegrationsSettings: React.FC = () => {
                 ))}
             </div>
 
-            {/* Modal remains the same but uses mpesaConfig populated from savedConfig */}
             {isModalOpen && activeService === "mpesa" && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]">
@@ -333,7 +324,7 @@ const IntegrationsSettings: React.FC = () => {
                                             ...prev,
                                             shortCode: e.target.value.replace(
                                                 /\D/g,
-                                                ""
+                                                "",
                                             ),
                                         }))
                                     }

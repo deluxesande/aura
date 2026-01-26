@@ -363,7 +363,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
                 <button
                     type="submit"
                     disabled={role === "manager"}
-                    className="mt-8 btn btn-md btn-ghost flex items-center bg-green-500 text-white hover:bg-green-600 w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="mt-8 mb-2 btn btn-md btn-ghost flex items-center bg-green-500 text-white hover:bg-green-600 w-full disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {hasExistingBusiness
                         ? "Update Business"

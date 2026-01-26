@@ -4,7 +4,7 @@ import { prisma } from "@/utils/lib/client";
 
 export default async function handler(
     req: NextApiRequest,
-    res: NextApiResponse
+    res: NextApiResponse,
 ) {
     if (req.method !== "GET") {
         return res.status(405).json({ error: "Method not allowed" });
@@ -17,9 +17,19 @@ export default async function handler(
             return res.status(401).json({ error: "Unauthorized" });
         }
 
+        // Fetch User, Business, and the latest Subscription
         const user = await prisma.user.findUnique({
             where: { clerkId: userId },
-            include: { Business: true },
+            include: {
+                Business: {
+                    include: {
+                        subscriptions: {
+                            orderBy: { createdAt: "desc" },
+                            take: 1,
+                        },
+                    },
+                },
+            },
         });
 
         if (!user) {
@@ -27,9 +37,29 @@ export default async function handler(
         }
 
         let maskedBusiness = null;
+
         if (user.Business) {
+            let activeSubscription = user.Business.subscriptions[0] || null;
+
+            if (activeSubscription) {
+                const now = new Date();
+                const endDate = new Date(activeSubscription.currentPeriodEnd);
+
+                if (
+                    activeSubscription.status === "ACTIVE" &&
+                    activeSubscription.plan !== "STARTER" &&
+                    endDate < now
+                ) {
+                    activeSubscription = await prisma.subscription.update({
+                        where: { id: activeSubscription.id },
+                        data: { status: "PAST_DUE" },
+                    });
+                }
+            }
+
             maskedBusiness = {
                 ...user.Business,
+                subscription: activeSubscription,
                 mpesaConsumerKey: user.Business.mpesaConsumerKey
                     ? "***********"
                     : null,
@@ -38,6 +68,8 @@ export default async function handler(
                     : null,
                 mpesaPassKey: user.Business.mpesaPassKey ? "***********" : null,
                 mpesaShortCode: user.Business.mpesaShortCode,
+                // Clean up the raw array
+                subscriptions: undefined,
             };
         }
 

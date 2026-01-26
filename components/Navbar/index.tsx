@@ -44,6 +44,7 @@ import FilterOverlay from "../FilterOverlay";
 import Sidebar from "./Sidebar";
 import { signOut as signOutAction } from "@/store/slices/authSlice";
 import SubscriptionWarningModal from "../SubscriptionWarningModal";
+import SubscriptionChecker from "../SubscriptionChecker";
 
 const allLinks = [
     {
@@ -630,6 +631,7 @@ export default function Navbar({
                     }`}
                 >
                     <BusinessOnboardingModal />
+                    <SubscriptionChecker />
                     <SubscriptionWarningModal />
                     {children}
                 </main>

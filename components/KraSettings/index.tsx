@@ -77,7 +77,7 @@ const KraSettings = () => {
 
     return (
         <section className="bg-white p-6 rounded-lg shadow-md w-full mt-6">
-            <header className="mb-6">
+            <header className="mb-4">
                 <h2 className="text-lg font-medium text-gray-900 flex items-center gap-2">
                     KRA PIN Validator
                 </h2>
@@ -89,7 +89,7 @@ const KraSettings = () => {
 
             <form
                 onSubmit={handleValidate}
-                className="flex gap-3 items-start mb-6"
+                className="flex gap-3 items-start mb-4"
             >
                 <div className="flex-1">
                     <div className="relative">
@@ -151,7 +151,7 @@ const KraSettings = () => {
                         {/* STATE 3: CONTENT AREA */}
                         <div>
                             <div className="flex items-start justify-between">
-                                <div className="flex items-center gap-2 mb-4">
+                                <div className="flex items-center gap-2 mb-2">
                                     {validationError ? (
                                         <span className="text-lg font-semibold text-red-500">
                                             Invalid Taxpayer
