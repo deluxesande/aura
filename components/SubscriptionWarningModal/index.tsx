@@ -1,19 +1,23 @@
 "use client";
+import { AppState } from "@/store";
+import axios from "axios";
+import { AlertTriangle, Loader2, X } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { AppState } from "@/store";
-import { AlertTriangle, X, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import axios from "axios";
 import { toast } from "sonner";
 
 const SubscriptionWarningModal = () => {
     const router = useRouter();
+    const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [phoneNumber, setPhoneNumber] = useState("");
     const [showRenewInput, setShowRenewInput] = useState(false);
+    const [statusType, setStatusType] = useState<"WARNING" | "EXPIRED">(
+        "WARNING",
+    );
 
     const businessDetails = useSelector(
         (state: AppState) => state.businessData.businessDetails,
@@ -32,15 +36,31 @@ const SubscriptionWarningModal = () => {
         const diff = end.getTime() - today.getTime();
         const daysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
 
-        const storageKey = `sub_warning_dismissed_${
-            businessDetails.id
-        }_${new Date().toDateString()}`;
+        const isExpired =
+            daysLeft <= 0 ||
+            (subscription.status !== "ACTIVE" &&
+                subscription.status !== "TRIALING");
+
+        if (isExpired) {
+            if (
+                !pathname?.startsWith("/subscription-expired") &&
+                !pathname?.startsWith("/payment")
+            ) {
+                router.replace("/subscription-expired");
+                return;
+            }
+            return;
+        }
+
+        const isWarning = daysLeft <= 15;
+        const storageKey = `sub_warning_dismissed_${businessDetails.id}_${new Date().toDateString()}`;
         const isDismissed = localStorage.getItem(storageKey);
 
-        if (!isDismissed && daysLeft <= 15 && daysLeft > 0) {
+        if (!isDismissed && isWarning) {
+            setStatusType("WARNING");
             setIsOpen(true);
         }
-    }, [businessDetails]);
+    }, [businessDetails, pathname, router]);
 
     const handleDismiss = () => {
         setIsOpen(false);
@@ -91,9 +111,13 @@ const SubscriptionWarningModal = () => {
 
     const currentPlan = businessDetails?.subscription?.plan || "Standard";
 
+    const isExpiredState = statusType === "EXPIRED";
+
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm animate-in fade-in duration-300 p-4">
-            <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden p-6 relative">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-300 p-4">
+            <div
+                className={`w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden p-6 relative ${isExpiredState ? "border-2 border-red-100" : ""}`}
+            >
                 <div className="flex justify-end mb-2">
                     <button
                         onClick={handleDismiss}
@@ -161,7 +185,7 @@ const SubscriptionWarningModal = () => {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="flex-1 py-2 px-4 bg-green-500 text-white font-bold text-sm rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center"
+                                    className="flex-1 py-2 px-4 bg-green-500 hover:bg-green-600 text-white font-bold text-sm rounded-lg transition-colors flex items-center justify-center"
                                 >
                                     {loading ? (
                                         <Loader2 className="animate-spin w-4 h-4" />

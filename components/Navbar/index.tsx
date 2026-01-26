@@ -1,7 +1,7 @@
 "use client";
 
 import { AppState } from "@/store";
-import { setUser } from "@/store/slices/authSlice";
+import { setUser, signOut as signOutAction } from "@/store/slices/authSlice";
 import {
     setBusinessDetails,
     setBusinessLoading,
@@ -41,10 +41,8 @@ import { toast } from "sonner";
 import BusinessOnboardingModal from "../BusinessOnboardingModal";
 import CustomUserButton from "../CustomUserButton";
 import FilterOverlay from "../FilterOverlay";
-import Sidebar from "./Sidebar";
-import { signOut as signOutAction } from "@/store/slices/authSlice";
 import SubscriptionWarningModal from "../SubscriptionWarningModal";
-import SubscriptionChecker from "../SubscriptionChecker";
+import Sidebar from "./Sidebar";
 
 const allLinks = [
     {
@@ -396,6 +394,10 @@ export default function Navbar({
                             {businessDetails?.subscription && (
                                 <div
                                     className={`flex items-center gap-2 border px-2 py-0.5 rounded-full ml-1 ${
+                                        businessDetails.subscription.status ===
+                                            "PAST_DUE" ||
+                                        businessDetails.subscription.status ===
+                                            "INACTIVE" ||
                                         businessDetails.usage.isLimitReached
                                             ? "bg-red-50 border-red-200"
                                             : "bg-gray-50 border-gray-200"
@@ -403,31 +405,53 @@ export default function Navbar({
                                 >
                                     <div
                                         className={`h-1.5 w-1.5 rounded-full ${
+                                            businessDetails.subscription
+                                                .status === "PAST_DUE" ||
+                                            businessDetails.subscription
+                                                .status === "INACTIVE" ||
                                             businessDetails.usage.isLimitReached
                                                 ? "bg-red-500 animate-pulse"
                                                 : "bg-green-500"
                                         }`}
                                     />
-                                    <span className="text-[10px] font-bold text-gray-600 uppercase tracking-tight">
-                                        {businessDetails.subscription.plan}
+
+                                    <span
+                                        className={`text-[10px] font-bold uppercase tracking-tight ${
+                                            businessDetails.subscription
+                                                .status === "PAST_DUE" ||
+                                            businessDetails.subscription
+                                                .status === "INACTIVE"
+                                                ? "text-red-600"
+                                                : "text-gray-600"
+                                        }`}
+                                    >
+                                        {businessDetails.subscription.status ===
+                                            "PAST_DUE" ||
+                                        businessDetails.subscription.status ===
+                                            "INACTIVE"
+                                            ? "PAST DUE"
+                                            : businessDetails.subscription.plan}
                                     </span>
+
                                     {businessDetails.subscription.plan ===
-                                        "STARTER" && (
-                                        <span
-                                            className={`text-[9px] font-medium border-l pl-1.5 ml-0.5 ${
-                                                businessDetails.usage
-                                                    .isLimitReached
-                                                    ? "text-red-600"
-                                                    : "text-gray-400"
-                                            }`}
-                                        >
-                                            {
-                                                businessDetails.usage
-                                                    .transactionCount
-                                            }
-                                            /100
-                                        </span>
-                                    )}
+                                        "STARTER" &&
+                                        businessDetails.subscription.status ===
+                                            "ACTIVE" && (
+                                            <span
+                                                className={`text-[9px] font-medium border-l pl-1.5 ml-0.5 ${
+                                                    businessDetails.usage
+                                                        .isLimitReached
+                                                        ? "text-red-600"
+                                                        : "text-gray-400"
+                                                }`}
+                                            >
+                                                {
+                                                    businessDetails.usage
+                                                        .transactionCount
+                                                }
+                                                /100
+                                            </span>
+                                        )}
                                 </div>
                             )}
 
@@ -534,7 +558,11 @@ export default function Navbar({
                                         <div
                                             className={`flex items-center gap-2 border px-2 py-0.5 rounded-full ml-1 ${
                                                 businessDetails.usage
-                                                    .isLimitReached
+                                                    .isLimitReached ||
+                                                (businessDetails.subscription
+                                                    .status !== "ACTIVE" &&
+                                                    businessDetails.subscription
+                                                        .status !== "TRIALING")
                                                     ? "bg-red-50 border-red-200"
                                                     : "bg-gray-50 border-gray-200"
                                             }`}
@@ -542,34 +570,59 @@ export default function Navbar({
                                             <div
                                                 className={`h-1.5 w-1.5 rounded-full ${
                                                     businessDetails.usage
-                                                        .isLimitReached
+                                                        .isLimitReached ||
+                                                    (businessDetails
+                                                        .subscription.status !==
+                                                        "ACTIVE" &&
+                                                        businessDetails
+                                                            .subscription
+                                                            .status !==
+                                                            "TRIALING")
                                                         ? "bg-red-500 animate-pulse"
                                                         : "bg-green-500"
                                                 }`}
                                             />
-                                            <span className="text-[10px] font-bold text-gray-600 uppercase tracking-tight">
-                                                {
+
+                                            <span
+                                                className={`text-[10px] font-bold uppercase tracking-tight ${
                                                     businessDetails.subscription
-                                                        .plan
-                                                }
+                                                        .status !== "ACTIVE" &&
+                                                    businessDetails.subscription
+                                                        .status !== "TRIALING"
+                                                        ? "text-red-600"
+                                                        : "text-gray-600"
+                                                }`}
+                                            >
+                                                {businessDetails.subscription
+                                                    .status !== "ACTIVE" &&
+                                                businessDetails.subscription
+                                                    .status !== "TRIALING"
+                                                    ? "PAST DUE"
+                                                    : businessDetails
+                                                          .subscription.plan}
                                             </span>
+
                                             {businessDetails.subscription
-                                                .plan === "STARTER" && (
-                                                <span
-                                                    className={`text-[9px] font-medium border-l pl-1.5 ml-0.5 ${
-                                                        businessDetails.usage
-                                                            .isLimitReached
-                                                            ? "text-red-600"
-                                                            : "text-gray-400"
-                                                    }`}
-                                                >
-                                                    {
-                                                        businessDetails.usage
-                                                            .transactionCount
-                                                    }
-                                                    /100
-                                                </span>
-                                            )}
+                                                .plan === "STARTER" &&
+                                                businessDetails.subscription
+                                                    .status === "ACTIVE" && (
+                                                    <span
+                                                        className={`text-[9px] font-medium border-l pl-1.5 ml-0.5 ${
+                                                            businessDetails
+                                                                .usage
+                                                                .isLimitReached
+                                                                ? "text-red-600"
+                                                                : "text-gray-400"
+                                                        }`}
+                                                    >
+                                                        {
+                                                            businessDetails
+                                                                .usage
+                                                                .transactionCount
+                                                        }
+                                                        /100
+                                                    </span>
+                                                )}
                                         </div>
                                     )}
 
@@ -631,7 +684,6 @@ export default function Navbar({
                     }`}
                 >
                     <BusinessOnboardingModal />
-                    <SubscriptionChecker />
                     <SubscriptionWarningModal />
                     {children}
                 </main>

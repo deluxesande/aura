@@ -117,7 +117,7 @@ const KraSettings = () => {
                 </button>
             </form>
 
-            <div className="bg-slate-50 rounded-lg border-2 border-dashed border-gray-200 p-4 flex flex-col justify-center animate-in fade-in slide-in-from-top-2 duration-200 min-h-[160px]">
+            <div className="bg-slate-50 rounded-lg border-2 border-dashed border-gray-200 p-4 flex flex-col justify-center min-h-[160px]">
                 {/* STATE 1: LOADING */}
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center text-gray-400 py-[51px]">
