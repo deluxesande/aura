@@ -1,5 +1,5 @@
 import axios from "axios";
-import { AlertCircle, RefreshCw, Search } from "lucide-react";
+import { RefreshCw, Search } from "lucide-react";
 import React, { useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
@@ -100,7 +100,7 @@ const KraSettings = () => {
                                 setInputPin(e.target.value.toUpperCase())
                             }
                             placeholder="Enter KRA PIN (e.g. A001234567Z)"
-                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase transition-all"
+                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase"
                         />
                         <Search
                             className="absolute left-3 top-2.5 stroke-green-500"
@@ -111,118 +111,100 @@ const KraSettings = () => {
                 <button
                     type="submit"
                     disabled={isLoading || !inputPin}
-                    className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center gap-2"
+                    className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center gap-2"
                 >
                     {isLoading ? "Checking..." : "Validate"}
                 </button>
             </form>
 
-            <div className="bg-slate-50 rounded-lg border-2 border-dashed border-gray-200 p-4 flex flex-col justify-center min-h-[160px]">
-                {/* STATE 1: LOADING */}
-                {isLoading ? (
-                    <div className="flex flex-col items-center justify-center text-gray-400 py-[51px]">
+            {/* Container now has 'relative' to support overlay */}
+            <div className="bg-slate-50 rounded-lg border-2 border-dashed border-gray-200 p-4 flex flex-col justify-center min-h-[160px] relative">
+                {/* LOADING OVERLAY */}
+                {isLoading && (
+                    <div className="absolute inset-0 bg-white/90 z-10 flex flex-col items-center justify-center">
+                        {/* YOUR SPINNER - UNCHANGED */}
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-2"></div>
-                        <p>
+                        <p className="text-gray-400">
                             {isValidating
                                 ? "Validating..."
                                 : "Loading Stored Data..."}
                         </p>
                     </div>
-                ) : (
-                    <div>
-                        {/* STATE 2: ERROR */}
-                        {/* {validationError && (
-                            <div className="flex items-center gap-3 text-red-500 bg-red-50 p-4 rounded-md border border-red-100 w-full mb-4">
-                                <AlertCircle
-                                    size={24}
-                                    className="flex-shrink-0"
-                                />
-                                <div>
-                                    <p className="font-semibold">
-                                        Validation Failed
-                                    </p>
-                                    <p className="text-sm opacity-90">
-                                        {validationError}
-                                    </p>
-                                </div>
-                            </div>
-                        )} */}
+                )}
 
-                        {/* STATE 3: CONTENT AREA */}
-                        <div>
-                            <div className="flex items-start justify-between">
-                                <div className="flex items-center gap-2 mb-2">
-                                    {validationError ? (
-                                        <span className="text-lg font-semibold text-red-500">
-                                            Invalid Taxpayer
-                                        </span>
-                                    ) : displayData ? (
-                                        <span className="text-lg font-semibold text-green-500">
-                                            Valid Taxpayer
-                                        </span>
-                                    ) : (
-                                        <span className="text-lg font-semibold text-gray-800">
-                                            Taxpayer Details
-                                        </span>
-                                    )}
-                                </div>
+                {/* CONTENT AREA - Always Rendered underneath */}
+                <div>
+                    <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2 mb-2">
+                            {validationError ? (
+                                <span className="text-lg font-semibold text-red-500">
+                                    Invalid Taxpayer
+                                </span>
+                            ) : displayData ? (
+                                <span className="text-lg font-semibold text-green-500">
+                                    Valid Taxpayer
+                                </span>
+                            ) : (
+                                <span className="text-lg font-semibold text-gray-800">
+                                    Taxpayer Details
+                                </span>
+                            )}
+                        </div>
 
-                                <button
-                                    onClick={() => mutate()}
-                                    className="text-xs text-gray-500 flex items-center gap-1 hover:text-green-500 transition-colors"
-                                    title="Refresh Data"
-                                >
-                                    <RefreshCw
-                                        size={16}
-                                        className="hover:stroke-green-500"
-                                    />
-                                </button>
-                            </div>
+                        <button
+                            onClick={() => mutate()}
+                            className="text-xs text-gray-500 flex items-center gap-1 hover:text-green-500"
+                            title="Refresh Data"
+                        >
+                            <RefreshCw
+                                size={16}
+                                className="hover:stroke-green-500"
+                            />
+                        </button>
+                    </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="bg-white p-3 rounded border border-gray-100 shadow-sm">
-                                    <p className="text-xs text-gray-500 uppercase font-semibold">
-                                        Taxpayer Name
-                                    </p>
-                                    <p className="text-gray-900 font-medium truncate">
-                                        {displayData?.name || "N/A"}
-                                    </p>
-                                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white p-3 rounded border border-gray-100 shadow-sm">
+                            <p className="text-xs text-gray-500 uppercase font-semibold">
+                                Taxpayer Name
+                            </p>
+                            <p className="text-gray-900 font-medium truncate">
+                                {displayData?.name || "N/A"}
+                            </p>
+                        </div>
 
-                                <div className="bg-white p-3 rounded border border-gray-100 shadow-sm">
-                                    <p className="text-xs text-gray-500 uppercase font-semibold">
-                                        PIN Status
-                                    </p>
-                                    <div
-                                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mt-1 ${getStatusColor(
-                                            displayData?.status,
-                                        )}`}
-                                    >
-                                        {displayData?.status || "Not Set"}
-                                    </div>
-                                </div>
-
-                                <div className="bg-white p-3 rounded border border-gray-100 shadow-sm">
-                                    <p className="text-xs text-gray-500 uppercase font-semibold">
-                                        Taxpayer Type
-                                    </p>
-                                    <p className="text-gray-900 font-medium">
-                                        {displayData?.type || "N/A"}
-                                    </p>
-                                </div>
-
-                                <div className="bg-white p-3 rounded border border-gray-100 shadow-sm">
-                                    <p className="text-xs text-gray-500 uppercase font-semibold">
-                                        PIN Number
-                                    </p>
-                                    <p className="text-gray-900 font-medium font-mono">
-                                        {displayData?.pin || "N/A"}
-                                    </p>
-                                </div>
+                        <div className="bg-white p-3 rounded border border-gray-100 shadow-sm">
+                            <p className="text-xs text-gray-500 uppercase font-semibold">
+                                PIN Status
+                            </p>
+                            <div
+                                className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mt-1 ${getStatusColor(
+                                    displayData?.status,
+                                )}`}
+                            >
+                                {displayData?.status || "Not Set"}
                             </div>
                         </div>
+
+                        <div className="bg-white p-3 rounded border border-gray-100 shadow-sm">
+                            <p className="text-xs text-gray-500 uppercase font-semibold">
+                                Taxpayer Type
+                            </p>
+                            <p className="text-gray-900 font-medium">
+                                {displayData?.type || "N/A"}
+                            </p>
+                        </div>
+
+                        <div className="bg-white p-3 rounded border border-gray-100 shadow-sm">
+                            <p className="text-xs text-gray-500 uppercase font-semibold">
+                                PIN Number
+                            </p>
+                            <p className="text-gray-900 font-medium font-mono">
+                                {displayData?.pin || "N/A"}
+                            </p>
+                        </div>
                     </div>
-                )}
+                </div>
             </div>
         </section>
     );
