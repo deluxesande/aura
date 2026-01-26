@@ -276,7 +276,7 @@ export default function Navbar({
                         <div className="flex items-center gap-4 flex-grow">
                             {businessDetails?.usage.isLimitReached && (
                                 <Link
-                                    href="/payments"
+                                    href="/payment"
                                     className="flex items-center gap-2 px-2 py-1 bg-red-50 text-red-700 rounded-lg border border-red-100 hover:bg-red-100 transition-colors"
                                 >
                                     <AlertTriangle size={14} />

@@ -5,7 +5,7 @@ import axios from "axios";
 import { AlertOctagon, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 
@@ -18,6 +18,16 @@ const SubscriptionExpiredPage = () => {
     const businessDetails = useSelector(
         (state: AppState) => state.businessData.businessDetails,
     );
+
+    useEffect(() => {
+        if (
+            businessDetails?.subscription?.status === "ACTIVE" ||
+            businessDetails?.subscription?.status === "TRIALING"
+        ) {
+            toast.info("Your subscription is active. Redirecting...");
+            router.replace("/settings");
+        }
+    }, [businessDetails, router]);
 
     const handleRenewSub = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -56,6 +66,13 @@ const SubscriptionExpiredPage = () => {
     };
 
     const currentPlan = businessDetails?.subscription?.plan || "Business";
+
+    if (
+        businessDetails?.subscription?.status === "ACTIVE" ||
+        businessDetails?.subscription?.status === "TRIALING"
+    ) {
+        return null;
+    }
 
     return (
         <Navbar>
