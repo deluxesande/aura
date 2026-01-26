@@ -54,7 +54,7 @@ export default async function handler(
             throw new Error("Failed to retrieve access token from KRA.");
         }
 
-        const validationUrl = `${BASE_URL}/checker/v1/pinbypin?KRAPIN=${kraPin}`;
+        const validationUrl = `${BASE_URL}/checker/v1/pinbypin`;
 
         const validationResponse = await axios.post(
             validationUrl,

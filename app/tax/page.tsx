@@ -4,7 +4,14 @@ import Navbar from "@/components/Navbar";
 import { Invoice } from "@/utils/typesDefinitions";
 import axios from "axios";
 import { format, isSameMonth, parseISO, subMonths } from "date-fns";
-import { AlertCircle, CheckCircle2, Download, Loader2 } from "lucide-react";
+import {
+    AlertCircle,
+    CheckCircle2,
+    ChevronLeft,
+    ChevronRight,
+    Download,
+    Loader2,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
@@ -26,33 +33,16 @@ interface KraDetails {
     pinStatus: string;
 }
 
-const MOCK_FILING_HISTORY: TaxFiling[] = [
-    {
-        id: "TAX-001",
-        period: "December 2025",
-        filingDate: "2026-01-15T10:00:00Z",
-        totalSales: 450000,
-        taxAmount: 13500,
-        status: "Submitted",
-        referenceNumber: "KRA20260012345",
-    },
-    {
-        id: "TAX-002",
-        period: "November 2025",
-        filingDate: "2025-12-18T14:30:00Z",
-        totalSales: 380000,
-        taxAmount: 11400,
-        status: "Submitted",
-        referenceNumber: "KRA20250098765",
-    },
-];
-
 const fetcher = (url: string) => axios.get(url).then((res) => res.data);
 
 const TaxReturnsPage = () => {
     const [selectedMonth, setSelectedMonth] = useState<Date>(
         subMonths(new Date(), 1),
     );
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
 
     const [filingMode, setFilingMode] = useState<"MANUAL" | "AUTO">("MANUAL");
     const [calculationMode, setCalculationMode] = useState<"INVOICE" | "FIXED">(
@@ -70,6 +60,39 @@ const TaxReturnsPage = () => {
         "/api/invoice",
         fetcher,
     );
+
+    // Fetch actual filing history (Currently empty as API is not ready)
+    const { data: filingHistory = [], isLoading: isLoadingHistory } = useSWR<
+        TaxFiling[]
+    >("/api/kra/returns", fetcher, {
+        fallbackData: [], // Default to empty array to show empty state
+    });
+
+    // Pagination Logic
+    const totalPages = Math.ceil((filingHistory?.length || 0) / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedHistory = filingHistory.slice(startIndex, endIndex);
+
+    const handlePreviousPage = () => {
+        if (currentPage > 1) setCurrentPage(currentPage - 1);
+    };
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+    };
+
+    const handlePageClick = (pageNumber: number) => {
+        setCurrentPage(pageNumber);
+    };
+
+    const getPageNumbers = () => {
+        const pages = [];
+        for (let i = 1; i <= totalPages; i++) {
+            pages.push(i);
+        }
+        return pages;
+    };
 
     const calculatedTotalSales = useMemo(() => {
         if (!invoices || !Array.isArray(invoices)) return 0;
@@ -98,9 +121,6 @@ const TaxReturnsPage = () => {
         calculationMode === "FIXED"
             ? parseFloat(manualSalesInput) || 0
             : calculatedTotalSales;
-
-    const taxRate = 0.03;
-    const taxPayable = effectiveTotalSales * taxRate;
 
     const handleFileReturn = async () => {
         if (!kraDetails?.kraPin) {
@@ -217,12 +237,17 @@ const TaxReturnsPage = () => {
                                     <input
                                         type="month"
                                         value={format(selectedMonth, "yyyy-MM")}
+                                        onClick={(e) => {
+                                            try {
+                                                e.currentTarget.showPicker();
+                                            } catch (error) {}
+                                        }}
                                         onChange={(e) =>
                                             setSelectedMonth(
                                                 new Date(e.target.value),
                                             )
                                         }
-                                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-sm"
+                                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-sm cursor-pointer"
                                     />
                                 </div>
 
@@ -291,15 +316,6 @@ const TaxReturnsPage = () => {
                             {/* Calculation & Action Footer */}
                             <div className="pt-4 mt-2 w-full border-t border-dashed border-gray-200">
                                 <div className="flex w-full flex-col sm:flex-row items-center justify-between gap-6">
-                                    {/* <div className="flex flex-col">
-                                        <span className="text-sm text-gray-500">
-                                            Tax Payable (3% Rate)
-                                        </span>
-                                        <span className="text-3xl font-bold text-green-600">
-                                            Ksh {taxPayable.toLocaleString()}
-                                        </span>
-                                    </div> */}
-
                                     <button
                                         onClick={handleFileReturn}
                                         disabled={
@@ -356,49 +372,127 @@ const TaxReturnsPage = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                    {MOCK_FILING_HISTORY.map((filing) => (
-                                        <tr
-                                            key={filing.id}
-                                            className="hover:bg-gray-50 transition-colors"
-                                        >
-                                            <td className="py-3 px-4 border-b border-gray-100 text-sm font-medium text-gray-900">
-                                                {filing.period}
-                                            </td>
-                                            <td className="py-3 px-4 border-b border-gray-100 text-sm text-gray-500 font-mono">
-                                                {filing.referenceNumber}
-                                            </td>
-                                            <td className="py-3 px-4 border-b border-gray-100 text-sm text-gray-500">
-                                                {new Date(
-                                                    filing.filingDate,
-                                                ).toLocaleDateString()}
-                                            </td>
-                                            <td className="py-3 px-4 border-b border-gray-100 text-sm text-gray-900">
-                                                Ksh{" "}
-                                                {filing.totalSales.toLocaleString()}
-                                            </td>
-                                            <td className="py-3 px-4 border-b border-gray-100 text-sm font-medium text-green-600">
-                                                Ksh{" "}
-                                                {filing.taxAmount.toLocaleString()}
-                                            </td>
-                                            <td className="py-3 px-4 border-b border-gray-100">
-                                                <span
-                                                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(
-                                                        filing.status,
-                                                    )}`}
-                                                >
-                                                    {filing.status}
-                                                </span>
-                                            </td>
-                                            <td className="py-3 px-4 border-b border-gray-100">
-                                                <button className="text-gray-400 hover:text-green-600 transition-colors">
-                                                    <Download className="w-4 h-4" />
-                                                </button>
+                                    {isLoadingHistory ? (
+                                        <tr>
+                                            <td colSpan={7} className="py-8">
+                                                <div className="flex justify-center">
+                                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                                                </div>
                                             </td>
                                         </tr>
-                                    ))}
+                                    ) : paginatedHistory &&
+                                      paginatedHistory.length > 0 ? (
+                                        paginatedHistory.map((filing) => (
+                                            <tr
+                                                key={filing.id}
+                                                className="hover:bg-gray-50 transition-colors"
+                                            >
+                                                <td className="py-3 px-4 border-b border-gray-100 text-sm font-medium text-gray-900">
+                                                    {filing.period}
+                                                </td>
+                                                <td className="py-3 px-4 border-b border-gray-100 text-sm text-gray-500 font-mono">
+                                                    {filing.referenceNumber}
+                                                </td>
+                                                <td className="py-3 px-4 border-b border-gray-100 text-sm text-gray-500">
+                                                    {new Date(
+                                                        filing.filingDate,
+                                                    ).toLocaleDateString()}
+                                                </td>
+                                                <td className="py-3 px-4 border-b border-gray-100 text-sm text-gray-900">
+                                                    Ksh{" "}
+                                                    {filing.totalSales.toLocaleString()}
+                                                </td>
+                                                <td className="py-3 px-4 border-b border-gray-100 text-sm font-medium text-green-600">
+                                                    Ksh{" "}
+                                                    {filing.taxAmount.toLocaleString()}
+                                                </td>
+                                                <td className="py-3 px-4 border-b border-gray-100">
+                                                    <span
+                                                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(
+                                                            filing.status,
+                                                        )}`}
+                                                    >
+                                                        {filing.status}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 px-4 border-b border-gray-100">
+                                                    <button className="text-gray-400 hover:text-green-600 transition-colors">
+                                                        <Download className="w-4 h-4" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td
+                                                colSpan={7}
+                                                className="py-12 text-center"
+                                            >
+                                                <div className="flex flex-col items-center justify-center text-gray-400">
+                                                    <div className="w-10 h-10 mb-2 rounded-full bg-green-50 flex items-center justify-center">
+                                                        <AlertCircle className=" stroke-green-500" />
+                                                    </div>
+                                                    <p className="text-sm font-medium">
+                                                        No tax returns filed yet
+                                                    </p>
+                                                    <p className="text-xs mt-1 opacity-70">
+                                                        Completed filings will
+                                                        appear here
+                                                    </p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Pagination Footer */}
+                        {!isLoadingHistory && filingHistory.length > 0 && (
+                            <div className="px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                <div className="text-sm text-gray-500">
+                                    Page {currentPage} of {totalPages} | Showing{" "}
+                                    {startIndex + 1}-
+                                    {Math.min(endIndex, filingHistory.length)}{" "}
+                                    of {filingHistory.length} returns
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        className="btn btn-xs btn-ghost flex items-center bg-green-400 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600 px-3 py-1.5 rounded-md"
+                                        onClick={handlePreviousPage}
+                                        disabled={currentPage === 1}
+                                    >
+                                        <ChevronLeft className="w-4 h-4 stroke-white mr-1" />
+                                        Back
+                                    </button>
+                                    <div className="flex gap-1">
+                                        {getPageNumbers().map((page) => (
+                                            <button
+                                                key={page}
+                                                onClick={() =>
+                                                    handlePageClick(page)
+                                                }
+                                                className={`w-6 h-6 flex items-center justify-center rounded text-xs font-medium transition-colors ${
+                                                    currentPage === page
+                                                        ? "bg-green-500 text-white"
+                                                        : "text-gray-600 hover:bg-gray-100"
+                                                }`}
+                                            >
+                                                {page}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <button
+                                        className="btn btn-xs btn-ghost flex items-center bg-green-400 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600 px-3 py-1.5 rounded-md"
+                                        onClick={handleNextPage}
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        Next
+                                        <ChevronRight className="w-4 h-4 stroke-white ml-1" />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </section>
                 </div>
             </div>

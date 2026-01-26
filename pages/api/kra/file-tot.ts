@@ -87,6 +87,10 @@ export default async function handler(
     } catch (error: any) {
         console.error("KRA TOT Filing Error:", error);
 
+        // return res.status(500).json({
+        //     error: error,
+        // });
+
         // Handle Sandbox "Unexpected EOF" (Backend Crash)
         if (
             error.response?.data?.fault?.faultstring ===

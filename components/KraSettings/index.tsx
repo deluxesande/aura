@@ -117,12 +117,10 @@ const KraSettings = () => {
                 </button>
             </form>
 
-            {/* Container now has 'relative' to support overlay */}
             <div className="bg-slate-50 rounded-lg border-2 border-dashed border-gray-200 p-4 flex flex-col justify-center min-h-[160px] relative">
                 {/* LOADING OVERLAY */}
                 {isLoading && (
                     <div className="absolute inset-0 bg-white/90 z-10 flex flex-col items-center justify-center">
-                        {/* YOUR SPINNER - UNCHANGED */}
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-2"></div>
                         <p className="text-gray-400">
                             {isValidating
