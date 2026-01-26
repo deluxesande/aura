@@ -19,7 +19,9 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
             where: { id: id },
             include: {
                 subscriptions: {
-                    where: { status: "ACTIVE" },
+                    where: {
+                        status: { in: ["ACTIVE", "PAST_DUE", "TRIALING"] },
+                    },
                     orderBy: { createdAt: "desc" },
                     take: 1,
                 },
@@ -41,14 +43,14 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
         if (activeSubscription) {
             activeSubscription = await checkAndRenewStarterPlan(
                 id,
-                activeSubscription
+                activeSubscription,
             );
         }
 
         let currentPeriodTransactions = 0;
+
         if (activeSubscription) {
             const clerkIds = business.users.map((u) => u.clerkId);
-            // Count current period transactions for paid M-Pesa invoices
             currentPeriodTransactions = await prisma.invoice.count({
                 where: {
                     OR: [
@@ -65,7 +67,6 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
             });
         }
 
-        // Destructure and mask sensitive M-Pesa fields
         const { subscriptions, ...businessData } = business;
 
         const businessWithUsage = {
@@ -80,8 +81,9 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
                 transactionCount: currentPeriodTransactions,
                 staffCount: business._count.users,
                 isLimitReached:
-                    activeSubscription?.plan === "STARTER" &&
-                    currentPeriodTransactions >= 100,
+                    (activeSubscription?.plan === "STARTER" &&
+                        currentPeriodTransactions >= 100) ||
+                    activeSubscription?.status === "PAST_DUE",
                 canExportData: activeSubscription?.plan === "PREMIUM",
                 hasCustomBranding: activeSubscription?.plan === "PREMIUM",
             },
@@ -93,6 +95,7 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
         res.status(500).json({ error: "Failed to fetch Business" });
     }
 }
+
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
     switch (req.method) {
         case "GET":
