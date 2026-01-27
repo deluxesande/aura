@@ -129,22 +129,23 @@ export default function FeaturesPage() {
                                     </span>
                                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     {[1, 2, 3].map((i) => (
                                         <div
                                             key={i}
-                                            className="flex items-center justify-between text-xs"
+                                            className="flex items-center justify-between bg-white p-2 rounded-lg border border-gray-100 shadow-sm"
                                         >
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center text-green-500 text-[8px]">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-[10px] font-bold text-green-600">
                                                     MP
                                                 </div>
-                                                <span className="text-gray-600 font-medium">
-                                                    Payment...
-                                                </span>
+                                                <div className="flex flex-col">
+                                                    <div className="h-2 w-16 bg-gray-200 rounded-full mb-1"></div>
+                                                    <div className="h-1.5 w-10 bg-gray-100 rounded-full"></div>
+                                                </div>
                                             </div>
-                                            <span className="text-green-500 text-md font-bold">
-                                                + Ksh 1,500
+                                            <span className="text-xs font-bold text-green-600">
+                                                + KES 500
                                             </span>
                                         </div>
                                     ))}
@@ -185,7 +186,7 @@ export default function FeaturesPage() {
                                     >
                                         <CheckCircle2
                                             size={16}
-                                            className="text-green-500"
+                                            className="stroke-green-500"
                                         />
                                         {item}
                                     </li>
