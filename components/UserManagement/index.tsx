@@ -8,7 +8,7 @@ import {
     updateInvitation,
 } from "@/store/slices/invitationsDataSlice";
 import axios, { AxiosError } from "axios";
-import { Trash, Users, AlertCircle } from "lucide-react";
+import { Trash, Users, AlertCircle, UserX } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
@@ -54,16 +54,16 @@ const UserManagement: React.FC = () => {
 
     // Selectors
     const invitations = useSelector(
-        (state: AppState) => state.invitations.invitations
+        (state: AppState) => state.invitations.invitations,
     ) as User[];
 
     const userInvitations = useSelector(
-        (state: AppState) => state.invitationsData.invitationsWithImages
+        (state: AppState) => state.invitationsData.invitationsWithImages,
     ) as Invitation[];
 
     // Fetch Business Data from Redux for the limit check
     const businessDetails = useSelector(
-        (state: AppState) => state.businessData?.businessDetails
+        (state: AppState) => state.businessData?.businessDetails,
     );
 
     // Use SWR for caching and background updates
@@ -90,7 +90,7 @@ const UserManagement: React.FC = () => {
                         "/api/auth/user/image",
                         {
                             params: { userId: user.id },
-                        }
+                        },
                     );
                     return {
                         ...user,
@@ -198,16 +198,16 @@ const UserManagement: React.FC = () => {
                         invitations.map((user) =>
                             user.id === userId
                                 ? { ...user, role: newRole }
-                                : user
-                        )
-                    )
+                                : user,
+                        ),
+                    ),
                 );
 
                 dispatch(
                     updateInvitation({
                         id: userId,
                         updates: { role: newRole },
-                    })
+                    }),
                 );
             }
         };
@@ -232,7 +232,7 @@ const UserManagement: React.FC = () => {
             let response;
             if (userToDelete.status === "accepted") {
                 response = await axios.delete(
-                    `/api/auth/delete/${userToDelete.clerkUserId}`
+                    `/api/auth/delete/${userToDelete.clerkUserId}`,
                 );
             } else {
                 response = await axios.delete("/api/auth/invite/delete", {
@@ -243,8 +243,8 @@ const UserManagement: React.FC = () => {
             if (response.status === 200) {
                 dispatch(
                     setInvitations(
-                        invitations.filter((inv) => inv.id !== userToDelete.id)
-                    )
+                        invitations.filter((inv) => inv.id !== userToDelete.id),
+                    ),
                 );
                 dispatch(removeInvitation(userToDelete.id));
             }
@@ -329,8 +329,16 @@ const UserManagement: React.FC = () => {
                 )}
 
                 {userInvitations.length === 0 && !isLoading && (
-                    <div className="text-gray-500 text-center py-8">
-                        No users found. Invite new users to get started.
+                    <div className="flex flex-col items-center justify-center">
+                        <div className="bg-green-100 rounded-full p-4 mb-3">
+                            <UserX className="h-6 w-6 stroke-green-500" />
+                        </div>
+                        <h3 className="text-gray-900 font-medium text-sm">
+                            No members found
+                        </h3>
+                        <p className="text-gray-500 text-xs mt-1">
+                            Try inviting team members to get started.
+                        </p>
                     </div>
                 )}
 
@@ -365,7 +373,7 @@ const UserManagement: React.FC = () => {
                                     </h3>
                                     <span
                                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                                            user.status
+                                            user.status,
                                         )} w-fit`}
                                     >
                                         {user.status}
@@ -380,7 +388,7 @@ const UserManagement: React.FC = () => {
                         <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
                             <span
                                 className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(
-                                    user.role
+                                    user.role,
                                 )} w-fit`}
                             >
                                 {user.role}
@@ -391,7 +399,7 @@ const UserManagement: React.FC = () => {
                                     onChange={(e) =>
                                         handleRoleChange(
                                             user.id,
-                                            e.target.value
+                                            e.target.value,
                                         )
                                     }
                                     className="outline-none bg-slate-50 block w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 text-xs"
