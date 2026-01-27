@@ -5,11 +5,15 @@ import { motion, useInView } from "framer-motion";
 import {
     BarChart3,
     Bell,
+    CheckCircle2,
     HandCoins,
-    Shield,
+    ShieldCheck,
     Smartphone,
     Users,
+    ArrowUpRight,
+    FileText,
 } from "lucide-react";
+import Image from "next/image";
 import { useRef, useState } from "react";
 
 const containerVariants = {
@@ -17,16 +21,16 @@ const containerVariants = {
     visible: {
         opacity: 1,
         transition: {
-            staggerChildren: 0.2, // Stagger animations for child elements
+            staggerChildren: 0.1,
         },
     },
 };
 
-const itemVariants = {
-    hidden: { opacity: 0, y: 20 }, // Start slightly below and invisible
+const fadeInUp = {
+    hidden: { opacity: 0, y: 30 },
     visible: {
         opacity: 1,
-        y: 0, // Slide up into place
+        y: 0,
         transition: { duration: 0.6, ease: "easeOut" },
     },
 };
@@ -41,102 +45,257 @@ export default function FeaturesPage() {
 
     // Track visibility
     const isHeroInView = useInView(heroRef, { once: true });
-    const isFeaturesInView = useInView(featuresRef, { once: true });
+    const isFeaturesInView = useInView(featuresRef, {
+        once: true,
+        margin: "-100px",
+    });
     const isCtaInView = useInView(ctaRef, { once: true });
 
     return (
-        <div>
+        <div className="bg-gray-50">
             <Navbar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
             {/* Hero Section */}
             <motion.section
                 ref={heroRef}
-                className="bg-gray-50 py-20"
+                className="pt-32 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto"
                 initial="hidden"
                 animate={isHeroInView ? "visible" : "hidden"}
                 variants={containerVariants}
             >
-                <div className="max-w-7xl mx-auto pt-16 px-4 sm:px-6 lg:px-8">
-                    <motion.div className="text-center" variants={itemVariants}>
-                        <h1 className="text-4xl font-bold text-gray-900 mb-6">
-                            Powerful Features for Your Business
-                        </h1>
-                        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                            Everything you need to manage your business
-                            effectively with integrated M-Pesa payments and KRA
-                            compliance
-                        </p>
+                <div className="text-center max-w-5xl mx-auto">
+                    <motion.div
+                        variants={fadeInUp}
+                        className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 text-green-500 text-xs font-bold uppercase tracking-wider mb-6"
+                    >
+                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        All-in-One Platform
                     </motion.div>
+                    <motion.h1
+                        className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6 leading-tight"
+                        variants={fadeInUp}
+                    >
+                        Powerful Features for Your Business
+                    </motion.h1>
+                    <motion.p
+                        className="text-xl text-gray-600 mb-8"
+                        variants={fadeInUp}
+                    >
+                        From seamless M-Pesa payments to automated KRA
+                        compliance, SaleSense gives you the tools to manage your
+                        business effectively.
+                    </motion.p>
                 </div>
             </motion.section>
 
-            {/* Features Grid */}
+            {/* Bento Grid Features */}
             <motion.section
                 ref={featuresRef}
-                className="py-20 bg-white"
+                className="pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto"
                 initial="hidden"
                 animate={isFeaturesInView ? "visible" : "hidden"}
                 variants={containerVariants}
             >
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[minmax(250px,auto)]">
+                    {/* Feature 1: M-Pesa Integration (Large Span) */}
                     <motion.div
-                        className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
-                        variants={containerVariants}
+                        variants={fadeInUp}
+                        className="md:col-span-2 bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
                     >
-                        {[
-                            {
-                                icon: <HandCoins color="#16a34a" size={24} />,
-                                title: "M-Pesa Integration",
-                                description:
-                                    "Seamless payment processing with real-time transaction tracking and automated reconciliation.",
-                            },
-                            {
-                                icon: <Shield color="#16a34a" size={24} />,
-                                title: "KRA Compliance",
-                                description:
-                                    "Automated tax calculations, reporting, and compliance management for your business.",
-                            },
-                            {
-                                icon: <BarChart3 color="#16a34a" size={24} />,
-                                title: "Sales Analytics",
-                                description:
-                                    "Comprehensive analytics and reporting tools to track your business performance.",
-                            },
-                            {
-                                icon: <Users color="#16a34a" size={24} />,
-                                title: "Customer Management",
-                                description:
-                                    "Track customer information, purchase history, and manage relationships effectively.",
-                            },
-                            {
-                                icon: <Smartphone color="#16a34a" size={24} />,
-                                title: "Mobile App",
-                                description:
-                                    "Manage your business on the go with our powerful mobile application.",
-                            },
-                            {
-                                icon: <Bell color="#16a34a" size={24} />,
-                                title: "Smart Notifications",
-                                description:
-                                    "Stay updated with real-time alerts for transactions, compliance deadlines, and more.",
-                            },
-                        ].map((feature, index) => (
-                            <motion.div
-                                key={index}
-                                className="p-6 rounded-xl border border-gray-100 hover:border-green-200 transition-colors"
-                                variants={itemVariants}
-                            >
-                                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                                    {feature.icon}
+                        <div className="relative z-10 max-w-md">
+                            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-6">
+                                <HandCoins
+                                    className="stroke-green-500"
+                                    size={24}
+                                />
+                            </div>
+                            <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                                Seamless M-Pesa Integration
+                            </h3>
+                            <p className="text-gray-500 leading-relaxed">
+                                Accept payments directly to your Till or
+                                Paybill. We automatically reconcile transactions
+                                in real-time, so you never have to guess who
+                                paid what.
+                            </p>
+                        </div>
+
+                        {/* Abstract UI Illustration */}
+                        <div className="absolute top-8 right-8 w-64 hidden lg:block">
+                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 shadow-sm transform rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                                <div className="flex items-center justify-between mb-3 border-b border-gray-200 pb-2">
+                                    <span className="text-xs font-bold text-gray-400">
+                                        Recent Transactions
+                                    </span>
+                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                                 </div>
-                                <h3 className="text-xl font-semibold mb-2">
-                                    {feature.title}
-                                </h3>
-                                <p className="text-gray-600">
-                                    {feature.description}
+                                <div className="space-y-2">
+                                    {[1, 2, 3].map((i) => (
+                                        <div
+                                            key={i}
+                                            className="flex items-center justify-between text-xs"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center text-green-500 text-[8px]">
+                                                    MP
+                                                </div>
+                                                <span className="text-gray-600 font-medium">
+                                                    Payment...
+                                                </span>
+                                            </div>
+                                            <span className="text-green-500 text-md font-bold">
+                                                + Ksh 1,500
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    {/* Feature 2: KRA Compliance (Tall Card) */}
+                    <motion.div
+                        variants={fadeInUp}
+                        className="md:row-span-2 bg-green-100 rounded-3xl p-8 border border-green-100 relative overflow-hidden group"
+                    >
+                        <div className="relative z-10">
+                            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mb-6 shadow-sm">
+                                <ShieldCheck
+                                    className="stroke-green-500"
+                                    size={24}
+                                />
+                            </div>
+                            <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                                KRA Compliance
+                            </h3>
+                            <p className="text-green-800 leading-relaxed mb-6">
+                                Stop worrying about tax deadlines. Our system
+                                tracks your sales and automatically prepares
+                                your returns.
+                            </p>
+                            <ul className="space-y-3">
+                                {[
+                                    "Auto-calculated Tax",
+                                    "One-click Filing",
+                                    "Audit-ready Reports",
+                                ].map((item, i) => (
+                                    <li
+                                        key={i}
+                                        className="flex items-center gap-2 text-sm font-medium"
+                                    >
+                                        <CheckCircle2
+                                            size={16}
+                                            className="text-green-500"
+                                        />
+                                        {item}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                        {/* Background Decoration */}
+                        <ShieldCheck className="absolute -bottom-10 -right-10 stroke-green-300 w-64 h-64 rotate-12 group-hover:rotate-0 transition-transform duration-700" />
+                    </motion.div>
+
+                    {/* Feature 3: Analytics */}
+                    <motion.div
+                        variants={fadeInUp}
+                        className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all group"
+                    >
+                        <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-6">
+                            <BarChart3 className="stroke-green-500" size={24} />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">
+                            Sales Analytics
+                        </h3>
+                        <p className="text-gray-500 text-sm">
+                            Visual insights into your best performing products
+                            and peak sales hours.
+                        </p>
+                        <div className="mt-4 flex items-end gap-1 h-16 w-full opacity-50 group-hover:opacity-100 transition-opacity">
+                            <div className="bg-green-200 w-1/5 h-[40%] rounded-t"></div>
+                            <div className="bg-green-300 w-1/5 h-[70%] rounded-t"></div>
+                            <div className="bg-green-500 w-1/5 h-[50%] rounded-t"></div>
+                            <div className="bg-green-400 w-1/5 h-[90%] rounded-t"></div>
+                            <div className="bg-green-200 w-1/5 h-[60%] rounded-t"></div>
+                        </div>
+                    </motion.div>
+
+                    {/* Feature 4: Customer Management */}
+                    <motion.div
+                        variants={fadeInUp}
+                        className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all"
+                    >
+                        <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-6">
+                            <Users className="stroke-green-500" size={24} />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">
+                            CRM Tools
+                        </h3>
+                        <p className="text-gray-500 text-sm">
+                            Keep track of your loyal customers and purchase
+                            history to build better relationships.
+                        </p>
+                    </motion.div>
+
+                    {/* Feature 5: Mobile App (Wide) */}
+                    <motion.div
+                        variants={fadeInUp}
+                        className="md:col-span-2 bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row items-center gap-8 overflow-hidden"
+                    >
+                        <div className="flex-1 text-center md:text-left">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-bold uppercase tracking-wider mb-4">
+                                <Smartphone size={14} /> Mobile First
+                            </div>
+                            <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                                Manage on the Go
+                            </h3>
+                            <p className="text-gray-500 mb-6">
+                                Your business in your pocket. Track sales, send
+                                invoices, and check inventory levels from
+                                anywhere using our mobile app.
+                            </p>
+                            <div className="flex gap-4 justify-center md:justify-start text-sm font-semibold text-green-600 cursor-pointer hover:text-green-700">
+                                <span>Download for Android</span>{" "}
+                                <ArrowUpRight size={18} />
+                            </div>
+                        </div>
+                        <div className="relative w-48 h-48 bg-gray-50 rounded-2xl border-4 border-gray-100 flex items-center justify-center shadow-inner">
+                            <div className="text-center">
+                                <div className="w-10 h-1 rounded-full bg-gray-200 mx-auto mb-4"></div>
+                                <div className="w-12 h-12 rounded-xl mx-auto flex items-center justify-center text-white mb-2 shadow-lg shadow-green-200">
+                                    <Image
+                                        src="/logos/salesense-icon.png"
+                                        alt="Logo"
+                                        className="rounded-xl"
+                                        width={48}
+                                        height={48}
+                                    />
+                                </div>
+                                <p className="text-xs text-gray-400 font-bold">
+                                    SaleSense
                                 </p>
-                            </motion.div>
-                        ))}
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    {/* Feature 6: Notifications */}
+                    <motion.div
+                        variants={fadeInUp}
+                        className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all"
+                    >
+                        <div className="flex justify-between items-start mb-6">
+                            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                                <Bell className="stroke-green-500" size={24} />
+                            </div>
+                            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">
+                            Smart Alerts
+                        </h3>
+                        <p className="text-gray-500 text-sm">
+                            Get notified instantly for low stock, failed
+                            payments, or when tax returns are due.
+                        </p>
                     </motion.div>
                 </div>
             </motion.section>
@@ -144,31 +303,29 @@ export default function FeaturesPage() {
             {/* CTA Section */}
             <motion.section
                 ref={ctaRef}
-                className="bg-gray-50 py-20"
+                className="py-20 bg-white border-t border-gray-100"
                 initial="hidden"
                 animate={isCtaInView ? "visible" : "hidden"}
                 variants={containerVariants}
             >
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                     <motion.div
-                        className="bg-white rounded-2xl p-8 md:p-12 shadow-sm border border-gray-100"
-                        variants={itemVariants}
+                        variants={fadeInUp}
+                        className="max-w-3xl mx-auto"
                     >
-                        <div className="text-center max-w-3xl mx-auto">
-                            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                                Ready to grow your business?
-                            </h2>
-                            <p className="text-gray-600 mb-8">
-                                Join thousands of Kenyan businesses using
-                                SaleSense to manage their operations.
-                            </p>
-                            <a
-                                href="/sign-up"
-                                className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors"
-                            >
-                                Get Started Now
-                            </a>
-                        </div>
+                        <h2 className="text-4xl font-bold text-gray-900 mb-6">
+                            Ready to modernize your business?
+                        </h2>
+                        <p className="text-xl text-gray-600 mb-10">
+                            Join thousands of Kenyan businesses using SaleSense
+                            to simplify operations and stay compliant.
+                        </p>
+                        <a
+                            href="/sign-up"
+                            className="inline-flex items-center justify-center px-8 py-4 text-base font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 transition-all shadow-lg shadow-green-200"
+                        >
+                            Get Started Now
+                        </a>
                     </motion.div>
                 </div>
             </motion.section>
