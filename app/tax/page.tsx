@@ -54,7 +54,7 @@ const TaxReturnsPage = () => {
     const itemsPerPage = 5;
 
     const [filingMode, setFilingMode] = useState<"MANUAL" | "AUTO">("MANUAL");
-    const [isSavingSettings, setIsSavingSettings] = useState(false); // <--- 2. ADDED LOADING STATE
+    const [isSavingSettings, setIsSavingSettings] = useState(false);
     const [calculationMode, setCalculationMode] = useState<"INVOICE" | "FIXED">(
         "INVOICE",
     );
@@ -87,6 +87,15 @@ const TaxReturnsPage = () => {
     const toggleFilingMode = async (mode: "MANUAL" | "AUTO") => {
         if (isStarter) return;
         if (mode === filingMode) return;
+
+        if (mode === "AUTO") {
+            if (!kraDetails?.kraPin) {
+                toast.error(
+                    "You must configure your KRA PIN in settings before enabling Auto-Filing.",
+                );
+                return;
+            }
+        }
 
         setFilingMode(mode);
         setIsSavingSettings(true);
@@ -459,7 +468,9 @@ const TaxReturnsPage = () => {
                                                 </td>
                                                 <td className="py-3 px-4 border-b border-gray-100">
                                                     <span
-                                                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(filing.status)}`}
+                                                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(
+                                                            filing.status,
+                                                        )}`}
                                                     >
                                                         {filing.status}
                                                     </span>
@@ -472,6 +483,7 @@ const TaxReturnsPage = () => {
                                             </tr>
                                         ))
                                     ) : (
+                                        /* EMPTY STATE */
                                         <tr>
                                             <td
                                                 colSpan={7}
@@ -511,7 +523,7 @@ const TaxReturnsPage = () => {
                                         onClick={handlePreviousPage}
                                         disabled={currentPage === 1}
                                     >
-                                        <ChevronLeft className="w-4 h-4 stroke-white mr-1" />{" "}
+                                        <ChevronLeft className="w-4 h-4 stroke-white mr-1" />
                                         Back
                                     </button>
                                     <div className="flex gap-1">
@@ -521,7 +533,11 @@ const TaxReturnsPage = () => {
                                                 onClick={() =>
                                                     handlePageClick(page)
                                                 }
-                                                className={`w-6 h-6 flex items-center justify-center rounded text-xs font-medium transition-colors ${currentPage === page ? "bg-green-500 text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                                                className={`w-6 h-6 flex items-center justify-center rounded text-xs font-medium transition-colors ${
+                                                    currentPage === page
+                                                        ? "bg-green-500 text-white"
+                                                        : "text-gray-600 hover:bg-gray-100"
+                                                }`}
                                             >
                                                 {page}
                                             </button>
@@ -532,7 +548,7 @@ const TaxReturnsPage = () => {
                                         onClick={handleNextPage}
                                         disabled={currentPage === totalPages}
                                     >
-                                        Next{" "}
+                                        Next
                                         <ChevronRight className="w-4 h-4 stroke-white ml-1" />
                                     </button>
                                 </div>
