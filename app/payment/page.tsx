@@ -4,7 +4,7 @@ import { setBusinessDetails } from "@/store/slices/businessDataSlice";
 import { formatPhoneNumber } from "@/utils/formatPhoneNumber";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, Check, Loader2, Phone, X } from "lucide-react";
+import { Check, Loader2, Phone, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -30,22 +30,13 @@ const PLANS: Plan[] = [
         id: "STARTER",
         name: "Starter",
         price: 0,
-        description: "Perfect for side hustles & small dukas",
+        description: "For side hustles just getting started",
         features: [
-            { text: "1 User", included: true },
-            { text: "Salesense Branded Receipts", included: true },
+            { text: "Connect Your Own Paybill", included: true },
+            { text: "1 Staff Account", included: true },
+            { text: "Max 100 Transactions/mo", included: true },
             {
-                text: "Use Salesense Paybill",
-                included: true,
-                highlight: "warning",
-            },
-            {
-                text: "Max 100 Transactions/mo",
-                included: true,
-                highlight: "warning",
-            },
-            {
-                text: "2% Transaction Fee",
+                text: "Auto-Filing Only",
                 included: true,
                 highlight: "warning",
             },
@@ -57,19 +48,18 @@ const PLANS: Plan[] = [
     {
         id: "STANDARD",
         name: "Standard",
-        price: 1,
-        description: "For busy hardware stores & cafes",
+        price: 1000,
+        description: "For growing shops & hardware stores",
         features: [
             { text: "Unlimited Transactions", included: true },
             { text: "5 Staff Accounts", included: true },
+            { text: "Connect Your Own Paybill", included: true },
             {
-                text: "0% Commission (Keep 100%)",
+                text: "Auto-Filing Included",
                 included: true,
                 highlight: "success",
             },
-            { text: "Connect YOUR Own Paybill", included: true },
             { text: "Salesense Branded Receipts", included: true },
-            { text: "PDF Reports", included: true },
         ],
         cta: "Select Standard",
         popular: true,
@@ -77,15 +67,18 @@ const PLANS: Plan[] = [
     {
         id: "PREMIUM",
         name: "Premium",
-        price: 1,
-        description: "For shops that need data & scaling",
+        price: 1500,
+        description: "For businesses that need full control",
         features: [
-            { text: "Unlimited Transactions", included: true },
-            { text: "Unlimited Staff Accounts", included: true },
-            { text: "Connect YOUR Own Paybill", included: true },
-            { text: "Custom Receipt Branding", included: true },
+            { text: "Unlimited Staff & Transactions", included: true },
+            { text: "Remove 'Powered by Salesense'", included: true },
             { text: "Full Excel/CSV Data Export", included: true },
-            { text: "Priority Support", included: true },
+            {
+                text: "Advanced Filing Control",
+                included: true,
+                highlight: "success",
+            },
+            { text: "Priority Phone Support", included: true },
         ],
         cta: "Select Premium",
         popular: false,
@@ -98,7 +91,7 @@ export default function PaymentPage() {
 
     const user = useSelector((state: AppState) => state.auth.user);
     const businessDetails = useSelector(
-        (state: AppState) => state.businessData.businessDetails
+        (state: AppState) => state.businessData.businessDetails,
     );
 
     const [isFetching, setIsFetching] = useState(false);
@@ -116,7 +109,7 @@ export default function PaymentPage() {
                 setIsFetching(true);
                 try {
                     const response = await axios.get(
-                        `/api/business/${user.businessId}`
+                        `/api/business/${user.businessId}`,
                     );
                     if (response.data) {
                         dispatch(setBusinessDetails(response.data));
@@ -160,7 +153,7 @@ export default function PaymentPage() {
                 } catch (error: any) {
                     throw new Error(
                         error.response?.data?.error ||
-                            "Failed to set up account"
+                            "Failed to set up account",
                     );
                 }
             };
@@ -256,8 +249,8 @@ export default function PaymentPage() {
                                     isCurrent
                                         ? "border-green-500 ring-2 ring-green-500/20 shadow-lg"
                                         : plan.popular
-                                        ? "border-green-500 shadow-md ring-1 ring-green-500"
-                                        : "border-gray-200"
+                                          ? "border-green-500 shadow-md ring-1 ring-green-500"
+                                          : "border-gray-200"
                                 } flex flex-col p-8 h-full`}
                             >
                                 {plan.popular && !isCurrent && (
@@ -326,8 +319,8 @@ export default function PaymentPage() {
                                         isCurrent
                                             ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
                                             : plan.popular
-                                            ? "bg-green-600 text-white hover:bg-green-700 shadow-md"
-                                            : "bg-white text-green-600 border border-green-600 hover:bg-green-50"
+                                              ? "bg-green-600 text-white hover:bg-green-700 shadow-md"
+                                              : "bg-white text-green-600 border border-green-600 hover:bg-green-50"
                                     }`}
                                 >
                                     {isCurrent ? "Active Plan" : plan.cta}
@@ -383,7 +376,7 @@ export default function PaymentPage() {
                                                 value={phoneNumber}
                                                 onChange={(e) =>
                                                     setPhoneNumber(
-                                                        e.target.value
+                                                        e.target.value,
                                                     )
                                                 }
                                                 className="block w-full pl-10 pr-3 py-3 bg-slate-50 outline-none border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"

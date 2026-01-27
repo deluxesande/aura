@@ -1,7 +1,7 @@
 "use client";
 import Footer from "@/components/LandingPage/Footer";
 import Navbar from "@/components/LandingPage/Navbar";
-import { Check, X, AlertCircle } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useState, useRef } from "react";
 import { motion, useInView } from "framer-motion";
 
@@ -47,12 +47,16 @@ export default function PricingPage() {
             >
                 <div className="max-w-7xl mx-auto pt-16 px-4 sm:px-6 lg:px-8">
                     <motion.div className="text-center" variants={itemVariants}>
-                        <h1 className="text-4xl font-bold text-gray-900 mb-6">
-                            Fair Pricing for Every Stage
+                        <div className="inline-block px-4 py-2 rounded-full bg-green-100 text-green-700 text-sm font-medium mb-6">
+                            Zero Transaction Fees on All Plans
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                            Fair Pricing for Every Stage <br />
                         </h1>
                         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                            Start for free, upgrade as you grow. No hidden
-                            charges.
+                            Connect your own M-Pesa Paybill directly. We handle
+                            the receipts, inventory, and monthly KRA returns
+                            automatically.
                         </p>
                     </motion.div>
                 </div>
@@ -71,212 +75,212 @@ export default function PricingPage() {
                         className="grid md:grid-cols-3 gap-8"
                         variants={containerVariants}
                     >
-                        {/* Free Tier */}
+                        {/* STARTER TIER */}
                         <motion.div
-                            className="border border-gray-100 bg-white rounded-2xl p-8 hover:border-green-200 transition-colors"
+                            className="border border-gray-100 bg-white rounded-2xl p-8 hover:border-green-200 transition-all shadow-sm hover:shadow-md"
                             variants={itemVariants}
                         >
                             <div className="text-center mb-8">
-                                <h3 className="text-xl font-semibold mb-2">
+                                <h3 className="text-xl font-semibold mb-2 text-gray-900">
                                     Starter
                                 </h3>
-                                <div className="text-4xl font-bold mb-4">
+                                <div className="text-4xl font-bold mb-4 text-gray-900">
                                     Free
                                 </div>
-                                <p className="text-gray-600 text-sm">
-                                    Perfect for side hustles & small dukas
+                                <p className="text-gray-500 text-sm">
+                                    For side hustles just getting started
                                 </p>
                             </div>
-                            <ul className="space-y-4 mb-8">
-                                <li className="flex items-center text-gray-600">
+                            <ul className="space-y-4 mb-8 text-sm">
+                                <li className="flex items-center text-gray-700">
                                     <Check
-                                        className="text-green-600 mr-3 shrink-0"
+                                        className="text-green-500 mr-3 shrink-0"
                                         size={20}
                                     />
-                                    <span>1 User </span>
+                                    <span>
+                                        Connect{" "}
+                                        <strong>Your Own Paybill</strong>
+                                    </span>
                                 </li>
-                                <li className="flex items-center text-gray-500 text-sm">
+                                <li className="flex items-center text-gray-700">
                                     <Check
-                                        className="text-gray-400 mr-3 shrink-0"
+                                        className="text-green-500 mr-3 shrink-0"
                                         size={20}
                                     />
-                                    <span>Salesense Branded Receipts</span>
+                                    <span>1 Staff Account</span>
                                 </li>
-                                <li className="flex items-center text-gray-400 text-sm">
-                                    <AlertCircle
-                                        className="text-gray-400 mr-3.5 shrink-0"
-                                        size={18}
-                                    />
-                                    <span>Use Salesense Paybill</span>
-                                </li>
-                                <li className="flex items-center text-gray-400 text-sm">
-                                    <AlertCircle
-                                        className="text-gray-400 mr-3.5 shrink-0"
-                                        size={18}
+                                <li className="flex items-center text-gray-700">
+                                    <Check
+                                        className="text-green-500 mr-3 shrink-0"
+                                        size={20}
                                     />
                                     <span>Max 100 Transactions/mo</span>
                                 </li>
-                                <li className="flex items-center text-gray-400 text-sm">
-                                    <AlertCircle
-                                        className="mr-3.5 shrink-0"
-                                        size={18}
+                                <li className="flex items-start text-gray-700">
+                                    <Check
+                                        className="text-green-500 mr-3 shrink-0"
+                                        size={20}
                                     />
-                                    <span>2% Transaction Fee</span>
+                                    <div className="flex flex-col">
+                                        <span>Auto-Filing Only</span>
+                                        <span className="text-xs text-gray-500 mt-0.5">
+                                            Automatic monthly Sales returns
+                                        </span>
+                                    </div>
                                 </li>
-                                <li className="flex items-center text-gray-400 text-sm">
+                                <li className="flex items-center text-gray-400">
                                     <X className="mr-3 shrink-0" size={20} />
                                     <span>No Data Export</span>
                                 </li>
                             </ul>
                             <a
                                 href="/sign-up"
-                                className="block w-full text-center py-3 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors"
+                                className="block w-full text-center py-3 border border-green-200 text-green-700 font-semibold rounded-xl hover:bg-green-50 transition-colors"
                             >
                                 Start Free
                             </a>
                         </motion.div>
 
-                        {/* Standard Plan (1,000 KSh) */}
+                        {/* STANDARD TIER */}
                         <motion.div
-                            className="border-2 border-green-600 rounded-2xl p-8 relative bg-white shadow-xl scale-105 z-10"
+                            className="border-2 border-green-500 rounded-2xl p-8 relative bg-white shadow-xl scale-105 z-10"
                             variants={itemVariants}
                         >
-                            <div className="absolute top-0 right-0 left-0 mx-auto w-32 -mt-4 bg-green-600 text-white text-center py-1 rounded-full text-sm font-medium">
+                            <div className="absolute top-0 right-0 left-0 mx-auto w-32 -mt-4 bg-green-500 text-white text-center py-1 rounded-full text-sm font-bold shadow-sm">
                                 Most Popular
                             </div>
                             <div className="text-center mb-8 pt-4">
-                                <h3 className="text-xl font-semibold mb-2">
+                                <h3 className="text-xl font-semibold mb-2 text-gray-900">
                                     Standard
                                 </h3>
-                                <div className="text-4xl font-bold mb-4">
+                                <div className="text-4xl font-bold mb-4 text-gray-900">
                                     KSh 1,000
-                                    <span className="text-gray-500 text-base font-normal">
+                                    <span className="text-gray-400 text-base font-normal">
                                         /mo
                                     </span>
                                 </div>
-                                <p className="text-gray-600 text-sm">
-                                    For busy hardware stores & cafes
+                                <p className="text-gray-500 text-sm">
+                                    For growing shops & hardware stores
                                 </p>
                             </div>
-                            <ul className="space-y-4 mb-8">
-                                <li className="flex items-center text-gray-900 font-bold">
+                            <ul className="space-y-4 mb-8 text-sm">
+                                <li className="flex items-center text-gray-900 font-medium">
                                     <Check
-                                        className="text-green-600 mr-3 shrink-0"
+                                        className="text-green-500 mr-3 shrink-0"
                                         size={20}
                                     />
-                                    <span>Unlimited Transactions</span>
+                                    <span>
+                                        <strong>Unlimited</strong> Transactions
+                                    </span>
                                 </li>
                                 <li className="flex items-center text-gray-900 font-medium">
                                     <Check
-                                        className="text-green-600 mr-3 shrink-0"
+                                        className="text-green-500 mr-3 shrink-0"
                                         size={20}
                                     />
                                     <span>5 Staff Accounts</span>
                                 </li>
                                 <li className="flex items-center text-gray-900 font-medium">
                                     <Check
-                                        className="mr-3 shrink-0"
+                                        className="text-green-500 mr-3 shrink-0"
                                         size={20}
                                     />
-                                    <span>0% Commission (Keep 100%)</span>
+                                    <span>Connect Your Own Paybill</span>
                                 </li>
-                                <li className="flex items-center text-gray-900 font-medium">
+                                <li className="flex items-start text-gray-900 font-medium">
                                     <Check
-                                        className="text-green-600 mr-3 shrink-0"
+                                        className="text-green-500 mr-3 shrink-0"
                                         size={20}
                                     />
-                                    <span>Connect YOUR Own Paybill</span>
+                                    <div className="flex flex-col">
+                                        <span>Auto-Filing Included</span>
+                                        <span className="text-xs text-gray-500 mt-0.5 font-normal">
+                                            Automated monthly submission
+                                        </span>
+                                    </div>
                                 </li>
-                                <li className="flex items-center text-gray-500 text-sm">
+                                <li className="flex items-center text-gray-500">
                                     <Check
                                         className="text-gray-400 mr-3 shrink-0"
                                         size={20}
                                     />
-                                    {/* Still branded on Standard - pushes them to Premium */}
                                     <span>Salesense Branded Receipts</span>
-                                </li>
-                                <li className="flex items-center text-gray-600">
-                                    <Check
-                                        className="text-green-600 mr-3 shrink-0"
-                                        size={20}
-                                    />
-                                    <span>PDF Reports</span>
                                 </li>
                             </ul>
                             <a
                                 href="/sign-up?plan=standard"
-                                className="block w-full text-center py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md"
+                                className="block w-full text-center py-3.5 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-colors shadow-lg shadow-green-200"
                             >
                                 Get Started
                             </a>
                         </motion.div>
 
-                        {/* Premium Plan (1,500 KSh) */}
+                        {/* PREMIUM TIER */}
                         <motion.div
-                            className="border border-gray-100 bg-white rounded-2xl p-8 hover:border-green-200 transition-colors"
+                            className="border border-gray-100 bg-white rounded-2xl p-8 hover:border-green-200 transition-all shadow-sm hover:shadow-md"
                             variants={itemVariants}
                         >
                             <div className="text-center mb-8">
-                                <h3 className="text-xl font-semibold mb-2">
+                                <h3 className="text-xl font-semibold mb-2 text-gray-900">
                                     Premium
                                 </h3>
-                                <div className="text-4xl font-bold mb-4">
+                                <div className="text-4xl font-bold mb-4 text-gray-900">
                                     KSh 1,500
-                                    <span className="text-gray-500 text-base font-normal">
+                                    <span className="text-gray-400 text-base font-normal">
                                         /mo
                                     </span>
                                 </div>
-                                <p className="text-gray-600 text-sm">
-                                    For shops that need data & scaling
+                                <p className="text-gray-500 text-sm">
+                                    For businesses that need full control
                                 </p>
                             </div>
-                            <ul className="space-y-4 mb-8">
-                                <li className="flex items-center text-gray-900 font-bold">
+                            <ul className="space-y-4 mb-8 text-sm">
+                                <li className="flex items-center text-gray-700">
                                     <Check
-                                        className="text-green-600 mr-3 shrink-0"
+                                        className="text-green-500 mr-3 shrink-0"
                                         size={20}
                                     />
-                                    <span>Unlimited Transactions</span>
+                                    <span>Unlimited Staff & Transactions</span>
                                 </li>
-                                <li className="flex items-center text-gray-600">
+                                <li className="flex items-center text-gray-700">
                                     <Check
-                                        className="text-green-600 mr-3 shrink-0"
+                                        className="text-green-500 mr-3 shrink-0"
                                         size={20}
                                     />
-                                    <span>Unlimited Staff Accounts</span>
+                                    <span>
+                                        Remove &quot;Powered by Salesense&quot;
+                                    </span>
                                 </li>
-                                <li className="flex items-center text-gray-900 font-medium">
+                                <li className="flex items-center text-gray-700">
                                     <Check
-                                        className="text-green-600 mr-3 shrink-0"
-                                        size={20}
-                                    />
-                                    <span>Connect YOUR Own Paybill</span>
-                                </li>
-                                <li className="flex items-center text-gray-900 font-bold">
-                                    <Check
-                                        className="text-green-600 mr-3 shrink-0"
-                                        size={20}
-                                    />
-                                    <span>Custom Receipt Branding</span>
-                                </li>
-                                <li className="flex items-center text-gray-600">
-                                    <Check
-                                        className="text-green-600 mr-3 shrink-0"
+                                        className="text-green-500 mr-3 shrink-0"
                                         size={20}
                                     />
                                     <span>Full Excel/CSV Data Export</span>
                                 </li>
-                                <li className="flex items-center text-gray-600">
+                                <li className="flex items-start text-gray-700">
                                     <Check
-                                        className="text-green-600 mr-3 shrink-0"
+                                        className="text-green-500 mr-3 shrink-0"
                                         size={20}
                                     />
-                                    <span>Priority Support</span>
+                                    <div className="flex flex-col">
+                                        <span>Advanced Filing Control</span>
+                                        <span className="text-xs text-gray-500 mt-0.5">
+                                            Manual review before submission
+                                        </span>
+                                    </div>
+                                </li>
+                                <li className="flex items-center text-gray-700">
+                                    <Check
+                                        className="text-green-500 mr-3 shrink-0"
+                                        size={20}
+                                    />
+                                    <span>Priority Phone Support</span>
                                 </li>
                             </ul>
                             <a
                                 href="/sign-up?plan=premium"
-                                className="block w-full text-center py-3 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors"
+                                className="block w-full text-center py-3 border border-gray-200 text-gray-600 font-semibold rounded-xl hover:border-green-500 hover:text-green-600 transition-colors"
                             >
                                 Get Premium
                             </a>

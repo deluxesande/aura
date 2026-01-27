@@ -1,7 +1,7 @@
 "use client";
 import Footer from "@/components/LandingPage/Footer";
 import Navbar from "@/components/LandingPage/Navbar";
-import { CheckCircle2, Receipt, Shield } from "lucide-react";
+import { CheckCircle2, HandCoins, Receipt, Shield } from "lucide-react";
 import { useState } from "react";
 
 export default function IntegrationPage() {
@@ -31,7 +31,7 @@ export default function IntegrationPage() {
                     <div className="grid md:grid-cols-2 gap-12 items-center">
                         <div>
                             <div className="inline-flex items-center px-4 py-2 bg-green-100 rounded-full text-green-600 mb-6">
-                                <Receipt
+                                <HandCoins
                                     size={20}
                                     color="#16a34a"
                                     className="mr-2"
