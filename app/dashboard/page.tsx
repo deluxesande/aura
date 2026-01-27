@@ -3,26 +3,28 @@
 import InfoCard from "@/components/InfoCard";
 import InvoicesTable from "@/components/InvoicesTable";
 import LineChart from "@/components/LineChart";
+import Navbar from "@/components/Navbar";
 import TopProductsChart from "@/components/TopProductsChart";
 import { AppState } from "@/store";
-import Navbar from "@/components/Navbar";
-import axios from "axios";
 import {
-    BadgeDollarSign,
-    ReceiptText,
-    Smartphone,
-    AlertCircle,
-    CheckCircle2,
-} from "lucide-react";
-import React, { useEffect, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import {
-    startFetching,
     setAnalyticsData,
     setAnalyticsError,
     setTimeRange,
+    startFetching,
 } from "@/store/slices/analyticsSlice";
 import { setInvoices } from "@/store/slices/invoiceSlice";
+import axios from "axios";
+import {
+    AlertCircle,
+    BadgeDollarSign,
+    CheckCircle2,
+    FileText,
+    HandCoins,
+    ReceiptText,
+    Smartphone,
+} from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 
 interface TopProduct {
@@ -127,7 +129,7 @@ export default function Page() {
         {
             title: "Total Invoices",
             number: stats?.totalInvoices || 0,
-            icon: ReceiptText,
+            icon: FileText,
             percentageChange: percentageChanges?.totalInvoices || 0,
         },
         {
@@ -145,7 +147,7 @@ export default function Page() {
         {
             title: "Profit",
             number: `Ksh ${(stats?.profit || 0).toLocaleString()}`,
-            icon: BadgeDollarSign,
+            icon: HandCoins,
             percentageChange: percentageChanges?.profit || 0,
         },
     ];

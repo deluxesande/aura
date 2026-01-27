@@ -1,6 +1,6 @@
-import { Building2, ArrowRight, Receipt, BarChart3 } from "lucide-react";
-import React, { useRef } from "react";
 import { motion, useInView } from "framer-motion";
+import { ArrowRight, BarChart3, Building2, HandCoins } from "lucide-react";
+import { useRef } from "react";
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -88,7 +88,7 @@ export default function HowItWorks() {
                     >
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full">
                             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                                <Receipt color="#16a34a" size={24} />
+                                <HandCoins color="#16a34a" size={24} />
                             </div>
                             <h3 className="text-xl font-semibold mb-2">
                                 2. Connect M-Pesa

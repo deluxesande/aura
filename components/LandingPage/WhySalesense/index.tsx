@@ -1,6 +1,6 @@
-import { Receipt, Shield, BarChart3 } from "lucide-react";
-import React, { useRef } from "react";
 import { motion, useInView } from "framer-motion";
+import { BarChart3, HandCoins, Shield } from "lucide-react";
+import { useRef } from "react";
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -56,7 +56,7 @@ export default function WhySalesense() {
                         variants={itemVariants}
                     >
                         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <Receipt color="#16a34a" size={32} />
+                            <HandCoins color="#16a34a" size={32} />
                         </div>
                         <h3 className="text-xl font-semibold mb-4">
                             M-Pesa Integration
