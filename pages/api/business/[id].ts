@@ -3,6 +3,7 @@ import { updateBusiness } from "./update";
 import { deleteBusiness } from "./delete";
 import { prisma } from "@/utils/lib/client";
 import { checkAndRenewStarterPlan } from "@/utils/subscription/subscription";
+import { checkAndAutoFile } from "@/utils/kra/auto-filler";
 
 async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
     let id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
@@ -37,6 +38,13 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
         if (!business) {
             return res.status(404).json({ error: "Business not found" });
         }
+
+        // checkAndAutoFile(business.id).catch((err) => {
+        //     console.error(
+        //         `Auto-filing failed for Business ID ${business.id}:`,
+        //         err,
+        //     );
+        // });
 
         let activeSubscription = business.subscriptions[0] || null;
 

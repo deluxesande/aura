@@ -293,7 +293,8 @@ model KraDetails {
   kraPin         String   @unique 
   taxpayerType   String   
   taxpayerName   String  
-  pinStatus      String   
+  pinStatus      String 
+  isAutoFilingEnabled Boolean  @default(false)  
   
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

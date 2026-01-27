@@ -1,6 +1,7 @@
 "use client";
 
 import Navbar from "@/components/Navbar";
+import { AppState } from "@/store";
 import { Invoice } from "@/utils/typesDefinitions";
 import axios from "axios";
 import { format, isSameMonth, parseISO, subMonths } from "date-fns";
@@ -11,8 +12,10 @@ import {
     ChevronRight,
     Download,
     Loader2,
+    Lock,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import useSWR from "swr";
 
@@ -31,6 +34,7 @@ interface KraDetails {
     taxpayerName: string;
     taxpayerType: string;
     pinStatus: string;
+    isAutoFilingEnabled: boolean;
 }
 
 const fetcher = (url: string) => axios.get(url).then((res) => res.data);
@@ -40,35 +44,67 @@ const TaxReturnsPage = () => {
         subMonths(new Date(), 1),
     );
 
-    // Pagination State
+    const businessDetails = useSelector(
+        (state: AppState) => state.businessData.businessDetails,
+    );
+    const plan = businessDetails?.subscription?.plan || "STARTER";
+    const isStarter = plan === "STARTER";
+
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
     const [filingMode, setFilingMode] = useState<"MANUAL" | "AUTO">("MANUAL");
+    const [isSavingSettings, setIsSavingSettings] = useState(false); // <--- 2. ADDED LOADING STATE
     const [calculationMode, setCalculationMode] = useState<"INVOICE" | "FIXED">(
         "INVOICE",
     );
     const [manualSalesInput, setManualSalesInput] = useState<string>("");
     const [isFiling, setIsFiling] = useState(false);
 
-    const { data: kraDetails, isLoading: isLoadingKra } = useSWR<KraDetails>(
-        "/api/kra",
-        fetcher,
-    );
+    const {
+        data: kraDetails,
+        isLoading: isLoadingKra,
+        mutate,
+    } = useSWR<KraDetails>("/api/kra", fetcher);
 
     const { data: invoices, isLoading: isLoadingInvoices } = useSWR<Invoice[]>(
         "/api/invoice",
         fetcher,
     );
 
-    // Fetch actual filing history (Currently empty as API is not ready)
     const { data: filingHistory = [], isLoading: isLoadingHistory } = useSWR<
         TaxFiling[]
-    >("/api/kra/returns", fetcher, {
-        fallbackData: [], // Default to empty array to show empty state
-    });
+    >("/api/kra/returns", fetcher);
 
-    // Pagination Logic
+    useEffect(() => {
+        if (isStarter) {
+            setFilingMode("AUTO");
+        } else if (kraDetails) {
+            setFilingMode(kraDetails.isAutoFilingEnabled ? "AUTO" : "MANUAL");
+        }
+    }, [isStarter, kraDetails]);
+
+    const toggleFilingMode = async (mode: "MANUAL" | "AUTO") => {
+        if (isStarter) return;
+        if (mode === filingMode) return;
+
+        setFilingMode(mode);
+        setIsSavingSettings(true);
+
+        try {
+            await axios.patch("/api/kra/update", {
+                isAutoFilingEnabled: mode === "AUTO",
+            });
+            toast.success(`Filing mode updated to ${mode}`);
+            mutate();
+        } catch (error) {
+            toast.error("Failed to save preference");
+            setFilingMode(mode === "AUTO" ? "MANUAL" : "AUTO");
+        } finally {
+            setIsSavingSettings(false);
+        }
+    };
+
     const totalPages = Math.ceil((filingHistory?.length || 0) / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -77,44 +113,36 @@ const TaxReturnsPage = () => {
     const handlePreviousPage = () => {
         if (currentPage > 1) setCurrentPage(currentPage - 1);
     };
-
     const handleNextPage = () => {
         if (currentPage < totalPages) setCurrentPage(currentPage + 1);
     };
-
     const handlePageClick = (pageNumber: number) => {
         setCurrentPage(pageNumber);
     };
-
     const getPageNumbers = () => {
         const pages = [];
-        for (let i = 1; i <= totalPages; i++) {
-            pages.push(i);
-        }
+        for (let i = 1; i <= totalPages; i++) pages.push(i);
         return pages;
     };
 
     const calculatedTotalSales = useMemo(() => {
         if (!invoices || !Array.isArray(invoices)) return 0;
-
         const monthlyInvoices = invoices.filter((inv) => {
             const dateString = inv.createdAt || (inv as any).date;
             if (!dateString) return false;
-
             const invoiceDate = parseISO(String(dateString));
             const isCorrectMonth = isSameMonth(invoiceDate, selectedMonth);
-
             const status = (inv.status || "").toUpperCase();
-            const isPaid = status === "PAID" || status === "COMPLETED";
-
-            return isCorrectMonth && isPaid;
+            return (
+                isCorrectMonth && (status === "PAID" || status === "COMPLETED")
+            );
         });
-
-        return monthlyInvoices.reduce((sum, inv) => {
-            const amount =
-                Number(inv.totalAmount) || Number((inv as any).amount) || 0;
-            return sum + amount;
-        }, 0);
+        return monthlyInvoices.reduce(
+            (sum, inv) =>
+                sum +
+                (Number(inv.totalAmount) || Number((inv as any).amount) || 0),
+            0,
+        );
     }, [invoices, selectedMonth]);
 
     const effectiveTotalSales =
@@ -123,11 +151,14 @@ const TaxReturnsPage = () => {
             : calculatedTotalSales;
 
     const handleFileReturn = async () => {
+        if (isStarter && filingMode === "MANUAL") {
+            toast.error("Manual filing is reserved for Premium plans.");
+            return;
+        }
         if (!kraDetails?.kraPin) {
             toast.error("Please validate your KRA PIN in settings first.");
             return;
         }
-
         setIsFiling(true);
         try {
             await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -202,20 +233,32 @@ const TaxReturnsPage = () => {
                             <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                                 New Return
                             </h2>
-                            {/* Mode Toggle */}
-                            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+
+                            <div className="flex items-center bg-gray-100 rounded-lg p-1 relative">
+                                {isSavingSettings && (
+                                    <div className="absolute inset-0 bg-white/50 z-10 rounded-lg flex items-center justify-center">
+                                        <Loader2 className="w-3 h-3 animate-spin text-green-600" />
+                                    </div>
+                                )}
                                 <button
-                                    onClick={() => setFilingMode("MANUAL")}
-                                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                                    onClick={() => toggleFilingMode("MANUAL")}
+                                    disabled={isStarter}
+                                    title={
+                                        isStarter
+                                            ? "Available on Premium Plans"
+                                            : "Manual Filing"
+                                    }
+                                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 ${
                                         filingMode === "MANUAL"
                                             ? "bg-white text-gray-900 shadow-sm"
-                                            : "text-gray-500 hover:text-gray-700"
+                                            : "text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                     }`}
                                 >
+                                    {isStarter && <Lock className="w-3 h-3" />}
                                     Manual
                                 </button>
                                 <button
-                                    onClick={() => setFilingMode("AUTO")}
+                                    onClick={() => toggleFilingMode("AUTO")}
                                     className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
                                         filingMode === "AUTO"
                                             ? "bg-white text-green-600 shadow-sm"
@@ -269,15 +312,20 @@ const TaxReturnsPage = () => {
                                             Auto-Sum
                                         </button>
                                         <button
-                                            onClick={() =>
-                                                setCalculationMode("FIXED")
-                                            }
+                                            onClick={() => {
+                                                if (!isStarter)
+                                                    setCalculationMode("FIXED");
+                                            }}
+                                            disabled={isStarter}
                                             className={`flex-1 border rounded-lg py-2 px-3 flex items-center justify-center gap-2 text-sm transition-all ${
                                                 calculationMode === "FIXED"
                                                     ? "border-green-500 bg-green-50 text-green-700 font-medium"
-                                                    : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                                                    : "border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:bg-gray-50 disabled:cursor-not-allowed"
                                             }`}
                                         >
+                                            {isStarter && (
+                                                <Lock className="w-3 h-3" />
+                                            )}
                                             Manual Input
                                         </button>
                                     </div>
@@ -319,7 +367,10 @@ const TaxReturnsPage = () => {
                                     <button
                                         onClick={handleFileReturn}
                                         disabled={
-                                            isFiling || effectiveTotalSales <= 0
+                                            isFiling ||
+                                            effectiveTotalSales <= 0 ||
+                                            (isStarter &&
+                                                filingMode === "MANUAL")
                                         }
                                         className="w-full bg-green-500 text-white px-8 py-3 rounded-lg font-medium hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2 transition-all shadow-md shadow-green-100"
                                     >
@@ -408,9 +459,7 @@ const TaxReturnsPage = () => {
                                                 </td>
                                                 <td className="py-3 px-4 border-b border-gray-100">
                                                     <span
-                                                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(
-                                                            filing.status,
-                                                        )}`}
+                                                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(filing.status)}`}
                                                     >
                                                         {filing.status}
                                                     </span>
@@ -462,7 +511,7 @@ const TaxReturnsPage = () => {
                                         onClick={handlePreviousPage}
                                         disabled={currentPage === 1}
                                     >
-                                        <ChevronLeft className="w-4 h-4 stroke-white mr-1" />
+                                        <ChevronLeft className="w-4 h-4 stroke-white mr-1" />{" "}
                                         Back
                                     </button>
                                     <div className="flex gap-1">
@@ -472,11 +521,7 @@ const TaxReturnsPage = () => {
                                                 onClick={() =>
                                                     handlePageClick(page)
                                                 }
-                                                className={`w-6 h-6 flex items-center justify-center rounded text-xs font-medium transition-colors ${
-                                                    currentPage === page
-                                                        ? "bg-green-500 text-white"
-                                                        : "text-gray-600 hover:bg-gray-100"
-                                                }`}
+                                                className={`w-6 h-6 flex items-center justify-center rounded text-xs font-medium transition-colors ${currentPage === page ? "bg-green-500 text-white" : "text-gray-600 hover:bg-gray-100"}`}
                                             >
                                                 {page}
                                             </button>
@@ -487,7 +532,7 @@ const TaxReturnsPage = () => {
                                         onClick={handleNextPage}
                                         disabled={currentPage === totalPages}
                                     >
-                                        Next
+                                        Next{" "}
                                         <ChevronRight className="w-4 h-4 stroke-white ml-1" />
                                     </button>
                                 </div>
