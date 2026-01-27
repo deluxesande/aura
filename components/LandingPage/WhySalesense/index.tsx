@@ -164,7 +164,7 @@ export default function WhySalesense() {
                             <div className="flex-1 relative z-10">
                                 <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-6">
                                     <BarChart3
-                                        className="text-green-500"
+                                        className="stroke-green-500"
                                         size={24}
                                     />
                                 </div>

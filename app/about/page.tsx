@@ -75,7 +75,7 @@ export default function AboutPage() {
                             animate={isHeroInView ? "visible" : "hidden"}
                             variants={fadeInRight}
                         >
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold uppercase tracking-wider mb-6">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 text-green-500 text-xs font-bold uppercase tracking-wider mb-6">
                                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                                 Operational Excellence
                             </div>
@@ -121,7 +121,7 @@ export default function AboutPage() {
                         >
                             <div className="relative z-10 rounded-2xl p-6 shadow-2xl shadow-green-200 transform rotate-1 hover:rotate-0 transition-transform duration-500">
                                 {/* Abstract UI Representation */}
-                                <div className="flex items-center justify-between mb-8 border-b border-gray-700 pb-4">
+                                <div className="flex items-center justify-between mb-8 pb-4">
                                     <div className="flex gap-2">
                                         <div className="w-3 h-3 rounded-full bg-red-500" />
                                         <div className="w-3 h-3 rounded-full bg-yellow-500" />
@@ -141,7 +141,7 @@ export default function AboutPage() {
                                         </p>
                                     </div>
                                     <div className="bg-slate-50 border-gray-100 p-4 rounded-lg">
-                                        <p className="text-gray-700 text-xs mb-1">
+                                        <p className="text-gray-400 text-xs mb-1">
                                             Tax Status
                                         </p>
                                         <p className="text-xl font-bold text-green-500 flex items-center gap-2">
@@ -263,9 +263,6 @@ export default function AboutPage() {
                             className="md:col-span-2 bg-white p-8 rounded-3xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow group overflow-hidden relative"
                         >
                             <div className="relative z-10">
-                                <div className="bg-green-100 w-12 h-12 rounded-xl flex items-center justify-center mb-6 text-green-500">
-                                    <ShieldCheck size={24} />
-                                </div>
                                 <h3 className="text-2xl font-bold text-gray-900 mb-3">
                                     Total Peace of Mind
                                 </h3>
@@ -300,7 +297,7 @@ export default function AboutPage() {
                                     <strong>zero transaction fees</strong>.
                                 </p>
                             </div>
-                            <div className="mt-8 pt-8 border-t border-gray-800">
+                            <div className="mt-8 pt-8">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
                                         <ArrowRight
@@ -335,7 +332,7 @@ export default function AboutPage() {
                             variants={fadeInUp}
                             className="bg-green-500 p-8 rounded-3xl shadow-sm text-white hover:bg-green-600 transition-colors"
                         >
-                            <h3 className="text-xl font-bold mb-3">
+                            <h3 className="text-xl text-white font-bold mb-3">
                                 Data Ownership
                             </h3>
                             <p className="text-green-100 text-sm">
