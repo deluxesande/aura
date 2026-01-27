@@ -52,7 +52,7 @@ export default function CreateProductPage() {
     });
 
     const originalProducts = useSelector(
-        (state: AppState) => state.product.products
+        (state: AppState) => state.product.products,
     );
     const dispatch = useDispatch();
 
@@ -74,7 +74,7 @@ export default function CreateProductPage() {
     const handleChange = (
         e: React.ChangeEvent<
             HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-        >
+        >,
     ) => {
         const { id, value } = e.target;
         setFormData((prev) => ({ ...prev, [id]: value }));
@@ -97,7 +97,7 @@ export default function CreateProductPage() {
     };
 
     const handleImageFileSelect = (
-        event: React.ChangeEvent<HTMLInputElement>
+        event: React.ChangeEvent<HTMLInputElement>,
     ) => {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -421,9 +421,6 @@ export default function CreateProductPage() {
                                         Quantity:
                                     </label>
                                     <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <Package className="h-4 w-4 text-gray-500" />
-                                        </div>
                                         <input
                                             id="quantity"
                                             type="number"

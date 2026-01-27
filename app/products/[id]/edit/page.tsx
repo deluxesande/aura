@@ -34,7 +34,7 @@ export default function EditProductPage() {
     const id = params?.id as string;
     const dispatch = useDispatch();
     const originalProducts = useSelector(
-        (state: AppState) => state.product.products
+        (state: AppState) => state.product.products,
     );
     const cachedProduct = useMemo(() => {
         return originalProducts.find((p) => p.id === id);
@@ -43,7 +43,7 @@ export default function EditProductPage() {
     const [categories, setCategories] = useState<Category[]>([]);
 
     const [imagePreview, setImagePreview] = useState<string | null>(
-        cachedProduct?.image || null
+        cachedProduct?.image || null,
     );
     const [isCropModalOpen, setIsCropModalOpen] = useState(false);
     const [tempImageSrc, setTempImageSrc] = useState<string | null>(null);
@@ -73,7 +73,7 @@ export default function EditProductPage() {
     };
 
     const [formData, setFormData] = useState<Product>(
-        cachedProduct || initialFormState
+        cachedProduct || initialFormState,
     );
 
     useEffect(() => {
@@ -101,12 +101,12 @@ export default function EditProductPage() {
                     }
 
                     const updatedList = originalProducts.some(
-                        (p) => p.id === freshProductData.id
+                        (p) => p.id === freshProductData.id,
                     )
                         ? originalProducts.map((p) =>
                               p.id === freshProductData.id
                                   ? freshProductData
-                                  : p
+                                  : p,
                           )
                         : [...originalProducts, freshProductData];
 
@@ -132,7 +132,7 @@ export default function EditProductPage() {
     const handleChange = (
         e: React.ChangeEvent<
             HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-        >
+        >,
     ) => {
         const { id, value } = e.target;
         setFormData((prev) => ({
@@ -215,7 +215,7 @@ export default function EditProductPage() {
     };
 
     const handleImageFileSelect = (
-        event: React.ChangeEvent<HTMLInputElement>
+        event: React.ChangeEvent<HTMLInputElement>,
     ) => {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -266,11 +266,11 @@ export default function EditProductPage() {
 
                 const response = await axios.put(
                     `/api/product/${id}`,
-                    finalData
+                    finalData,
                 );
 
                 const updatedProducts = originalProducts.map((p) =>
-                    p.id === id ? response.data : p
+                    p.id === id ? response.data : p,
                 );
                 dispatch(setProducts(updatedProducts));
 
@@ -477,9 +477,6 @@ export default function EditProductPage() {
                                         </button>
                                     </div>
                                     <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <Package className="h-4 w-4 text-gray-500" />
-                                        </div>
                                         <input
                                             id="quantity"
                                             type="number"

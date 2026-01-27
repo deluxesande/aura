@@ -10,6 +10,7 @@ import {
     TrendingUp,
     ShieldCheck,
 } from "lucide-react";
+import Link from "next/link";
 
 const fadeInUp = {
     hidden: { opacity: 0, y: 40 },
@@ -298,7 +299,10 @@ export default function AboutPage() {
                                 </p>
                             </div>
                             <div className="mt-8 pt-8">
-                                <div className="flex items-center gap-3">
+                                <Link
+                                    href="/sign-up"
+                                    className="flex items-center gap-3"
+                                >
                                     <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
                                         <ArrowRight
                                             size={20}
@@ -308,7 +312,7 @@ export default function AboutPage() {
                                     <span className="text-sm font-semibold text-green-500">
                                         Get Started Free
                                     </span>
-                                </div>
+                                </Link>
                             </div>
                         </motion.div>
 
