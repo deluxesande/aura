@@ -36,7 +36,7 @@ export default function HelpArticlePage({
                     <aside className="hidden lg:block w-64 shrink-0">
                         <Link
                             href={`/help-center/${category}`}
-                            className="flex items-center text-sm font-semibold text-gray-500 hover:text-green-600 mb-8 transition-colors"
+                            className="flex items-center text-sm font-semibold text-gray-500 hover:text-green-500 mb-8 transition-colors"
                         >
                             <ArrowLeft size={16} className="mr-2" />{" "}
                             {categoryData.title}
@@ -134,7 +134,7 @@ export default function HelpArticlePage({
                                 Was this article helpful?
                             </h4>
                             <div className="flex gap-4">
-                                <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-gray-600 hover:border-green-500 hover:text-green-600 transition-all">
+                                <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-gray-600 hover:border-green-500 hover:text-green-500 transition-all">
                                     <ThumbsUp size={18} /> Yes
                                 </button>
                                 <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-gray-600 hover:border-red-500 hover:text-red-600 transition-all">

@@ -19,6 +19,8 @@ const PUBLIC_ROUTES = new Set([
     "/verify",
     "/payment",
     "/payment/checking",
+    "/blog",
+    "/help-center",
 ]);
 
 const PUBLIC_PREFIXES = ["/auth/accept-invitation"];
@@ -34,7 +36,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
 };
 
 const SORTED_PROTECTED_ROUTES = Object.keys(ROLE_PERMISSIONS).sort(
-    (a, b) => b.length - a.length
+    (a, b) => b.length - a.length,
 );
 
 export default function RoleGuard({ children }: { children: React.ReactNode }) {
@@ -43,7 +45,7 @@ export default function RoleGuard({ children }: { children: React.ReactNode }) {
     const pathname = usePathname() || "";
 
     const { user, loading, isSignedIn } = useSelector(
-        (state: AppState) => state.auth
+        (state: AppState) => state.auth,
     );
 
     useEffect(() => {
@@ -67,7 +69,7 @@ export default function RoleGuard({ children }: { children: React.ReactNode }) {
         const userRole = user.role?.toLowerCase() || "user";
 
         const matchedRoute = SORTED_PROTECTED_ROUTES.find((route) =>
-            pathname.startsWith(route)
+            pathname.startsWith(route),
         );
 
         if (matchedRoute) {

@@ -79,21 +79,21 @@ export default function HelpCenterPage() {
                                 </span>
                                 <button
                                     onClick={() => setSearchQuery("M-Pesa")}
-                                    className="hover:text-green-600 hover:underline"
+                                    className="hover:text-green-500 hover:underline"
                                 >
                                     M-Pesa Integration
                                 </button>
                                 <span className="text-gray-300">•</span>
                                 <button
                                     onClick={() => setSearchQuery("Tax")}
-                                    className="hover:text-green-600 hover:underline"
+                                    className="hover:text-green-500 hover:underline"
                                 >
                                     Tax Reports
                                 </button>
                                 <span className="text-gray-300">•</span>
                                 <button
                                     onClick={() => setSearchQuery("Reset")}
-                                    className="hover:text-green-600 hover:underline"
+                                    className="hover:text-green-500 hover:underline"
                                 >
                                     Reset Password
                                 </button>
@@ -131,7 +131,7 @@ export default function HelpCenterPage() {
                                         >
                                             <div className="flex justify-between items-start">
                                                 <div>
-                                                    <h4 className="text-lg font-bold text-gray-900 group-hover:text-green-600 mb-2">
+                                                    <h4 className="text-lg font-bold text-gray-900 group-hover:text-green-500 mb-2">
                                                         {article.title}
                                                     </h4>
                                                     <p className="text-gray-500 text-sm line-clamp-2">
@@ -162,9 +162,9 @@ export default function HelpCenterPage() {
                                 </div>
                             ) : (
                                 <div className="text-center py-20 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                                    <div className="mx-auto w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm">
+                                    <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 shadow-sm">
                                         <HelpCircle
-                                            className="text-gray-300"
+                                            className="stroke-green-500"
                                             size={32}
                                         />
                                     </div>
@@ -177,7 +177,7 @@ export default function HelpCenterPage() {
                                     </p>
                                     <button
                                         onClick={clearSearch}
-                                        className="mt-6 text-green-600 font-bold hover:underline"
+                                        className="mt-6 text-green-500 font-bold hover:underline"
                                     >
                                         Clear Search
                                     </button>
@@ -209,12 +209,12 @@ export default function HelpCenterPage() {
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="flex items-center justify-between mb-2">
-                                                        <h3 className="text-xl font-bold text-gray-900 group-hover:text-green-700">
+                                                        <h3 className="text-xl font-bold text-gray-900 group-hover:text-green-500">
                                                             {category.title}
                                                         </h3>
                                                         <ChevronRight
                                                             size={18}
-                                                            className="text-gray-300 group-hover:text-green-600 group-hover:translate-x-1 transition-all"
+                                                            className="text-gray-300 group-hover:text-green-500 group-hover:translate-x-1 transition-all"
                                                         />
                                                     </div>
                                                     <p className="text-gray-600 text-sm leading-relaxed">
@@ -222,7 +222,7 @@ export default function HelpCenterPage() {
                                                     </p>
 
                                                     {/* Optional: Show popular articles count or quick links here if avail in data */}
-                                                    <div className="mt-4 flex items-center gap-2 text-xs font-medium text-green-600 opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
+                                                    <div className="mt-4 flex items-center gap-2 text-xs font-medium text-green-500 opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
                                                         View Articles
                                                     </div>
                                                 </div>

@@ -38,7 +38,7 @@ export default function HelpCategoryPage({
                 <div className="max-w-3xl mx-auto">
                     <Link
                         href="/help-center"
-                        className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-green-600 mb-6 transition-colors"
+                        className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-green-500 mb-6 transition-colors"
                     >
                         <ArrowLeft size={16} className="mr-2" /> Back to Help
                         Center
@@ -68,7 +68,7 @@ export default function HelpCategoryPage({
                                 >
                                     <div className="flex items-start gap-4">
                                         <div>
-                                            <h3 className="font-semibold text-gray-900 group-hover:text-green-700 transition-colors">
+                                            <h3 className="font-semibold text-gray-900 group-hover:text-green-500 transition-colors">
                                                 {article.title}
                                             </h3>
                                             <p className="text-sm text-gray-500 mt-1">
