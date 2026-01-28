@@ -21,10 +21,9 @@ export default function AccessSuspendedPage() {
         if (!loading) {
             if (!user) {
                 router.replace("/sign-in");
+            } else if (user.status === "active") {
+                router.replace("/settings");
             }
-            // else if (user.status === "active") {
-            //     router.replace("/settings");
-            // }
         }
     }, [user, loading, router]);
 

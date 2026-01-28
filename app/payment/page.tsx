@@ -214,7 +214,8 @@ export default function PaymentPage() {
                 dispatch(setBusinessDetails(res.data));
 
                 setIsDowngradeModalOpen(false);
-                return "Plan updated successfully.";
+                router.push("/settings");
+                return `Successfully downgraded to ${plan.name} plan.`;
             }
         };
 

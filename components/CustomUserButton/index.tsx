@@ -55,35 +55,32 @@ const CustomUserButton = () => {
 
     // Redux Selectors
     const invitations = useSelector(
-        (state: AppState) => state.invitations.invitations
+        (state: AppState) => state.invitations.invitations,
     ) as User[];
 
     const userInvitations = useSelector(
-        (state: AppState) => state.invitationsData.invitationsWithImages
+        (state: AppState) => state.invitationsData.invitationsWithImages,
     ) as Invitation[];
 
     const user = useSelector(
-        (state: AppState) => state.auth.user
+        (state: AppState) => state.auth.user,
     ) as StoreUser | null;
 
     const businessDetails = useSelector(
-        (state: AppState) => state.businessData?.businessDetails
+        (state: AppState) => state.businessData?.businessDetails,
     );
 
     const [isLoading, setIsLoading] = useState(userInvitations.length === 0);
     const hasFetched = useRef(false);
 
-    // --- Subscription Limit Logic ---
     const plan = businessDetails?.subscription?.plan || "STARTER";
     const staffCount = businessDetails?.usage?.staffCount || 0;
 
-    // Starter: 1 | Standard: 5 | Premium: Unlimited
     const teamLimit =
         plan === "STARTER" ? 1 : plan === "STANDARD" ? 5 : Infinity;
     const canInviteMore = staffCount < teamLimit;
 
     useEffect(() => {
-        // Only Admin or Manager can fetch/manage team members
         if (
             user?.role?.toLowerCase() !== "admin" &&
             user?.role?.toLowerCase() !== "manager"
@@ -92,7 +89,6 @@ const CustomUserButton = () => {
             return;
         }
 
-        // Prevent redundant fetching if already successful
         if (hasFetched.current) return;
 
         const fetchUsers = async () => {
@@ -110,7 +106,7 @@ const CustomUserButton = () => {
                                     "/api/auth/user/image",
                                     {
                                         params: { userId: inv.id },
-                                    }
+                                    },
                                 );
                                 return {
                                     ...inv,
@@ -124,7 +120,7 @@ const CustomUserButton = () => {
                                     imageUrl: undefined,
                                 } as Invitation;
                             }
-                        }
+                        },
                     );
 
                     const results = await Promise.allSettled(imagePromises);
@@ -146,7 +142,6 @@ const CustomUserButton = () => {
         };
 
         fetchUsers();
-        // Added userInvitations.length and user?.role to satisfy ESLint
     }, [dispatch, user?.role, userInvitations.length]);
 
     if (plan === "STARTER") {
@@ -156,9 +151,16 @@ const CustomUserButton = () => {
     const handleInviteUser = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        if (businessDetails?.subscription?.status !== "ACTIVE") {
+            toast.error(
+                "Cannot invite users: Your subscription plan is not active.",
+            );
+            return;
+        }
+
         if (!canInviteMore) {
             toast.error(
-                `Team limit reached. Your ${plan} plan allows only ${teamLimit} member(s).`
+                `Team limit reached. Your ${plan} plan allows only ${teamLimit} member(s).`,
             );
             return;
         }
@@ -193,7 +195,7 @@ const CustomUserButton = () => {
     const handleOpenModal = () => {
         if (!canInviteMore) {
             toast.warning(
-                `Team full: Your ${plan} plan is limited to ${teamLimit} member(s).`
+                `Team full: Your ${plan} plan is limited to ${teamLimit} member(s).`,
             );
             return;
         }

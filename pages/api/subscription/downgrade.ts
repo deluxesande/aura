@@ -59,11 +59,10 @@ export default async function handler(
             await tx.subscription.updateMany({
                 where: {
                     businessId: businessId,
-                    status: { in: ["ACTIVE", "PAST_DUE", "TRIALING"] },
+                    status: { in: ["ACTIVE", "TRIALING"] },
                 },
                 data: {
                     status: "CANCELED",
-                    // Optional: update currentPeriodEnd to now() if you want to truncate access immediately
                     currentPeriodEnd: new Date(),
                 },
             });

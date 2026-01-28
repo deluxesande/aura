@@ -13,7 +13,7 @@ const inviteSchema = z.object({
 
 export default async function handler(
     req: NextApiRequest,
-    res: NextApiResponse
+    res: NextApiResponse,
 ) {
     if (req.method !== "POST") {
         return res.status(405).json({ error: "Method not allowed" });
@@ -76,7 +76,20 @@ export default async function handler(
         }
 
         const activeSub = business.subscriptions[0];
-        const plan = activeSub?.plan || "STARTER";
+
+        const isPlanValid =
+            activeSub &&
+            (activeSub.status === "ACTIVE" || activeSub.status === "TRIALING");
+
+        if (!isPlanValid) {
+            return res.status(403).json({
+                error: "No active subscription plan found for this business.",
+                details: "Please subscribe to a plan to invite more users.",
+            });
+        }
+
+        const plan = isPlanValid ? activeSub.plan : "STARTER";
+
         const currentTotal =
             business._count.users + business._count.invitations;
 
