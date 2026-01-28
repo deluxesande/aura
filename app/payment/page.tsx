@@ -4,7 +4,7 @@ import { setBusinessDetails } from "@/store/slices/businessDataSlice";
 import { formatPhoneNumber } from "@/utils/formatPhoneNumber";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Phone, X, Loader2 } from "lucide-react"; // Removed other icons
+import { Check, Phone, X, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -164,11 +164,10 @@ export default function PaymentPage() {
                     email: item.email,
                     name: item.name || item.email,
                     role: item.role,
-                    // LOGIC CHANGE: If accepted, treat as USER (selectable). If pending, treat as INVITE.
+                    // If status is accepted, they are a User (selectable). Otherwise an Invite (pending).
                     type: item.status === "accepted" ? "USER" : "INVITE",
                 }));
             } else if (data && (data.users || data.invitations)) {
-                // Fallback for object structure
                 const users = (data.users || []).map((u: any) => ({
                     ...u,
                     type: "USER",
@@ -180,19 +179,19 @@ export default function PaymentPage() {
                 allSeats = [...users, ...invites];
             }
 
-            // 2. Calculate TOTAL HEADCOUNT (You + Others)
+            // Calculate TOTAL HEADCOUNT (You + Others)
             const isOwnerInList = allSeats.some((s) => s.email === user?.email);
             let totalHeadcount = allSeats.length;
             if (!isOwnerInList) {
                 totalHeadcount += 1;
             }
 
-            // 3. Determine slots available for the list items
+            // Determine slots available for the list items
             const slotsForList = isOwnerInList
                 ? targetPlan.staffLimit
                 : Math.max(0, targetPlan.staffLimit - 1);
 
-            // 4. Strict Check
+            // Strict Check
             if (totalHeadcount > targetPlan.staffLimit) {
                 setStaffList(allSeats);
                 setEffectiveStaffLimit(slotsForList);
@@ -207,10 +206,10 @@ export default function PaymentPage() {
 
                 setSelectedPlan(targetPlan);
                 setIsDowngradeModalOpen(true);
-                return false; // STOP: Open modal
+                return false; // Stop -> Open modal
             }
 
-            return true; // OK: Proceed
+            return true; // Go ahead
         } catch (error) {
             console.error(error);
             toast.error("Failed to verify staff count.", { duration: 5000 });
@@ -616,6 +615,7 @@ export default function PaymentPage() {
                                                         : "border-gray-200 hover:border-gray-300"
                                                 } ${isDisabled ? "opacity-50 cursor-not-allowed grayscale-[0.5]" : ""}`}
                                             >
+                                                {/* NO ICONS HERE */}
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2">
                                                         <p className="font-semibold text-gray-900">
