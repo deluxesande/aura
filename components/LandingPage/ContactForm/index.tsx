@@ -53,7 +53,7 @@ export default function ContactForm() {
                         transition={{ delay: 0.1 }}
                     >
                         Have questions about pricing, integrations, or just want
-                        to say hello? We&apso;d love to hear from you.
+                        to say hello? We&apos;d love to hear from you.
                     </motion.p>
                 </div>
 
@@ -85,7 +85,7 @@ export default function ContactForm() {
                                             Call Us
                                         </p>
                                         <p className="text-white font-semibold">
-                                            +254 742 210 044
+                                            +254 117 805 393
                                         </p>
                                     </div>
                                 </div>
