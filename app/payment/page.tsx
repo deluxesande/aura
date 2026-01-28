@@ -4,15 +4,7 @@ import { setBusinessDetails } from "@/store/slices/businessDataSlice";
 import { formatPhoneNumber } from "@/utils/formatPhoneNumber";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-    Check,
-    Phone,
-    X,
-    AlertTriangle,
-    User,
-    Mail,
-    Loader2,
-} from "lucide-react";
+import { Check, Phone, X, AlertTriangle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -164,7 +156,6 @@ export default function PaymentPage() {
             const response = await axios.get("/api/auth/invite/get");
             const data = response.data;
 
-            // 1. Flatten API Data into a single "Seats" list
             let allSeats: StaffMember[] = [];
 
             if (Array.isArray(data)) {
@@ -173,12 +164,11 @@ export default function PaymentPage() {
                     email: item.email,
                     name: item.name || item.email,
                     role: item.role,
-                    // If status is accepted, they are a User. Otherwise an Invite.
+                    // UPDATED: 'accepted' = USER, otherwise = INVITE
                     type: item.status === "accepted" ? "USER" : "INVITE",
                 }));
-            }
-            // Fallback for object structure { users: [], invitations: [] }
-            else if (data && (data.users || data.invitations)) {
+            } else if (data && (data.users || data.invitations)) {
+                // Fallback for object structure
                 const users = (data.users || []).map((u: any) => ({
                     ...u,
                     type: "USER",
@@ -191,14 +181,14 @@ export default function PaymentPage() {
             }
 
             // 2. Calculate TOTAL HEADCOUNT (You + Others)
+            // If the current user is NOT in the list returned by API, we must add +1 to the count manually
             const isOwnerInList = allSeats.some((s) => s.email === user?.email);
             let totalHeadcount = allSeats.length;
             if (!isOwnerInList) {
-                totalHeadcount += 1; // Add yourself if not in the list
+                totalHeadcount += 1;
             }
 
-            // 3. Determine how many "Slots" are available for the list items
-            // If you (owner) take 1 slot, the list can have (Limit - 1).
+            // 3. Determine slots available for the list items
             const slotsForList = isOwnerInList
                 ? targetPlan.staffLimit
                 : Math.max(0, targetPlan.staffLimit - 1);
@@ -208,7 +198,7 @@ export default function PaymentPage() {
                 setStaffList(allSeats);
                 setEffectiveStaffLimit(slotsForList);
 
-                // Auto-select owner if present in list
+                // Auto-select owner if present
                 if (isOwnerInList) {
                     const owner = allSeats.find((s) => s.email === user?.email);
                     if (owner) setSelectedStaffIds([owner.id]);
@@ -218,10 +208,10 @@ export default function PaymentPage() {
 
                 setSelectedPlan(targetPlan);
                 setIsDowngradeModalOpen(true);
-                return false; // Stop!
+                return false; // STOP: Open modal
             }
 
-            return true; // Go ahead
+            return true; // OK: Proceed
         } catch (error) {
             console.error(error);
             toast.error("Failed to verify staff count. Please try again.", {
@@ -239,13 +229,32 @@ export default function PaymentPage() {
             return;
         }
 
+        // --- UPDATED: Check limits for ALL plans (Free OR Paid) ---
+        const isWithinLimits = await checkStaffForDowngrade(plan);
+
+        // If check returns false, the Downgrade Modal is already open. We stop here.
+        if (!isWithinLimits) return;
+
+        // If safe, proceed to appropriate flow
         if (plan.price === 0) {
-            const safeToDowngrade = await checkStaffForDowngrade(plan);
-            if (safeToDowngrade) {
-                processFreePlanSwitch(plan);
-            }
+            processFreePlanSwitch(plan);
         } else {
             setSelectedPlan(plan);
+            setIsPaymentModalOpen(true);
+        }
+    };
+
+    const handleDowngradeConfirmation = () => {
+        if (!selectedPlan) return;
+
+        if (selectedPlan.price === 0) {
+            // Free plan: Immediate downgrade
+            processFreePlanSwitch(selectedPlan, selectedStaffIds);
+        } else {
+            // Paid plan: Move to payment modal
+            // Note: The selectedStaffIds won't be used by the STK push,
+            // but the user has acknowledged the limit.
+            setIsDowngradeModalOpen(false);
             setIsPaymentModalOpen(true);
         }
     };
@@ -333,13 +342,14 @@ export default function PaymentPage() {
 
     const toggleStaffSelection = (staffId: string) => {
         if (selectedStaffIds.includes(staffId)) {
-            // Deselect
             setSelectedStaffIds((prev) => prev.filter((id) => id !== staffId));
         } else {
-            // Select (Check Effective Limit)
-            if (selectedStaffIds.length >= effectiveStaffLimit) {
+            if (
+                selectedPlan &&
+                selectedStaffIds.length >= effectiveStaffLimit
+            ) {
                 toast.warning(
-                    `You can only select ${effectiveStaffLimit} member(s) to keep active.`,
+                    `You can only select ${effectiveStaffLimit} member(s).`,
                 );
                 return;
             }
@@ -347,9 +357,6 @@ export default function PaymentPage() {
         }
     };
 
-    // --- MAIN RENDER ---
-
-    // Page Loading
     if (isFetching || loadingStaff) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -528,7 +535,6 @@ export default function PaymentPage() {
                                         className="w-full flex justify-center items-center py-4 px-4 rounded-xl shadow-lg text-sm font-black text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 transition-all shadow-green-100"
                                     >
                                         {paymentLoading ? (
-                                            /* BUTTON SPINNER: LOADER2 + STROKE-WHITE */
                                             <Loader2 className="animate-spin h-4 w-4 stroke-white" />
                                         ) : (
                                             `Pay KSh ${selectedPlan.price.toLocaleString()}`
@@ -619,42 +625,28 @@ export default function PaymentPage() {
                                                         : "border-gray-200 hover:border-gray-300"
                                                 } ${isDisabled ? "opacity-50 cursor-not-allowed grayscale-[0.5]" : ""}`}
                                             >
-                                                <div className="flex items-center gap-3">
-                                                    <div
-                                                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                                            isSelected
-                                                                ? "bg-green-200 text-green-600"
-                                                                : "bg-gray-100 text-gray-500"
-                                                        }`}
-                                                    >
-                                                        {isInvite ? (
-                                                            <Mail size={18} />
-                                                        ) : (
-                                                            <User size={20} />
+                                                {/* REMOVED ICONS AS REQUESTED */}
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="font-semibold text-gray-900">
+                                                            {staff.name ||
+                                                                "Staff Member"}
+                                                        </p>
+                                                        {isInvite && (
+                                                            <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full font-bold">
+                                                                INVITE
+                                                            </span>
+                                                        )}
+                                                        {staff.email ===
+                                                            user?.email && (
+                                                            <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full font-bold">
+                                                                YOU
+                                                            </span>
                                                         )}
                                                     </div>
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <p className="font-semibold text-gray-900">
-                                                                {staff.name ||
-                                                                    "Staff Member"}
-                                                            </p>
-                                                            {isInvite && (
-                                                                <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full font-bold">
-                                                                    INVITE
-                                                                </span>
-                                                            )}
-                                                            {staff.email ===
-                                                                user?.email && (
-                                                                <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full font-bold">
-                                                                    YOU
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <p className="text-xs text-gray-500">
-                                                            {staff.email}
-                                                        </p>
-                                                    </div>
+                                                    <p className="text-xs text-gray-500">
+                                                        {staff.email}
+                                                    </p>
                                                 </div>
                                                 <div
                                                     className={`w-6 h-6 rounded-full border flex items-center justify-center ${
@@ -686,27 +678,19 @@ export default function PaymentPage() {
                                     Cancel
                                 </button>
                                 <button
-                                    onClick={() =>
-                                        processFreePlanSwitch(
-                                            selectedPlan,
-                                            selectedStaffIds,
-                                        )
-                                    }
+                                    onClick={handleDowngradeConfirmation}
                                     disabled={
                                         downgradeLoading ||
-                                        // Strict check: length must match effective limit exactly?
-                                        // Or usually just ensure they selected *something* if limit > 0
-                                        // But if effective limit is 0 (Starter, owner only), selected ids must be 0.
+                                        // Strict check: must select UP TO the effective limit.
                                         (effectiveStaffLimit > 0 &&
                                             selectedStaffIds.length === 0)
                                     }
                                     className="flex-1 py-3 px-4 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
                                 >
                                     {downgradeLoading ? (
-                                        /* BUTTON SPINNER: LOADER2 + STROKE-WHITE */
                                         <Loader2 className="animate-spin h-4 w-4 stroke-white" />
                                     ) : (
-                                        "Confirm & Downgrade"
+                                        "Confirm & Continue"
                                     )}
                                 </button>
                             </div>
