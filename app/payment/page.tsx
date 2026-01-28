@@ -4,7 +4,15 @@ import { setBusinessDetails } from "@/store/slices/businessDataSlice";
 import { formatPhoneNumber } from "@/utils/formatPhoneNumber";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Phone, X, AlertTriangle, User, Mail } from "lucide-react";
+import {
+    Check,
+    Phone,
+    X,
+    AlertTriangle,
+    User,
+    Mail,
+    Loader2,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -108,13 +116,15 @@ export default function PaymentPage() {
     const [isFetching, setIsFetching] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
 
-    // Context for Downgrade Logic (Effective limit for the list shown)
+    // Limit tracking
     const [effectiveStaffLimit, setEffectiveStaffLimit] = useState(0);
 
+    // Payment State
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [paymentLoading, setPaymentLoading] = useState(false);
     const [phoneNumber, setPhoneNumber] = useState("");
 
+    // Downgrade State
     const [isDowngradeModalOpen, setIsDowngradeModalOpen] = useState(false);
     const [staffList, setStaffList] = useState<StaffMember[]>([]);
     const [loadingStaff, setLoadingStaff] = useState(false);
@@ -152,39 +162,53 @@ export default function PaymentPage() {
         setLoadingStaff(true);
         try {
             const response = await axios.get("/api/auth/invite/get");
-            const data = response.data; // Expecting Array
+            const data = response.data;
 
-            if (!Array.isArray(data)) {
-                // If api fails to return array, we assume safe (or handle error)
-                return true;
+            // 1. Flatten API Data into a single "Seats" list
+            let allSeats: StaffMember[] = [];
+
+            if (Array.isArray(data)) {
+                allSeats = data.map((item: any) => ({
+                    id: item.id,
+                    email: item.email,
+                    name: item.name || item.email,
+                    role: item.role,
+                    // If status is accepted, they are a User. Otherwise an Invite.
+                    type: item.status === "accepted" ? "USER" : "INVITE",
+                }));
+            }
+            // Fallback for object structure { users: [], invitations: [] }
+            else if (data && (data.users || data.invitations)) {
+                const users = (data.users || []).map((u: any) => ({
+                    ...u,
+                    type: "USER",
+                }));
+                const invites = (data.invitations || []).map((i: any) => ({
+                    ...i,
+                    type: "INVITE",
+                }));
+                allSeats = [...users, ...invites];
             }
 
-            // 1. Map API data to simple list
-            const allSeats: StaffMember[] = data.map((item: any) => ({
-                id: item.id,
-                email: item.email,
-                name: item.name || item.email,
-                role: item.role,
-                // Status 'accepted' means they are a user, otherwise an invite
-                type: item.status === "accepted" ? "USER" : "INVITE",
-            }));
-
-            // 2. Calculate Limits
-            // Does the list include the current user (owner)?
+            // 2. Calculate TOTAL HEADCOUNT (You + Others)
             const isOwnerInList = allSeats.some((s) => s.email === user?.email);
+            let totalHeadcount = allSeats.length;
+            if (!isOwnerInList) {
+                totalHeadcount += 1; // Add yourself if not in the list
+            }
 
-            // If owner is NOT in the list, they take up 1 slot automatically.
-            // So the list can only have (Limit - 1) people.
-            const calculatedEffectiveLimit = isOwnerInList
+            // 3. Determine how many "Slots" are available for the list items
+            // If you (owner) take 1 slot, the list can have (Limit - 1).
+            const slotsForList = isOwnerInList
                 ? targetPlan.staffLimit
                 : Math.max(0, targetPlan.staffLimit - 1);
 
-            // 3. Check if we need to downgrade
-            if (allSeats.length > calculatedEffectiveLimit) {
+            // 4. Strict Check
+            if (totalHeadcount > targetPlan.staffLimit) {
                 setStaffList(allSeats);
-                setEffectiveStaffLimit(calculatedEffectiveLimit);
+                setEffectiveStaffLimit(slotsForList);
 
-                // Auto-select owner if they appear in the list to prevent self-lockout
+                // Auto-select owner if present in list
                 if (isOwnerInList) {
                     const owner = allSeats.find((s) => s.email === user?.email);
                     if (owner) setSelectedStaffIds([owner.id]);
@@ -194,13 +218,15 @@ export default function PaymentPage() {
 
                 setSelectedPlan(targetPlan);
                 setIsDowngradeModalOpen(true);
-                return false; // Stop process
+                return false; // Stop!
             }
 
-            return true; // Safe to proceed
+            return true; // Go ahead
         } catch (error) {
             console.error(error);
-            toast.error("Failed to verify staff count. Please try again.");
+            toast.error("Failed to verify staff count. Please try again.", {
+                duration: 5000,
+            });
             return false;
         } finally {
             setLoadingStaff(false);
@@ -214,13 +240,11 @@ export default function PaymentPage() {
         }
 
         if (plan.price === 0) {
-            // Free Plan Logic
             const safeToDowngrade = await checkStaffForDowngrade(plan);
             if (safeToDowngrade) {
                 processFreePlanSwitch(plan);
             }
         } else {
-            // Paid Plan Logic
             setSelectedPlan(plan);
             setIsPaymentModalOpen(true);
         }
@@ -234,7 +258,6 @@ export default function PaymentPage() {
 
         const setupFreeAccount = async () => {
             if (!user?.businessId) {
-                // New Account
                 const formData = new FormData();
                 const businessName = user?.firstName
                     ? `${user.firstName}'s Business`
@@ -247,13 +270,11 @@ export default function PaymentPage() {
                 router.push("/settings");
                 return "Welcome to Salesense Starter!";
             } else {
-                // Downgrade Existing
                 await axios.post("/api/subscription/downgrade", {
                     planId: plan.id,
                     activeStaffIds: staffToKeep,
                 });
 
-                // Refresh Redux
                 const res = await axios.get(`/api/business/${user.businessId}`);
                 dispatch(setBusinessDetails(res.data));
 
@@ -304,7 +325,7 @@ export default function PaymentPage() {
             console.error("Payment Error:", error);
             const message =
                 error.response?.data?.error || "Payment request failed.";
-            toast.error(message);
+            toast.error(message, { duration: 5000 });
         } finally {
             setPaymentLoading(false);
         }
@@ -318,7 +339,7 @@ export default function PaymentPage() {
             // Select (Check Effective Limit)
             if (selectedStaffIds.length >= effectiveStaffLimit) {
                 toast.warning(
-                    `You can only select ${effectiveStaffLimit} additional member(s).`,
+                    `You can only select ${effectiveStaffLimit} member(s) to keep active.`,
                 );
                 return;
             }
@@ -326,13 +347,15 @@ export default function PaymentPage() {
         }
     };
 
+    // --- MAIN RENDER ---
+
+    // Page Loading
     if (isFetching || loadingStaff) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="flex flex-col items-center gap-4">
-                    {/* --- YOUR SPINNER --- */}
+                    {/* CUSTOM PAGE SPINNER */}
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-
                     <p className="text-gray-500 animate-pulse text-sm font-medium">
                         {loadingStaff
                             ? "Verifying staff limits..."
@@ -505,7 +528,8 @@ export default function PaymentPage() {
                                         className="w-full flex justify-center items-center py-4 px-4 rounded-xl shadow-lg text-sm font-black text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 transition-all shadow-green-100"
                                     >
                                         {paymentLoading ? (
-                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mx-auto"></div>
+                                            /* BUTTON SPINNER: LOADER2 + STROKE-WHITE */
+                                            <Loader2 className="animate-spin h-4 w-4 stroke-white" />
                                         ) : (
                                             `Pay KSh ${selectedPlan.price.toLocaleString()}`
                                         )}
@@ -544,9 +568,7 @@ export default function PaymentPage() {
                                     The <strong>{selectedPlan.name}</strong>{" "}
                                     plan allows{" "}
                                     <strong>{selectedPlan.staffLimit}</strong>{" "}
-                                    total seat(s) (You + {effectiveStaffLimit}{" "}
-                                    others).
-                                    <br />
+                                    total seat(s).
                                     <br />
                                     You currently have{" "}
                                     <strong>
@@ -557,7 +579,7 @@ export default function PaymentPage() {
                                                 ? 0
                                                 : 1)}
                                     </strong>{" "}
-                                    active seats.
+                                    (You + active users + pending invites).
                                 </p>
                                 <p className="text-xs text-red-500 mt-3 font-semibold bg-red-100/50 p-2 rounded-lg">
                                     Please select exactly {effectiveStaffLimit}{" "}
@@ -672,15 +694,17 @@ export default function PaymentPage() {
                                     }
                                     disabled={
                                         downgradeLoading ||
-                                        // Strict check: We might allow selecting fewer, but usually for a downgrade flow we want explicit confirmation.
-                                        // But if they have 0 slots allowed (Starter), then length must be 0.
+                                        // Strict check: length must match effective limit exactly?
+                                        // Or usually just ensure they selected *something* if limit > 0
+                                        // But if effective limit is 0 (Starter, owner only), selected ids must be 0.
                                         (effectiveStaffLimit > 0 &&
                                             selectedStaffIds.length === 0)
                                     }
                                     className="flex-1 py-3 px-4 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
                                 >
                                     {downgradeLoading ? (
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mx-auto"></div>
+                                        /* BUTTON SPINNER: LOADER2 + STROKE-WHITE */
+                                        <Loader2 className="animate-spin h-4 w-4 stroke-white" />
                                     ) : (
                                         "Confirm & Downgrade"
                                     )}
