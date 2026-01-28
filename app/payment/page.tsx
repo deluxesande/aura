@@ -108,12 +108,13 @@ export default function PaymentPage() {
     const [isFetching, setIsFetching] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
 
-    // Payment State
+    // Context for Downgrade Logic (Effective limit for the list shown)
+    const [effectiveStaffLimit, setEffectiveStaffLimit] = useState(0);
+
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [paymentLoading, setPaymentLoading] = useState(false);
     const [phoneNumber, setPhoneNumber] = useState("");
 
-    // Downgrade State
     const [isDowngradeModalOpen, setIsDowngradeModalOpen] = useState(false);
     const [staffList, setStaffList] = useState<StaffMember[]>([]);
     const [loadingStaff, setLoadingStaff] = useState(false);
@@ -151,50 +152,49 @@ export default function PaymentPage() {
         setLoadingStaff(true);
         try {
             const response = await axios.get("/api/auth/invite/get");
-            const data = response.data; // Expecting Array of { ...userOrInvite }
+            const data = response.data; // Expecting Array
 
-            // Normalize the data. API might return { users: [], invitations: [] } or a flat list.
-            // We unify everything into a single list of "Occupied Seats".
-            let allSeats: StaffMember[] = [];
-
-            if (Array.isArray(data)) {
-                // If it's a flat list, just map it
-                allSeats = data.map((item: any) => ({
-                    id: item.id,
-                    email: item.email,
-                    name: item.name,
-                    role: item.role,
-                    type: item.token ? "INVITE" : "USER", // Simple heuristic: invites have tokens
-                }));
-            } else if (data && (data.users || data.invitations)) {
-                // If structured
-                const users = (data.users || []).map((u: any) => ({
-                    ...u,
-                    type: "USER",
-                }));
-                const invites = (data.invitations || []).map((i: any) => ({
-                    ...i,
-                    type: "INVITE",
-                }));
-                allSeats = [...users, ...invites];
+            if (!Array.isArray(data)) {
+                // If api fails to return array, we assume safe (or handle error)
+                return true;
             }
 
-            // STRICT CHECK: Is the total count greater than the NEW plan's limit?
-            if (allSeats.length > targetPlan.staffLimit) {
-                setStaffList(allSeats);
+            // 1. Map API data to simple list
+            const allSeats: StaffMember[] = data.map((item: any) => ({
+                id: item.id,
+                email: item.email,
+                name: item.name || item.email,
+                role: item.role,
+                // Status 'accepted' means they are a user, otherwise an invite
+                type: item.status === "accepted" ? "USER" : "INVITE",
+            }));
 
-                // Auto-select Owner (current user) so they don't downgrade themselves out
-                const owner = allSeats.find((s) => s.email === user?.email);
-                if (owner) {
-                    setSelectedStaffIds([owner.id]);
+            // 2. Calculate Limits
+            // Does the list include the current user (owner)?
+            const isOwnerInList = allSeats.some((s) => s.email === user?.email);
+
+            // If owner is NOT in the list, they take up 1 slot automatically.
+            // So the list can only have (Limit - 1) people.
+            const calculatedEffectiveLimit = isOwnerInList
+                ? targetPlan.staffLimit
+                : Math.max(0, targetPlan.staffLimit - 1);
+
+            // 3. Check if we need to downgrade
+            if (allSeats.length > calculatedEffectiveLimit) {
+                setStaffList(allSeats);
+                setEffectiveStaffLimit(calculatedEffectiveLimit);
+
+                // Auto-select owner if they appear in the list to prevent self-lockout
+                if (isOwnerInList) {
+                    const owner = allSeats.find((s) => s.email === user?.email);
+                    if (owner) setSelectedStaffIds([owner.id]);
                 } else {
                     setSelectedStaffIds([]);
                 }
 
-                // Trigger Modal
                 setSelectedPlan(targetPlan);
                 setIsDowngradeModalOpen(true);
-                return false; // STOP immediate downgrade
+                return false; // Stop process
             }
 
             return true; // Safe to proceed
@@ -315,13 +315,10 @@ export default function PaymentPage() {
             // Deselect
             setSelectedStaffIds((prev) => prev.filter((id) => id !== staffId));
         } else {
-            // Select (Check Limit)
-            if (
-                selectedPlan &&
-                selectedStaffIds.length >= selectedPlan.staffLimit
-            ) {
+            // Select (Check Effective Limit)
+            if (selectedStaffIds.length >= effectiveStaffLimit) {
                 toast.warning(
-                    `You can only keep ${selectedPlan.staffLimit} member(s) on the ${selectedPlan.name} plan.`,
+                    `You can only select ${effectiveStaffLimit} additional member(s).`,
                 );
                 return;
             }
@@ -333,7 +330,7 @@ export default function PaymentPage() {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="flex flex-col items-center gap-4">
-                    {/* --- YOUR SPECIFIC SPINNER --- */}
+                    {/* --- YOUR SPINNER --- */}
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
 
                     <p className="text-gray-500 animate-pulse text-sm font-medium">
@@ -508,7 +505,6 @@ export default function PaymentPage() {
                                         className="w-full flex justify-center items-center py-4 px-4 rounded-xl shadow-lg text-sm font-black text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 transition-all shadow-green-100"
                                     >
                                         {paymentLoading ? (
-                                            /* Button Spinner (Smaller version of your style) */
                                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mx-auto"></div>
                                         ) : (
                                             `Pay KSh ${selectedPlan.price.toLocaleString()}`
@@ -548,17 +544,26 @@ export default function PaymentPage() {
                                     The <strong>{selectedPlan.name}</strong>{" "}
                                     plan allows{" "}
                                     <strong>{selectedPlan.staffLimit}</strong>{" "}
-                                    active seat(s).
+                                    total seat(s) (You + {effectiveStaffLimit}{" "}
+                                    others).
+                                    <br />
                                     <br />
                                     You currently have{" "}
-                                    <strong>{staffList.length}</strong> (Active
-                                    Users + Pending Invites).
+                                    <strong>
+                                        {staffList.length +
+                                            (staffList.some(
+                                                (s) => s.email === user?.email,
+                                            )
+                                                ? 0
+                                                : 1)}
+                                    </strong>{" "}
+                                    active seats.
                                 </p>
                                 <p className="text-xs text-red-500 mt-3 font-semibold bg-red-100/50 p-2 rounded-lg">
-                                    Please select exactly{" "}
-                                    {selectedPlan.staffLimit} person(s) to keep
-                                    active. Unselected users will be suspended
-                                    and unselected invites cancelled.
+                                    Please select exactly {effectiveStaffLimit}{" "}
+                                    person(s) from this list to keep active.
+                                    Unselected users will be suspended and
+                                    invites cancelled.
                                 </p>
                             </div>
 
@@ -573,7 +578,7 @@ export default function PaymentPage() {
                                         // Logic: Disable selection if limit is reached AND this specific item isn't already selected
                                         const isMaxReached =
                                             selectedStaffIds.length >=
-                                            selectedPlan.staffLimit;
+                                            effectiveStaffLimit;
                                         const isDisabled =
                                             isMaxReached && !isSelected;
 
@@ -667,9 +672,10 @@ export default function PaymentPage() {
                                     }
                                     disabled={
                                         downgradeLoading ||
-                                        // Strict: Must select EXACTLY the limit? Or UP TO the limit?
-                                        // Usually "At least 1 (self)" is good enough, but ensuring they don't exceed is key.
-                                        selectedStaffIds.length === 0
+                                        // Strict check: We might allow selecting fewer, but usually for a downgrade flow we want explicit confirmation.
+                                        // But if they have 0 slots allowed (Starter), then length must be 0.
+                                        (effectiveStaffLimit > 0 &&
+                                            selectedStaffIds.length === 0)
                                     }
                                     className="flex-1 py-3 px-4 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
                                 >

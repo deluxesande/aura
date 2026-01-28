@@ -2,7 +2,7 @@
 import Navbar from "@/components/Navbar";
 import { AppState } from "@/store";
 import axios from "axios";
-import { AlertOctagon, Loader2 } from "lucide-react";
+import { AlertOctagon } from "lucide-react"; // Removed Loader2
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -15,11 +15,12 @@ const SubscriptionExpiredPage = () => {
     const [phoneNumber, setPhoneNumber] = useState("");
     const [showRenewInput, setShowRenewInput] = useState(false);
 
+    const { user } = useSelector((state: AppState) => state.auth);
     const businessDetails = useSelector(
         (state: AppState) => state.businessData.businessDetails,
     );
-    const user = useSelector((state: AppState) => state.auth.user);
 
+    // Redirect if active
     useEffect(() => {
         if (
             businessDetails?.subscription?.status === "ACTIVE" ||
@@ -43,12 +44,14 @@ const SubscriptionExpiredPage = () => {
 
         setLoading(true);
         try {
+            // Determine amount based on plan
             const amount = plan === "STANDARD" ? 1000 : 1500;
 
             const res = await axios.post("/api/subscription/stk-push", {
                 phoneNumber,
                 amount,
                 planId: plan,
+                businessId: businessDetails?.id,
             });
 
             if (res.data.data.CheckoutRequestID) {
@@ -67,7 +70,9 @@ const SubscriptionExpiredPage = () => {
     };
 
     const currentPlan = businessDetails?.subscription?.plan || "Business";
+    const isAdmin = user?.role === "admin"; // Normalized to lowercase per schema
 
+    // Prevent hydration flicker if actually active
     if (
         businessDetails?.subscription?.status === "ACTIVE" ||
         businessDetails?.subscription?.status === "TRIALING"
@@ -95,8 +100,8 @@ const SubscriptionExpiredPage = () => {
                     </p>
 
                     <div className="space-y-4">
-                        {/* Show if the user is an admin */}
-                        {user?.role === "ADMIN" && (
+                        {/* --- ADMIN ONLY VIEW --- */}
+                        {isAdmin ? (
                             <>
                                 {showRenewInput ? (
                                     <form
@@ -126,7 +131,7 @@ const SubscriptionExpiredPage = () => {
                                             className="w-full py-3 px-4 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-colors flex items-center justify-center shadow-lg shadow-green-200"
                                         >
                                             {loading ? (
-                                                <Loader2 className="animate-spin w-5 h-5" />
+                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mx-auto"></div>
                                             ) : (
                                                 "Pay Now"
                                             )}
@@ -160,6 +165,17 @@ const SubscriptionExpiredPage = () => {
                                     </Link>
                                 )}
                             </>
+                        ) : (
+                            /* --- NON-ADMIN VIEW --- */
+                            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 text-gray-600 text-sm">
+                                <p>
+                                    Only the business administrator can renew
+                                    the subscription.
+                                </p>
+                                <p className="mt-2 font-bold">
+                                    Please contact the owner.
+                                </p>
+                            </div>
                         )}
                     </div>
                 </div>
