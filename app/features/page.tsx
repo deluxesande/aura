@@ -14,6 +14,7 @@ import {
     FileText,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRef, useState } from "react";
 
 const containerVariants = {
@@ -304,29 +305,98 @@ export default function FeaturesPage() {
             {/* CTA Section */}
             <motion.section
                 ref={ctaRef}
-                className="py-20 bg-white border-t border-gray-100"
+                className="py-24 bg-gray-50"
                 initial="hidden"
                 animate={isCtaInView ? "visible" : "hidden"}
                 variants={containerVariants}
             >
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div
                         variants={fadeInUp}
-                        className="max-w-3xl mx-auto"
+                        className="relative bg-white rounded-3xl p-8 md:p-16 text-center overflow-hidden shadow-2xl shadow-gray-200/50 border border-gray-100"
                     >
-                        <h2 className="text-4xl font-bold text-gray-900 mb-6">
-                            Ready to modernize your business?
-                        </h2>
-                        <p className="text-xl text-gray-600 mb-10">
-                            Join thousands of Kenyan businesses using SaleSense
-                            to simplify operations and stay compliant.
-                        </p>
-                        <a
-                            href="/sign-up"
-                            className="inline-flex items-center justify-center px-8 py-4 text-base font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 transition-all shadow-lg shadow-green-200"
-                        >
-                            Get Started Now
-                        </a>
+                        {/* --- BACKGROUND PATTERNS (Inverted for White Background) --- */}
+                        <div className="absolute inset-0 pointer-events-none">
+                            {/* 1. Soft Green Glow Gradients */}
+                            <div className="absolute -top-[50%] -left-[20%] w-[80%] h-[200%] rounded-full bg-green-50/50 blur-[100px]" />
+                            <div className="absolute bottom-0 right-0 w-[60%] h-[120%] bg-green-50/80 blur-[80px] rounded-full translate-y-1/4" />
+
+                            {/* 2. Flowing Lines SVG (Green Strokes) */}
+                            <svg
+                                className="absolute inset-0 w-full h-full"
+                                viewBox="0 0 1440 400"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                                preserveAspectRatio="none"
+                            >
+                                <defs>
+                                    <filter
+                                        id="white-card-glow"
+                                        x="-50%"
+                                        y="-50%"
+                                        width="200%"
+                                        height="200%"
+                                    >
+                                        <feGaussianBlur
+                                            stdDeviation="4"
+                                            result="coloredBlur"
+                                        />
+                                        <feMerge>
+                                            <feMergeNode in="coloredBlur" />
+                                            <feMergeNode in="SourceGraphic" />
+                                        </feMerge>
+                                    </filter>
+                                </defs>
+
+                                {/* Background Wave - Very subtle gray/green */}
+                                <path
+                                    d="M0 400C230 400 340 300 500 300C660 300 780 400 1000 400C1220 400 1350 300 1440 300V0H0V400Z"
+                                    stroke="#22c55e" // green-500
+                                    strokeWidth="2"
+                                    fill="none"
+                                    className="opacity-[0.03]"
+                                />
+
+                                {/* Main Flowing Wave - Visible Green */}
+                                <path
+                                    d="M-100 450C130 450 240 250 400 250C560 250 680 450 900 450C1120 450 1250 250 1540 250V-50H-100V450Z"
+                                    stroke="#16a34a" // green-600
+                                    strokeWidth="2"
+                                    className="opacity-10"
+                                    fill="none"
+                                    filter="url(#white-card-glow)"
+                                />
+
+                                {/* Sharp Foreground Waves */}
+                                <path
+                                    d="M0 200C200 200 300 100 500 100C700 100 900 300 1100 300C1300 300 1400 100 1440 100"
+                                    stroke="#15803d" // green-700
+                                    strokeWidth="1.5"
+                                    fill="none"
+                                    className="opacity-20"
+                                />
+                            </svg>
+                        </div>
+
+                        {/* --- CONTENT --- */}
+                        <div className="relative z-10 max-w-3xl mx-auto">
+                            <h2 className="text-3xl md:text-4xl font-bold text-green-500 mb-6">
+                                Ready to modernize your business?
+                            </h2>
+                            <p className="text-xl text-gray-600 mb-10 leading-relaxed">
+                                Join thousands of Kenyan businesses using
+                                SaleSense to simplify operations and stay
+                                compliant.
+                            </p>
+
+                            {/* Green Button for contrast against White Card */}
+                            <Link
+                                href="/sign-up"
+                                className="inline-flex items-center justify-center px-8 py-4 text-base font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 hover:-translate-y-1 transition-all shadow-lg shadow-green-200"
+                            >
+                                Get Started Now
+                            </Link>
+                        </div>
                     </motion.div>
                 </div>
             </motion.section>
