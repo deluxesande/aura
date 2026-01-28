@@ -91,7 +91,7 @@ export default function FAQ() {
                                 <span
                                     className={`font-semibold text-lg ${
                                         openIndex === idx
-                                            ? "text-green-800"
+                                            ? "text-green-500"
                                             : "text-gray-900"
                                     }`}
                                 >

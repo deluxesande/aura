@@ -464,13 +464,13 @@ export default function Navbar({
 
                 {/* --- Mobile Navbar --- */}
                 <div className="p-4 sticky top-0 left-0 z-40 bg-white shadow-sm lg:hidden flex justify-between items-center">
-                    <Link href="/dashboard">
+                    <Link href="/">
                         <Image
                             src="/logos/salesense-vertical.png"
                             alt="Logo"
                             width={40}
                             height={40}
-                            className="w-8"
+                            className="w-12 h-12 object-contain ml-2"
                         />
                     </Link>
                     <div className="flex items-center gap-1">

@@ -200,7 +200,7 @@ export default function Page() {
                                     <div className="p-2 bg-green-50 rounded-full">
                                         <Smartphone
                                             size={32}
-                                            className="stroke-green-600"
+                                            className="stroke-green-500"
                                         />
                                     </div>
                                 </div>

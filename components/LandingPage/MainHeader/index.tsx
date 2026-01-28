@@ -2,8 +2,8 @@
 
 import { ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
-// --- Animation Variants ---
 const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -61,7 +61,7 @@ export default function MainHeader() {
                         >
                             Streamline Your Sales with
                             <br />
-                            <span className="text-green-600 text-4xl sm:text-5xl md:text-6xl font-bold">
+                            <span className="text-green-500 text-4xl sm:text-5xl md:text-6xl font-bold">
                                 Kenyan Solutions
                             </span>
                         </motion.h1>
@@ -77,97 +77,101 @@ export default function MainHeader() {
                             className="flex flex-col w-full justify-start sm:flex-row gap-4 mb-16"
                             variants={textVariants}
                         >
-                            <a
+                            {/* Primary CTA: Solid Color, Deep Colored Shadow, Tactile Lift */}
+                            <Link
                                 href="/sign-up"
-                                className="w-full md:w-auto lg:w-auto bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center"
+                                className="group relative w-full md:w-auto"
                             >
-                                Start Free Trial{" "}
-                                <motion.span variants={itemPopVariants}>
+                                <div className="relative z-10 w-full md:w-auto bg-green-500 text-white px-8 py-3.5 rounded-xl font-semibold shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] hover:shadow-[0_6px_20px_rgba(22,163,74,0.23)] hover:bg-green-600 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center">
+                                    Start Free Trial
                                     <ChevronRight
-                                        color="#fff"
-                                        className="ml-2"
-                                        size={18}
+                                        className="ml-2 stroke-white transition-transform duration-300 group-hover:translate-x-1.5"
+                                        size={20}
                                     />
-                                </motion.span>
-                            </a>
-                            <a
+                                </div>
+                            </Link>
+
+                            {/* Secondary CTA: Clean Outline with Subtle Tint on Hover */}
+                            <Link
                                 href="/features"
-                                className="w-full md:w-auto lg:w-auto border border-gray-300 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center"
+                                className="group w-full md:w-auto"
                             >
-                                Learn more
-                            </a>
+                                <div className="w-full md:w-auto bg-white text-gray-600 px-8 py-3.5 rounded-xl font-medium border border-gray-200 shadow-sm hover:text-green-700 hover:border-green-200 hover:bg-green-50/50 hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center">
+                                    Learn more
+                                </div>
+                            </Link>
                         </motion.div>
                     </motion.div>
 
                     {/* --- RIGHT: Simplified Abstract Dashboard Illustration --- */}
                     <motion.div
-                        className="relative perspective-1000"
+                        className="relative perspective-1000 w-full max-w-lg lg:max-w-none mx-auto"
                         initial="hidden"
                         animate="visible"
                         variants={dashboardVariants}
                     >
                         {/* Browser Window Container */}
-                        <div className="relative z-10 bg-white rounded-xl shadow-2xl shadow-gray-200/50 border border-gray-100 overflow-hidden transform rotate-y-6 hover:rotate-y-0 transition-transform duration-700 ease-out p-1">
+                        <div className="relative z-10 bg-white rounded-xl shadow-2xl shadow-gray-200/50 border border-gray-100 overflow-hidden transform lg:rotate-y-6 hover:rotate-y-0 transition-transform duration-700 ease-out p-1">
                             {/* Fake Browser Toolbar */}
-                            <div className="bg-gray-50 border-b border-gray-100 px-4 py-2.5 flex items-center gap-2 rounded-t-lg">
+                            <div className="bg-gray-50 border-b border-gray-100 px-3 py-2 md:px-4 md:py-2.5 flex items-center gap-2 rounded-t-lg">
                                 <div className="flex gap-1.5">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-gray-300" />
-                                    <div className="w-2.5 h-2.5 rounded-full bg-gray-300" />
-                                    <div className="w-2.5 h-2.5 rounded-full bg-gray-300" />
+                                    <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-red-400/80" />
+                                    <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-yellow-400/80" />
+                                    <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-green-400/80" />
                                 </div>
                             </div>
 
                             {/* Dashboard Body */}
-                            <div className="flex bg-gray-50 h-[400px] lg:h-[450px] p-3 gap-3">
-                                {/* Sidebar (Abstract) */}
-                                <div className="w-12 lg:w-40 bg-white border border-gray-100 rounded-lg p-2 flex flex-col gap-2 sm:flex">
-                                    <div className="h-6 w-16 bg-green-100 rounded-md mb-4 opacity-50"></div>
+                            <div className="flex bg-gray-50 h-[300px] md:h-[400px] lg:h-[450px] p-2 md:p-3 gap-2 md:gap-3">
+                                {/* Sidebar (Hidden on mobile, visible on sm+) */}
+                                <div className="hidden sm:flex w-12 lg:w-40 bg-white border border-gray-100 rounded-lg p-2 flex-col gap-2">
+                                    <div className="h-5 lg:h-6 w-8 lg:w-16 bg-green-100 rounded-md mb-2 lg:mb-4 opacity-50"></div>
                                     {[1, 2, 3, 4, 5].map((i) => (
                                         <div
                                             key={i}
-                                            className={`h-8 w-full rounded-md flex items-center px-2 ${i === 1 ? "bg-green-50 border border-green-100" : "opacity-40"}`}
+                                            className={`h-8 w-full rounded-md flex items-center justify-center lg:justify-start lg:px-2 ${i === 1 ? "bg-green-50 border border-green-100" : "opacity-40"}`}
                                         >
                                             <div
-                                                className={`w-4 h-4 rounded-sm mr-2 ${i === 1 ? "bg-green-500" : "bg-gray-300"}`}
+                                                className={`w-3 h-3 lg:w-4 lg:h-4 rounded-sm lg:mr-2 shrink-0 ${i === 1 ? "bg-green-500" : "bg-gray-300"}`}
                                             ></div>
                                             <div
-                                                className={`h-2 rounded-full ${i === 1 ? "w-12 bg-green-200" : "w-16 bg-gray-200"}`}
+                                                className={`hidden lg:block h-2 rounded-full ${i === 1 ? "w-12 bg-green-200" : "w-16 bg-gray-200"}`}
                                             ></div>
                                         </div>
                                     ))}
                                 </div>
 
                                 {/* Main Content Area */}
-                                <div className="flex-1 flex flex-col gap-3">
-                                    {/* Top Stats Row (Abstract) */}
-                                    <div className="grid grid-cols-3 gap-3">
+                                <div className="flex-1 flex flex-col gap-2 md:gap-3">
+                                    {/* Top Stats Row */}
+                                    <div className="grid grid-cols-3 gap-2 md:gap-3">
                                         {[1, 2, 3].map((i) => (
                                             <motion.div
                                                 variants={itemPopVariants}
                                                 key={i}
-                                                className="bg-white p-3 rounded-lg border border-gray-100 shadow-sm flex flex-col justify-between h-24"
+                                                className="bg-white p-2 md:p-3 rounded-lg border border-gray-100 shadow-sm flex flex-col justify-between h-16 md:h-24"
                                             >
-                                                <div className="h-2 w-12 bg-gray-200 rounded-full mb-3 opacity-60"></div>
-                                                <div className="h-5 w-20 bg-gray-800 rounded-md mb-2 opacity-80"></div>
-                                                <div className="h-2 w-8 bg-green-100 rounded-full self-end"></div>
+                                                <div className="h-1.5 md:h-2 w-8 md:w-12 bg-gray-200 rounded-full mb-1 opacity-60"></div>
+                                                <div className="h-3 md:h-5 w-12 md:w-20 bg-gray-800 rounded-md mb-1 opacity-80"></div>
+                                                <div className="h-1 md:h-2 w-6 md:w-8 bg-green-100 rounded-full self-end"></div>
                                             </motion.div>
                                         ))}
                                     </div>
 
-                                    {/* Main Chart Area (Abstract Line) */}
+                                    {/* Main Chart Area */}
                                     <motion.div
                                         variants={itemPopVariants}
-                                        className="flex-1 bg-white p-4 rounded-lg border border-gray-100 shadow-sm flex flex-col"
+                                        className="flex-1 bg-white p-3 md:p-4 rounded-lg border border-gray-100 shadow-sm flex flex-col min-h-0" // min-h-0 allows flex child to shrink
                                     >
-                                        <div className="flex justify-between mb-4">
-                                            <div className="h-3 w-24 bg-gray-200 rounded-full opacity-60"></div>
-                                            <div className="h-4 w-10 bg-gray-100 rounded-md opacity-60"></div>
+                                        <div className="flex justify-between mb-2 md:mb-4">
+                                            <div className="h-2 md:h-3 w-16 md:w-24 bg-gray-200 rounded-full opacity-60"></div>
+                                            <div className="h-3 md:h-4 w-8 md:w-10 bg-gray-100 rounded-md opacity-60"></div>
                                         </div>
-                                        {/* Abstract SVG Line Chart */}
-                                        <div className="flex-1 relative overflow-hidden flex items-end">
+                                        {/* SVG Line Chart */}
+                                        <div className="flex-1 relative overflow-hidden flex items-end w-full">
                                             <svg
                                                 viewBox="0 0 400 150"
-                                                className="w-full h-3/4"
+                                                className="w-full h-full max-h-[120px] md:max-h-none"
                                                 preserveAspectRatio="none"
                                             >
                                                 <defs>
@@ -208,8 +212,8 @@ export default function MainHeader() {
                             </div>
                         </div>
 
-                        {/* Decorative BG element behind dashboard */}
-                        <div className="absolute top-1/2 right-0 -translate-y-1/2 w-[400px] h-[400px] bg-gradient-to-tr from-green-100/30 to-transparent rounded-full blur-3xl -z-10" />
+                        {/* Decorative BG element */}
+                        <div className="absolute top-1/2 right-0 -translate-y-1/2 w-[200px] md:w-[400px] h-[200px] md:h-[400px] bg-gradient-to-tr from-green-100/30 to-transparent rounded-full blur-3xl -z-10" />
                     </motion.div>
                 </div>
             </div>
