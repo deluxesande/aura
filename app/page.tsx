@@ -21,9 +21,9 @@ export default function App() {
 
             <WhySalesense />
 
-            <CTABanner />
-
             <HowItWorks />
+
+            <CTABanner />
 
             <TrustedBy />
 
