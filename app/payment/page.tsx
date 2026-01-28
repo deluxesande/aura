@@ -4,12 +4,21 @@ import { setBusinessDetails } from "@/store/slices/businessDataSlice";
 import { formatPhoneNumber } from "@/utils/formatPhoneNumber";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Loader2, Phone, X, AlertTriangle, User } from "lucide-react";
+import {
+    Check,
+    Loader2,
+    Phone,
+    X,
+    AlertTriangle,
+    User,
+    Mail,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 
+// --- TYPES ---
 type Plan = {
     id: string;
     name: string;
@@ -26,6 +35,16 @@ type Plan = {
     staffLimit: number;
 };
 
+type StaffMember = {
+    id: string;
+    name?: string;
+    email: string;
+    role: string;
+    isOwner?: boolean;
+    type: "USER" | "INVITE"; // Added to distinguish types
+};
+
+// --- DATA ---
 const PLANS: Plan[] = [
     {
         id: "STARTER",
@@ -85,14 +104,6 @@ const PLANS: Plan[] = [
     },
 ];
 
-type StaffMember = {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-    isOwner?: boolean;
-};
-
 export default function PaymentPage() {
     const router = useRouter();
     const dispatch = useDispatch();
@@ -105,10 +116,12 @@ export default function PaymentPage() {
     const [isFetching, setIsFetching] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
 
+    // Payment State
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [paymentLoading, setPaymentLoading] = useState(false);
     const [phoneNumber, setPhoneNumber] = useState("");
 
+    // Downgrade State
     const [isDowngradeModalOpen, setIsDowngradeModalOpen] = useState(false);
     const [staffList, setStaffList] = useState<StaffMember[]>([]);
     const [loadingStaff, setLoadingStaff] = useState(false);
@@ -130,7 +143,7 @@ export default function PaymentPage() {
                         dispatch(setBusinessDetails(response.data));
                     }
                 } catch (error: any) {
-                    // Handle error silently
+                    // Silent fail for 404s
                 } finally {
                     setTimeout(() => setIsFetching(false), 100);
                 }
@@ -141,27 +154,57 @@ export default function PaymentPage() {
 
     const currentPlanId = businessDetails?.subscription?.plan || null;
 
+    // --- CHECK STAFF LOGIC ---
     const checkStaffForDowngrade = async (targetPlan: Plan) => {
         setLoadingStaff(true);
         try {
             const response = await axios.get("/api/auth/invite/get");
-            const staff: StaffMember[] = response.data || [];
+            const data = response.data;
 
-            if (staff.length > targetPlan.staffLimit) {
-                setStaffList(staff);
+            let combinedStaff: StaffMember[] = [];
 
-                const owner = staff.find((s) => s.email === user?.email);
+            // Robust parsing: Handle if API returns { users: [], invitations: [] } or just flat array
+            if (data.users || data.invitations) {
+                const users = (data.users || []).map((u: any) => ({
+                    ...u,
+                    type: "USER" as const,
+                }));
+                const invites = (data.invitations || []).map((i: any) => ({
+                    ...i,
+                    type: "INVITE" as const,
+                    name: i.email, // Invites might not have names, use email
+                }));
+                combinedStaff = [...users, ...invites];
+            } else if (Array.isArray(data)) {
+                // If the API returns a mixed array, try to detect based on 'token' or 'status'
+                combinedStaff = data.map((item: any) => ({
+                    ...item,
+                    type: item.token ? "INVITE" : "USER",
+                    name: item.name || item.email,
+                }));
+            }
+
+            // Check if Total count > Plan Limit
+            if (combinedStaff.length > targetPlan.staffLimit) {
+                setStaffList(combinedStaff);
+
+                // Pre-select Owner to avoid lockout
+                const owner = combinedStaff.find(
+                    (s) => s.email === user?.email,
+                );
                 if (owner) {
                     setSelectedStaffIds([owner.id]);
                 }
 
+                // Use targetPlan (the argument), NOT selectedPlan (state)
                 setSelectedPlan(targetPlan);
                 setIsDowngradeModalOpen(true);
-                return false;
+                return false; // STOP: Open modal
             }
 
-            return true;
+            return true; // OK: Proceed
         } catch (error) {
+            console.error(error);
             toast.error("Failed to verify staff count. Please try again.");
             return false;
         } finally {
@@ -177,7 +220,6 @@ export default function PaymentPage() {
 
         if (plan.price === 0) {
             const safeToDowngrade = await checkStaffForDowngrade(plan);
-
             if (safeToDowngrade) {
                 processFreePlanSwitch(plan);
             }
@@ -191,8 +233,11 @@ export default function PaymentPage() {
         plan: Plan,
         staffToKeep?: string[],
     ) => {
+        setDowngradeLoading(true);
+
         const setupFreeAccount = async () => {
             if (!user?.businessId) {
+                // New Account Logic
                 const formData = new FormData();
                 const businessName = user?.firstName
                     ? `${user.firstName}'s Business`
@@ -205,11 +250,13 @@ export default function PaymentPage() {
                 router.push("/settings");
                 return "Welcome to Salesense Starter!";
             } else {
+                // Downgrade Logic
                 await axios.post("/api/subscription/downgrade", {
                     planId: plan.id,
                     activeStaffIds: staffToKeep,
                 });
 
+                // Refresh Data
                 const res = await axios.get(`/api/business/${user.businessId}`);
                 dispatch(setBusinessDetails(res.data));
 
@@ -219,7 +266,6 @@ export default function PaymentPage() {
             }
         };
 
-        setDowngradeLoading(true);
         toast.promise(setupFreeAccount(), {
             loading: "Updating your plan...",
             success: (data) => data,
@@ -269,8 +315,10 @@ export default function PaymentPage() {
 
     const toggleStaffSelection = (staffId: string) => {
         if (selectedStaffIds.includes(staffId)) {
+            // Deselect
             setSelectedStaffIds((prev) => prev.filter((id) => id !== staffId));
         } else {
+            // Select (Check Limit)
             if (
                 selectedPlan &&
                 selectedStaffIds.length >= selectedPlan.staffLimit
@@ -288,10 +336,10 @@ export default function PaymentPage() {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-                    <p className="text-gray-500 animate-pulse">
+                    <Loader2 className="animate-spin h-10 w-10 text-green-600" />
+                    <p className="text-gray-500 animate-pulse text-sm font-medium">
                         {loadingStaff
-                            ? "Checking eligibility..."
+                            ? "Verifying staff limits..."
                             : "Syncing your plan details..."}
                     </p>
                 </div>
@@ -491,6 +539,7 @@ export default function PaymentPage() {
                         >
                             <div className="p-6 bg-red-50 border-b border-red-100">
                                 <div className="flex items-center gap-3 text-red-600 mb-2">
+                                    <AlertTriangle size={24} />
                                     <h3 className="text-xl font-bold">
                                         Downgrade Action Required
                                     </h3>
@@ -500,9 +549,13 @@ export default function PaymentPage() {
                                     plan allows{" "}
                                     <strong>{selectedPlan.staffLimit}</strong>{" "}
                                     staff member(s). You currently have{" "}
-                                    <strong>{staffList.length}</strong>. Please
-                                    select who should remain active. Unselected
-                                    staff will be suspended.
+                                    <strong>{staffList.length}</strong> (active
+                                    users + pending invites).
+                                </p>
+                                <p className="text-xs text-red-500 mt-2 font-medium">
+                                    Please uncheck staff or invites to meet the
+                                    limit. Active users not selected will be
+                                    suspended.
                                 </p>
                             </div>
 
@@ -514,8 +567,12 @@ export default function PaymentPage() {
                                         const isMaxReached =
                                             selectedStaffIds.length >=
                                             selectedPlan.staffLimit;
+                                        // Disable logic: If limit reached AND this item isn't selected, you can't select it.
                                         const isDisabled =
                                             isMaxReached && !isSelected;
+
+                                        const isInvite =
+                                            staff.type === "INVITE";
 
                                         return (
                                             <div
@@ -526,7 +583,7 @@ export default function PaymentPage() {
                                                         staff.id,
                                                     )
                                                 }
-                                                className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
+                                                className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${
                                                     isSelected
                                                         ? "border-green-500 bg-green-50 ring-1 ring-green-500"
                                                         : "border-gray-200 hover:border-gray-300"
@@ -534,22 +591,37 @@ export default function PaymentPage() {
                                             >
                                                 <div className="flex items-center gap-3">
                                                     <div
-                                                        className={`w-10 h-10 rounded-full flex items-center justify-center ${isSelected ? "bg-green-200 text-green-500" : "bg-gray-100 text-gray-500"}`}
+                                                        className={`w-10 h-10 rounded-full flex items-center justify-center ${isSelected ? "bg-green-200 text-green-600" : "bg-gray-100 text-gray-500"}`}
                                                     >
-                                                        <User size={20} />
+                                                        {isInvite ? (
+                                                            <Mail size={18} />
+                                                        ) : (
+                                                            <User size={20} />
+                                                        )}
                                                     </div>
                                                     <div>
-                                                        <p className="font-semibold text-gray-900">
-                                                            {staff.name ||
-                                                                "Staff Member"}
-                                                        </p>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="font-semibold text-gray-900">
+                                                                {staff.name ||
+                                                                    "Staff Member"}
+                                                            </p>
+                                                            {isInvite && (
+                                                                <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full font-bold">
+                                                                    PENDING
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                         <p className="text-xs text-gray-500">
                                                             {staff.email}
                                                         </p>
                                                     </div>
                                                 </div>
                                                 <div
-                                                    className={`w-6 h-6 rounded-full border flex items-center justify-center ${isSelected ? "bg-green-600 border-green-600" : "border-gray-300"}`}
+                                                    className={`w-6 h-6 rounded-full border flex items-center justify-center ${
+                                                        isSelected
+                                                            ? "bg-green-600 border-green-600"
+                                                            : "border-gray-300"
+                                                    }`}
                                                 >
                                                     {isSelected && (
                                                         <Check
