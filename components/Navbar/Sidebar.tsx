@@ -1,27 +1,25 @@
-import {
-    LayoutDashboard,
-    ShoppingBasket,
-    History as HistoryIcon,
-    Settings,
-    PackageSearch,
-    ChevronRight,
-    ChevronLeft,
-    LogOut,
-    Users,
-    FileText,
-    Calculator,
-} from "lucide-react";
-import React, { useEffect } from "react";
-import Image from "next/image";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
-import { useUser, useClerk } from "@clerk/nextjs";
-import { useSelector } from "react-redux";
 import { AppState } from "@/store";
-import { useDispatch } from "react-redux";
-import { toggleSideBarState } from "@/store/slices/sideBarSlice";
-import axios from "axios";
 import { setUser, signOut as signOutAction } from "@/store/slices/authSlice";
+import { toggleSideBarState } from "@/store/slices/sideBarSlice";
+import { useClerk, useUser } from "@clerk/nextjs";
+import axios from "axios";
+import {
+    Calculator,
+    ChevronLeft,
+    ChevronRight,
+    History as HistoryIcon,
+    LayoutDashboard,
+    LogOut,
+    PackageSearch,
+    Settings,
+    ShoppingBasket,
+    Users,
+} from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 const allLinks = [
     {

@@ -76,7 +76,7 @@ const SubscriptionExpiredPage = () => {
 
     return (
         <Navbar>
-            <div className="min-h-full w-full flex flex-col items-center justify-center bg-gray-50">
+            <div className="min-h-full w-full flex flex-col items-center justify-center">
                 <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-red-100 overflow-hidden p-8 text-center animate-in fade-in zoom-in duration-300">
                     <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
                         <AlertOctagon className="w-10 h-10 stroke-red-600" />
@@ -92,10 +92,6 @@ const SubscriptionExpiredPage = () => {
                         Please renew your plan to regain access to your
                         dashboard.
                     </p>
-
-                    <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-8 flex items-center justify-center gap-2 text-red-800 text-sm font-medium">
-                        Account is currently locked
-                    </div>
 
                     <div className="space-y-4">
                         {showRenewInput ? (

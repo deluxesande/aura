@@ -20,12 +20,17 @@ const OAUTH_URL =
 const STK_PUSH_URL =
     "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest";
 
+const PLAN_PRICES: Record<string, number> = {
+    STANDARD: 1000,
+    PREMIUM: 1500,
+};
+
 const getAccessToken = async () => {
     if (!CONSUMER_KEY || !CONSUMER_SECRET) {
         throw new Error("Missing CONSUMER_KEY or CONSUMER_SECRET");
     }
     const auth = Buffer.from(`${CONSUMER_KEY}:${CONSUMER_SECRET}`).toString(
-        "base64"
+        "base64",
     );
 
     const response = await axios.get(OAUTH_URL, {
@@ -45,7 +50,7 @@ const formatPhoneNumber = (phone: string) => {
 
 export default async function handler(
     req: NextApiRequest,
-    res: NextApiResponse
+    res: NextApiResponse,
 ) {
     if (req.method !== "POST") {
         return res.status(405).json({ error: "Method not allowed" });
@@ -57,6 +62,21 @@ export default async function handler(
 
         if (!userId || !amount || !phoneNumber || !planId) {
             return res.status(400).json({ error: "Missing required fields" });
+        }
+
+        const validPrice = PLAN_PRICES[planId as string];
+        if (!validPrice) {
+            return res.status(400).json({ error: "Invalid Plan ID selected." });
+        }
+
+        if (Number(amount) !== validPrice) {
+            console.warn(
+                `Potential Price Tampering: User ${userId} tried to pay ${amount} for ${planId}`,
+            );
+            return res.status(400).json({
+                error: "Invalid amount.",
+                message: `The price for ${planId} is KSh ${validPrice}. Please refresh and try again.`,
+            });
         }
 
         if (businessId) {
@@ -105,7 +125,7 @@ export default async function handler(
             throw new Error("Missing M-Pesa Env Vars");
 
         const password = Buffer.from(
-            `${SHORTCODE}${PASS_KEY}${timestamp}`
+            `${SHORTCODE}${PASS_KEY}${timestamp}`,
         ).toString("base64");
         const formattedPhone = formatPhoneNumber(phoneNumber);
 

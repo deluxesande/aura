@@ -21,9 +21,9 @@ const PUBLIC_ROUTES = new Set([
     "/payment/checking",
     "/blog",
     "/help-center",
+    "/access-suspended",
 ]);
 
-// UPDATED: Added /blog and /help-center here to allow dynamic sub-routes
 const PUBLIC_PREFIXES = ["/auth/accept-invitation", "/blog", "/help-center"];
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
@@ -56,10 +56,7 @@ export default function RoleGuard({ children }: { children: React.ReactNode }) {
     }, [user, loading, isSignedIn, dispatch]);
 
     const isPublicRoute = useMemo(() => {
-        // 1. Check Exact Match
         if (PUBLIC_ROUTES.has(pathname)) return true;
-
-        // 2. Check Prefix Match (for /blog/... and /help-center/...)
         return PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
     }, [pathname]);
 
@@ -70,8 +67,11 @@ export default function RoleGuard({ children }: { children: React.ReactNode }) {
 
         if (!user) return { isAuthorized: false, redirectPath: "/sign-in" };
 
-        const userRole = user.role?.toLowerCase() || "user";
+        if (user.status === "inactive") {
+            return { isAuthorized: false, redirectPath: "/access-suspended" };
+        }
 
+        const userRole = user.role?.toLowerCase() || "user";
         const matchedRoute = SORTED_PROTECTED_ROUTES.find((route) =>
             pathname.startsWith(route),
         );
@@ -88,11 +88,14 @@ export default function RoleGuard({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (!loading && !isAuthorized && redirectPath) {
-            if (user) {
+            if (redirectPath === "/access-suspended") {
+                toast.error("Account access suspended.");
+            } else if (user && redirectPath !== "/sign-in") {
                 toast.error("Access Denied: You do not have permission.");
             } else if (pathname !== "/sign-in") {
                 toast.error("Please sign in to access this page.");
             }
+
             router.replace(redirectPath);
         }
     }, [isAuthorized, redirectPath, router, user, pathname, loading]);
@@ -101,7 +104,7 @@ export default function RoleGuard({ children }: { children: React.ReactNode }) {
 
     if (loading) {
         return (
-            <div className="h-screen w-full flex items-center justify-center">
+            <div className="h-screen w-full flex items-center justify-center bg-gray-50">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
             </div>
         );

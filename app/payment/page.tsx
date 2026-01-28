@@ -4,7 +4,7 @@ import { setBusinessDetails } from "@/store/slices/businessDataSlice";
 import { formatPhoneNumber } from "@/utils/formatPhoneNumber";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Loader2, Phone, X } from "lucide-react";
+import { Check, Loader2, Phone, X, AlertTriangle, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -23,6 +23,7 @@ type Plan = {
     }[];
     cta: string;
     popular: boolean;
+    staffLimit: number;
 };
 
 const PLANS: Plan[] = [
@@ -35,15 +36,12 @@ const PLANS: Plan[] = [
             { text: "Connect Your Own Paybill", included: true },
             { text: "1 Staff Account", included: true },
             { text: "Max 100 Transactions/mo", included: true },
-            {
-                text: "Auto-Filing Only",
-                included: true,
-                highlight: "warning",
-            },
+            { text: "Auto-Filing Only", included: true, highlight: "warning" },
             { text: "No Data Export", included: false },
         ],
         cta: "Start Free",
         popular: false,
+        staffLimit: 1,
     },
     {
         id: "STANDARD",
@@ -63,6 +61,7 @@ const PLANS: Plan[] = [
         ],
         cta: "Select Standard",
         popular: true,
+        staffLimit: 5,
     },
     {
         id: "PREMIUM",
@@ -82,8 +81,17 @@ const PLANS: Plan[] = [
         ],
         cta: "Select Premium",
         popular: false,
+        staffLimit: 999,
     },
 ];
+
+type StaffMember = {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    isOwner?: boolean;
+};
 
 export default function PaymentPage() {
     const router = useRouter();
@@ -96,9 +104,16 @@ export default function PaymentPage() {
 
     const [isFetching, setIsFetching] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [loading, setLoading] = useState(false);
+
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [paymentLoading, setPaymentLoading] = useState(false);
     const [phoneNumber, setPhoneNumber] = useState("");
+
+    const [isDowngradeModalOpen, setIsDowngradeModalOpen] = useState(false);
+    const [staffList, setStaffList] = useState<StaffMember[]>([]);
+    const [loadingStaff, setLoadingStaff] = useState(false);
+    const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
+    const [downgradeLoading, setDowngradeLoading] = useState(false);
 
     const fetchAttempted = useRef(false);
 
@@ -115,69 +130,113 @@ export default function PaymentPage() {
                         dispatch(setBusinessDetails(response.data));
                     }
                 } catch (error: any) {
-                    if (error.response?.status !== 404) {
-                        // console.error("Rehydration error:", error);
-                    }
+                    // Handle error silently
                 } finally {
-                    // Give Redux a tiny window to propagate the change before hiding loader
                     setTimeout(() => setIsFetching(false), 100);
                 }
             }
         };
-
         rehydrateBusiness();
     }, [user, businessDetails, dispatch]);
 
     const currentPlanId = businessDetails?.subscription?.plan || null;
 
-    const handlePlanSelect = (plan: Plan) => {
+    const checkStaffForDowngrade = async (targetPlan: Plan) => {
+        setLoadingStaff(true);
+        try {
+            const response = await axios.get("/api/auth/invite/get");
+            const staff: StaffMember[] = response.data || [];
+
+            if (staff.length > targetPlan.staffLimit) {
+                setStaffList(staff);
+
+                const owner = staff.find((s) => s.email === user?.email);
+                if (owner) {
+                    setSelectedStaffIds([owner.id]);
+                }
+
+                setSelectedPlan(targetPlan);
+                setIsDowngradeModalOpen(true);
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            toast.error("Failed to verify staff count. Please try again.");
+            return false;
+        } finally {
+            setLoadingStaff(false);
+        }
+    };
+
+    const handlePlanSelect = async (plan: Plan) => {
         if (plan.id === currentPlanId) {
             toast.info(`You are already on the ${plan.name} plan.`);
             return;
         }
 
         if (plan.price === 0) {
-            const setupFreeAccount = async () => {
+            const safeToDowngrade = await checkStaffForDowngrade(plan);
+
+            if (safeToDowngrade) {
+                processFreePlanSwitch(plan);
+            }
+        } else {
+            setSelectedPlan(plan);
+            setIsPaymentModalOpen(true);
+        }
+    };
+
+    const processFreePlanSwitch = async (
+        plan: Plan,
+        staffToKeep?: string[],
+    ) => {
+        const setupFreeAccount = async () => {
+            if (!user?.businessId) {
                 const formData = new FormData();
                 const businessName = user?.firstName
                     ? `${user.firstName}'s Business`
                     : "My New Business";
                 formData.append("name", businessName);
 
-                try {
-                    await axios.post("/api/business", formData, {
-                        headers: { "Content-Type": "multipart/form-data" },
-                    });
-                    router.push("/settings");
-                    return "Welcome to Salesense Starter!";
-                } catch (error: any) {
-                    throw new Error(
-                        error.response?.data?.error ||
-                            "Failed to set up account",
-                    );
-                }
-            };
+                await axios.post("/api/business", formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                });
+                router.push("/settings");
+                return "Welcome to Salesense Starter!";
+            } else {
+                await axios.post("/api/subscription/downgrade", {
+                    planId: plan.id,
+                    activeStaffIds: staffToKeep,
+                });
 
-            toast.promise(setupFreeAccount(), {
-                loading: "Setting up your account...",
-                success: (data) => data,
-                error: (err) => err.message,
-            });
-        } else {
-            setSelectedPlan(plan);
-            setIsModalOpen(true);
-        }
+                const res = await axios.get(`/api/business/${user.businessId}`);
+                dispatch(setBusinessDetails(res.data));
+
+                setIsDowngradeModalOpen(false);
+                return "Plan updated successfully.";
+            }
+        };
+
+        setDowngradeLoading(true);
+        toast.promise(setupFreeAccount(), {
+            loading: "Updating your plan...",
+            success: (data) => data,
+            error: "Failed to update plan.",
+            finally: () => setDowngradeLoading(false),
+        });
     };
 
     const handlePayment = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
+        setPaymentLoading(true);
 
         if (!selectedPlan) return;
 
         const formattedNumber = formatPhoneNumber(phoneNumber);
         if (!formattedNumber) {
             toast.error("Invalid phone number.");
+            setPaymentLoading(false);
             return;
         }
 
@@ -189,7 +248,7 @@ export default function PaymentPage() {
                 businessId: businessDetails?.id,
             });
 
-            setIsModalOpen(false);
+            setIsPaymentModalOpen(false);
             toast.success("STK Push Sent!", {
                 description: `Check your phone (${phoneNumber}) to enter your PIN.`,
                 duration: 8000,
@@ -203,18 +262,36 @@ export default function PaymentPage() {
                 error.response?.data?.error || "Payment request failed.";
             toast.error(message);
         } finally {
-            setLoading(false);
+            setPaymentLoading(false);
         }
     };
 
-    // Render a skeleton or loader during rehydration to prevent UI flickering
-    if (isFetching) {
+    const toggleStaffSelection = (staffId: string) => {
+        if (selectedStaffIds.includes(staffId)) {
+            setSelectedStaffIds((prev) => prev.filter((id) => id !== staffId));
+        } else {
+            if (
+                selectedPlan &&
+                selectedStaffIds.length >= selectedPlan.staffLimit
+            ) {
+                toast.warning(
+                    `You can only select ${selectedPlan.staffLimit} active staff member(s).`,
+                );
+                return;
+            }
+            setSelectedStaffIds((prev) => [...prev, staffId]);
+        }
+    };
+
+    if (isFetching || loadingStaff) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="h-10 w-10 animate-spin stroke-green-600" />
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                     <p className="text-gray-500 animate-pulse">
-                        Syncing your plan details...
+                        {loadingStaff
+                            ? "Checking eligibility..."
+                            : "Syncing your plan details..."}
                     </p>
                 </div>
             </div>
@@ -289,22 +366,13 @@ export default function PaymentPage() {
                                         >
                                             {feature.included ? (
                                                 <Check
-                                                    className={`h-5 w-5 mr-3 shrink-0 ${
-                                                        feature.highlight ===
-                                                        "warning"
-                                                            ? "text-orange-500"
-                                                            : "text-green-500"
-                                                    }`}
+                                                    className={`h-5 w-5 mr-3 shrink-0 ${feature.highlight === "warning" ? "text-orange-500" : feature.highlight === "success" ? "text-green-500" : "text-green-500"}`}
                                                 />
                                             ) : (
                                                 <X className="h-5 w-5 text-gray-300 mr-3 shrink-0" />
                                             )}
                                             <span
-                                                className={`text-sm ${
-                                                    !feature.included
-                                                        ? "text-gray-400"
-                                                        : "text-gray-600"
-                                                }`}
+                                                className={`text-sm ${!feature.included ? "text-gray-400" : "text-gray-600"}`}
                                             >
                                                 {feature.text}
                                             </span>
@@ -331,8 +399,9 @@ export default function PaymentPage() {
                 </div>
             </div>
 
+            {/* --- PAYMENT MODAL --- */}
             <AnimatePresence>
-                {isModalOpen && selectedPlan && (
+                {isPaymentModalOpen && selectedPlan && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                         <motion.div
                             initial={{ scale: 0.95, opacity: 0 }}
@@ -385,10 +454,12 @@ export default function PaymentPage() {
                                     </div>
                                     <button
                                         type="submit"
-                                        disabled={loading || !phoneNumber}
+                                        disabled={
+                                            paymentLoading || !phoneNumber
+                                        }
                                         className="w-full flex justify-center items-center py-4 px-4 rounded-xl shadow-lg text-sm font-black text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 transition-all shadow-green-100"
                                     >
-                                        {loading ? (
+                                        {paymentLoading ? (
                                             <Loader2 className="animate-spin stroke-white mr-2 h-4 w-4" />
                                         ) : (
                                             `Pay KSh ${selectedPlan.price.toLocaleString()}`
@@ -396,10 +467,129 @@ export default function PaymentPage() {
                                     </button>
                                 </form>
                                 <button
-                                    onClick={() => setIsModalOpen(false)}
+                                    onClick={() => setIsPaymentModalOpen(false)}
                                     className="mt-4 w-full text-center text-sm font-medium text-gray-400 hover:text-gray-600 transition-colors"
                                 >
                                     Cancel
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* --- DOWNGRADE SELECTION MODAL --- */}
+            <AnimatePresence>
+                {isDowngradeModalOpen && selectedPlan && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden z-10"
+                        >
+                            <div className="p-6 bg-red-50 border-b border-red-100">
+                                <div className="flex items-center gap-3 text-red-600 mb-2">
+                                    <h3 className="text-xl font-bold">
+                                        Downgrade Action Required
+                                    </h3>
+                                </div>
+                                <p className="text-gray-700 text-sm">
+                                    The <strong>{selectedPlan.name}</strong>{" "}
+                                    plan allows{" "}
+                                    <strong>{selectedPlan.staffLimit}</strong>{" "}
+                                    staff member(s). You currently have{" "}
+                                    <strong>{staffList.length}</strong>. Please
+                                    select who should remain active. Unselected
+                                    staff will be suspended.
+                                </p>
+                            </div>
+
+                            <div className="p-6 max-h-[300px] overflow-y-auto">
+                                <div className="space-y-3">
+                                    {staffList.map((staff) => {
+                                        const isSelected =
+                                            selectedStaffIds.includes(staff.id);
+                                        const isMaxReached =
+                                            selectedStaffIds.length >=
+                                            selectedPlan.staffLimit;
+                                        const isDisabled =
+                                            isMaxReached && !isSelected;
+
+                                        return (
+                                            <div
+                                                key={staff.id}
+                                                onClick={() =>
+                                                    !isDisabled &&
+                                                    toggleStaffSelection(
+                                                        staff.id,
+                                                    )
+                                                }
+                                                className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
+                                                    isSelected
+                                                        ? "border-green-500 bg-green-50 ring-1 ring-green-500"
+                                                        : "border-gray-200 hover:border-gray-300"
+                                                } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div
+                                                        className={`w-10 h-10 rounded-full flex items-center justify-center ${isSelected ? "bg-green-200 text-green-500" : "bg-gray-100 text-gray-500"}`}
+                                                    >
+                                                        <User size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-gray-900">
+                                                            {staff.name ||
+                                                                "Staff Member"}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500">
+                                                            {staff.email}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    className={`w-6 h-6 rounded-full border flex items-center justify-center ${isSelected ? "bg-green-600 border-green-600" : "border-gray-300"}`}
+                                                >
+                                                    {isSelected && (
+                                                        <Check
+                                                            size={14}
+                                                            className="stroke-white"
+                                                        />
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-4">
+                                <button
+                                    onClick={() =>
+                                        setIsDowngradeModalOpen(false)
+                                    }
+                                    className="flex-1 py-3 px-4 rounded-xl border border-gray-300 text-gray-700 font-bold hover:bg-gray-100 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() =>
+                                        processFreePlanSwitch(
+                                            selectedPlan,
+                                            selectedStaffIds,
+                                        )
+                                    }
+                                    disabled={
+                                        downgradeLoading ||
+                                        selectedStaffIds.length === 0
+                                    }
+                                    className="flex-1 py-3 px-4 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+                                >
+                                    {downgradeLoading ? (
+                                        <Loader2 className="animate-spin stroke-white h-4 w-4" />
+                                    ) : (
+                                        "Confirm Downgrade"
+                                    )}
                                 </button>
                             </div>
                         </motion.div>
