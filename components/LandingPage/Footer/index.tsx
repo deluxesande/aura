@@ -1,11 +1,14 @@
+"use client";
+
 import React, { useState } from "react";
-import { motion } from "framer-motion";
 import PrivacyModal from "@/components/modals/Privacy";
 import TermsModal from "@/components/modals/Terms";
+import Link from "next/link"; // Replaced 'a' tags with Link
 
 export default function Footer() {
     const [isTermsOpen, setIsTermsOpen] = useState(false);
     const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+    const currentYear = new Date().getFullYear(); // Dynamic Year
 
     const modalVariants = {
         hidden: { opacity: 0, y: "-30%" },
@@ -35,28 +38,28 @@ export default function Footer() {
                         </h3>
                         <ul className="space-y-2">
                             <li>
-                                <a
+                                <Link
                                     href="/features"
                                     className="text-green-200 hover:text-white"
                                 >
                                     Features
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a
+                                <Link
                                     href="/pricing"
                                     className="text-green-200 hover:text-white"
                                 >
                                     Pricing
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a
+                                <Link
                                     href="/integration"
                                     className="text-green-200 hover:text-white"
                                 >
                                     Integrations
-                                </a>
+                                </Link>
                             </li>
                         </ul>
                     </div>
@@ -66,20 +69,20 @@ export default function Footer() {
                         </h3>
                         <ul className="space-y-2">
                             <li>
-                                <a
+                                <Link
                                     href="/about"
                                     className="text-green-200 hover:text-white"
                                 >
                                     About
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a
+                                <Link
                                     href="#"
                                     className="text-green-200 hover:text-white"
                                 >
                                     Careers
-                                </a>
+                                </Link>
                             </li>
                         </ul>
                     </div>
@@ -89,28 +92,20 @@ export default function Footer() {
                         </h3>
                         <ul className="space-y-2">
                             <li>
-                                <a
-                                    href="#"
+                                <Link
+                                    href="/blog"
                                     className="text-green-200 hover:text-white"
                                 >
                                     Blog
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a
-                                    href="#"
+                                <Link
+                                    href="/help-center"
                                     className="text-green-200 hover:text-white"
                                 >
                                     Help Center
-                                </a>
-                            </li>
-                            <li>
-                                <a
-                                    href="#"
-                                    className="text-green-200 hover:text-white"
-                                >
-                                    Guides
-                                </a>
+                                </Link>
                             </li>
                         </ul>
                     </div>
@@ -122,7 +117,7 @@ export default function Footer() {
                             <li>
                                 <button
                                     onClick={() => setIsPrivacyOpen(true)}
-                                    className="text-green-200 hover:text-white"
+                                    className="text-green-200 hover:text-white text-left"
                                 >
                                     Privacy
                                 </button>
@@ -130,7 +125,7 @@ export default function Footer() {
                             <li>
                                 <button
                                     onClick={() => setIsTermsOpen(true)}
-                                    className="text-green-200 hover:text-white"
+                                    className="text-green-200 hover:text-white text-left"
                                 >
                                     T&C
                                 </button>
@@ -140,7 +135,7 @@ export default function Footer() {
                 </div>
                 <div className="mt-12 pt-8 border-t border-green-800">
                     <p className="text-green-200 text-center">
-                        © 2025 SaleSense. All rights reserved.
+                        © {currentYear} SaleSense. All rights reserved.
                     </p>
                 </div>
             </div>
