@@ -18,6 +18,7 @@ const SubscriptionExpiredPage = () => {
     const businessDetails = useSelector(
         (state: AppState) => state.businessData.businessDetails,
     );
+    const user = useSelector((state: AppState) => state.auth.user);
 
     useEffect(() => {
         if (
@@ -94,62 +95,71 @@ const SubscriptionExpiredPage = () => {
                     </p>
 
                     <div className="space-y-4">
-                        {showRenewInput ? (
-                            <form
-                                onSubmit={handleRenewSub}
-                                className="space-y-4 animate-in fade-in slide-in-from-bottom-2"
-                            >
-                                <div className="text-left">
-                                    <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
-                                        M-Pesa Number
-                                    </label>
-                                    <input
-                                        type="tel"
-                                        placeholder="07XXXXXXXX"
-                                        className="w-full bg-slate-50 p-3 rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                                        value={phoneNumber}
-                                        onChange={(e) =>
-                                            setPhoneNumber(e.target.value)
-                                        }
-                                        autoFocus
-                                    />
-                                </div>
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="w-full py-3 px-4 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-colors flex items-center justify-center shadow-lg shadow-green-200"
-                                >
-                                    {loading ? (
-                                        <Loader2 className="animate-spin w-5 h-5" />
-                                    ) : (
-                                        "Pay Now"
-                                    )}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowRenewInput(false)}
-                                    disabled={loading}
-                                    className="text-sm text-gray-400 hover:text-gray-600 underline"
-                                >
-                                    Go back
-                                </button>
-                            </form>
-                        ) : (
-                            <button
-                                onClick={() => setShowRenewInput(true)}
-                                className="w-full py-3.5 px-4 rounded-xl text-base font-bold text-white transition-all shadow-lg hover:scale-[1.02] active:scale-95 bg-green-600 hover:bg-green-700 shadow-green-200"
-                            >
-                                Renew Subscription
-                            </button>
-                        )}
+                        {/* Show if the user is an admin */}
+                        {user?.role === "ADMIN" && (
+                            <>
+                                {showRenewInput ? (
+                                    <form
+                                        onSubmit={handleRenewSub}
+                                        className="space-y-4 animate-in fade-in slide-in-from-bottom-2"
+                                    >
+                                        <div className="text-left">
+                                            <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
+                                                M-Pesa Number
+                                            </label>
+                                            <input
+                                                type="tel"
+                                                placeholder="07XXXXXXXX"
+                                                className="w-full bg-slate-50 p-3 rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                                                value={phoneNumber}
+                                                onChange={(e) =>
+                                                    setPhoneNumber(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                autoFocus
+                                            />
+                                        </div>
+                                        <button
+                                            type="submit"
+                                            disabled={loading}
+                                            className="w-full py-3 px-4 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-colors flex items-center justify-center shadow-lg shadow-green-200"
+                                        >
+                                            {loading ? (
+                                                <Loader2 className="animate-spin w-5 h-5" />
+                                            ) : (
+                                                "Pay Now"
+                                            )}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setShowRenewInput(false)
+                                            }
+                                            disabled={loading}
+                                            className="text-sm text-gray-400 hover:text-gray-600 underline"
+                                        >
+                                            Go back
+                                        </button>
+                                    </form>
+                                ) : (
+                                    <button
+                                        onClick={() => setShowRenewInput(true)}
+                                        className="w-full py-3.5 px-4 rounded-xl text-base font-bold text-white transition-all shadow-lg hover:scale-[1.02] active:scale-95 bg-green-600 hover:bg-green-700 shadow-green-200"
+                                    >
+                                        Renew Subscription
+                                    </button>
+                                )}
 
-                        {!showRenewInput && (
-                            <Link
-                                href="/payment"
-                                className="block w-full text-center py-3.5 px-4 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors"
-                            >
-                                Choose a Different Plan
-                            </Link>
+                                {!showRenewInput && (
+                                    <Link
+                                        href="/payment"
+                                        className="block w-full text-center py-3.5 px-4 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors"
+                                    >
+                                        Choose a Different Plan
+                                    </Link>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
