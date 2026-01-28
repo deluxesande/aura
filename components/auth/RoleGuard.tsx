@@ -23,7 +23,8 @@ const PUBLIC_ROUTES = new Set([
     "/help-center",
 ]);
 
-const PUBLIC_PREFIXES = ["/auth/accept-invitation"];
+// UPDATED: Added /blog and /help-center here to allow dynamic sub-routes
+const PUBLIC_PREFIXES = ["/auth/accept-invitation", "/blog", "/help-center"];
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
     "/settings/team": ["admin", "manager"],
@@ -55,7 +56,10 @@ export default function RoleGuard({ children }: { children: React.ReactNode }) {
     }, [user, loading, isSignedIn, dispatch]);
 
     const isPublicRoute = useMemo(() => {
+        // 1. Check Exact Match
         if (PUBLIC_ROUTES.has(pathname)) return true;
+
+        // 2. Check Prefix Match (for /blog/... and /help-center/...)
         return PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
     }, [pathname]);
 
