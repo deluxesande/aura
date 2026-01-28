@@ -4,7 +4,7 @@ import { setBusinessDetails } from "@/store/slices/businessDataSlice";
 import { formatPhoneNumber } from "@/utils/formatPhoneNumber";
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Phone, X, AlertTriangle, Loader2 } from "lucide-react";
+import { Check, Phone, X, Loader2 } from "lucide-react"; // Removed other icons
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -164,7 +164,7 @@ export default function PaymentPage() {
                     email: item.email,
                     name: item.name || item.email,
                     role: item.role,
-                    // UPDATED: 'accepted' = USER, otherwise = INVITE
+                    // LOGIC CHANGE: If accepted, treat as USER (selectable). If pending, treat as INVITE.
                     type: item.status === "accepted" ? "USER" : "INVITE",
                 }));
             } else if (data && (data.users || data.invitations)) {
@@ -181,7 +181,6 @@ export default function PaymentPage() {
             }
 
             // 2. Calculate TOTAL HEADCOUNT (You + Others)
-            // If the current user is NOT in the list returned by API, we must add +1 to the count manually
             const isOwnerInList = allSeats.some((s) => s.email === user?.email);
             let totalHeadcount = allSeats.length;
             if (!isOwnerInList) {
@@ -214,9 +213,7 @@ export default function PaymentPage() {
             return true; // OK: Proceed
         } catch (error) {
             console.error(error);
-            toast.error("Failed to verify staff count. Please try again.", {
-                duration: 5000,
-            });
+            toast.error("Failed to verify staff count.", { duration: 5000 });
             return false;
         } finally {
             setLoadingStaff(false);
@@ -229,13 +226,11 @@ export default function PaymentPage() {
             return;
         }
 
-        // --- UPDATED: Check limits for ALL plans (Free OR Paid) ---
+        // Check limits for ALL plans to ensure safety
         const isWithinLimits = await checkStaffForDowngrade(plan);
 
-        // If check returns false, the Downgrade Modal is already open. We stop here.
         if (!isWithinLimits) return;
 
-        // If safe, proceed to appropriate flow
         if (plan.price === 0) {
             processFreePlanSwitch(plan);
         } else {
@@ -248,12 +243,8 @@ export default function PaymentPage() {
         if (!selectedPlan) return;
 
         if (selectedPlan.price === 0) {
-            // Free plan: Immediate downgrade
             processFreePlanSwitch(selectedPlan, selectedStaffIds);
         } else {
-            // Paid plan: Move to payment modal
-            // Note: The selectedStaffIds won't be used by the STK push,
-            // but the user has acknowledged the limit.
             setIsDowngradeModalOpen(false);
             setIsPaymentModalOpen(true);
         }
@@ -564,12 +555,9 @@ export default function PaymentPage() {
                             className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden z-10"
                         >
                             <div className="p-6 bg-red-50 border-b border-red-100">
-                                <div className="flex items-center gap-3 text-red-600 mb-2">
-                                    <AlertTriangle size={24} />
-                                    <h3 className="text-xl font-bold">
-                                        Limit Reached
-                                    </h3>
-                                </div>
+                                <h3 className="text-xl font-bold text-red-600 mb-2">
+                                    Limit Reached
+                                </h3>
                                 <p className="text-gray-700 text-sm">
                                     The <strong>{selectedPlan.name}</strong>{" "}
                                     plan allows{" "}
@@ -604,11 +592,14 @@ export default function PaymentPage() {
                                             staff.type === "INVITE";
 
                                         // Logic: Disable selection if limit is reached AND this specific item isn't already selected
+                                        // ALSO disable if it is a pending invite (greyed out)
                                         const isMaxReached =
                                             selectedStaffIds.length >=
                                             effectiveStaffLimit;
+
                                         const isDisabled =
-                                            isMaxReached && !isSelected;
+                                            isInvite ||
+                                            (isMaxReached && !isSelected);
 
                                         return (
                                             <div
@@ -625,7 +616,6 @@ export default function PaymentPage() {
                                                         : "border-gray-200 hover:border-gray-300"
                                                 } ${isDisabled ? "opacity-50 cursor-not-allowed grayscale-[0.5]" : ""}`}
                                             >
-                                                {/* REMOVED ICONS AS REQUESTED */}
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2">
                                                         <p className="font-semibold text-gray-900">
@@ -681,7 +671,9 @@ export default function PaymentPage() {
                                     onClick={handleDowngradeConfirmation}
                                     disabled={
                                         downgradeLoading ||
-                                        // Strict check: must select UP TO the effective limit.
+                                        // Strict check: length must match effective limit exactly?
+                                        // Or usually just ensure they selected *something* if limit > 0
+                                        // But if effective limit is 0 (Starter, owner only), selected ids must be 0.
                                         (effectiveStaffLimit > 0 &&
                                             selectedStaffIds.length === 0)
                                     }
