@@ -455,6 +455,10 @@ export default function Navbar({
                                 </div>
                             )}
 
+                            <div
+                                className={user?.role === "user" ? "mr-4" : ""}
+                            ></div>
+
                             <SignedIn>
                                 <CustomUserButton />
                             </SignedIn>
