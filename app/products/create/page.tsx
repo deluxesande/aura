@@ -1,31 +1,29 @@
 "use client";
 import CreateCategoryModal from "@/components/CreateCategoryModal";
 import ImageCropperModal from "@/components/ImageCropperModal";
-import Image from "next/image";
 import Navbar from "@/components/Navbar";
-import { Category } from "@/utils/typesDefinitions";
-import { generateSKU } from "@/utils/generateSKU";
-import axios from "axios";
-import {
-    CloudUpload,
-    PlusCircle,
-    ArrowLeft,
-    Save,
-    Loader2,
-    Info,
-    ScanBarcode,
-    RefreshCw,
-    Package,
-} from "lucide-react";
-import React, { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { useSelector, useDispatch } from "react-redux";
 import { AppState } from "@/store";
 import { setProducts } from "@/store/slices/productSlice";
+import { generateSKU } from "@/utils/generateSKU";
+import { Category } from "@/utils/typesDefinitions";
+import { useUploadThing } from "@/utils/uploadthing";
+import { FloatingPortal } from "@floating-ui/react";
+import axios from "axios";
+import {
+    ArrowLeft,
+    CloudUpload,
+    Info,
+    Loader2,
+    PlusCircle,
+    RefreshCw,
+    Save,
+} from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FloatingPortal } from "@floating-ui/react";
-import { useUploadThing } from "@/utils/uploadthing";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "sonner";
 
 const MAX_SIZE = 200 * 1024; // 200KB
 
@@ -287,7 +285,7 @@ export default function CreateProductPage() {
                         <button
                             onClick={handleSubmit}
                             disabled={isLoading}
-                            className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                            className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                         >
                             {isLoading ? (
                                 <Loader2 className="w-4 h-4 animate-spin stroke-white" />
@@ -305,14 +303,14 @@ export default function CreateProductPage() {
                 >
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                            <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
                                 General Information
                             </h2>
                             <div className="space-y-4">
                                 <div>
                                     <label
                                         htmlFor="name"
-                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                        className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5"
                                     >
                                         Name:
                                     </label>
@@ -330,22 +328,19 @@ export default function CreateProductPage() {
                                 <div>
                                     <label
                                         htmlFor="sku"
-                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                        className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5"
                                     >
                                         SKU / Barcode:
                                     </label>
                                     <div className="flex gap-2">
                                         <div className="relative flex-1">
-                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <ScanBarcode className="h-4 w-4 text-gray-400" />
-                                            </div>
                                             <input
                                                 id="sku"
                                                 type="text"
-                                                className={`${inputStyle} pl-10`}
+                                                className={`${inputStyle} px-4`}
                                                 value={formData.sku}
                                                 onChange={handleChange}
-                                                onKeyDown={handleInputKeyDown} // Uses dedicated handler
+                                                onKeyDown={handleInputKeyDown}
                                                 autoFocus
                                                 placeholder="Scan barcode or auto-generate"
                                             />
@@ -368,7 +363,7 @@ export default function CreateProductPage() {
                                 <div>
                                     <label
                                         htmlFor="description"
-                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                        className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5"
                                     >
                                         Description:
                                     </label>
@@ -386,14 +381,14 @@ export default function CreateProductPage() {
 
                         {/* Pricing & Inventory */}
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                            <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
                                 Pricing & Inventory
                             </h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                 <div>
                                     <label
                                         htmlFor="price"
-                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                        className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5"
                                     >
                                         Price:
                                     </label>
@@ -416,7 +411,7 @@ export default function CreateProductPage() {
                                 <div>
                                     <label
                                         htmlFor="quantity"
-                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                        className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5"
                                     >
                                         Quantity:
                                     </label>
@@ -435,10 +430,10 @@ export default function CreateProductPage() {
                         </div>
 
                         {/* Instructions */}
-                        <div className="bg-green-50 p-5 rounded-xl shadow-sm border border-green-100">
+                        <div className="bg-green-50 p-5 rounded-xl shadow-sm border border-green-100 mb-2">
                             <div className="flex items-center gap-2 mb-3">
-                                <Info className="w-5 h-5 text-green-600" />
-                                <h2 className="text-sm font-bold text-green-800 uppercase tracking-wider">
+                                <Info className="w-5 h-5 stroke-green-500" />
+                                <h2 className="text-sm font-bold text-green-500 uppercase tracking-wider">
                                     Instructions
                                 </h2>
                             </div>
@@ -499,7 +494,7 @@ export default function CreateProductPage() {
                                 <div>
                                     <label
                                         htmlFor="categoryId"
-                                        className="block text-sm font-medium text-gray-700 mb-1"
+                                        className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5"
                                     >
                                         Category:
                                     </label>

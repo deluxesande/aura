@@ -483,6 +483,17 @@ export default function Navbar({
                             </Link>
                         )}
                         <button
+                            onClick={toggleSidebar}
+                            className="p-2 hover:bg-slate-100 text-gray-600 rounded-lg relative transition-colors"
+                        >
+                            <ShoppingCart size={18} />
+                            {cartCount > 0 && (
+                                <span className="absolute top-1 right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-600 text-[8px] text-white font-bold">
+                                    {cartCount > 99 ? "99+" : cartCount}
+                                </span>
+                            )}
+                        </button>
+                        <button
                             className="p-2 text-gray-600"
                             onClick={() => setShowMobileMenu(!showMobileMenu)}
                         >
@@ -517,6 +528,7 @@ export default function Navbar({
                                     <div className="py-2 px-4 text-black">
                                         <SearchIcon size={25} />
                                     </div>
+
                                     <div className="p-2 hover:bg-slate-100 text-black rounded-lg cursor-pointer flex items-center justify-center">
                                         <div className="relative">
                                             <button

@@ -1,4 +1,5 @@
 import { FloatingPortal } from "@floating-ui/react";
+import { AnimatePresence, motion } from "framer-motion";
 import React from "react";
 
 interface ModalProps {
@@ -21,53 +22,98 @@ const CreateCategoryModal: React.FC<ModalProps> = ({
         onClose();
     };
 
-    if (!isOpen) return null;
-
     return (
-        <FloatingPortal>
-            <div className="fixed z-20 inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
-                <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-                    <h1 className="text-2xl font-bold mb-6 text-gray-900">
-                        Create New Category
-                    </h1>
-                    <form onSubmit={handleSubmit}>
-                        <div className="mb-4">
-                            <label
-                                htmlFor="categoryName"
-                                className="block text-sm font-medium text-gray-700 mb-2"
-                            >
-                                Category Name
-                            </label>
-                            <input
-                                id="categoryName"
-                                type="text"
-                                value={categoryName}
-                                onChange={(e) =>
-                                    setCategoryName(e.target.value)
-                                }
-                                className="w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2"
-                                required
-                            />
-                        </div>
-                        <div className="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-3 mt-6">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 w-full sm:w-auto"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 w-full sm:w-auto"
-                            >
-                                Create
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </FloatingPortal>
+        <AnimatePresence>
+            {isOpen && (
+                <FloatingPortal>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            transition={{ duration: 0.2 }}
+                            className="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-gray-100 overflow-hidden relative"
+                        >
+                            {/* --- Background Line Pattern --- */}
+                            <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03]">
+                                <div className="absolute -top-[10%] -left-[10%] w-[80%] h-[40%] rounded-full bg-green-900/20 blur-[60px]" />
+                                <svg
+                                    className="absolute inset-0 w-full h-full"
+                                    viewBox="0 0 100 100"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    preserveAspectRatio="none"
+                                >
+                                    <path
+                                        d="M0 100 C 20 0 50 0 100 100 Z"
+                                        stroke="black"
+                                        strokeWidth="0.5"
+                                        className="opacity-20"
+                                    />
+                                </svg>
+                            </div>
+
+                            {/* --- Modal Content --- */}
+                            <div className="p-8 relative z-10">
+                                <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">
+                                    Create Category
+                                </h1>
+                                <p className="text-sm text-gray-500 text-center mb-8">
+                                    Organize your products for better tracking.
+                                </p>
+
+                                <form
+                                    onSubmit={handleSubmit}
+                                    className="space-y-6"
+                                >
+                                    <div>
+                                        <label
+                                            htmlFor="categoryName"
+                                            className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5"
+                                        >
+                                            Category Name
+                                        </label>
+                                        <input
+                                            id="categoryName"
+                                            type="text"
+                                            value={categoryName}
+                                            onChange={(e) =>
+                                                setCategoryName(e.target.value)
+                                            }
+                                            className="block w-full pl-4 pr-4 py-3 bg-slate-50 outline-none border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm font-medium"
+                                            placeholder="e.g., Electronics, Beverages..."
+                                            required
+                                            autoFocus
+                                        />
+                                    </div>
+
+                                    <div className="flex gap-3 pt-2">
+                                        <button
+                                            type="button"
+                                            onClick={onClose}
+                                            className="flex-1 px-4 py-3 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            className="flex-1 px-4 py-3 text-sm font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 transition-all"
+                                        >
+                                            Create Category
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                </FloatingPortal>
+            )}
+        </AnimatePresence>
     );
 };
 

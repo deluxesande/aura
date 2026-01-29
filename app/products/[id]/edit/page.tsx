@@ -1,30 +1,28 @@
 "use client";
 
+import ImageCropperModal from "@/components/ImageCropperModal";
 import Navbar from "@/components/Navbar";
-import { Category, Product } from "@/utils/typesDefinitions";
-import axios from "axios";
-import React, { useEffect, useState, useRef, useMemo } from "react";
-import { toast } from "sonner";
-import { useParams, useRouter } from "next/navigation";
-import Image from "next/image";
-import { useDispatch, useSelector } from "react-redux";
-import { setProducts } from "@/store/slices/productSlice";
+import QuicKRestockModal from "@/components/QuickRestockModal";
 import { AppState } from "@/store";
+import { setProducts } from "@/store/slices/productSlice";
 import { generateSKU } from "@/utils/generateSKU";
+import { Category, Product } from "@/utils/typesDefinitions";
+import { FloatingPortal } from "@floating-ui/react";
+import axios from "axios";
 import {
     ArrowLeft,
-    UploadCloud,
-    Package,
-    Save,
     Loader2,
     Plus,
-    ScanBarcode,
     RefreshCw,
+    Save,
+    UploadCloud,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
-import ImageCropperModal from "@/components/ImageCropperModal";
-import { FloatingPortal } from "@floating-ui/react";
-import QuicKRestockModal from "@/components/QuickRestockModal";
+import { useParams, useRouter } from "next/navigation";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "sonner";
 
 const MAX_SIZE = 200 * 1024; // 200KB
 
@@ -328,7 +326,7 @@ export default function EditProductPage() {
                         <button
                             onClick={(e) => handleSubmit(e as any)}
                             disabled={isLoading || isDataLoading}
-                            className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                            className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                         >
                             {isLoading ? (
                                 <Loader2 className="w-4 h-4 animate-spin stroke-white" />
@@ -348,7 +346,7 @@ export default function EditProductPage() {
                     <div className="lg:col-span-2 space-y-6">
                         {/* General Info Card */}
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                            <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
                                 General Information
                             </h2>
                             <div className="space-y-4">
@@ -379,13 +377,10 @@ export default function EditProductPage() {
                                     </label>
                                     <div className="flex gap-2">
                                         <div className="relative flex-1">
-                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <ScanBarcode className="h-4 w-4 text-gray-400" />
-                                            </div>
                                             <input
                                                 id="sku"
                                                 type="text"
-                                                className="w-full pl-10 pr-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-green-400 border-2 transition-colors"
+                                                className="w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-green-400 border-2 transition-colors"
                                                 value={formData.sku || ""}
                                                 onChange={handleChange}
                                                 onKeyDown={handleInputKeyDown}
@@ -428,7 +423,7 @@ export default function EditProductPage() {
 
                         {/* Pricing & Inventory Card */}
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                            <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
                                 Pricing & Inventory
                             </h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

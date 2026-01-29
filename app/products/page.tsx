@@ -56,7 +56,7 @@ export default function Page() {
 
     const cartItems = useSelector((state: AppState) => state.cart.items);
     const productsData = useSelector(
-        (state: AppState) => state.product.products
+        (state: AppState) => state.product.products,
     );
     const [loading, setLoading] = useState(productsData.length === 0);
 
@@ -71,7 +71,7 @@ export default function Page() {
     const [paymentType, setPaymentType] = useState("CASH");
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-        null
+        null,
     );
     const [showSelectCustomerModal, setShowSelectCustomerModal] =
         useState(false);
@@ -85,7 +85,7 @@ export default function Page() {
     });
     const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
     const [productToRestock, setProductToRestock] = useState<Product | null>(
-        null
+        null,
     );
     const [restockAmount, setRestockAmount] = useState("");
     const [isRestocking, setIsRestocking] = useState(false);
@@ -98,7 +98,7 @@ export default function Page() {
     productsRef.current = productsData;
 
     const business = useSelector(
-        (state: AppState) => state.businessData.businessDetails
+        (state: AppState) => state.businessData.businessDetails,
     );
 
     // Removed the conflicting useMemo here.
@@ -139,12 +139,12 @@ export default function Page() {
                             id: c.id,
                             name: c.name,
                             description: c.description || "",
-                        })
+                        }),
                     );
                     setCategories((prev) => {
                         const existingIds = new Set(prev.map((p) => p.id));
                         const newCats = mappedCategories.filter(
-                            (c: Category) => !existingIds.has(c.id)
+                            (c: Category) => !existingIds.has(c.id),
                         );
                         return [...prev, ...newCats];
                     });
@@ -173,12 +173,12 @@ export default function Page() {
                 setFilteredProducts(productsData);
             } else {
                 const filtered = productsData.filter(
-                    (product) => product.categoryId === categoryId
+                    (product) => product.categoryId === categoryId,
                 );
                 setFilteredProducts(filtered);
             }
         },
-        [productsData]
+        [productsData],
     );
 
     const openRestockModal = useCallback((product: Product) => {
@@ -208,16 +208,16 @@ export default function Page() {
 
             await axios.put(
                 `/api/product/${productToRestock.id}`,
-                updatedProduct
+                updatedProduct,
             );
 
             const updatedProductsList = productsData.map((p) =>
-                p.id === productToRestock.id ? updatedProduct : p
+                p.id === productToRestock.id ? updatedProduct : p,
             );
             dispatch(setProducts(updatedProductsList));
 
             toast.success(
-                `${productToRestock.name} restocked! New Qty: ${newQuantity}`
+                `${productToRestock.name} restocked! New Qty: ${newQuantity}`,
             );
             setIsRestockModalOpen(false);
         } catch (error) {
@@ -249,12 +249,12 @@ export default function Page() {
                 toast.warning("Product cannot be added to the cart.");
             }
         },
-        [cartItems, dispatch]
+        [cartItems, dispatch],
     );
 
     const handleOrder = async (
         paymentTypeOverride?: string,
-        mpesaDetails?: any
+        mpesaDetails?: any,
     ) => {
         if (cartItems.length === 0) {
             toast.warning("Cart is empty.");
@@ -272,7 +272,7 @@ export default function Page() {
                         productId: item.id,
                     })
                     .then((res) => res.data)
-                    .catch(() => null)
+                    .catch(() => null),
             );
 
             const results = await Promise.all(invoiceItemPromises);
@@ -286,7 +286,7 @@ export default function Page() {
 
             const totalAmount = cartItems.reduce(
                 (acc, item) => acc + item.price * item.cartQuantity,
-                0
+                0,
             );
 
             const invoiceData = {
@@ -333,14 +333,14 @@ export default function Page() {
             const formatted = formatPhoneNumber(num);
             if (!formatted) return undefined;
             return customers.find(
-                (c) => formatPhoneNumber(c.phoneNumber) === formatted
+                (c) => formatPhoneNumber(c.phoneNumber) === formatted,
             );
         },
-        [customers]
+        [customers],
     );
 
     const handleMpesaNumberChange = (
-        e: React.ChangeEvent<HTMLInputElement>
+        e: React.ChangeEvent<HTMLInputElement>,
     ) => {
         const val = e.target.value;
         setMpesaNumber(val);
@@ -408,7 +408,7 @@ export default function Page() {
 
         if (!isMpesaConfigured) {
             toast.error(
-                "M-Pesa payments are not configured for this business."
+                "M-Pesa payments are not configured for this business.",
             );
             return;
         }
@@ -416,7 +416,7 @@ export default function Page() {
         const amount = parseFloat(
             cartItems
                 .reduce((t, i) => t + i.price * i.cartQuantity, 0)
-                .toFixed(2)
+                .toFixed(2),
         );
 
         if (!isInputVisible) {
@@ -443,7 +443,7 @@ export default function Page() {
                         amount: amount,
                         transactionType: "CustomerPayBillOnline",
                         invoiceId: invoice.id,
-                    }
+                    },
                 );
 
                 if (res.status === 200) {
@@ -480,7 +480,7 @@ export default function Page() {
                     const scannedProduct = currentProducts.find(
                         (p) =>
                             p.sku === buffer ||
-                            p.sku?.toUpperCase() === buffer.toUpperCase()
+                            p.sku?.toUpperCase() === buffer.toUpperCase(),
                     );
 
                     if (scannedProduct) {
@@ -510,7 +510,7 @@ export default function Page() {
             cartItems
                 .reduce((acc, item) => acc + item.price * item.cartQuantity, 0)
                 .toFixed(2),
-        [cartItems]
+        [cartItems],
     );
 
     // Initial Data Sync:
@@ -522,8 +522,8 @@ export default function Page() {
             } else {
                 setFilteredProducts(
                     productsData.filter(
-                        (p) => p.categoryId === selectedCategoryId
-                    )
+                        (p) => p.categoryId === selectedCategoryId,
+                    ),
                 );
             }
         }
@@ -595,12 +595,15 @@ export default function Page() {
                                         }}
                                         className={`${
                                             product.quantity <= 5
-                                                ? "block"
+                                                ? "hidden md:flex"
                                                 : "hidden"
-                                        } absolute top-2 right-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-sm hover:bg-green-100 hover:text-green-600 text-gray-400 transition-all border border-gray-100 z-10`}
-                                        title="Quick Restock"
+                                        } absolute top-1 right-1 md:top-2 md:right-2 items-center justify-center bg-white/95 backdrop-blur-sm p-1.5 md:p-2 rounded-full shadow-sm border border-red-100 text-red-400 hover:text-red-600 hover:bg-red-50 transition-all z-10`}
+                                        title="Quick Restock (Low Stock)"
                                     >
-                                        <Plus size={16} />
+                                        <Plus
+                                            size={14}
+                                            className="md:w-4 md:h-4"
+                                        />
                                     </button>
 
                                     {/* Add to Cart Button */}
@@ -684,7 +687,10 @@ export default function Page() {
                                             : "bg-gray-100 text-gray-500"
                                     }`}
                                 >
-                                    <UserIcon size={18} />
+                                    <UserIcon
+                                        size={18}
+                                        className="stroke-green-500"
+                                    />
                                 </div>
                                 <div className="text-left">
                                     <p className="text-sm text-gray-500">
@@ -722,10 +728,10 @@ export default function Page() {
                                                             ...prev,
                                                             phoneNumber:
                                                                 mpesaNumber,
-                                                        })
+                                                        }),
                                                     );
                                                     setShowAddCustomerModal(
-                                                        true
+                                                        true,
                                                     );
                                                     if (
                                                         typeof window !==
@@ -744,7 +750,7 @@ export default function Page() {
                             <button
                                 type="submit"
                                 disabled={isProcessingOrder}
-                                className="px-4 py-2 border border-green-400 text-green-400 w-full bg-white rounded-md hover:bg-green-50 transition-colors"
+                                className="px-4 py-2 border border-green-500 text-green-500 w-full bg-white rounded-md hover:bg-green-50 transition-colors"
                             >
                                 {buttonText}
                             </button>
@@ -752,10 +758,10 @@ export default function Page() {
 
                         <button
                             disabled={isProcessingOrder}
-                            className={`px-4 py-2 mt-3 bg-green-400 w-full text-white rounded-md ${
+                            className={`px-4 py-2 mt-3 bg-green-500 w-full text-white rounded-md ${
                                 isProcessingOrder
                                     ? "opacity-50 cursor-not-allowed"
-                                    : "cursor-pointer hover:bg-green-200 transition-colors"
+                                    : "cursor-pointer hover:bg-green-400 transition-colors"
                             }`}
                             onClick={() => handleOrder()}
                         >
