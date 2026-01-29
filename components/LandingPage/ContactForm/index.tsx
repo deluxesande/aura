@@ -58,9 +58,8 @@ export default function ContactForm() {
                 </div>
 
                 <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
-                    {/* --- Contact Info Sidebar --- */}
                     <motion.div
-                        className="bg-green-500 rounded-3xl p-8 md:p-10 text-white shadow-xl flex flex-col justify-between overflow-hidden relative"
+                        className="bg-green-500 rounded-3xl p-8 md:p-10 text-white flex flex-col justify-between overflow-hidden relative"
                         initial={{ opacity: 0, x: -30 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
@@ -123,7 +122,6 @@ export default function ContactForm() {
                         </div>
                     </motion.div>
 
-                    {/* --- The Form --- */}
                     <motion.div
                         className="lg:col-span-2 bg-white rounded-3xl p-8 md:p-10 shadow-xl shadow-gray-200/50 border border-gray-100"
                         initial={{ opacity: 0, x: 30 }}
@@ -149,7 +147,7 @@ export default function ContactForm() {
                                         }
                                         required
                                         placeholder="John Doe"
-                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all placeholder-gray-400 text-gray-900"
+                                        className="w-full px-4 py-3 outline-none bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all placeholder-gray-400 text-gray-900"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -168,7 +166,7 @@ export default function ContactForm() {
                                         }
                                         required
                                         placeholder="john@example.com"
-                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all placeholder-gray-400 text-gray-900"
+                                        className="w-full px-4 py-3 outline-none bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all placeholder-gray-400 text-gray-900"
                                     />
                                 </div>
                             </div>
@@ -187,7 +185,7 @@ export default function ContactForm() {
                                     onChange={(e) => setMessage(e.target.value)}
                                     required
                                     placeholder="Tell us how we can help..."
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all placeholder-gray-400 text-gray-900 resize-none"
+                                    className="w-full px-4 py-3 outline-none bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all placeholder-gray-400 text-gray-900 resize-none"
                                 />
                             </div>
 

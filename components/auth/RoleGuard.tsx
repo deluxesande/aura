@@ -11,6 +11,7 @@ const PUBLIC_ROUTES = new Set([
     "/",
     "/sign-in",
     "/sign-up",
+    "/profile",
     "/features",
     "/integration",
     "/about",

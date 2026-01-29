@@ -255,7 +255,7 @@ export default function Navbar({
     if (user == null) return null;
 
     return (
-        <div className="flex h-screen overflow-hidden z-50">
+        <div className="flex h-screen overflow-hidden z-40">
             <div className="fixed h-full">
                 <Sidebar />
             </div>

@@ -1,18 +1,20 @@
 "use client";
-import axios from "axios";
 import { AppState } from "@/store";
-import { Plus, AlertCircle } from "lucide-react";
-import Image from "next/image";
-import { useState, useEffect, useRef } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { toast } from "sonner";
 import {
-    setInvitationsWithImages,
     addInvitation,
+    setInvitationsWithImages,
 } from "@/store/slices/invitationsDataSlice";
 import { setInvitations } from "@/store/slices/invitationSlice";
 import { FloatingPortal } from "@floating-ui/react";
+import axios from "axios";
+import { AnimatePresence, motion } from "framer-motion";
+import { AlertCircle, ChevronDown, Loader2, Plus, Users } from "lucide-react";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "sonner";
 
+// --- TYPES ---
 interface User {
     id: string;
     email: string;
@@ -71,6 +73,7 @@ const CustomUserButton = () => {
     );
 
     const [isLoading, setIsLoading] = useState(userInvitations.length === 0);
+    const [isSending, setIsSending] = useState(false);
     const hasFetched = useRef(false);
 
     const plan = businessDetails?.subscription?.plan || "STARTER";
@@ -170,6 +173,13 @@ const CustomUserButton = () => {
             return;
         }
 
+        if (inviteRole === "admin") {
+            toast.error("Cannot invite users with Admin role.");
+            return;
+        }
+
+        setIsSending(true);
+
         const sendInvitation = async () => {
             const response = await axios.post("/api/auth/invite/post", {
                 email: inviteEmail,
@@ -181,15 +191,21 @@ const CustomUserButton = () => {
         };
 
         toast.promise(sendInvitation(), {
-            loading: "Sending Invitation.",
-            success: "Invitation sent successfully.",
-            error: (err) =>
-                err.response?.data?.error || "Sending Invitation Failed.",
+            loading: "Sending Invitation...",
+            success: () => {
+                setInviteEmail("");
+                setInviteRole("user");
+                setShowInviteModal(false);
+                setIsSending(false);
+                return "Invitation sent successfully.";
+            },
+            error: (err) => {
+                setIsSending(false);
+                return (
+                    err.response?.data?.error || "Sending Invitation Failed."
+                );
+            },
         });
-
-        setInviteEmail("");
-        setInviteRole("user");
-        setShowInviteModal(false);
     };
 
     const handleOpenModal = () => {
@@ -212,31 +228,32 @@ const CustomUserButton = () => {
         .filter((invitation) => invitation.status === "accepted")
         .slice(0, 3);
 
-    const defaultImage = "https://placehold.co/100x100/94a3b8/ffffff?text=U";
+    const defaultImage = "https://placehold.co/100x100/f1f5f9/94a3b8?text=U";
 
     return (
         <>
-            <div className="flex items-center space-x-2 pr-10">
+            {/* --- TRIGGER AREA (Avatars + Add Button) --- */}
+            <div className="flex items-center space-x-3 pr-6">
                 {isLoading ? (
                     <div className="flex items-center -space-x-2">
                         {[1, 2, 3].map((i) => (
                             <div
                                 key={i}
-                                className="h-8 w-8 rounded-full border-2 border-white bg-gray-200 animate-pulse"
+                                className="h-9 w-9 rounded-full border-2 border-white bg-slate-100 animate-pulse"
                             />
                         ))}
                     </div>
                 ) : acceptedUsers.length === 0 ? (
-                    <div className="flex items-center gap-2">
-                        <p className="text-sm truncate text-gray-500">
+                    <div className="flex items-center gap-3">
+                        <p className="text-sm font-medium text-gray-400">
                             No team members
                         </p>
                         <button
                             onClick={handleOpenModal}
-                            className={`h-8 w-8 min-h-8 min-w-8 rounded-full flex items-center justify-center border-2 border-white cursor-pointer transition-colors ${
+                            className={`h-9 w-9 rounded-full flex items-center justify-center border border-dashed border-gray-300 transition-all ${
                                 canInviteMore
-                                    ? "bg-green-500 hover:bg-green-600"
-                                    : "bg-gray-400 cursor-not-allowed"
+                                    ? "bg-white hover:border-green-500 hover:text-green-500 text-gray-400"
+                                    : "bg-gray-50 cursor-not-allowed opacity-60"
                             }`}
                             title={
                                 canInviteMore
@@ -245,40 +262,44 @@ const CustomUserButton = () => {
                             }
                         >
                             {canInviteMore ? (
-                                <Plus size={16} className="stroke-white" />
+                                <Plus size={16} />
                             ) : (
-                                <AlertCircle
-                                    size={14}
-                                    className="stroke-white"
-                                />
+                                <AlertCircle size={16} />
                             )}
                         </button>
                     </div>
                 ) : (
-                    <div className="flex items-center -space-x-2">
-                        {acceptedUsers.map((acceptedUser, index) => (
-                            <div
-                                key={acceptedUser.id}
-                                className="h-8 w-8 rounded-full overflow-hidden border-2 border-white cursor-pointer hover:scale-110 transition-transform relative"
-                                style={{ zIndex: acceptedUsers.length - index }}
-                                title={acceptedUser.email}
-                            >
-                                <Image
-                                    src={acceptedUser.imageUrl || defaultImage}
-                                    fill
-                                    sizes="32px"
-                                    alt={acceptedUser.email}
-                                    className="object-cover"
-                                />
-                            </div>
-                        ))}
+                    <div className="flex items-center">
+                        <div className="flex items-center -space-x-3 mr-3">
+                            {acceptedUsers.map((acceptedUser, index) => (
+                                <div
+                                    key={acceptedUser.id}
+                                    className="h-9 w-9 rounded-full overflow-hidden border-2 border-white cursor-pointer hover:scale-105 transition-transform relative ring-1 ring-gray-100 shadow-sm"
+                                    style={{
+                                        zIndex: acceptedUsers.length - index,
+                                    }}
+                                    title={acceptedUser.email}
+                                >
+                                    <Image
+                                        src={
+                                            acceptedUser.imageUrl ||
+                                            defaultImage
+                                        }
+                                        fill
+                                        sizes="36px"
+                                        alt={acceptedUser.email}
+                                        className="object-cover"
+                                    />
+                                </div>
+                            ))}
+                        </div>
 
                         <button
                             onClick={handleOpenModal}
-                            className={`h-8 w-8 rounded-full flex items-center justify-center border-2 border-white cursor-pointer transition-colors ${
+                            className={`h-9 w-9 rounded-full flex items-center justify-center border-2 border-white shadow-sm transition-all transform hover:scale-105 active:scale-95 ${
                                 canInviteMore
-                                    ? "bg-green-500 hover:bg-green-600"
-                                    : "bg-gray-400 cursor-not-allowed"
+                                    ? "bg-green-600 hover:bg-green-700 text-white"
+                                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
                             }`}
                             style={{ zIndex: 0 }}
                             title={
@@ -288,88 +309,156 @@ const CustomUserButton = () => {
                             }
                         >
                             {canInviteMore ? (
-                                <Plus size={16} className="stroke-white" />
+                                <Plus size={18} strokeWidth={2.5} />
                             ) : (
-                                <AlertCircle
-                                    size={14}
-                                    className="stroke-white"
-                                />
+                                <AlertCircle size={18} />
                             )}
                         </button>
                     </div>
                 )}
             </div>
 
-            {showInviteModal && (
-                <FloatingPortal>
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4 text-center">
-                                Invite New Team Member <br />
-                                <span className="text-xs text-gray-400">
-                                    ({staffCount} / {teamLimit} seats occupied)
-                                </span>
-                            </h3>
-
-                            <form
-                                onSubmit={handleInviteUser}
-                                className="space-y-4"
+            {/* --- INVITE MODAL --- */}
+            <AnimatePresence>
+                {showInviteModal && (
+                    <FloatingPortal>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
+                        >
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                transition={{ duration: 0.2 }}
+                                className="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-gray-100 overflow-hidden relative"
                             >
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-900 mb-1">
-                                        Email Address
-                                    </label>
-                                    <input
-                                        type="email"
-                                        value={inviteEmail}
-                                        onChange={(e) =>
-                                            setInviteEmail(e.target.value)
-                                        }
-                                        className="outline-none bg-slate-50 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
-                                        placeholder="Enter email address"
-                                        required
-                                    />
+                                {/* Background Line Pattern */}
+                                <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03]">
+                                    <div className="absolute -top-[10%] -left-[10%] w-[80%] h-[40%] rounded-full bg-green-900/20 blur-[60px]" />
+                                    <svg
+                                        className="absolute inset-0 w-full h-full"
+                                        viewBox="0 0 100 100"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        preserveAspectRatio="none"
+                                    >
+                                        <path
+                                            d="M0 100 C 20 0 50 0 100 100 Z"
+                                            stroke="black"
+                                            strokeWidth="0.5"
+                                            className="opacity-20"
+                                        />
+                                    </svg>
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-900 mb-1">
-                                        Role
-                                    </label>
-                                    <select
-                                        value={inviteRole}
-                                        onChange={(e) =>
-                                            setInviteRole(e.target.value)
-                                        }
-                                        className="outline-none bg-slate-50 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-                                    >
-                                        <option value="user">User</option>
-                                        <option value="manager">Manager</option>
-                                        <option value="admin">Admin</option>
-                                    </select>
+                                {/* Modal Header */}
+                                <div className="p-6 pb-0 relative z-10 text-center">
+                                    <h3 className="text-xl font-bold text-gray-900">
+                                        Invite Team Member
+                                    </h3>
+
+                                    <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-xs font-medium text-slate-600 border border-slate-200">
+                                        <Users size={12} />
+                                        {staffCount} / {teamLimit} seats
+                                        occupied
+                                    </div>
                                 </div>
 
-                                <div className="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-3 mt-6">
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            setShowInviteModal(false)
-                                        }
-                                        className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 w-full sm:w-auto"
+                                {/* Modal Form */}
+                                <div className="p-6 relative z-10">
+                                    <form
+                                        onSubmit={handleInviteUser}
+                                        className="space-y-5"
                                     >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 w-full sm:w-auto"
-                                    >
-                                        Send Invitation
-                                    </button>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                                Email Address
+                                            </label>
+                                            <div className="relative">
+                                                <input
+                                                    type="email"
+                                                    value={inviteEmail}
+                                                    onChange={(e) =>
+                                                        setInviteEmail(
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    className="block w-full pl-4 pr-4 py-3 bg-slate-50 outline-none border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm"
+                                                    placeholder="colleague@company.com"
+                                                    required
+                                                    autoFocus
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                                Role Permission
+                                            </label>
+                                            <div className="relative">
+                                                <select
+                                                    value={inviteRole}
+                                                    onChange={(e) =>
+                                                        setInviteRole(
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    className="block w-full pl-4 pr-10 py-3 bg-slate-50 outline-none border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm appearance-none cursor-pointer"
+                                                >
+                                                    <option value="user">
+                                                        User (Basic Access)
+                                                    </option>
+                                                    <option value="manager">
+                                                        Manager (Edit Access)
+                                                    </option>
+                                                </select>
+                                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none h-4 w-4" />
+                                            </div>
+
+                                            {/* Role Description Helper */}
+                                            <div className="mt-2 flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                                <p className="text-xs text-blue-700 leading-relaxed">
+                                                    {inviteRole === "manager" &&
+                                                        "Managers can view and edit data but cannot change billing or delete the business."}
+                                                    {inviteRole === "user" &&
+                                                        "Users can record transactions and view basic reports. Suitable for team members who need limited access."}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-3 pt-2">
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setShowInviteModal(false)
+                                                }
+                                                className="flex-1 px-4 py-3 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                                                disabled={isSending}
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                disabled={isSending}
+                                                className="flex-1 px-4 py-3 text-sm font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 transition-all flex items-center justify-center gap-2"
+                                            >
+                                                {isSending ? (
+                                                    <Loader2 className="animate-spin h-4 w-4 stroke-white" />
+                                                ) : (
+                                                    <>Send Invitation</>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </form>
                                 </div>
-                            </form>
-                        </div>
-                    </div>
-                </FloatingPortal>
-            )}
+                            </motion.div>
+                        </motion.div>
+                    </FloatingPortal>
+                )}
+            </AnimatePresence>
         </>
     );
 };

@@ -7,8 +7,17 @@ import {
     setInvitationsWithImages,
     updateInvitation,
 } from "@/store/slices/invitationsDataSlice";
+import { FloatingPortal } from "@floating-ui/react";
 import axios, { AxiosError } from "axios";
-import { Trash, Users, AlertCircle, UserX } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+    Trash,
+    Users,
+    AlertCircle,
+    UserX,
+    ChevronDown,
+    Loader2,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
@@ -49,6 +58,7 @@ const UserManagement: React.FC = () => {
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteRole, setInviteRole] = useState("user");
+    const [isSending, setIsSending] = useState(false);
 
     const dispatch = useDispatch();
 
@@ -138,12 +148,20 @@ const UserManagement: React.FC = () => {
         plan === "STARTER" ? 1 : plan === "STANDARD" ? 5 : Infinity;
     const canInvite = staffCount < teamLimit;
 
-    const handleInviteUser = (e: React.FormEvent) => {
+    const handleInviteUser = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Double check limit before submitting
+        if (businessDetails?.subscription?.status !== "ACTIVE") {
+            toast.error(
+                "Cannot invite users: Your subscription plan is not active.",
+            );
+            return;
+        }
+
         if (!canInvite) {
-            toast.error("Team limit reached. Please upgrade your plan.");
+            toast.error(
+                `Team limit reached. Your ${plan} plan allows only ${teamLimit} member(s).`,
+            );
             return;
         }
 
@@ -152,37 +170,39 @@ const UserManagement: React.FC = () => {
             return;
         }
 
+        if (inviteRole === "admin") {
+            toast.error("Cannot invite users with Admin role.");
+            return;
+        }
+
+        setIsSending(true);
+
         const sendInvitation = async () => {
-            try {
-                const response = await axios.post("/api/auth/invite/post", {
-                    email: inviteEmail,
-                    role: inviteRole,
-                });
-
-                const newInvitation = response.data.invitation;
-                dispatch(setInvitations([...invitations, newInvitation]));
-                const newInvitationWithImage = {
-                    ...newInvitation,
-                    imageUrl: null,
-                } as Invitation;
-
-                dispatch(addInvitation(newInvitationWithImage));
-            } catch (error) {
-                throw error;
-            }
+            const response = await axios.post("/api/auth/invite/post", {
+                email: inviteEmail,
+                role: inviteRole,
+            });
+            const newInvitation = response.data.invitation;
+            dispatch(setInvitations([...invitations, newInvitation]));
+            dispatch(addInvitation({ ...newInvitation, imageUrl: undefined }));
         };
 
         toast.promise(sendInvitation(), {
-            loading: "Sending Invitation.",
-            success: "Invitation sent.",
-            error: (err: AxiosError) =>
-                (err.response?.data as { error?: string })?.error ||
-                "Failed to send invitation.",
+            loading: "Sending Invitation...",
+            success: () => {
+                setInviteEmail("");
+                setInviteRole("user");
+                setShowInviteModal(false);
+                setIsSending(false);
+                return "Invitation sent successfully.";
+            },
+            error: (err) => {
+                setIsSending(false);
+                return (
+                    err.response?.data?.error || "Sending Invitation Failed."
+                );
+            },
         });
-
-        setInviteEmail("");
-        setInviteRole("user");
-        setShowInviteModal(false);
     };
 
     const handleRoleChange = (userId: string, newRole: string) => {
@@ -420,65 +440,146 @@ const UserManagement: React.FC = () => {
             </div>
 
             {/* Invite User Modal */}
-            {showInviteModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">
-                            Invite New User
-                        </h3>
+            <AnimatePresence>
+                {showInviteModal && (
+                    <FloatingPortal>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
+                        >
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                transition={{ duration: 0.2 }}
+                                className="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-gray-100 overflow-hidden relative"
+                            >
+                                {/* Background Line Pattern */}
+                                <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03]">
+                                    <div className="absolute -top-[10%] -left-[10%] w-[80%] h-[40%] rounded-full bg-green-900/20 blur-[60px]" />
+                                    <svg
+                                        className="absolute inset-0 w-full h-full"
+                                        viewBox="0 0 100 100"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        preserveAspectRatio="none"
+                                    >
+                                        <path
+                                            d="M0 100 C 20 0 50 0 100 100 Z"
+                                            stroke="black"
+                                            strokeWidth="0.5"
+                                            className="opacity-20"
+                                        />
+                                    </svg>
+                                </div>
 
-                        <form onSubmit={handleInviteUser} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-900 mb-1">
-                                    Email Address
-                                </label>
-                                <input
-                                    type="email"
-                                    value={inviteEmail}
-                                    onChange={(e) =>
-                                        setInviteEmail(e.target.value)
-                                    }
-                                    className="outline-none appearance-none bg-slate-50 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
-                                    placeholder="Enter email address"
-                                    required
-                                />
-                            </div>
+                                {/* Modal Header */}
+                                <div className="p-6 pb-0 relative z-10 text-center">
+                                    <h3 className="text-xl font-bold text-gray-900">
+                                        Invite Team Member
+                                    </h3>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-900 mb-1">
-                                    Role
-                                </label>
-                                <select
-                                    value={inviteRole}
-                                    onChange={(e) =>
-                                        setInviteRole(e.target.value)
-                                    }
-                                    className="outline-none bg-slate-50 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
-                                >
-                                    <option value="user">User</option>
-                                    <option value="manager">Manager</option>
-                                </select>
-                            </div>
+                                    <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-xs font-medium text-slate-600 border border-slate-200">
+                                        <Users size={12} />
+                                        {staffCount} / {teamLimit} seats
+                                        occupied
+                                    </div>
+                                </div>
 
-                            <div className="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-3 mt-6">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowInviteModal(false)}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 w-full sm:w-auto"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 w-full sm:w-auto"
-                                >
-                                    Send Invitation
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+                                {/* Modal Form */}
+                                <div className="p-6 relative z-10">
+                                    <form
+                                        onSubmit={handleInviteUser}
+                                        className="space-y-5"
+                                    >
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                                Email Address
+                                            </label>
+                                            <div className="relative">
+                                                <input
+                                                    type="email"
+                                                    value={inviteEmail}
+                                                    onChange={(e) =>
+                                                        setInviteEmail(
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    className="block w-full pl-4 pr-4 py-3 bg-slate-50 outline-none border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm"
+                                                    placeholder="colleague@company.com"
+                                                    required
+                                                    autoFocus
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                                Role Permission
+                                            </label>
+                                            <div className="relative">
+                                                <select
+                                                    value={inviteRole}
+                                                    onChange={(e) =>
+                                                        setInviteRole(
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    className="block w-full pl-4 pr-10 py-3 bg-slate-50 outline-none border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm appearance-none cursor-pointer"
+                                                >
+                                                    <option value="user">
+                                                        User (Basic Access)
+                                                    </option>
+                                                    <option value="manager">
+                                                        Manager (Edit Access)
+                                                    </option>
+                                                </select>
+                                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none h-4 w-4" />
+                                            </div>
+
+                                            {/* Role Description Helper */}
+                                            <div className="mt-2 flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                                <p className="text-xs text-blue-700 leading-relaxed">
+                                                    {inviteRole === "manager" &&
+                                                        "Managers can view and edit data but cannot change billing or delete the business."}
+                                                    {inviteRole === "user" &&
+                                                        "Users can record transactions and view basic reports. Suitable for team members who need limited access."}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-3 pt-2">
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setShowInviteModal(false)
+                                                }
+                                                className="flex-1 px-4 py-3 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                                                disabled={isSending}
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                disabled={isSending}
+                                                className="flex-1 px-4 py-3 text-sm font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 transition-all flex items-center justify-center gap-2"
+                                            >
+                                                {isSending ? (
+                                                    <Loader2 className="animate-spin h-4 w-4 stroke-white" />
+                                                ) : (
+                                                    <>Send Invitation</>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    </FloatingPortal>
+                )}
+            </AnimatePresence>
 
             {/* Delete User Confirmation Modal */}
             {showDeleteModal && userToDelete && (

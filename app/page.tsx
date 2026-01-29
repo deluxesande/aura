@@ -23,9 +23,9 @@ export default function App() {
 
             <HowItWorks />
 
-            <CTABanner />
-
             <TrustedBy />
+
+            <CTABanner />
 
             <Testimonials />
 
