@@ -1,6 +1,8 @@
 import { AppState } from "@/store";
+import { FloatingPortal } from "@floating-ui/react";
 import axios, { AxiosError } from "axios";
-import { AlertTriangle, Check, Eye, EyeOff, X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { AlertTriangle, Check, Eye, EyeOff, Loader2, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
@@ -184,24 +186,23 @@ const IntegrationsSettings: React.FC = () => {
                 toast.info("M-PESA integration disconnected.");
             }
         } catch (error) {
-            const axiosError = error as AxiosError;
             toast.error("Failed to disconnect service.");
         }
     };
 
     return (
-        <section className="bg-white p-6 rounded-lg shadow-md w-full relative min-h-[200px]">
+        <section className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 w-full relative min-h-[200px]">
             {isLoading && (
-                <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center rounded-lg backdrop-blur-sm">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center rounded-2xl backdrop-blur-sm">
+                    <Loader2 className="animate-spin h-8 w-8 text-green-600" />
                 </div>
             )}
 
             <header>
-                <h2 className="text-lg font-medium text-gray-900">
+                <h2 className="text-lg font-bold text-gray-900">
                     Payment Integrations
                 </h2>
-                <p className="mt-1 text-sm text-gray-600">
+                <p className="mt-1 text-sm text-gray-500">
                     Connect your live payment gateways to process real customer
                     transactions.
                 </p>
@@ -211,28 +212,28 @@ const IntegrationsSettings: React.FC = () => {
                 {integrationsList.map((integration) => (
                     <div
                         key={integration.id}
-                        className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow gap-4 sm:gap-0"
+                        className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between p-5 bg-white border border-gray-200 rounded-xl hover:border-green-200 hover:shadow-md transition-all gap-4 sm:gap-0 group"
                     >
                         <div className="flex-1 min-w-0">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-1 sm:space-y-0">
-                                <h3 className="text-sm font-medium text-gray-900">
+                                <h3 className="text-sm font-bold text-gray-900">
                                     {integration.name}
                                 </h3>
                                 {integration.popular && (
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 w-fit">
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-500 w-fit">
                                         Popular
                                     </span>
                                 )}
                             </div>
-                            <p className="text-sm text-gray-600 mt-1">
+                            <p className="text-xs text-gray-500 mt-1 leading-relaxed max-w-lg">
                                 {integration.description}
                             </p>
 
                             {integrations[
                                 integration.id as keyof typeof integrations
                             ] && (
-                                <div className="text-xs text-green-500 mt-2 font-medium flex items-center gap-1">
-                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                <div className="text-xs text-green-600 mt-3 font-medium flex items-center gap-1.5 bg-green-50 w-fit px-2 py-1 rounded-md border border-green-100">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
                                     <span>
                                         Live Connected: {savedConfig?.shortCode}
                                     </span>
@@ -244,16 +245,20 @@ const IntegrationsSettings: React.FC = () => {
                             {integrations[
                                 integration.id as keyof typeof integrations
                             ] ? (
-                                <div className="flex flex-col sm:flex-row items-end sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
-                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        <Check size={12} className="mr-1" />{" "}
+                                <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">
+                                        <Check
+                                            size={12}
+                                            className="mr-1"
+                                            strokeWidth={3}
+                                        />
                                         Connected
                                     </span>
                                     <button
                                         onClick={() =>
                                             handleOpenModal(integration.id)
                                         }
-                                        className="px-3 py-1 text-xs font-medium text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 whitespace-nowrap"
+                                        className="px-3 py-1.5 text-xs font-bold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors"
                                     >
                                         Configure
                                     </button>
@@ -263,7 +268,7 @@ const IntegrationsSettings: React.FC = () => {
                                     onClick={() =>
                                         handleOpenModal(integration.id)
                                     }
-                                    className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 whitespace-nowrap"
+                                    className="px-4 py-2 text-sm font-bold text-white bg-green-500 rounded-xl hover:bg-green-600transition-all hover:-translate-y-0.5"
                                 >
                                     Connect
                                 </button>
@@ -273,158 +278,203 @@ const IntegrationsSettings: React.FC = () => {
                 ))}
             </div>
 
-            {isModalOpen && activeService === "mpesa" && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]">
-                        <div className="flex justify-between items-center p-5 border-b border-gray-100">
-                            <div>
-                                <h3 className="text-lg font-semibold text-gray-900">
-                                    Live M-PESA Configuration
-                                </h3>
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Enter credentials from your{" "}
-                                    <strong>Production</strong> App.
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-full transition-colors"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        <form
-                            onSubmit={handleSaveMpesa}
-                            className="p-6 space-y-5 overflow-y-auto"
+            <AnimatePresence>
+                {isModalOpen && activeService === "mpesa" && (
+                    <FloatingPortal>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
                         >
-                            <div className="bg-amber-50 border border-amber-200 rounded-md p-3 flex items-start gap-3">
-                                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                                <div className="text-amber-800 text-xs">
-                                    <p className="font-medium">
-                                        Production Environment
-                                    </p>
-                                    <p>
-                                        Ensure you have &quot;Gone Live&quot; on
-                                        Daraja. Do not use Sandbox credentials.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Business Short Code
-                                </label>
-                                <input
-                                    type="text"
-                                    name="shortCode"
-                                    value={mpesaConfig.shortCode}
-                                    onChange={(e) =>
-                                        setMpesaConfig((prev) => ({
-                                            ...prev,
-                                            shortCode: e.target.value.replace(
-                                                /\D/g,
-                                                "",
-                                            ),
-                                        }))
-                                    }
-                                    placeholder="e.g. 174379"
-                                    className="w-full outline-none bg-slate-50 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 transition-all"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Consumer Key
-                                </label>
-                                <input
-                                    type="text"
-                                    name="consumerKey"
-                                    value={mpesaConfig.consumerKey}
-                                    onChange={handleChange}
-                                    placeholder="Consumer Key"
-                                    className="w-full outline-none bg-slate-50 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 transition-all"
-                                    required
-                                />
-                            </div>
-
-                            <div className="space-y-5 border-t border-gray-100 pt-4">
-                                <div className="flex justify-between items-center">
-                                    <h4 className="text-sm font-semibold text-gray-900">
-                                        Production Secrets
-                                    </h4>
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            setShowSecrets(!showSecrets)
-                                        }
-                                        className="text-xs text-green-500 font-medium flex items-center gap-1"
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                transition={{ duration: 0.2 }}
+                                className="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden relative"
+                            >
+                                {/* --- Background Line Pattern --- */}
+                                <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03] z-0">
+                                    <div className="absolute -top-[10%] -left-[10%] w-[80%] h-[40%] rounded-full bg-green-900/20 blur-[60px]" />
+                                    <svg
+                                        className="absolute inset-0 w-full h-full"
+                                        viewBox="0 0 100 100"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        preserveAspectRatio="none"
                                     >
-                                        {showSecrets ? (
-                                            <>
-                                                <EyeOff size={12} /> Hide
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Eye size={12} /> Show
-                                            </>
-                                        )}
+                                        <path
+                                            d="M0 100 C 20 0 50 0 100 100 Z"
+                                            stroke="black"
+                                            strokeWidth="0.5"
+                                            className="opacity-20"
+                                        />
+                                    </svg>
+                                </div>
+
+                                {/* Header */}
+                                <div className="flex justify-between items-start p-6 border-b border-gray-100 relative z-10 bg-white/50 backdrop-blur-sm">
+                                    <div>
+                                        <h3 className="text-xl font-bold text-gray-900">
+                                            Live M-PESA Configuration
+                                        </h3>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Enter credentials from your{" "}
+                                            <strong className="text-green-500">
+                                                Production
+                                            </strong>{" "}
+                                            App on Daraja.
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => setIsModalOpen(false)}
+                                        className="text-gray-400 hover:text-gray-600 p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                                    >
+                                        <X size={20} />
                                     </button>
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Consumer Secret
-                                    </label>
-                                    <input
-                                        type={showSecrets ? "text" : "password"}
-                                        name="consumerSecret"
-                                        value={mpesaConfig.consumerSecret}
-                                        onChange={handleChange}
-                                        className="w-full outline-none bg-slate-50 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 font-mono text-sm"
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Pass Key
-                                    </label>
-                                    <input
-                                        type={showSecrets ? "text" : "password"}
-                                        name="passKey"
-                                        value={mpesaConfig.passKey}
-                                        onChange={handleChange}
-                                        className="w-full outline-none bg-slate-50 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 font-mono text-sm"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex gap-3 pt-4 border-t border-gray-100">
-                                {integrations.mpesa && (
-                                    <button
-                                        type="button"
-                                        onClick={handleDisconnect}
-                                        className="flex-1 px-4 py-2.5 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100"
-                                    >
-                                        Disconnect
-                                    </button>
-                                )}
-                                <button
-                                    type="submit"
-                                    className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-700 shadow-sm"
+                                {/* Form */}
+                                <form
+                                    onSubmit={handleSaveMpesa}
+                                    className="p-6 space-y-5 overflow-y-auto relative z-10"
                                 >
-                                    {integrations.mpesa
-                                        ? "Update Credentials"
-                                        : "Save & Connect"}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+                                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+                                        <AlertTriangle className="w-5 h-5 stroke-amber-600 flex-shrink-0 mt-0.5" />
+                                        <div className="text-amber-800 text-xs leading-relaxed">
+                                            <p className="font-bold mb-0.5 text-amber-600">
+                                                Production Environment
+                                            </p>
+                                            <p className="text-amber-800">
+                                                Ensure you have &quot;Gone
+                                                Live&quot; on Daraja. Do not use
+                                                Sandbox credentials.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                            Business Short Code
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="shortCode"
+                                            value={mpesaConfig.shortCode}
+                                            onChange={(e) =>
+                                                setMpesaConfig((prev) => ({
+                                                    ...prev,
+                                                    shortCode:
+                                                        e.target.value.replace(
+                                                            /\D/g,
+                                                            "",
+                                                        ),
+                                                }))
+                                            }
+                                            placeholder="e.g. 174379"
+                                            className="w-full outline-none bg-slate-50 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm font-medium"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                            Consumer Key
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="consumerKey"
+                                            value={mpesaConfig.consumerKey}
+                                            onChange={handleChange}
+                                            placeholder="Consumer Key"
+                                            className="w-full outline-none bg-slate-50 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm font-medium"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="pt-2">
+                                        <div className="flex justify-between items-center mb-1.5">
+                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                                Consumer Secret
+                                            </label>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setShowSecrets(!showSecrets)
+                                                }
+                                                className="text-[10px] font-bold text-green-500 hover:text-green-600 flex items-center gap-1 uppercase tracking-wider"
+                                            >
+                                                {showSecrets ? (
+                                                    <>
+                                                        <EyeOff size={12} />{" "}
+                                                        Hide Secrets
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Eye size={12} /> Show
+                                                        Secrets
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                        <input
+                                            type={
+                                                showSecrets
+                                                    ? "text"
+                                                    : "password"
+                                            }
+                                            name="consumerSecret"
+                                            value={mpesaConfig.consumerSecret}
+                                            onChange={handleChange}
+                                            className="w-full outline-none bg-slate-50 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm font-mono"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                            Pass Key
+                                        </label>
+                                        <input
+                                            type={
+                                                showSecrets
+                                                    ? "text"
+                                                    : "password"
+                                            }
+                                            name="passKey"
+                                            value={mpesaConfig.passKey}
+                                            onChange={handleChange}
+                                            className="w-full outline-none bg-slate-50 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm font-mono"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="flex gap-3 pt-6 border-t border-gray-100">
+                                        {integrations.mpesa && (
+                                            <button
+                                                type="button"
+                                                onClick={handleDisconnect}
+                                                className="flex-1 px-4 py-3 text-sm font-bold text-red-600 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition-colors"
+                                            >
+                                                Disconnect
+                                            </button>
+                                        )}
+                                        <button
+                                            type="submit"
+                                            className="flex-1 px-4 py-3 text-sm font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 transition-all"
+                                        >
+                                            {integrations.mpesa
+                                                ? "Update Credentials"
+                                                : "Save & Connect"}
+                                        </button>
+                                    </div>
+                                </form>
+                            </motion.div>
+                        </motion.div>
+                    </FloatingPortal>
+                )}
+            </AnimatePresence>
         </section>
     );
 };

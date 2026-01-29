@@ -14,7 +14,6 @@ import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 
-// --- TYPES ---
 interface User {
     id: string;
     email: string;
@@ -55,7 +54,6 @@ const CustomUserButton = () => {
     const [inviteRole, setInviteRole] = useState("user");
     const dispatch = useDispatch();
 
-    // Redux Selectors
     const invitations = useSelector(
         (state: AppState) => state.invitations.invitations,
     ) as User[];

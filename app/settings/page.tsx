@@ -5,7 +5,7 @@ import IntegrationsSettings from "@/components/IntegrationsSettings";
 import Navbar from "@/components/Navbar";
 import NotificationPreferencesForm from "@/components/NotificationPreferencesForm";
 import UserManagement from "@/components/UserManagement";
-import SubscriptionManagement from "@/components/SubscriptionManagement"; // Added Import
+import SubscriptionManagement from "@/components/SubscriptionManagement";
 import { AppState } from "@/store";
 import { setUser } from "@/store/slices/authSlice";
 import axios from "axios";
@@ -35,7 +35,7 @@ const SettingsPage: React.FC = () => {
                                 role: "",
                                 businessId: null,
                                 status: "",
-                            })
+                            }),
                         );
                     }
                     if (res.data) {
