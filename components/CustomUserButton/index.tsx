@@ -307,7 +307,11 @@ const CustomUserButton = () => {
                             }
                         >
                             {canInviteMore ? (
-                                <Plus size={18} strokeWidth={2.5} />
+                                <Plus
+                                    size={18}
+                                    strokeWidth={2.5}
+                                    className="stroke-white"
+                                />
                             ) : (
                                 <AlertCircle size={18} />
                             )}
