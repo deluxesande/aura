@@ -107,7 +107,7 @@ function SelectCustomerModal({
                             <div className="relative mb-4">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
                                 <input
-                                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm"
+                                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm"
                                     placeholder="Search by name or number..."
                                     value={customerSearchQuery}
                                     onChange={(e) =>
@@ -121,7 +121,7 @@ function SelectCustomerModal({
                                 {/* Guest Checkout Option */}
                                 <button
                                     onClick={handleGuestCheckout}
-                                    className="w-full p-3 flex items-center gap-3 hover:bg-slate-50 rounded-xl border border-transparent hover:border-gray-200 transition-all text-left group"
+                                    className="w-full p-3 flex items-center gap-3 hover:bg-slate-50 rounded-lg border border-transparent hover:border-gray-200 transition-all text-left group"
                                 >
                                     <div className="h-10 w-10 bg-slate-100 rounded-full flex items-center justify-center text-gray-500 group-hover:bg-white group-hover:shadow-sm transition-all">
                                         <UserIcon size={20} />
@@ -171,7 +171,7 @@ function SelectCustomerModal({
                                             onClick={() =>
                                                 handleSelectCustomer(customer)
                                             }
-                                            className={`w-full p-3 flex items-center gap-3 rounded-xl border transition-all text-left group ${
+                                            className={`w-full p-3 flex items-center gap-3 rounded-lg border transition-all text-left group ${
                                                 selectedCustomer?.id ===
                                                 customer.id
                                                     ? "bg-green-50 border-green-200"
@@ -227,7 +227,7 @@ function SelectCustomerModal({
                                     setShowSelectCustomerModal(false);
                                     setShowAddCustomerModal(true);
                                 }}
-                                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-all"
+                                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition-all"
                             >
                                 Add New Customer
                             </button>

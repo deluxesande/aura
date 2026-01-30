@@ -214,28 +214,32 @@ const IntegrationsSettings: React.FC = () => {
                         key={integration.id}
                         className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between p-5 bg-white border border-gray-200 rounded-xl hover:border-green-200 hover:shadow-md transition-all gap-4 sm:gap-0 group"
                     >
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 flex items-center  gap-2">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-1 sm:space-y-0">
                                 <h3 className="text-sm font-bold text-gray-900">
                                     {integration.name}
                                 </h3>
-                                {integration.popular && (
+                                {/* {integration.popular && (
                                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-500 w-fit">
                                         Popular
                                     </span>
-                                )}
+                                )} */}
                             </div>
-                            <p className="text-xs text-gray-500 mt-1 leading-relaxed max-w-lg">
-                                {integration.description}
-                            </p>
+                            {!integrations[
+                                integration.id as keyof typeof integrations
+                            ] && (
+                                <p className="text-xs text-gray-500 mt-1 leading-relaxed max-w-lg">
+                                    {integration.description}
+                                </p>
+                            )}
 
                             {integrations[
                                 integration.id as keyof typeof integrations
                             ] && (
-                                <div className="text-xs text-green-600 mt-3 font-medium flex items-center gap-1.5 bg-green-50 w-fit px-2 py-1 rounded-md border border-green-100">
+                                <div className="text-xs font-medium flex items-center gap-1.5 bg-green-50 w-fit px-2 py-1 rounded-md border border-green-100">
                                     <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                                    <span>
-                                        Live Connected: {savedConfig?.shortCode}
+                                    <span className="text-green-500">
+                                        Connected: {savedConfig?.shortCode}
                                     </span>
                                 </div>
                             )}
@@ -246,10 +250,10 @@ const IntegrationsSettings: React.FC = () => {
                                 integration.id as keyof typeof integrations
                             ] ? (
                                 <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
-                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-500 border border-green-200">
                                         <Check
                                             size={12}
-                                            className="mr-1"
+                                            className="mr-1 stroke-green-500"
                                             strokeWidth={3}
                                         />
                                         Connected
@@ -373,7 +377,7 @@ const IntegrationsSettings: React.FC = () => {
                                                 }))
                                             }
                                             placeholder="e.g. 174379"
-                                            className="w-full outline-none bg-slate-50 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm font-medium"
+                                            className="w-full outline-none bg-slate-50 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm font-medium"
                                             required
                                         />
                                     </div>
@@ -388,7 +392,7 @@ const IntegrationsSettings: React.FC = () => {
                                             value={mpesaConfig.consumerKey}
                                             onChange={handleChange}
                                             placeholder="Consumer Key"
-                                            className="w-full outline-none bg-slate-50 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm font-medium"
+                                            className="w-full outline-none bg-slate-50 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm font-medium"
                                             required
                                         />
                                     </div>
@@ -427,7 +431,7 @@ const IntegrationsSettings: React.FC = () => {
                                             name="consumerSecret"
                                             value={mpesaConfig.consumerSecret}
                                             onChange={handleChange}
-                                            className="w-full outline-none bg-slate-50 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm font-mono"
+                                            className="w-full outline-none bg-slate-50 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm font-mono"
                                             required
                                         />
                                     </div>
@@ -445,7 +449,7 @@ const IntegrationsSettings: React.FC = () => {
                                             name="passKey"
                                             value={mpesaConfig.passKey}
                                             onChange={handleChange}
-                                            className="w-full outline-none bg-slate-50 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm font-mono"
+                                            className="w-full outline-none bg-slate-50 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm font-mono"
                                             required
                                         />
                                     </div>

@@ -3,6 +3,8 @@ import { InvoiceItem } from "@/utils/typesDefinitions";
 import { addCreatedBy } from "../middleware";
 import { prisma } from "@/utils/lib/client";
 import { Novu } from "@novu/api";
+import { buffer } from "stream/consumers";
+import { getAuth } from "@clerk/nextjs/server";
 
 const novu = new Novu({
     secretKey: process.env.NOVU_SECRET_KEY!,
@@ -18,6 +20,28 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         .replace("T", "-")
         .split(".")[0];
     const invoiceName = `Invoice-${formattedDate}`;
+
+    // Getting the users db info
+    const { userId } = getAuth(req);
+
+    if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const dbUser = await prisma.user.findUnique({
+        where: { clerkId: userId },
+        select: { id: true, businessId: true },
+    });
+
+    if (!dbUser) {
+        return res.status(404).json({ error: "User not found" });
+    }
+
+    if (!dbUser.businessId) {
+        return res
+            .status(400)
+            .json({ error: "User is not linked to a business" });
+    }
 
     try {
         if (customerId) {
@@ -46,7 +70,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         // If paymentType is CASH, automatically mark as PAID.
         // Otherwise, use the status passed in body or default to PENDING.
         const invoiceStatus =
-            paymentType === "CASH" ? "PAID" : req.body.status ?? "PENDING";
+            paymentType === "CASH" ? "PAID" : (req.body.status ?? "PENDING");
 
         const invoiceData: any = {
             invoiceName,
@@ -59,6 +83,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             paymentType: paymentType,
             status: invoiceStatus,
             createdBy: req.body.createdBy,
+            businessId: dbUser.businessId,
         };
 
         if (customerId) {
@@ -95,7 +120,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 } catch (mpesaError) {
                     console.error(
                         "Failed to link M-Pesa payment to invoice:",
-                        mpesaError
+                        mpesaError,
                     );
                 }
             }

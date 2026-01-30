@@ -264,40 +264,27 @@ export default function Page() {
         setIsProcessingOrder(true);
 
         try {
-            const invoiceItemPromises = cartItems.map((item) =>
-                axios
-                    .post("/api/invoiceItem/", {
-                        quantity: item.cartQuantity,
-                        price: item.price * item.cartQuantity,
-                        productId: item.id,
-                    })
-                    .then((res) => res.data)
-                    .catch(() => null),
-            );
-
-            const results = await Promise.all(invoiceItemPromises);
-            const createdInvoiceItems = results
-                .filter((r) => r !== null)
-                .map((r) => ({ id: r.id }));
-
-            if (createdInvoiceItems.length !== cartItems.length) {
-                throw new Error("Failed to create some items");
-            }
-
             const totalAmount = cartItems.reduce(
                 (acc, item) => acc + item.price * item.cartQuantity,
                 0,
             );
 
-            const invoiceData = {
-                invoiceItems: createdInvoiceItems,
+            const payload = {
+                cartItems: cartItems.map((item) => ({
+                    productId: item.id,
+                    quantity: item.cartQuantity,
+                    price: item.price * item.cartQuantity,
+                })),
                 totalAmount: totalAmount,
                 paymentType: paymentTypeOverride || paymentType,
                 mpesaDetails: mpesaDetails,
                 customerId: selectedCustomer?.id || null,
             };
 
-            const response = await axios.post("/api/invoice/", invoiceData);
+            const response = await axios.post(
+                "/api/invoice/create-batch",
+                payload,
+            );
 
             if (response.status === 201) {
                 dispatch(clearCart());
@@ -306,15 +293,19 @@ export default function Page() {
                 setIsInputVisible(false);
                 setButtonText("Mpesa");
                 toast.success("Order Created Successfully!");
+
+                return response.data;
             }
-            return response.data;
-        } catch (e) {
-            toast.error("Error creating order");
+        } catch (e: any) {
+            const errorMsg = e.response?.data?.error || "Error creating order";
+            toast.error(errorMsg);
             console.error(e);
+            return null;
         } finally {
-            const isStartingMpesaFlow =
+            // Keep loading state true if we are continuing to M-Pesa prompt
+            const isMpesaFlow =
                 paymentTypeOverride === "MPESA" && !mpesaDetails;
-            if (!isStartingMpesaFlow) {
+            if (!isMpesaFlow) {
                 setIsProcessingOrder(false);
             }
         }
@@ -750,7 +741,7 @@ export default function Page() {
                             <button
                                 type="submit"
                                 disabled={isProcessingOrder}
-                                className="px-4 py-2 border border-green-500 text-green-500 w-full bg-white rounded-md hover:bg-green-50 transition-colors"
+                                className={`px-4 py-2 border border-green-500 text-green-500 w-full bg-white rounded-md hover:bg-green-50 transition-colors ${isProcessingOrder ? "opacity-50 cursor-not-allowed" : ""}`}
                             >
                                 {buttonText}
                             </button>
