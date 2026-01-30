@@ -4,7 +4,7 @@ import { prisma } from "@/utils/lib/client";
 
 export const getInvoices = async (
     req: NextApiRequest,
-    res: NextApiResponse
+    res: NextApiResponse,
 ) => {
     try {
         const { userId } = getAuth(req);
@@ -130,6 +130,8 @@ export const getInvoices = async (
                     select: {
                         firstName: true,
                         lastName: true,
+                        email: true,
+                        phoneNumber: true,
                     },
                 },
             },

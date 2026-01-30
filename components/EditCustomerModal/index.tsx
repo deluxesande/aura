@@ -98,7 +98,7 @@ export default function EditCustomerModal({
                 <div className="p-5 space-y-4">
                     <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-gray-500">
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
                                 First Name
                             </label>
                             <input
@@ -114,7 +114,7 @@ export default function EditCustomerModal({
                             />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-gray-500">
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
                                 Last Name
                             </label>
                             <input
@@ -132,7 +132,7 @@ export default function EditCustomerModal({
                     </div>
 
                     <div className="space-y-1">
-                        <label className="text-xs font-semibold text-gray-500">
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
                             Phone Number
                         </label>
                         <input
@@ -150,7 +150,7 @@ export default function EditCustomerModal({
                     </div>
 
                     <div className="space-y-1">
-                        <label className="text-xs font-semibold text-gray-500">
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
                             Email (Optional)
                         </label>
                         <input

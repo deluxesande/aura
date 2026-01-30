@@ -19,6 +19,7 @@
         "@prisma/adapter-pg": "^7.2.0",
         "@prisma/client": "5.22.0",
         "@radix-ui/react-popover": "^1.1.15",
+        "@react-pdf/renderer": "^4.3.2",
         "@reduxjs/toolkit": "^2.2.7",
         "@supabase/supabase-js": "^2.78.0",
         "@uploadthing/react": "^7.3.3",

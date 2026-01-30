@@ -27,6 +27,9 @@ async function getInvoiceById(req: NextApiRequest, res: NextApiResponse) {
                 Customer: {
                     select: {
                         firstName: true,
+                        lastName: true,
+                        email: true,
+                        phoneNumber: true,
                     },
                 },
             },

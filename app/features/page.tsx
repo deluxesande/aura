@@ -316,6 +316,7 @@ export default function FeaturesPage() {
                         className="relative bg-white rounded-3xl p-8 md:p-16 text-center overflow-hidden shadow-2xl shadow-gray-200/50 border border-gray-100"
                     >
                         {/* --- BACKGROUND PATTERNS (Inverted for White Background) --- */}
+                        {/* TODO: Make this it's own Component */}
                         <div className="absolute inset-0 pointer-events-none">
                             {/* 1. Soft Green Glow Gradients */}
                             <div className="absolute -top-[50%] -left-[20%] w-[80%] h-[200%] rounded-full bg-green-50/50 blur-[100px]" />

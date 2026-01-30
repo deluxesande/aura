@@ -52,7 +52,7 @@ export default function HelpArticlePage({
                                 <Link
                                     key={link.slug}
                                     href={`/help-center/${category}/${link.slug}`}
-                                    className={`block px-3 py-2 rounded-lg text-sm transition-colors ${link.slug === slug ? "bg-green-50 text-green-700 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
+                                    className={`block px-3 py-2 rounded-lg text-sm transition-colors ${link.slug === slug ? "bg-green-50 text-green-500 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
                                 >
                                     {link.title}
                                 </Link>

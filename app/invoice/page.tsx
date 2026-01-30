@@ -1,34 +1,32 @@
 "use client";
 
 import Navbar from "@/components/Navbar";
-import { useSearchParams } from "next/navigation";
-import React, { Suspense, useEffect, useState, useMemo } from "react";
+import DownloadInvoiceButton from "@/components/pdf/DownloadInvoiceButton";
+import { AppState } from "@/store";
 import { Invoice, Product } from "@/utils/typesDefinitions";
 import axios from "axios";
 import { format } from "date-fns";
 import {
-    Copy,
     ArrowLeft,
-    Calendar,
-    CreditCard,
-    User,
-    Printer,
     CheckCircle,
-    XCircle,
+    Copy,
     RefreshCcw,
+    User,
+    XCircle,
 } from "lucide-react";
-import { toast } from "sonner";
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
-import { AppState } from "@/store";
+import { toast } from "sonner";
 
 function InvoicePageContent() {
     const searchParams = useSearchParams();
     const id = searchParams ? searchParams.get("id") : null;
 
     const storedInvoices = useSelector(
-        (state: AppState) => state.invoice.invoices
+        (state: AppState) => state.invoice.invoices,
     );
 
     const cachedInvoice = useMemo(() => {
@@ -98,7 +96,7 @@ function InvoicePageContent() {
         } catch (error: any) {
             toast.error(
                 error?.response?.data?.error || "Failed to retry payment",
-                { id: toastId }
+                { id: toastId },
             );
         } finally {
             setIsRetrying(false);
@@ -158,7 +156,7 @@ function InvoicePageContent() {
 
                                 <span
                                     className={`shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
-                                        status
+                                        status,
                                     )}`}
                                 >
                                     {invoice.status
@@ -226,11 +224,7 @@ function InvoicePageContent() {
                             </button>
                         )}
 
-                        {/* Print Button */}
-                        <button className="w-full sm:w-auto justify-center flex btn-sm items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                            <Printer size={16} />
-                            Print
-                        </button>
+                        <DownloadInvoiceButton invoice={invoice} />
                     </div>
                 </div>
 
@@ -341,7 +335,7 @@ function InvoicePageContent() {
                                     <span className="text-base font-bold text-gray-900">
                                         Total Due
                                     </span>
-                                    <span className="text-xl font-bold text-green-600">
+                                    <span className="text-xl font-bold text-green-500">
                                         Ksh {invoice.totalAmount}
                                     </span>
                                 </div>
@@ -386,7 +380,7 @@ function InvoicePageContent() {
                                         <p className="text-sm text-gray-900 font-medium">
                                             {format(
                                                 new Date(invoice.createdAt),
-                                                "MMM dd, yyyy"
+                                                "MMM dd, yyyy",
                                             )}
                                         </p>
                                     </div>
