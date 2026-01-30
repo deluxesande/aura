@@ -3,6 +3,7 @@
 import { AppState } from "@/store";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { Printer } from "lucide-react";
+import { useMemo } from "react";
 import { useSelector } from "react-redux";
 import InvoicePDF from "./InvoicePDF";
 
@@ -13,9 +14,27 @@ interface DownloadInvoiceButtonProps {
 export default function DownloadInvoiceButton({
     invoice,
 }: DownloadInvoiceButtonProps) {
-    const business = useSelector(
+    const businessDetails = useSelector(
         (state: AppState) => state.businessData.businessDetails,
     );
+    const isStarterPlan = businessDetails?.subscription?.plan === "STARTER";
+
+    const business = useMemo(() => {
+        if (!businessDetails) return null;
+
+        return {
+            name: businessDetails.name,
+            email: businessDetails.email,
+            address: businessDetails.address,
+            logo: businessDetails.logo,
+            phoneNumber: businessDetails.phoneNumber,
+            plan: businessDetails.subscription?.plan || "STARTER",
+        };
+    }, [businessDetails]);
+
+    if (isStarterPlan) {
+        return null;
+    }
 
     return (
         <PDFDownloadLink
@@ -28,7 +47,7 @@ export default function DownloadInvoiceButton({
                     className="w-full sm:w-auto justify-center flex btn-sm items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
                 >
                     <Printer size={16} />
-                    Print
+                    {loading ? "Preparing..." : "Print"}
                 </button>
             )}
         </PDFDownloadLink>

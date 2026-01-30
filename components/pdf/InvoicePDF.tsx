@@ -1,5 +1,4 @@
 /* eslint-disable jsx-a11y/alt-text */
-import React from "react";
 import {
     Document,
     Font,
@@ -8,16 +7,9 @@ import {
     StyleSheet,
     Text,
     View,
-    Svg,
-    Path,
-    Defs,
-    RadialGradient,
-    Stop,
-    Circle,
-    G,
 } from "@react-pdf/renderer";
+import React from "react";
 
-// Register Fonts
 Font.register({
     family: "Helvetica",
     fonts: [
@@ -40,7 +32,6 @@ const styles = StyleSheet.create({
         flexDirection: "column",
         backgroundColor: "#ffffff",
     },
-    // Background container must be absolute to cover the whole page
     backgroundContainer: {
         position: "absolute",
         top: 0,
@@ -162,13 +153,13 @@ const styles = StyleSheet.create({
     },
 });
 
-// --- INTERFACES ---
 interface Business {
     name: string;
     email?: string | null;
     address?: string | null;
     logo?: string | null;
     phoneNumber?: string | null;
+    plan?: string;
 }
 
 interface Product {
@@ -222,6 +213,8 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, business }) => {
     const businessLogo = business?.logo || null;
     const footerLogo = "/logos/salesense-horizontal.png";
 
+    const isPremium = business?.plan === "PREMIUM";
+
     return (
         <Document>
             <Page size="A4" style={styles.page}>
@@ -239,7 +232,7 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, business }) => {
 
                     <View style={styles.businessDetails}>
                         <Text style={styles.title}>Receipt</Text>
-                        <Text style={styles.value}>{invoice.invoiceName}</Text>
+                        <Text style={styles.value}>#{invoice.invoiceName}</Text>
                         <Text style={styles.value}>
                             {new Date(invoice.createdAt).toDateString()}
                         </Text>
@@ -357,18 +350,20 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, business }) => {
                     </View>
                 </View>
 
-                {/* --- Footer --- */}
-                <View style={styles.footer}>
-                    <Text style={styles.footerText}>Powered by</Text>
-                    <Image
-                        src={`${
-                            typeof window !== "undefined"
-                                ? window.location.origin
-                                : ""
-                        }${footerLogo}`}
-                        style={styles.footerLogo}
-                    />
-                </View>
+                {/* --- Footer (Hidden for Premium) --- */}
+                {!isPremium && (
+                    <View style={styles.footer}>
+                        <Text style={styles.footerText}>Powered by</Text>
+                        <Image
+                            src={`${
+                                typeof window !== "undefined"
+                                    ? window.location.origin
+                                    : ""
+                            }${footerLogo}`}
+                            style={styles.footerLogo}
+                        />
+                    </View>
+                )}
             </Page>
         </Document>
     );

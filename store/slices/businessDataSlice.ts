@@ -3,6 +3,10 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 type BusinessDetails = {
     id: string;
     name: string;
+    email: string;
+    address: string;
+    logo: string;
+    phoneNumber: string;
     subscription?: {
         plan: "STARTER" | "STANDARD" | "PREMIUM";
         status: string;
