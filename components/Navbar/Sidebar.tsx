@@ -31,18 +31,6 @@ const linkGroups = [
                 icon: LayoutDashboard,
                 allowedRoles: ["admin", "manager", "user"],
             },
-            {
-                href: "/products",
-                label: "Products",
-                icon: ShoppingBasket,
-                allowedRoles: ["admin", "manager", "user"],
-            },
-            {
-                href: "/products/list",
-                label: "Inventory",
-                icon: PackageSearch,
-                allowedRoles: ["admin", "manager", "user"],
-            },
         ],
     },
     {
