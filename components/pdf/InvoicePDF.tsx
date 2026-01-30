@@ -342,10 +342,8 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, business }) => {
                             </Text>
                         </View>
                         <View style={[styles.totalRow, styles.grandTotal]}>
-                            <Text style={styles.title}>Total:</Text>
-                            <Text style={styles.title}>
-                                {formatMoney(invoice.totalAmount)}
-                            </Text>
+                            <Text>Total:</Text>
+                            <Text>{formatMoney(invoice.totalAmount)}</Text>
                         </View>
                     </View>
                 </View>

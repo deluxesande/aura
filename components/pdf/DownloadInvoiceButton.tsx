@@ -17,7 +17,11 @@ export default function DownloadInvoiceButton({
     const businessDetails = useSelector(
         (state: AppState) => state.businessData.businessDetails,
     );
+
     const isStarterPlan = businessDetails?.subscription?.plan === "STARTER";
+
+    const status = invoice?.status?.toUpperCase() || "";
+    const isPaid = status === "PAID" || status === "COMPLETED";
 
     const business = useMemo(() => {
         if (!businessDetails) return null;
@@ -32,7 +36,7 @@ export default function DownloadInvoiceButton({
         };
     }, [businessDetails]);
 
-    if (isStarterPlan) {
+    if (isStarterPlan || !isPaid) {
         return null;
     }
 
