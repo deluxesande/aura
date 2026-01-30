@@ -46,6 +46,23 @@ const linkGroups = [
         ],
     },
     {
+        label: "Products",
+        items: [
+            {
+                href: "/products",
+                label: "Products",
+                icon: ShoppingBasket,
+                allowedRoles: ["admin", "manager", "user"],
+            },
+            {
+                href: "/products/list",
+                label: "Inventory",
+                icon: PackageSearch,
+                allowedRoles: ["admin", "manager", "user"],
+            },
+        ],
+    },
+    {
         label: "Finance & CRM",
         items: [
             {

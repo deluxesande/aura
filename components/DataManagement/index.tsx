@@ -5,7 +5,7 @@ import {
     X,
     FileSpreadsheet,
     AlertTriangle,
-    Info, // Added Info icon
+    Info,
 } from "lucide-react";
 import React, { useState, useRef } from "react";
 import { toast } from "sonner";
@@ -34,7 +34,7 @@ const DataManagement: React.FC = () => {
             link.href = url;
             link.setAttribute(
                 "download",
-                `business_data_${new Date().toISOString().split("T")[0]}.xlsx`
+                `business_data_${new Date().toISOString().split("T")[0]}.xlsx`,
             );
             document.body.appendChild(link);
             link.click();
@@ -51,7 +51,6 @@ const DataManagement: React.FC = () => {
         }
     };
 
-    // --- IMPORT LOGIC ---
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             setImportFile(e.target.files[0]);
@@ -97,7 +96,6 @@ const DataManagement: React.FC = () => {
             </header>
 
             <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Export Button */}
                 <button
                     onClick={() => setShowExportModal(true)}
                     className="btn btn-md btn-ghost flex items-center justify-center bg-green-500 text-white hover:bg-green-600 w-full"
@@ -105,7 +103,6 @@ const DataManagement: React.FC = () => {
                     Export Data
                 </button>
 
-                {/* Import Button */}
                 <button
                     onClick={() => setShowImportModal(true)}
                     className="btn btn-md btn-ghost flex items-center justify-center border border-gray-300 text-gray-700 hover:bg-gray-50 w-full"
@@ -138,7 +135,7 @@ const DataManagement: React.FC = () => {
                         <div className="p-6">
                             <div className="flex items-start space-x-4">
                                 <div className="p-3 bg-green-100 rounded-full flex-shrink-0">
-                                    <FileSpreadsheet className="w-6 h-6 text-green-600" />
+                                    <FileSpreadsheet className="w-6 h-6 stroke-green-500" />
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-semibold text-gray-900">
@@ -246,7 +243,9 @@ const DataManagement: React.FC = () => {
                                     accept=".xlsx, .xls"
                                     onChange={handleFileChange}
                                 />
-                                <Upload className="w-8 h-8 stroke-green-500 mb-3" />
+                                <div className="p-3 bg-green-100 rounded-full flex-shrink-0">
+                                    <Upload className="w-8 h-8 stroke-green-500 mb-3" />
+                                </div>
                                 {importFile ? (
                                     <div className="text-sm">
                                         <p className="font-semibold text-gray-900">
@@ -254,7 +253,7 @@ const DataManagement: React.FC = () => {
                                         </p>
                                         <p className="text-gray-500">
                                             {(importFile.size / 1024).toFixed(
-                                                2
+                                                2,
                                             )}{" "}
                                             KB
                                         </p>

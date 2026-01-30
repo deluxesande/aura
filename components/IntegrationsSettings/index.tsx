@@ -268,7 +268,7 @@ const IntegrationsSettings: React.FC = () => {
                                     onClick={() =>
                                         handleOpenModal(integration.id)
                                     }
-                                    className="px-4 py-2 text-sm font-bold text-white bg-green-500 rounded-xl hover:bg-green-600transition-all hover:-translate-y-0.5"
+                                    className="px-4 py-2 text-sm font-bold text-white bg-green-500 rounded-lg hover:bg-green-600transition-all hover:-translate-y-0.5"
                                 >
                                     Connect
                                 </button>
@@ -462,7 +462,7 @@ const IntegrationsSettings: React.FC = () => {
                                         )}
                                         <button
                                             type="submit"
-                                            className="flex-1 px-4 py-3 text-sm font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 transition-all"
+                                            className="flex-1 px-4 py-3 text-sm font-bold text-white bg-green-500 rounded-lg hover:bg-green-600 transition-all"
                                         >
                                             {integrations.mpesa
                                                 ? "Update Credentials"

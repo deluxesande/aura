@@ -419,7 +419,7 @@ export default function CreateProductPage() {
                                         <input
                                             id="quantity"
                                             type="number"
-                                            className={`${inputStyle} pl-10 no-spinner`}
+                                            className={`${inputStyle} no-spinner`}
                                             value={formData.quantity}
                                             onChange={handleChange}
                                             required
@@ -560,14 +560,14 @@ export default function CreateProductPage() {
                                     </>
                                 ) : (
                                     <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
-                                        <div className="p-3 bg-white rounded-full shadow-sm mb-3">
+                                        <div className="p-3 bg-green-100 rounded-full shadow-sm mb-3">
                                             <CloudUpload className="w-6 h-6 stroke-green-500" />
                                         </div>
                                         <span className="text-sm font-medium text-gray-600">
                                             Click to upload
                                         </span>
                                         <span className="text-xs mt-1">
-                                            PNG, JPG
+                                            PNG
                                         </span>
                                     </div>
                                 )}

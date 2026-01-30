@@ -477,7 +477,7 @@ export default function EditProductPage() {
                                             type="number"
                                             value={formData.quantity}
                                             onChange={handleChange}
-                                            className="w-full pl-10 pr-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-green-400 border-2 no-spinner"
+                                            className="w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-green-400 border-2 no-spinner"
                                             placeholder="0"
                                             required
                                         />

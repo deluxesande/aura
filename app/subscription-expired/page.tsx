@@ -2,7 +2,7 @@
 import Navbar from "@/components/Navbar";
 import { AppState } from "@/store";
 import axios from "axios";
-import { AlertOctagon } from "lucide-react"; // Removed Loader2
+import { AlertOctagon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -150,7 +150,7 @@ const SubscriptionExpiredPage = () => {
                                 ) : (
                                     <button
                                         onClick={() => setShowRenewInput(true)}
-                                        className="w-full py-3.5 px-4 rounded-xl text-base font-bold text-white transition-all shadow-lg hover:scale-[1.02] active:scale-95 bg-green-600 hover:bg-green-700 shadow-green-200"
+                                        className="w-full py-3.5 px-4 rounded-xl text-base font-bold text-white transition-all hover:scale-[1.02] active:scale-95 bg-green-500 hover:bg-green-500"
                                     >
                                         Renew Subscription
                                     </button>

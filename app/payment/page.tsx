@@ -10,7 +10,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 
-// --- TYPES ---
 type Plan = {
     id: string;
     name: string;
@@ -36,7 +35,6 @@ type StaffMember = {
     type: "USER" | "INVITE";
 };
 
-// --- DATA ---
 const PLANS: Plan[] = [
     {
         id: "STARTER",
@@ -149,7 +147,6 @@ export default function PaymentPage() {
 
     const currentPlanId = businessDetails?.subscription?.plan || null;
 
-    // --- CHECK STAFF LOGIC ---
     const checkStaffForDowngrade = async (targetPlan: Plan) => {
         setLoadingStaff(true);
         try {
@@ -186,12 +183,10 @@ export default function PaymentPage() {
                 totalHeadcount += 1;
             }
 
-            // Determine slots available for the list items
             const slotsForList = isOwnerInList
                 ? targetPlan.staffLimit
                 : Math.max(0, targetPlan.staffLimit - 1);
 
-            // Strict Check
             if (totalHeadcount > targetPlan.staffLimit) {
                 setStaffList(allSeats);
                 setEffectiveStaffLimit(slotsForList);
@@ -206,10 +201,10 @@ export default function PaymentPage() {
 
                 setSelectedPlan(targetPlan);
                 setIsDowngradeModalOpen(true);
-                return false; // Stop -> Open modal
+                return false;
             }
 
-            return true; // Go ahead
+            return true;
         } catch (error) {
             console.error(error);
             toast.error("Failed to verify staff count.", { duration: 5000 });
@@ -497,12 +492,6 @@ export default function PaymentPage() {
                                             M-Pesa Phone Number
                                         </label>
                                         <div className="relative">
-                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <Phone
-                                                    size={18}
-                                                    className="h-5 w-5 stroke-green-500"
-                                                />
-                                            </div>
                                             <input
                                                 type="tel"
                                                 required
