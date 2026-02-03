@@ -135,10 +135,18 @@ export default function HelpArticlePage({
                             </h4>
                             <div className="flex gap-4">
                                 <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-gray-600 hover:border-green-500 hover:text-green-500 transition-all">
-                                    <ThumbsUp size={18} /> Yes
+                                    <ThumbsUp
+                                        size={18}
+                                        className="stroke-green-500"
+                                    />{" "}
+                                    Yes
                                 </button>
                                 <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-gray-600 hover:border-red-500 hover:text-red-600 transition-all">
-                                    <ThumbsDown size={18} /> No
+                                    <ThumbsDown
+                                        size={18}
+                                        className="stroke-red-500"
+                                    />{" "}
+                                    No
                                 </button>
                             </div>
                         </div>

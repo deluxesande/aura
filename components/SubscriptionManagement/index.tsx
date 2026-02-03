@@ -42,7 +42,7 @@ const SubscriptionManagement: React.FC = () => {
     const itemsPerPage = 5;
 
     const businessDetails = useSelector(
-        (state: AppState) => state.businessData.businessDetails
+        (state: AppState) => state.businessData.businessDetails,
     );
 
     const {
@@ -57,7 +57,7 @@ const SubscriptionManagement: React.FC = () => {
             revalidateOnReconnect: true,
             dedupingInterval: 5000,
             refreshInterval: 60000,
-        }
+        },
     );
 
     useEffect(() => {
@@ -111,12 +111,12 @@ const SubscriptionManagement: React.FC = () => {
             if (res.data.data.CheckoutRequestID) {
                 toast.success("STK Push sent! Redirecting...");
                 router.push(
-                    `/payment/checking?id=${res.data.data.CheckoutRequestID}`
+                    `/payment/checking?id=${res.data.data.CheckoutRequestID}`,
                 );
             }
         } catch (error: any) {
             toast.error(
-                error.response?.data?.error || "Failed to initiate renewal"
+                error.response?.data?.error || "Failed to initiate renewal",
             );
         } finally {
             setLoading(false);
@@ -281,7 +281,7 @@ const SubscriptionManagement: React.FC = () => {
                                 style={{
                                     width: `${Math.min(
                                         (usage.transactionCount / 100) * 100,
-                                        100
+                                        100,
                                     )}%`,
                                 }}
                                 className={`h-full rounded-full transition-all duration-500 ease-out ${
@@ -321,9 +321,14 @@ const SubscriptionManagement: React.FC = () => {
             </div>
 
             <div className="mt-12 pt-8 border-t border-gray-100">
-                <p className="mb-4 text-sm text-gray-600">
-                    View your billing history.
-                </p>
+                <div>
+                    <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                        Billing History
+                    </h3>
+                    <p className="mb-4 text-sm text-gray-600">
+                        View your billing history.
+                    </p>
+                </div>
 
                 <div className="overflow-x-auto rounded-lg border border-gray-100">
                     <table className="min-w-full bg-white hidden md:table">
@@ -387,7 +392,7 @@ const SubscriptionManagement: React.FC = () => {
                                         >
                                             <td className="py-3 px-4 border-b text-black text-sm border-gray-100">
                                                 {new Date(
-                                                    item.paymentDate
+                                                    item.paymentDate,
                                                 ).toLocaleDateString()}
                                             </td>
                                             <td className="py-3 px-4 border-b text-black text-sm border-gray-100 font-medium">
@@ -414,7 +419,7 @@ const SubscriptionManagement: React.FC = () => {
                                                 </span>
                                             </td>
                                         </tr>
-                                    )
+                                    ),
                                 )
                             )}
                         </tbody>
@@ -449,7 +454,7 @@ const SubscriptionManagement: React.FC = () => {
                                                 </p>
                                                 <p className="text-xs text-gray-500">
                                                     {new Date(
-                                                        item.paymentDate
+                                                        item.paymentDate,
                                                     ).toLocaleDateString()}
                                                 </p>
                                             </div>
@@ -475,7 +480,7 @@ const SubscriptionManagement: React.FC = () => {
                                             </span>
                                         </div>
                                     </div>
-                                )
+                                ),
                             )
                         )}
                     </div>

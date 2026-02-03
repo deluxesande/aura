@@ -29,7 +29,7 @@ const linkGroups = [
                 href: "/dashboard",
                 label: "Dashboard",
                 icon: LayoutDashboard,
-                allowedRoles: ["admin", "manager", "user"],
+                allowedRoles: ["admin", "manager"],
             },
         ],
     },
@@ -65,12 +65,12 @@ const linkGroups = [
                 icon: HistoryIcon,
                 allowedRoles: ["admin", "manager", "user"],
             },
-            {
-                href: "/tax",
-                label: "Tax Returns",
-                icon: Calculator,
-                allowedRoles: ["admin", "manager"],
-            },
+            // {
+            //     href: "/tax",
+            //     label: "Tax Returns",
+            //     icon: Calculator,
+            //     allowedRoles: ["admin", "manager"],
+            // },
         ],
     },
     {

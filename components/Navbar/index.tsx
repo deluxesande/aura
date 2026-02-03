@@ -48,7 +48,7 @@ const allLinks = [
     {
         href: "/dashboard",
         text: "Dashboard",
-        allowedRoles: ["admin", "manager", "user"],
+        allowedRoles: ["admin", "manager"],
     },
     {
         href: "/products",
@@ -70,7 +70,7 @@ const allLinks = [
         text: "Customers",
         allowedRoles: ["admin", "manager", "user"],
     },
-    { href: "/tax", text: "Tax Returns", allowedRoles: ["admin", "manager"] },
+    // { href: "/tax", text: "Tax Returns", allowedRoles: ["admin", "manager"] },
     { href: "/settings", text: "Settings", allowedRoles: ["admin", "manager"] },
     {
         href: "/profile",

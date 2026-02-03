@@ -283,7 +283,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
                                         Upload file
                                     </p>
                                     <p className="text-sm text-gray-400">
-                                        Square image (PNG, JPG)
+                                        Square image (PNG)
                                     </p>
                                 </div>
                             )}

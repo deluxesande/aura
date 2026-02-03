@@ -225,13 +225,13 @@ const IntegrationsSettings: React.FC = () => {
                                     </span>
                                 )} */}
                             </div>
-                            {!integrations[
+                            {/* {!integrations[
                                 integration.id as keyof typeof integrations
                             ] && (
                                 <p className="text-xs text-gray-500 mt-1 leading-relaxed max-w-lg">
                                     {integration.description}
                                 </p>
-                            )}
+                            )} */}
 
                             {integrations[
                                 integration.id as keyof typeof integrations
@@ -239,7 +239,7 @@ const IntegrationsSettings: React.FC = () => {
                                 <div className="text-xs font-medium flex items-center gap-1.5 bg-green-50 w-fit px-2 py-1 rounded-md border border-green-100">
                                     <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
                                     <span className="text-green-500">
-                                        Connected: {savedConfig?.shortCode}
+                                        {savedConfig?.shortCode}
                                     </span>
                                 </div>
                             )}
