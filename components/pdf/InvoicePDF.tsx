@@ -15,144 +15,15 @@ Font.register({
     fonts: [
         {
             src: "https://fonts.gstatic.com/s/roboto/v20/KFOmCnqEu92Fr1Mu4mxP.ttf",
-        }, // Regular
+        },
         {
             src: "https://fonts.gstatic.com/s/roboto/v20/KFOlCnqEu92Fr1MmWUlfBBc9.ttf",
             fontWeight: 700,
-        }, // Bold
+        },
     ],
 });
 
-const styles = StyleSheet.create({
-    page: {
-        fontFamily: "Helvetica",
-        fontSize: 10,
-        padding: 30,
-        color: "#333",
-        flexDirection: "column",
-        backgroundColor: "#ffffff",
-    },
-    backgroundContainer: {
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        height: "100%",
-        width: "100%",
-        zIndex: -1,
-    },
-    header: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: "#eee",
-        paddingBottom: 10,
-    },
-    logo: {
-        width: 60,
-        height: 60,
-        objectFit: "contain",
-    },
-    businessDetails: {
-        textAlign: "right",
-    },
-    title: {
-        fontSize: 20,
-        fontWeight: "bold",
-        color: "#22c55e",
-        textTransform: "uppercase",
-        marginBottom: 5,
-    },
-    invoiceMeta: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        marginTop: 20,
-        marginBottom: 20,
-    },
-    col: {
-        width: "48%",
-    },
-    label: {
-        fontSize: 8,
-        color: "#888",
-        marginBottom: 2,
-        textTransform: "uppercase",
-    },
-    value: {
-        fontSize: 10,
-        marginBottom: 4,
-    },
-    boldValue: {
-        fontSize: 10,
-        fontWeight: "bold",
-        marginBottom: 4,
-    },
-    table: {
-        width: "100%",
-        marginTop: 10,
-        marginBottom: 20,
-    },
-    tableHeader: {
-        flexDirection: "row",
-        backgroundColor: "#f9fafb",
-        borderBottomWidth: 1,
-        borderBottomColor: "#eee",
-        padding: 8,
-    },
-    tableRow: {
-        flexDirection: "row",
-        borderBottomWidth: 1,
-        borderBottomColor: "#eee",
-        padding: 8,
-    },
-    colDesc: { width: "50%" },
-    colQty: { width: "15%", textAlign: "center" },
-    colPrice: { width: "15%", textAlign: "right" },
-    colTotal: { width: "20%", textAlign: "right" },
-    totalsSection: {
-        flexDirection: "row",
-        justifyContent: "flex-end",
-        marginTop: 10,
-    },
-    totalRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        width: 200,
-        marginBottom: 5,
-    },
-    grandTotal: {
-        fontSize: 14,
-        fontWeight: "bold",
-        borderTopWidth: 1,
-        borderTopColor: "#333",
-        paddingTop: 5,
-        marginTop: 5,
-    },
-    footer: {
-        position: "absolute",
-        bottom: 30,
-        left: 0,
-        right: 0,
-        textAlign: "center",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    footerText: {
-        fontSize: 8,
-        color: "#9ca3af",
-        marginBottom: 4,
-    },
-    footerLogo: {
-        width: 100,
-        objectFit: "contain",
-        opacity: 1,
-    },
-});
-
+// --- INTERFACES ---
 interface Business {
     name: string;
     email?: string | null;
@@ -190,10 +61,171 @@ interface Invoice {
 
 interface InvoicePDFProps {
     invoice: Invoice;
+    pageSize?: "A4" | "A7";
     business?: Business | null;
 }
 
-const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, business }) => {
+const InvoicePDF: React.FC<InvoicePDFProps> = ({
+    invoice,
+    business,
+    pageSize = "A4",
+}) => {
+    const isSmall = pageSize === "A7";
+    const isPremium = business?.plan === "PREMIUM";
+
+    const calculatePageHeight = () => {
+        if (!isSmall) return { size: "A4" as any };
+
+        const ITEM_HEIGHT = 20;
+        const HEADER_HEIGHT = 140;
+        const META_HEIGHT = 100;
+        const TABLE_HEADER_HEIGHT = 30;
+        const TOTALS_HEIGHT = 100;
+        const FOOTER_HEIGHT = isPremium ? 0 : 80;
+
+        const totalHeight =
+            HEADER_HEIGHT +
+            META_HEIGHT +
+            TABLE_HEADER_HEIGHT +
+            invoice.invoiceItems.length * ITEM_HEIGHT +
+            TOTALS_HEIGHT +
+            FOOTER_HEIGHT;
+
+        return { size: [226, totalHeight] as [number, number] };
+    };
+
+    const pageProps = calculatePageHeight();
+
+    const styles = StyleSheet.create({
+        page: {
+            fontFamily: "Helvetica",
+            fontSize: isSmall ? 9 : 10,
+            padding: isSmall ? 10 : 30,
+            color: "#333",
+            flexDirection: "column",
+            backgroundColor: "#ffffff",
+        },
+        header: {
+            flexDirection: isSmall ? "column" : "row",
+            alignItems: isSmall ? "flex-start" : "center",
+            justifyContent: isSmall ? "flex-start" : "space-between",
+            marginBottom: isSmall ? 10 : 20,
+            borderBottomWidth: 1,
+            borderBottomColor: "#eee",
+            paddingBottom: 10,
+            gap: isSmall ? 5 : 0,
+        },
+        logo: {
+            width: isSmall ? 40 : 60,
+            height: isSmall ? 40 : 60,
+            objectFit: "contain",
+            marginBottom: isSmall ? 5 : 0,
+        },
+        businessDetails: {
+            textAlign: isSmall ? "left" : "right",
+            width: isSmall ? "100%" : "auto",
+        },
+        title: {
+            fontSize: isSmall ? 14 : 20,
+            fontWeight: "bold",
+            color: "#22c55e",
+            textTransform: "uppercase",
+            marginBottom: 5,
+        },
+        invoiceMeta: {
+            flexDirection: isSmall ? "column" : "row",
+            justifyContent: "space-between",
+            marginTop: isSmall ? 10 : 20,
+            marginBottom: isSmall ? 10 : 20,
+            gap: isSmall ? 10 : 0,
+        },
+        col: {
+            width: isSmall ? "100%" : "48%",
+        },
+        label: {
+            fontSize: 8,
+            color: "#888",
+            marginBottom: 2,
+            textTransform: "uppercase",
+        },
+        value: {
+            fontSize: isSmall ? 9 : 10,
+            marginBottom: 4,
+        },
+        boldValue: {
+            fontSize: isSmall ? 9 : 10,
+            fontWeight: "bold",
+            marginBottom: 4,
+        },
+        table: {
+            width: "100%",
+            marginTop: 10,
+            marginBottom: isSmall ? 10 : 20,
+        },
+        tableHeader: {
+            flexDirection: "row",
+            backgroundColor: "#f9fafb",
+            borderBottomWidth: 1,
+            borderBottomColor: "#eee",
+            padding: isSmall ? 4 : 8,
+        },
+        tableRow: {
+            flexDirection: "row",
+            borderBottomWidth: 1,
+            borderBottomColor: "#eee",
+            padding: isSmall ? 4 : 8,
+            alignItems: "center",
+        },
+        colDesc: { width: isSmall ? "40%" : "50%" },
+        colQty: { width: isSmall ? "10%" : "15%", textAlign: "center" },
+        colPrice: { width: isSmall ? "25%" : "15%", textAlign: "right" },
+        colTotal: { width: isSmall ? "25%" : "20%", textAlign: "right" },
+
+        totalsSection: {
+            flexDirection: "row",
+            justifyContent: "flex-end",
+            marginTop: 10,
+        },
+        totalRowWrapper: {
+            width: isSmall ? "100%" : "auto",
+            minWidth: isSmall ? 0 : 200,
+        },
+        totalRow: {
+            flexDirection: "row",
+            justifyContent: "space-between",
+            marginBottom: 5,
+        },
+        grandTotal: {
+            fontSize: isSmall ? 12 : 14,
+            fontWeight: "bold",
+            borderTopWidth: 1,
+            borderTopColor: "#333",
+            paddingTop: 5,
+            marginTop: 5,
+        },
+        footer: {
+            marginTop: isSmall ? 20 : "auto",
+            position: isSmall ? "relative" : "absolute",
+            bottom: isSmall ? "auto" : 30,
+            left: 0,
+            right: 0,
+            textAlign: "center",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+        },
+        footerText: {
+            fontSize: 8,
+            color: "#9ca3af",
+            marginBottom: 4,
+        },
+        footerLogo: {
+            width: isSmall ? 60 : 100,
+            objectFit: "contain",
+            opacity: 1,
+        },
+    });
+
     const formatMoney = (amount: any) => {
         const num = Number(amount);
         if (isNaN(num)) return "Ksh 0.00";
@@ -201,6 +233,15 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, business }) => {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         })}`;
+    };
+
+    const formatNumber = (amount: any) => {
+        const num = Number(amount);
+        if (isNaN(num)) return "0.00";
+        return num.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
     };
 
     const getCustomerName = () => {
@@ -213,18 +254,21 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, business }) => {
     const businessLogo = business?.logo || null;
     const footerLogo = "/logos/salesense-horizontal.png";
 
-    const isPremium = business?.plan === "PREMIUM";
-
     return (
         <Document>
-            <Page size="A4" style={styles.page}>
+            <Page {...(pageProps as any)} style={styles.page}>
                 {/* --- Header --- */}
                 <View style={styles.header}>
                     <View>
                         {businessLogo ? (
                             <Image src={businessLogo} style={styles.logo} />
                         ) : (
-                            <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+                            <Text
+                                style={{
+                                    fontSize: isSmall ? 14 : 18,
+                                    fontWeight: "bold",
+                                }}
+                            >
                                 {business?.name || "Business Name"}
                             </Text>
                         )}
@@ -232,7 +276,7 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, business }) => {
 
                     <View style={styles.businessDetails}>
                         <Text style={styles.title}>Receipt</Text>
-                        <Text style={styles.value}>#{invoice.invoiceName}</Text>
+                        <Text style={styles.value}>{invoice.invoiceName}</Text>
                         <Text style={styles.value}>
                             {new Date(invoice.createdAt).toDateString()}
                         </Text>
@@ -308,18 +352,25 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, business }) => {
                         const unitPrice = item.Product.price;
 
                         return (
-                            <View key={index} style={styles.tableRow}>
+                            <View
+                                key={index}
+                                style={styles.tableRow}
+                                wrap={false}
+                            >
                                 <Text style={[styles.value, styles.colDesc]}>
                                     {item.Product?.name || "Item"}
                                 </Text>
+
                                 <Text style={[styles.value, styles.colQty]}>
                                     {qty}
                                 </Text>
+
                                 <Text style={[styles.value, styles.colPrice]}>
-                                    {formatMoney(unitPrice)}
+                                    {formatNumber(unitPrice)}
                                 </Text>
+
                                 <Text style={[styles.value, styles.colTotal]}>
-                                    {formatMoney(lineTotal)}
+                                    {formatNumber(lineTotal)}
                                 </Text>
                             </View>
                         );
@@ -327,8 +378,8 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, business }) => {
                 </View>
 
                 {/* --- Totals --- */}
-                <View style={styles.totalsSection}>
-                    <View>
+                <View style={styles.totalsSection} wrap={false}>
+                    <View style={styles.totalRowWrapper}>
                         <View style={styles.totalRow}>
                             <Text style={styles.value}>Subtotal:</Text>
                             <Text style={styles.value}>
@@ -342,15 +393,17 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, business }) => {
                             </Text>
                         </View>
                         <View style={[styles.totalRow, styles.grandTotal]}>
-                            <Text>Total:</Text>
-                            <Text>{formatMoney(invoice.totalAmount)}</Text>
+                            <Text style={styles.title}>Total:</Text>
+                            <Text style={styles.title}>
+                                {formatMoney(invoice.totalAmount)}
+                            </Text>
                         </View>
                     </View>
                 </View>
 
-                {/* --- Footer (Hidden for Premium) --- */}
+                {/* --- Footer --- */}
                 {!isPremium && (
-                    <View style={styles.footer}>
+                    <View style={styles.footer} wrap={false}>
                         <Text style={styles.footerText}>Powered by</Text>
                         <Image
                             src={`${
