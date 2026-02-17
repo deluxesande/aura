@@ -211,8 +211,8 @@ const Sidebar = () => {
                             const visibleLinks = group.items.filter((link) =>
                                 link.allowedRoles.some(
                                     (role) =>
-                                        role.toLowerCase() ===
-                                        user.role.toLowerCase(),
+                                        role?.toLowerCase() ===
+                                        user?.role?.toLowerCase(),
                                 ),
                             );
 

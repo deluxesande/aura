@@ -128,7 +128,7 @@ const SubscriptionExpiredPage = () => {
                                         <button
                                             type="submit"
                                             disabled={loading}
-                                            className="w-full py-3 px-4 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-colors flex items-center justify-center shadow-lg shadow-green-200"
+                                            className="w-full py-3 px-4 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-colors flex items-center justify-center shadow-lg shadow-green-200"
                                         >
                                             {loading ? (
                                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mx-auto"></div>

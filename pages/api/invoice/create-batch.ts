@@ -28,7 +28,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         .replace("T", "-")
         .split(".")[0];
     const invoiceName = `Invoice-${formattedDate}`;
-
     const invoiceStatus = paymentType === "CASH" ? "PAID" : "PENDING";
 
     try {
@@ -42,58 +41,78 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 .json({ error: "User is not linked to a business" });
         }
 
-        const result = await prisma.$transaction(async (tx) => {
-            const invoice = await tx.invoice.create({
-                data: {
-                    invoiceName,
-                    totalAmount: parseFloat(totalAmount),
-                    paymentType,
-                    status: invoiceStatus,
-                    customerId: customerId || null,
-                    businessId: creator.businessId,
-                    createdBy,
-                },
-            });
-
-            const lowStockAlerts = [];
-
-            for (const item of cartItems) {
-                const product = await tx.product.findUnique({
-                    where: { id: item.productId },
+        const result = await prisma.$transaction(
+            async (tx) => {
+                const productIds = cartItems.map((item: any) => item.productId);
+                const dbProducts = await tx.product.findMany({
+                    where: { id: { in: productIds } },
                 });
 
-                if (!product) {
-                    throw new Error(`Product not found: ${item.productId}`);
+                const productMap = new Map(dbProducts.map((p) => [p.id, p]));
+                const lowStockAlerts: any[] = [];
+                const updatePromises: any[] = [];
+
+                for (const item of cartItems) {
+                    const product = productMap.get(item.productId);
+
+                    if (!product) {
+                        throw new Error(`Product not found: ${item.productId}`);
+                    }
+
+                    if (product.quantity < item.quantity) {
+                        throw new Error(
+                            `Insufficient stock for ${product.name}. Available: ${product.quantity}`,
+                        );
+                    }
+
+                    const updatePromise = tx.product.update({
+                        where: { id: item.productId },
+                        data: {
+                            quantity: { decrement: item.quantity },
+                            inStock: product.quantity - item.quantity > 0,
+                        },
+                    });
+                    updatePromises.push(updatePromise);
+
+                    // Check for low stock based on calculation
+                    if (product.quantity - item.quantity <= 5) {
+                        lowStockAlerts.push({
+                            name: product.name,
+                            quantity: product.quantity - item.quantity,
+                        });
+                    }
                 }
 
-                if (product.quantity < item.quantity) {
-                    throw new Error(`Insufficient stock for ${product.name}`);
-                }
-
-                const updatedProduct = await tx.product.update({
-                    where: { id: item.productId },
+                const invoice = await tx.invoice.create({
                     data: {
-                        quantity: { decrement: item.quantity },
-                        inStock: product.quantity - item.quantity > 0,
+                        invoiceName,
+                        totalAmount: parseFloat(totalAmount),
+                        paymentType,
+                        status: invoiceStatus,
+                        customerId: customerId || null,
+                        businessId: creator.businessId,
+                        createdBy,
                     },
                 });
-                await tx.invoiceItem.create({
-                    data: {
+
+                await tx.invoiceItem.createMany({
+                    data: cartItems.map((item: any) => ({
                         invoiceId: invoice.id,
                         productId: item.productId,
                         quantity: item.quantity,
                         price: item.price,
                         createdBy,
-                    },
+                    })),
                 });
 
-                if (updatedProduct.quantity <= 5) {
-                    lowStockAlerts.push(updatedProduct);
-                }
-            }
+                await Promise.all(updatePromises);
 
-            return { invoice, lowStockAlerts };
-        });
+                return { invoice, lowStockAlerts };
+            },
+            {
+                timeout: 10000,
+            },
+        );
 
         const { invoice, lowStockAlerts } = result;
 
@@ -120,7 +139,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     },
                 }),
             ),
-        ).catch((err) => console.error("Invoice Notification Error:", err));
+        ).catch((e) => console.error("Notification Error", e));
 
         if (lowStockAlerts.length > 0) {
             Promise.all(
@@ -136,7 +155,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                         }),
                     ),
                 ),
-            ).catch((err) => console.error("Stock Notification Error:", err));
+            ).catch((e) => console.error("Stock Alert Error", e));
         }
 
         return res.status(201).json(invoice);
