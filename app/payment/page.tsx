@@ -209,7 +209,6 @@ export default function PaymentPage() {
 
             return true;
         } catch (error) {
-            console.error(error);
             toast.error("Failed to verify staff count.", { duration: 5000 });
             return false;
         } finally {
@@ -261,9 +260,49 @@ export default function PaymentPage() {
                     : "My New Business";
                 formData.append("name", businessName);
 
-                await axios.post("/api/business", formData, {
+                // Create the business
+                const response = await axios.post("/api/business", formData, {
                     headers: { "Content-Type": "multipart/form-data" },
                 });
+
+                const newBusiness = response.data;
+
+                // Format it to STRICTLY match your Redux type
+                const formattedBusinessDetails = {
+                    id: newBusiness.id,
+                    name: newBusiness.name,
+                    email: newBusiness.email || "",
+                    address: newBusiness.address || "",
+                    logo: newBusiness.logo || "",
+                    phoneNumber: newBusiness.phoneNumber || "",
+                    mpesaConsumerKey: newBusiness.mpesaConsumerKey || "",
+                    mpesaConsumerSecret: newBusiness.mpesaConsumerSecret || "",
+                    mpesaPassKey: newBusiness.mpesaPassKey || "",
+                    mpesaShortCode: newBusiness.mpesaShortCode || "",
+
+                    // Set default Starter subscription details
+                    subscription: newBusiness.subscription || {
+                        plan: "STARTER" as const,
+                        status: "ACTIVE",
+                        currentPeriodStart: new Date().toISOString(),
+                        currentPeriodEnd: new Date(
+                            new Date().setMonth(new Date().getMonth() + 1),
+                        ).toISOString(),
+                    },
+
+                    // Provide default usage block to prevent UI crashes
+                    usage: newBusiness.usage || {
+                        transactionCount: 0,
+                        staffCount: 1, // Just the owner
+                        isLimitReached: false,
+                        canExportData: false,
+                        hasCustomBranding: false,
+                    },
+                };
+
+                // Dispatch the strictly typed object
+                dispatch(setBusinessDetails(formattedBusinessDetails));
+
                 router.push("/settings");
                 return "Welcome to Salesense Starter!";
             } else {
@@ -461,6 +500,7 @@ export default function PaymentPage() {
                 </div>
             </div>
 
+            {/* --- PAYMENT MODAL --- */}
             <AnimatePresence>
                 {isPaymentModalOpen && selectedPlan && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -533,6 +573,7 @@ export default function PaymentPage() {
                 )}
             </AnimatePresence>
 
+            {/* --- DOWNGRADE SELECTION MODAL --- */}
             <AnimatePresence>
                 {isDowngradeModalOpen && selectedPlan && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -578,6 +619,7 @@ export default function PaymentPage() {
                                             selectedStaffIds.includes(staff.id);
                                         const isInvite =
                                             staff.type === "INVITE";
+
                                         const isMaxReached =
                                             selectedStaffIds.length >=
                                             effectiveStaffLimit;

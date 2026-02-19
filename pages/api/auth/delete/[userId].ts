@@ -5,7 +5,7 @@ import { utapi, extractFileKey } from "@/utils/server/uploadthingServer";
 
 export default async function handler(
     req: NextApiRequest,
-    res: NextApiResponse
+    res: NextApiResponse,
 ) {
     const { userId } = req.query;
 
@@ -27,7 +27,6 @@ export default async function handler(
             return res.status(404).json({ error: "User not found" });
         }
 
-        // Check if admin has other users
         if (user.role === "admin" && user.businessId) {
             const otherUsersCount = await prisma.user.count({
                 where: {
@@ -47,7 +46,6 @@ export default async function handler(
 
         if (user.role === "admin") {
             try {
-                // Find all products created by this user that have UploadThing URLs
                 const productsWithImages = await prisma.product.findMany({
                     where: {
                         createdBy: userId,
@@ -62,138 +60,147 @@ export default async function handler(
                         .filter(Boolean) as string[];
 
                     if (fileKeys.length > 0) {
-                        // Delete batch from UploadThing
                         await utapi.deleteFiles(fileKeys);
                     }
                 }
             } catch (utError) {
                 console.error(
-                    "Failed to clean up UploadThing images, proceeding with DB deletion:",
-                    utError
+                    "Failed to clean up UploadThing images:",
+                    utError,
                 );
+            }
+        }
+
+        let invoiceIds: string[] = [];
+        let assigneeClerkId: string | null = null;
+        let assigneeUuid: string | null = null;
+
+        if (user.role === "admin") {
+            const userInvoices = await prisma.invoice.findMany({
+                where: { createdBy: userId },
+                select: { id: true },
+            });
+            invoiceIds = userInvoices.map((inv: any) => inv.id);
+        } else {
+            let assignee = null;
+            if (user.email && user.businessId) {
+                const invitation = await prisma.userInvitation.findFirst({
+                    where: { email: user.email, businessId: user.businessId },
+                });
+                if (invitation?.invitedBy) {
+                    assignee = await prisma.user.findUnique({
+                        where: { id: invitation.invitedBy },
+                    });
+                }
+            }
+            if (!assignee && user.businessId) {
+                assignee = await prisma.user.findFirst({
+                    where: { businessId: user.businessId, role: "admin" },
+                });
+            }
+            if (assignee) {
+                assigneeClerkId = assignee.clerkId;
+                assigneeUuid = assignee.id;
             }
         }
 
         await prisma.$transaction(async (tx: any) => {
             if (user.role === "admin") {
-                const userInvoices = await tx.invoice.findMany({
-                    where: { createdBy: userId },
-                    select: { id: true },
-                });
-                const invoiceIds = userInvoices.map((inv: any) => inv.id);
+                const tier1Deletes = [
+                    tx.invoiceItem.deleteMany({ where: { createdBy: userId } }),
+                    tx.customer.deleteMany({ where: { createdById: user.id } }),
+                ];
 
                 if (invoiceIds.length > 0) {
-                    await tx.successfulCallback.deleteMany({
-                        where: { invoiceId: { in: invoiceIds } },
-                    });
-                    await tx.failedCallback.deleteMany({
-                        where: { invoiceId: { in: invoiceIds } },
-                    });
-                    await tx.mpesaPayment.deleteMany({
-                        where: {
-                            OR: [
-                                { invoiceId: { in: invoiceIds } },
-                                { userId: user.id },
-                            ],
-                        },
-                    });
+                    tier1Deletes.push(
+                        tx.successfulCallback.deleteMany({
+                            where: { invoiceId: { in: invoiceIds } },
+                        }),
+                        tx.failedCallback.deleteMany({
+                            where: { invoiceId: { in: invoiceIds } },
+                        }),
+                    );
+                }
+
+                if (user.businessId || invoiceIds.length > 0) {
+                    tier1Deletes.push(
+                        tx.mpesaPayment.deleteMany({
+                            where: {
+                                OR: [
+                                    { invoiceId: { in: invoiceIds } },
+                                    { userId: user.id },
+                                    {
+                                        businessId:
+                                            user.businessId || undefined,
+                                    },
+                                ],
+                            },
+                        }),
+                    );
                 }
 
                 if (user.businessId) {
-                    await tx.subscriptionPayment.deleteMany({
-                        where: { userId: userId },
-                    });
-
-                    await tx.subscription.deleteMany({
-                        where: { businessId: user.businessId },
-                    });
+                    tier1Deletes.push(
+                        tx.subscriptionPayment.deleteMany({
+                            where: { userId: userId },
+                        }),
+                        tx.userInvitation.deleteMany({
+                            where: { businessId: user.businessId },
+                        }),
+                    );
                 }
 
-                await tx.invoiceItem.deleteMany({
-                    where: { createdBy: userId },
-                });
-                await tx.invoice.deleteMany({ where: { createdBy: userId } });
+                await Promise.all(tier1Deletes);
 
-                await tx.customer.deleteMany({
-                    where: { createdById: user.id },
-                });
-
-                await tx.product.deleteMany({ where: { createdBy: userId } });
-                await tx.category.deleteMany({ where: { createdBy: userId } });
+                const tier2Deletes = [
+                    tx.invoice.deleteMany({ where: { createdBy: userId } }),
+                    tx.product.deleteMany({ where: { createdBy: userId } }),
+                    tx.category.deleteMany({ where: { createdBy: userId } }),
+                ];
 
                 if (user.businessId) {
-                    await tx.mpesaPayment.deleteMany({
-                        where: { businessId: user.businessId },
-                    });
-                    await tx.userInvitation.deleteMany({
-                        where: { businessId: user.businessId },
-                    });
+                    tier2Deletes.push(
+                        tx.subscription.deleteMany({
+                            where: { businessId: user.businessId },
+                        }),
+                    );
+                }
 
+                await Promise.all(tier2Deletes);
+
+                if (user.businessId) {
                     await tx.business.delete({
                         where: { id: user.businessId },
                     });
                 }
             } else {
-                // REGULAR USER LOGIC (Reassignment)
-                let assignee = null;
-
-                if (user.email && user.businessId) {
-                    const invitation = await tx.userInvitation.findFirst({
-                        where: {
-                            email: user.email,
-                            businessId: user.businessId,
-                        },
-                    });
-
-                    if (invitation && invitation.invitedBy) {
-                        assignee = await tx.user.findUnique({
-                            where: { id: invitation.invitedBy },
-                        });
-                    }
-                }
-
-                if (!assignee && user.businessId) {
-                    assignee = await tx.user.findFirst({
-                        where: {
-                            businessId: user.businessId,
-                            role: "admin",
-                        },
-                    });
-                }
-
-                if (assignee) {
-                    const assigneeClerkId = assignee.clerkId;
-                    const assigneeUuid = assignee.id;
-
-                    await tx.invoice.updateMany({
-                        where: { createdBy: userId },
-                        data: { createdBy: assigneeClerkId },
-                    });
-
-                    await tx.invoiceItem.updateMany({
-                        where: { createdBy: userId },
-                        data: { createdBy: assigneeClerkId },
-                    });
-
-                    await tx.product.updateMany({
-                        where: { createdBy: userId },
-                        data: { createdBy: assigneeClerkId },
-                    });
-
-                    await tx.category.updateMany({
-                        where: { createdBy: userId },
-                        data: { createdBy: assigneeClerkId },
-                    });
-
-                    await tx.customer.updateMany({
-                        where: { createdById: user.id },
-                        data: { createdById: assigneeUuid },
-                    });
-
-                    await tx.mpesaPayment.updateMany({
-                        where: { userId: user.id },
-                        data: { userId: assigneeUuid },
-                    });
+                if (assigneeClerkId && assigneeUuid) {
+                    await Promise.all([
+                        tx.invoice.updateMany({
+                            where: { createdBy: userId },
+                            data: { createdBy: assigneeClerkId },
+                        }),
+                        tx.invoiceItem.updateMany({
+                            where: { createdBy: userId },
+                            data: { createdBy: assigneeClerkId },
+                        }),
+                        tx.product.updateMany({
+                            where: { createdBy: userId },
+                            data: { createdBy: assigneeClerkId },
+                        }),
+                        tx.category.updateMany({
+                            where: { createdBy: userId },
+                            data: { createdBy: assigneeClerkId },
+                        }),
+                        tx.customer.updateMany({
+                            where: { createdById: user.id },
+                            data: { createdById: assigneeUuid },
+                        }),
+                        tx.mpesaPayment.updateMany({
+                            where: { userId: user.id },
+                            data: { userId: assigneeUuid },
+                        }),
+                    ]);
                 }
 
                 if (user.email) {
@@ -203,9 +210,7 @@ export default async function handler(
                 }
             }
 
-            await tx.user.delete({
-                where: { id: user.id },
-            });
+            await tx.user.delete({ where: { id: user.id } });
         });
 
         const client = await clerkClient();
@@ -215,9 +220,7 @@ export default async function handler(
             console.warn("Clerk user already deleted or not found");
         }
 
-        return res.status(200).json({
-            message: "User deleted successfully",
-        });
+        return res.status(200).json({ message: "User deleted successfully" });
     } catch (error) {
         console.error("Delete Error:", error);
         return res.status(500).json({
