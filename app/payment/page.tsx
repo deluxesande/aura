@@ -148,6 +148,10 @@ export default function PaymentPage() {
     const currentPlanId = businessDetails?.subscription?.plan || null;
 
     const checkStaffForDowngrade = async (targetPlan: Plan) => {
+        if (!user?.businessId) {
+            return true;
+        }
+
         setLoadingStaff(true);
         try {
             const response = await axios.get("/api/auth/invite/get");
@@ -161,7 +165,6 @@ export default function PaymentPage() {
                     email: item.email,
                     name: item.name || item.email,
                     role: item.role,
-                    // If status is accepted, they are a User (selectable). Otherwise an Invite (pending).
                     type: item.status === "accepted" ? "USER" : "INVITE",
                 }));
             } else if (data && (data.users || data.invitations)) {
@@ -346,7 +349,6 @@ export default function PaymentPage() {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="flex flex-col items-center gap-4">
-                    {/* CUSTOM PAGE SPINNER */}
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                     <p className="text-gray-500 animate-pulse text-sm font-medium">
                         {loadingStaff
@@ -459,7 +461,6 @@ export default function PaymentPage() {
                 </div>
             </div>
 
-            {/* --- PAYMENT MODAL --- */}
             <AnimatePresence>
                 {isPaymentModalOpen && selectedPlan && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -532,7 +533,6 @@ export default function PaymentPage() {
                 )}
             </AnimatePresence>
 
-            {/* --- DOWNGRADE SELECTION MODAL --- */}
             <AnimatePresence>
                 {isDowngradeModalOpen && selectedPlan && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -578,9 +578,6 @@ export default function PaymentPage() {
                                             selectedStaffIds.includes(staff.id);
                                         const isInvite =
                                             staff.type === "INVITE";
-
-                                        // Logic: Disable selection if limit is reached AND this specific item isn't already selected
-                                        // ALSO disable if it is a pending invite (greyed out)
                                         const isMaxReached =
                                             selectedStaffIds.length >=
                                             effectiveStaffLimit;
@@ -604,7 +601,6 @@ export default function PaymentPage() {
                                                         : "border-gray-200 hover:border-gray-300"
                                                 } ${isDisabled ? "opacity-50 cursor-not-allowed grayscale-[0.5]" : ""}`}
                                             >
-                                                {/* NO ICONS HERE */}
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2">
                                                         <p className="font-semibold text-gray-900">
@@ -660,9 +656,6 @@ export default function PaymentPage() {
                                     onClick={handleDowngradeConfirmation}
                                     disabled={
                                         downgradeLoading ||
-                                        // Strict check: length must match effective limit exactly?
-                                        // Or usually just ensure they selected *something* if limit > 0
-                                        // But if effective limit is 0 (Starter, owner only), selected ids must be 0.
                                         (effectiveStaffLimit > 0 &&
                                             selectedStaffIds.length === 0)
                                     }
