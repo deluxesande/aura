@@ -120,7 +120,7 @@ export default function AboutPage() {
                             animate={isHeroInView ? "visible" : "hidden"}
                             variants={fadeInLeft}
                         >
-                            <div className="relative z-10 rounded-2xl p-6 shadow-2xl shadow-green-200 transform rotate-1 hover:rotate-0 transition-transform duration-500">
+                            <div className="relative z-10 rounded-lg p-6 shadow-2xl shadow-green-200 transform rotate-1 hover:rotate-0 transition-transform duration-500">
                                 {/* Abstract UI Representation */}
                                 <div className="flex items-center justify-between mb-8 pb-4">
                                     <div className="flex gap-2">
@@ -372,7 +372,7 @@ export default function AboutPage() {
 
                         <div className="md:w-2/3 w-full">
                             {/* Single Founder Card (Horizontal) */}
-                            <div className="flex flex-col sm:flex-row bg-gray-50 rounded-2xl p-6 md:p-8 gap-6 items-center sm:items-start hover:shadow-lg transition-shadow duration-300 border border-gray-100">
+                            <div className="flex flex-col sm:flex-row bg-gray-50 rounded-lg p-6 md:p-8 gap-6 items-center sm:items-start hover:shadow-lg transition-shadow duration-300 border border-gray-100">
                                 <div className="shrink-0 relative w-32 h-32 md:w-40 md:h-40">
                                     <Image
                                         src="/images/Profile.jpg"

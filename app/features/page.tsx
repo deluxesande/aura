@@ -261,7 +261,7 @@ export default function FeaturesPage() {
                                 <ArrowUpRight size={18} />
                             </div>
                         </div>
-                        <div className="relative w-48 h-48 bg-gray-50 rounded-2xl border-4 border-gray-100 flex items-center justify-center shadow-inner">
+                        <div className="relative w-48 h-48 bg-gray-50 rounded-lg border-4 border-gray-100 flex items-center justify-center shadow-inner">
                             <div className="text-center">
                                 <div className="w-10 h-1 rounded-full bg-gray-200 mx-auto mb-4"></div>
                                 <div className="w-12 h-12 rounded-xl mx-auto flex items-center justify-center text-white mb-2 shadow-lg shadow-green-200">

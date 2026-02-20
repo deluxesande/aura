@@ -564,7 +564,7 @@ const SubscriptionManagement: React.FC = () => {
                                         onChange={(e) =>
                                             setPhoneNumber(e.target.value)
                                         }
-                                        className="block w-full pl-10 pr-3 py-3 bg-slate-50 outline-none border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 transition-colors"
+                                        className="block w-full px-4 py-3 bg-slate-50 outline-none border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 transition-colors"
                                     />
                                 </div>
                             </div>
@@ -572,7 +572,7 @@ const SubscriptionManagement: React.FC = () => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-3 px-4 bg-green-600 text-white font-black rounded-2xl hover:bg-green-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50 shadow-lg shadow-green-200"
+                                className="w-full py-3 px-4 bg-green-600 text-white font-black rounded-lg hover:bg-green-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                             >
                                 {loading ? (
                                     <Loader2 className="animate-spin" />

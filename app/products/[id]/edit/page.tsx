@@ -24,6 +24,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 
+import { useUploadThing } from "@/utils/uploadthing";
+
 const MAX_SIZE = 200 * 1024; // 200KB
 
 export default function EditProductPage() {
@@ -46,6 +48,9 @@ export default function EditProductPage() {
     const [isCropModalOpen, setIsCropModalOpen] = useState(false);
     const [tempImageSrc, setTempImageSrc] = useState<string | null>(null);
 
+    // NEW: State to hold the actual physical file ready for UploadThing
+    const [croppedFile, setCroppedFile] = useState<File | null>(null);
+
     const [isRestockModalOpen, setIsRestockModalOpen] = useState(false);
     const [restockAmount, setRestockAmount] = useState<string>("");
 
@@ -53,6 +58,9 @@ export default function EditProductPage() {
     const [isDataLoading, setIsDataLoading] = useState(!cachedProduct);
 
     const hasFetched = useRef(false);
+
+    // Get the upload function from UploadThing
+    const { startUpload } = useUploadThing("productImage");
 
     const initialFormState: Product = {
         id: "",
@@ -160,7 +168,6 @@ export default function EditProductPage() {
                 return;
             }
 
-            // Reset buffer if typing/scanning is too slow (manual entry vs scanner)
             if (currentTime - lastKeyTime > 100) {
                 buffer = "";
             }
@@ -237,18 +244,16 @@ export default function EditProductPage() {
     };
 
     const handleCropComplete = (croppedBlob: Blob) => {
+        // Create a local blob URL just for the UI preview
         const previewUrl = URL.createObjectURL(croppedBlob);
         setImagePreview(previewUrl);
 
-        const reader = new FileReader();
-        reader.readAsDataURL(croppedBlob);
-        reader.onloadend = () => {
-            const base64String = reader.result as string;
-            setFormData((prev) => ({
-                ...prev,
-                image: base64String,
-            }));
-        };
+        // Convert the Blob to a true File object for UploadThing
+        const file = new File([croppedBlob], "product-image.png", {
+            type: "image/png",
+        });
+        setCroppedFile(file);
+        setIsCropModalOpen(false);
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -257,11 +262,28 @@ export default function EditProductPage() {
 
         const promise = async () => {
             try {
+                let finalImageUrl = formData.image;
+
+                // 1. If we have a newly cropped file, upload it to UploadThing FIRST
+                if (croppedFile) {
+                    const uploadResponse = await startUpload([croppedFile]);
+
+                    if (uploadResponse && uploadResponse[0]) {
+                        // 2. Extract the true utfs.io URL
+                        finalImageUrl = uploadResponse[0].url;
+                    } else {
+                        throw new Error("Image upload failed");
+                    }
+                }
+
+                // 3. Prepare the final data using the secure UploadThing URL
                 const finalData = {
                     ...formData,
                     sku: formData.sku || generateSKU(formData.name),
+                    image: finalImageUrl,
                 };
 
+                // 4. Send to backend
                 const response = await axios.put(
                     `/api/product/${id}`,
                     finalData,
@@ -274,6 +296,7 @@ export default function EditProductPage() {
 
                 router.push("/products/list");
             } catch (error) {
+                console.error("Submission error:", error);
                 throw error;
             } finally {
                 setIsLoading(false);
@@ -281,7 +304,9 @@ export default function EditProductPage() {
         };
 
         toast.promise(promise(), {
-            loading: "Saving changes...",
+            loading: croppedFile
+                ? "Uploading image & saving..."
+                : "Saving changes...",
             success: "Product updated successfully!",
             error: "Failed to update product",
         });

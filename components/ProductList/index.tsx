@@ -35,21 +35,18 @@ export default function ProductList({
         router.push(`/products/${productId}/edit`);
     };
 
-    // Extract Unique Categories
     const categories = [
         "All",
         ...Array.from(
-            new Set(products.map((p: any) => p.Category?.name).filter(Boolean))
+            new Set(products.map((p: any) => p.Category?.name).filter(Boolean)),
         ),
     ];
 
     const filteredProducts = products.filter((product: any) => {
-        // 1. Check Category
         const matchesCategory =
             selectedCategory === "All" ||
             product.Category?.name === selectedCategory;
 
-        // 2. Check Search (Name, Description, or SKU)
         const query = searchQuery.toLowerCase();
         const matchesSearch =
             product.name.toLowerCase().includes(query) ||
@@ -86,7 +83,7 @@ export default function ProductList({
         const maxPagesToShow = 5;
         let startPage = Math.max(
             1,
-            currentPage - Math.floor(maxPagesToShow / 2)
+            currentPage - Math.floor(maxPagesToShow / 2),
         );
         let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
 
@@ -218,7 +215,7 @@ export default function ProductList({
                                                     <button
                                                         onClick={() =>
                                                             setSelectedCategory(
-                                                                "All"
+                                                                "All",
                                                             )
                                                         }
                                                         className="text-green-600 hover:underline"
@@ -340,7 +337,7 @@ export default function ProductList({
                                                     className="btn btn-sm btn-ghost text-gray-600 hover:text-green-600"
                                                     onClick={() =>
                                                         handleEditClick(
-                                                            product.id
+                                                            product.id,
                                                         )
                                                     }
                                                 >

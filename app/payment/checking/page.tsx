@@ -21,7 +21,7 @@ function PaymentCheckingContent() {
         if (!checkoutRequestId) return null;
         try {
             const response = await axios.get(
-                `/api/subscription/check-status?checkoutRequestId=${checkoutRequestId}`
+                `/api/subscription/check-status?checkoutRequestId=${checkoutRequestId}`,
             );
             const currentStatus = response.data.status;
 
@@ -103,7 +103,7 @@ function PaymentCheckingContent() {
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-white p-8 rounded-2xl shadow-lg max-w-sm w-full text-center"
+                className="bg-white p-8 rounded-lg shadow-lg max-w-sm w-full text-center"
             >
                 <div className="flex justify-center mb-6">
                     {status === "PENDING" && (
@@ -141,8 +141,8 @@ function PaymentCheckingContent() {
                     {status === "PENDING"
                         ? "Check your phone"
                         : status === "COMPLETED"
-                        ? "Payment Confirmed"
-                        : "Payment Issue"}
+                          ? "Payment Confirmed"
+                          : "Payment Issue"}
                 </h2>
 
                 <p className="text-gray-500 mb-8">

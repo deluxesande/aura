@@ -60,7 +60,7 @@ export default function HowItWorks() {
                             className="flex-1"
                         >
                             <div className="flex items-center gap-4 mb-6">
-                                <span className="flex items-center justify-center w-12 h-12 rounded-2xl bg-green-100 text-green-700 font-bold text-xl">
+                                <span className="flex items-center justify-center w-12 h-12 rounded-lg bg-green-100 text-green-700 font-bold text-xl">
                                     01
                                 </span>
                                 <h3 className="text-2xl md:text-3xl font-bold text-gray-900">
@@ -151,7 +151,7 @@ export default function HowItWorks() {
                             className="flex-1"
                         >
                             <div className="flex items-center gap-4 mb-6">
-                                <span className="flex items-center justify-center w-12 h-12 rounded-2xl bg-green-100 text-green-700 font-bold text-xl">
+                                <span className="flex items-center justify-center w-12 h-12 rounded-lg bg-green-100 text-green-700 font-bold text-xl">
                                     02
                                 </span>
                                 <h3 className="text-2xl md:text-3xl font-bold text-gray-900">
@@ -235,7 +235,7 @@ export default function HowItWorks() {
                             className="flex-1"
                         >
                             <div className="flex items-center gap-4 mb-6">
-                                <span className="flex items-center justify-center w-12 h-12 rounded-2xl bg-green-100 text-green-700 font-bold text-xl">
+                                <span className="flex items-center justify-center w-12 h-12 rounded-lg bg-green-100 text-green-700 font-bold text-xl">
                                     03
                                 </span>
                                 <h3 className="text-2xl md:text-3xl font-bold text-gray-900">

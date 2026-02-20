@@ -76,7 +76,7 @@ const BusinessOnboardingModal = () => {
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/90 backdrop-blur-sm">
-            <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden p-8 animate-in fade-in zoom-in duration-300">
+            <div className="w-full max-w-md bg-white rounded-lg shadow-2xl overflow-hidden p-8 animate-in fade-in zoom-in duration-300">
                 {/* Header */}
                 <div className="flex flex-col items-center text-center mb-8">
                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
