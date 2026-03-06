@@ -202,7 +202,7 @@ function SelectCustomerModal({
                                                 customer.id && (
                                                 <div className="ml-auto bg-green-500 p-1 rounded-full shadow-sm">
                                                     <Check
-                                                        className="text-white"
+                                                        className="stroke-white"
                                                         size={14}
                                                         strokeWidth={3}
                                                     />

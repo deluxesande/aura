@@ -541,7 +541,7 @@ export default function CreateProductPage() {
                                     accept="image/png"
                                     onChange={handleImageFileSelect}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                    required={!productImage}
+                                    // required={!productImage}
                                 />
 
                                 {imagePreview ? (

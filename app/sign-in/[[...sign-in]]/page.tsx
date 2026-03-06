@@ -24,9 +24,6 @@ export default function LoginPage() {
     useEffect(() => {
         const fetchUserData = async () => {
             if (isSignedIn && userId) {
-                // Redirect to dashboard immediately
-                router.push("/dashboard");
-
                 // Fetch user data in background
                 try {
                     const response = await axios.get("/api/auth/user/profile");
@@ -35,6 +32,9 @@ export default function LoginPage() {
                     // console.error("Error fetching user data:", error);
                     // User will be handled by middleware or dashboard page
                 }
+
+                // Redirect to dashboard immediately
+                router.push("/dashboard");
             }
         };
 
@@ -57,8 +57,6 @@ export default function LoginPage() {
             if (result.status === "complete") {
                 await setActive({ session: result.createdSessionId });
                 dispatch(signInAction());
-
-                console.log("User signed in successfully");
 
                 // Redirect to dashboard immediately
                 router.push("/dashboard");
@@ -106,18 +104,18 @@ export default function LoginPage() {
     };
 
     // Don't show loading screen, render the form normally
-    if (!isLoaded) {
-        return (
-            <AuthLayout
-                title="Welcome back"
-                subtitle="Log in to your account to continue"
-            >
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
-                </div>
-            </AuthLayout>
-        );
-    }
+    // if (!isLoaded) {
+    //     return (
+    //         <AuthLayout
+    //             title="Welcome back"
+    //             subtitle="Log in to your account to continue"
+    //         >
+    //             <div className="text-center">
+    //                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+    //             </div>
+    //         </AuthLayout>
+    //     );
+    // }
 
     // If already signed in, still show form but they'll be redirected
     return (
