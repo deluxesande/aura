@@ -24,6 +24,9 @@ export default function LoginPage() {
     useEffect(() => {
         const fetchUserData = async () => {
             if (isSignedIn && userId) {
+                // Redirect to dashboard immediately
+                router.push("/dashboard");
+
                 // Fetch user data in background
                 try {
                     const response = await axios.get("/api/auth/user/profile");
@@ -32,9 +35,6 @@ export default function LoginPage() {
                     // console.error("Error fetching user data:", error);
                     // User will be handled by middleware or dashboard page
                 }
-
-                // Redirect to dashboard immediately
-                router.push("/dashboard");
             }
         };
 
