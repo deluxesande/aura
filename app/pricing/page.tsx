@@ -77,7 +77,7 @@ export default function PricingPage() {
                     >
                         {/* STARTER TIER */}
                         <motion.div
-                            className="border border-gray-100 bg-white rounded-lg p-8 hover:border-green-200 transition-all shadow-sm hover:shadow-md"
+                            className="border border-gray-100 bg-white rounded-2xl p-8 hover:border-green-200 transition-all shadow-sm hover:shadow-md"
                             variants={itemVariants}
                         >
                             <div className="text-center mb-8">
@@ -143,7 +143,7 @@ export default function PricingPage() {
 
                         {/* STANDARD TIER */}
                         <motion.div
-                            className="border-2 border-green-500 rounded-lg p-8 relative bg-white shadow-xl scale-105 z-10"
+                            className="border-2 border-green-500 rounded-2xl p-8 relative bg-white shadow-xl scale-105 z-10"
                             variants={itemVariants}
                         >
                             <div className="absolute top-0 right-0 left-0 mx-auto w-32 -mt-4 bg-green-500 text-white text-center py-1 rounded-full text-sm font-bold shadow-sm">
@@ -217,7 +217,7 @@ export default function PricingPage() {
 
                         {/* PREMIUM TIER */}
                         <motion.div
-                            className="border border-gray-100 bg-white rounded-lg p-8 hover:border-green-200 transition-all shadow-sm hover:shadow-md"
+                            className="border border-gray-100 bg-white rounded-2xl p-8 hover:border-green-200 transition-all shadow-sm hover:shadow-md"
                             variants={itemVariants}
                         >
                             <div className="text-center mb-8">

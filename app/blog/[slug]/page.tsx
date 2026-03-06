@@ -152,7 +152,7 @@ export default function BlogPostPage({
                                     return (
                                         <ul
                                             key={i}
-                                            className="bg-gray-50 p-6 rounded-lg space-y-2 mb-8"
+                                            className="bg-gray-50 p-6 rounded-2xl space-y-2 mb-8"
                                         >
                                             {block.items?.map(
                                                 (item: any, idx: number) => (

@@ -116,7 +116,7 @@ const SubscriptionWarningModal = () => {
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-300 p-4">
             <div
-                className={`w-full max-w-md bg-white rounded-lg shadow-2xl overflow-hidden p-6 relative ${isExpiredState ? "border-2 border-red-100" : ""}`}
+                className={`w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden p-6 relative ${isExpiredState ? "border-2 border-red-100" : ""}`}
             >
                 <div className="flex justify-end mb-2">
                     <button

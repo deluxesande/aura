@@ -66,7 +66,7 @@ function SelectCustomerModal({
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ duration: 0.2 }}
-                        className="bg-white w-full max-w-md rounded-lg shadow-2xl border border-gray-100 overflow-hidden relative flex flex-col max-h-[80vh]"
+                        className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-gray-100 overflow-hidden relative flex flex-col max-h-[80vh]"
                     >
                         {/* --- Background Line Pattern --- */}
                         <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03] z-0">

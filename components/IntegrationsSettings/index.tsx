@@ -193,7 +193,7 @@ const IntegrationsSettings: React.FC = () => {
     return (
         <section className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 w-full relative min-h-[200px]">
             {isLoading && (
-                <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center rounded-lg backdrop-blur-sm">
+                <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center rounded-2xl backdrop-blur-sm">
                     <Loader2 className="animate-spin h-8 w-8 text-green-600" />
                 </div>
             )}
@@ -296,7 +296,7 @@ const IntegrationsSettings: React.FC = () => {
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                                 transition={{ duration: 0.2 }}
-                                className="bg-white rounded-lg shadow-2xl border border-gray-100 w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden relative"
+                                className="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden relative"
                             >
                                 {/* --- Background Line Pattern --- */}
                                 <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03] z-0">

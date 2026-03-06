@@ -57,7 +57,7 @@ export default function HelpCategoryPage({
 
             {/* Article List */}
             <section className="py-12 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto">
-                <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                     {articles.length > 0 ? (
                         <div className="divide-y divide-gray-100">
                             {articles.map((article) => (

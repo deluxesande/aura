@@ -78,7 +78,7 @@ export default function FAQ() {
                         <motion.div
                             key={idx}
                             variants={itemVariants}
-                            className={`border rounded-lg overflow-hidden transition-all duration-300 ${
+                            className={`border rounded-2xl overflow-hidden transition-all duration-300 ${
                                 openIndex === idx
                                     ? "border-green-200 bg-green-50/50 shadow-sm"
                                     : "border-gray-200 bg-white hover:border-green-200"

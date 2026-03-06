@@ -37,7 +37,7 @@ const CreateCategoryModal: React.FC<ModalProps> = ({
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 10 }}
                             transition={{ duration: 0.2 }}
-                            className="bg-white rounded-lg w-full max-w-md shadow-2xl border border-gray-100 overflow-hidden relative"
+                            className="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-gray-100 overflow-hidden relative"
                         >
                             {/* --- Background Line Pattern --- */}
                             <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03]">

@@ -1,10 +1,9 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/utils/lib/client";
-import { utapi, extractFileKey } from "@/utils/server/uploadthingServer";
 
 export const updateProduct = async (
     req: NextApiRequest,
-    res: NextApiResponse,
+    res: NextApiResponse
 ) => {
     const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
     const { name, description, price, quantity, categoryId, image, sku } =
@@ -30,11 +29,6 @@ export const updateProduct = async (
             }
         }
 
-        const existingProduct = await prisma.product.findUnique({
-            where: { id: id },
-            select: { image: true },
-        });
-
         const updatedProduct = await prisma.product.update({
             where: {
                 id: id,
@@ -50,32 +44,6 @@ export const updateProduct = async (
                 inStock: quantity > 0 ? true : false,
             },
         });
-
-        if (
-            existingProduct?.image &&
-            existingProduct.image !== image &&
-            existingProduct.image.includes("utfs.io")
-        ) {
-            const oldFileKey = extractFileKey(existingProduct.image);
-
-            if (oldFileKey) {
-                // Fire and forget: Do not await it so it doesn't slow down the response to the user
-                utapi
-                    .deleteFiles(oldFileKey)
-                    // .then((result) => {
-                    //     console.log(
-                    //         `Successfully deleted old image from UploadThing: ${oldFileKey}`,
-                    //         result,
-                    //     );
-                    // })
-                    .catch((err) => {
-                        console.error(
-                            "Failed to delete old image from UploadThing:",
-                            err,
-                        );
-                    });
-            }
-        }
 
         res.status(200).json(updatedProduct);
     } catch (error: any) {

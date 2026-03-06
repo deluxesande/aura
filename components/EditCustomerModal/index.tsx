@@ -84,7 +84,7 @@ export default function EditCustomerModal({
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white w-full max-w-sm rounded-lg shadow-2xl overflow-hidden">
+            <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden">
                 <div className="p-4 border-b flex items-center justify-between">
                     <h3 className="font-bold text-lg">Edit Customer</h3>
                     <button

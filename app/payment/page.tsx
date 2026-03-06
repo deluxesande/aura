@@ -423,7 +423,7 @@ export default function PaymentPage() {
                             <motion.div
                                 key={plan.id}
                                 whileHover={{ y: -5 }}
-                                className={`relative bg-white rounded-lg shadow-sm border ${
+                                className={`relative bg-white rounded-2xl shadow-sm border ${
                                     isCurrent
                                         ? "border-green-500 ring-2 ring-green-500/20 shadow-lg"
                                         : plan.popular
@@ -508,7 +508,7 @@ export default function PaymentPage() {
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            className="relative bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden z-10"
+                            className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden z-10"
                         >
                             <div className="p-6 text-center border-b border-gray-100">
                                 <h3 className="text-2xl font-bold text-gray-900">
@@ -581,7 +581,7 @@ export default function PaymentPage() {
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            className="relative bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden z-10"
+                            className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden z-10"
                         >
                             <div className="p-6 bg-red-50 border-b border-red-100">
                                 <h3 className="text-xl font-bold text-red-600 mb-2">

@@ -47,9 +47,10 @@ export default function UserDetailsPage() {
     const [invoices, setInvoices] = useState<ExtendedInvoice[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // --- Stats Calculation ---
     const totalRevenue = invoices.reduce(
         (acc, curr) => (curr.status === "PAID" ? acc + curr.totalAmount : acc),
-        0,
+        0
     );
 
     const totalSalesCount = invoices.length;
@@ -94,7 +95,7 @@ export default function UserDetailsPage() {
         const fetchInvoices = async () => {
             try {
                 const response = await axios.get(
-                    `/api/invoice/user?userId=${userId}`,
+                    `/api/invoice/user?userId=${userId}`
                 );
                 setInvoices(response.data);
             } catch (error) {
@@ -186,9 +187,9 @@ export default function UserDetailsPage() {
                                                     staffUser.role === "ADMIN"
                                                         ? "bg-purple-100 text-purple-700 border-purple-200"
                                                         : staffUser.role ===
-                                                            "MANAGER"
-                                                          ? "bg-blue-100 text-blue-700 border-blue-200"
-                                                          : "bg-gray-100 text-gray-700 border-gray-200"
+                                                          "MANAGER"
+                                                        ? "bg-blue-100 text-blue-700 border-blue-200"
+                                                        : "bg-gray-100 text-gray-700 border-gray-200"
                                                 }`}
                                             >
                                                 {staffUser.role}
@@ -198,7 +199,7 @@ export default function UserDetailsPage() {
                                             <span className="flex items-center font-light gap-1">
                                                 Joined{" "}
                                                 {new Date(
-                                                    staffUser.createdAt,
+                                                    staffUser.createdAt
                                                 ).toLocaleDateString()}
                                             </span>
                                         </div>
