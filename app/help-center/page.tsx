@@ -55,7 +55,7 @@ export default function HelpCenterPage() {
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Search for articles (e.g., 'Paybill', 'Tax')"
-                                className="w-full pl-14 pr-12 py-5 bg-white border border-gray-200 rounded-2xl text-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent shadow-lg shadow-gray-100 transition-all"
+                                className="w-full pl-14 pr-12 py-5 bg-white border border-gray-200 rounded-lg text-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent shadow-lg shadow-gray-100 transition-all"
                             />
                             <Search
                                 className="absolute left-5 top-1/2 -translate-y-1/2 stroke-green-500"
@@ -127,7 +127,7 @@ export default function HelpCenterPage() {
                                         <Link
                                             key={article.slug}
                                             href={`/help-center/${article.categorySlug}/${article.slug}`}
-                                            className="block bg-white p-6 rounded-xl border border-gray-200 hover:border-green-500 hover:shadow-md transition-all group"
+                                            className="block bg-white p-6 rounded-lg border border-gray-200 hover:border-green-500 hover:shadow-md transition-all group"
                                         >
                                             <div className="flex justify-between items-start">
                                                 <div>
@@ -161,7 +161,7 @@ export default function HelpCenterPage() {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="text-center py-20 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                                <div className="text-center py-20 bg-gray-50 rounded-lg border border-dashed border-gray-200">
                                     <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 shadow-sm">
                                         <HelpCircle
                                             className="stroke-green-500"
@@ -199,9 +199,9 @@ export default function HelpCenterPage() {
                                         <div key={idx} className="group">
                                             <Link
                                                 href={`/help-center/${category.slug}`}
-                                                className="flex items-start gap-6 hover:bg-gray-50 p-4 -ml-4 rounded-2xl transition-colors"
+                                                className="flex items-start gap-6 hover:bg-gray-50 p-4 -ml-4 rounded-lg transition-colors"
                                             >
-                                                <div className="shrink-0 w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center text-green-500 group-hover:bg-green-500 group-hover:text-white transition-colors duration-300">
+                                                <div className="shrink-0 w-14 h-14 bg-green-50 rounded-lg flex items-center justify-center text-green-500 group-hover:bg-green-500 group-hover:text-white transition-colors duration-300">
                                                     <Icon
                                                         size={28}
                                                         className="stroke-green-500 group-hover:stroke-white transition-colors duration-300"

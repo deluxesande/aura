@@ -32,7 +32,7 @@ function QuickRestockModal({
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ duration: 0.2 }}
-                        className="bg-white w-full max-w-sm rounded-2xl shadow-2xl border border-gray-100 overflow-hidden relative"
+                        className="bg-white w-full max-w-sm rounded-lg shadow-2xl border border-gray-100 overflow-hidden relative"
                     >
                         {/* --- Background Line Pattern (Green) --- */}
                         <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.05]">
@@ -80,7 +80,7 @@ function QuickRestockModal({
                             onSubmit={handleQuickRestockSubmit}
                             className="p-6 relative z-10"
                         >
-                            <div className="bg-green-50 border border-green-100 rounded-xl p-4 mb-6">
+                            <div className="bg-green-50 border border-green-100 rounded-lg p-4 mb-6">
                                 <p className="text-sm text-green-700 font-medium mb-1">
                                     Restocking:
                                 </p>
@@ -108,7 +108,7 @@ function QuickRestockModal({
                                         setRestockAmount(e.target.value)
                                     }
                                     placeholder="e.g., 20"
-                                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-gray-200 outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-gray-900 font-medium no-spinner"
+                                    className="w-full px-4 py-3 rounded-lg bg-slate-50 border border-gray-200 outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-gray-900 font-medium no-spinner"
                                     autoFocus
                                     disabled={isRestocking}
                                 />
@@ -127,7 +127,7 @@ function QuickRestockModal({
                             <button
                                 type="submit"
                                 disabled={isRestocking}
-                                className="w-full py-3 px-4 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                                className="w-full py-3 px-4 rounded-lg bg-green-500 text-white font-bold hover:bg-green-600 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                             >
                                 {isRestocking ? (
                                     <>

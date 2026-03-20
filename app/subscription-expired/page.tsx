@@ -83,7 +83,7 @@ const SubscriptionExpiredPage = () => {
     return (
         <Navbar>
             <div className="min-h-full w-full flex flex-col items-center justify-center">
-                <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-red-100 overflow-hidden p-8 text-center animate-in fade-in zoom-in duration-300">
+                <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-red-100 overflow-hidden p-8 text-center animate-in fade-in zoom-in duration-300">
                     <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
                         <AlertOctagon className="w-10 h-10 stroke-red-600" />
                     </div>
@@ -128,7 +128,7 @@ const SubscriptionExpiredPage = () => {
                                         <button
                                             type="submit"
                                             disabled={loading}
-                                            className="w-full py-3 px-4 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-colors flex items-center justify-center shadow-lg shadow-green-200"
+                                            className="w-full py-3 px-4 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center shadow-lg shadow-green-200"
                                         >
                                             {loading ? (
                                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mx-auto"></div>
@@ -150,7 +150,7 @@ const SubscriptionExpiredPage = () => {
                                 ) : (
                                     <button
                                         onClick={() => setShowRenewInput(true)}
-                                        className="w-full py-3.5 px-4 rounded-xl text-base font-bold text-white transition-all hover:scale-[1.02] active:scale-95 bg-green-500 hover:bg-green-500"
+                                        className="w-full py-3.5 px-4 rounded-lg text-base font-bold text-white transition-all hover:scale-[1.02] active:scale-95 bg-green-500 hover:bg-green-500"
                                     >
                                         Renew Subscription
                                     </button>
@@ -159,7 +159,7 @@ const SubscriptionExpiredPage = () => {
                                 {!showRenewInput && (
                                     <Link
                                         href="/payment"
-                                        className="block w-full text-center py-3.5 px-4 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors"
+                                        className="block w-full text-center py-3.5 px-4 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-lg hover:bg-gray-50 transition-colors"
                                     >
                                         Choose a Different Plan
                                     </Link>
@@ -167,7 +167,7 @@ const SubscriptionExpiredPage = () => {
                             </>
                         ) : (
                             /* --- NON-ADMIN VIEW --- */
-                            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 text-gray-600 text-sm">
+                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-gray-600 text-sm">
                                 <p>
                                     Only the business administrator can renew
                                     the subscription.

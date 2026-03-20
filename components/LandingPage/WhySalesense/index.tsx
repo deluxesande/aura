@@ -64,7 +64,7 @@ export default function WhySalesense() {
                         className="md:col-span-2 bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all relative overflow-hidden group"
                     >
                         <div className="relative z-10 max-w-sm">
-                            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-6">
+                            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-6">
                                 <HandCoins
                                     className="stroke-green-500"
                                     size={24}
@@ -81,7 +81,7 @@ export default function WhySalesense() {
                         </div>
 
                         {/* Abstract UI: Transaction List */}
-                        <div className="absolute top-10 -right-10 w-72 bg-gray-50 rounded-xl p-4 border border-gray-100 shadow-sm transform rotate-6 group-hover:rotate-3 transition-transform duration-500 hidden sm:block">
+                        <div className="absolute top-10 -right-10 w-72 bg-gray-50 rounded-lg p-4 border border-gray-100 shadow-sm transform rotate-6 group-hover:rotate-3 transition-transform duration-500 hidden sm:block">
                             <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-200">
                                 <span className="text-xs font-bold text-gray-400 uppercase">
                                     Recent Transactions
@@ -117,7 +117,7 @@ export default function WhySalesense() {
                         className="md:row-span-2 bg-green-100 rounded-3xl p-8 border border-green-100 relative overflow-hidden flex flex-col justify-between group"
                     >
                         <div className="relative z-10">
-                            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mb-6 shadow-sm text-green-500">
+                            <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center mb-6 shadow-sm text-green-500">
                                 <ShieldCheck
                                     size={24}
                                     className="stroke-green-500"
@@ -162,7 +162,7 @@ export default function WhySalesense() {
                     >
                         <div className="flex flex-col md:flex-row gap-8 items-center">
                             <div className="flex-1 relative z-10">
-                                <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-6">
+                                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-6">
                                     <BarChart3
                                         className="stroke-green-500"
                                         size={24}
@@ -180,7 +180,7 @@ export default function WhySalesense() {
 
                             {/* Abstract UI: Chart */}
                             <div className="flex-1 w-full relative h-40">
-                                <div className="absolute inset-0 bg-gray-50 rounded-xl border border-gray-100 p-4 flex flex-col justify-end gap-2 group-hover:translate-y-1 transition-transform duration-500">
+                                <div className="absolute inset-0 bg-gray-50 rounded-lg border border-gray-100 p-4 flex flex-col justify-end gap-2 group-hover:translate-y-1 transition-transform duration-500">
                                     <div className="flex justify-between items-end h-full gap-2 px-2">
                                         <div className="w-full bg-green-200 rounded-t-md h-[40%] group-hover:h-[45%] transition-all duration-700"></div>
                                         <div className="w-full bg-green-300 rounded-t-md h-[65%] group-hover:h-[70%] transition-all duration-700 delay-75"></div>

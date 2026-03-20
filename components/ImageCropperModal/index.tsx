@@ -29,7 +29,7 @@ export default function ImageCropperModal({
         (_croppedArea: any, _croppedAreaPixels: any) => {
             setCroppedAreaPixels(_croppedAreaPixels);
         },
-        []
+        [],
     );
 
     const handleSave = async () => {
@@ -38,7 +38,7 @@ export default function ImageCropperModal({
             try {
                 const croppedImage = await getCroppedImg(
                     imageSrc,
-                    croppedAreaPixels
+                    croppedAreaPixels,
                 );
                 if (croppedImage) {
                     onCropComplete(croppedImage);
@@ -56,7 +56,7 @@ export default function ImageCropperModal({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-            <div className="bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden flex flex-col h-[500px]">
+            <div className="bg-white w-full max-w-lg rounded-lg shadow-2xl overflow-hidden flex flex-col h-[500px]">
                 {/* Header */}
                 <div className="p-4 border-b border-gray-100 flex justify-between items-center">
                     <h3 className="font-semibold text-gray-800">Crop Image</h3>

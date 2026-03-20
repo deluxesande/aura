@@ -25,7 +25,7 @@ export default function LoginPage() {
         const fetchUserData = async () => {
             if (isSignedIn && userId) {
                 // Redirect to dashboard immediately
-                router.push("/dashboard");
+                router.push("/products");
 
                 // Fetch user data in background
                 try {
@@ -59,7 +59,7 @@ export default function LoginPage() {
                 dispatch(signInAction());
 
                 // Redirect to dashboard immediately
-                router.push("/dashboard");
+                router.push("/products");
 
                 // Fetch user data in background
                 try {
@@ -92,7 +92,7 @@ export default function LoginPage() {
             await signIn.authenticateWithRedirect({
                 strategy: "oauth_google",
                 redirectUrl: "/sign-in",
-                redirectUrlComplete: "/dashboard",
+                redirectUrlComplete: "/products",
                 continueSignUp: false,
             });
             dispatch(signInAction());

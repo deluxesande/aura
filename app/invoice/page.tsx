@@ -230,7 +230,7 @@ function InvoicePageContent() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                                 <h3 className="font-semibold text-gray-900">
                                     Invoice Items
@@ -344,7 +344,7 @@ function InvoicePageContent() {
                     </div>
 
                     <div className="space-y-6">
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                             <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">
                                 Invoice Details
                             </h3>
@@ -398,7 +398,7 @@ function InvoicePageContent() {
                             </div>
                         </div>
 
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                             <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">
                                 Customer
                             </h3>

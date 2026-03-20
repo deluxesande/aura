@@ -51,7 +51,7 @@ const linkGroups = [
         ],
     },
     {
-        label: "Finance & CRM",
+        label: "Finance",
         items: [
             {
                 href: "/customers",
@@ -150,9 +150,10 @@ const Sidebar = () => {
 
     return (
         <aside
+            data-tour="sidebar"
             className={`${
                 toggleSideBar ? "w-44" : "w-20"
-            } h-screen bg-white shadow-sm border-r border-gray-100 hidden lg:flex flex-col sticky top-0 -z-50 transition-all duration-300 ease-in-out overflow-visible`}
+            } h-screen bg-white shadow-sm border-r border-gray-100 hidden lg:flex flex-col sticky top-0 transition-all duration-300 ease-in-out overflow-visible`}
         >
             {/* BACKGROUND PATTERN */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03] z-0">
@@ -219,7 +220,11 @@ const Sidebar = () => {
                             if (visibleLinks.length === 0) return null;
 
                             return (
-                                <div key={groupIdx} className="w-full">
+                                <div
+                                    key={groupIdx}
+                                    data-tour={`nav-${group.label.toLowerCase()}`}
+                                    className="w-full"
+                                >
                                     {toggleSideBar && (
                                         <h3 className="px-3 mb-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                                             {group.label}

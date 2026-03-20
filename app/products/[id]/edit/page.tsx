@@ -345,7 +345,7 @@ export default function EditProductPage() {
                     {/* LEFT COLUMN - Main Info */}
                     <div className="lg:col-span-2 space-y-6">
                         {/* General Info Card */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                             <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
                                 General Information
                             </h2>
@@ -422,7 +422,7 @@ export default function EditProductPage() {
                         </div>
 
                         {/* Pricing & Inventory Card */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                             <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
                                 Pricing & Inventory
                             </h2>
@@ -490,7 +490,7 @@ export default function EditProductPage() {
                     {/* RIGHT COLUMN - Media & Organization */}
                     <div className="space-y-6">
                         {/* Status Card */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                             <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
                                 Status
                             </h2>
@@ -524,7 +524,7 @@ export default function EditProductPage() {
                         </div>
 
                         {/* Organization Card */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                             <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
                                 Organization
                             </h2>
@@ -555,11 +555,11 @@ export default function EditProductPage() {
                         </div>
 
                         {/* Media Card */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                             <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
                                 Product Image
                             </h2>
-                            <div className="relative w-full aspect-square border-2 border-dashed border-gray-300 rounded-xl hover:border-green-500 transition-colors group bg-gray-50 overflow-hidden cursor-pointer">
+                            <div className="relative w-full aspect-square border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 transition-colors group bg-gray-50 overflow-hidden cursor-pointer">
                                 <input
                                     type="file"
                                     accept="image/png"

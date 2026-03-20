@@ -43,7 +43,7 @@ export default function BlogPage() {
                         className="hidden lg:block relative"
                     >
                         <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 relative z-10">
-                            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-6">
+                            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-6">
                                 <Tag className="stroke-green-500" />
                             </div>
                             <h3 className="text-2xl font-bold text-gray-900 mb-2">

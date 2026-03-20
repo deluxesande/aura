@@ -49,7 +49,7 @@ export default function AccessSuspendedPage() {
     return (
         <Navbar>
             <div className="h-full w-full flex flex-col items-center justify-center ">
-                <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-red-100 overflow-hidden p-8 text-center animate-in fade-in zoom-in duration-300">
+                <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-red-100 overflow-hidden p-8 text-center animate-in fade-in zoom-in duration-300">
                     {/* Icon */}
                     <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
                         <ShieldAlert className="w-10 h-10 stroke-red-600" />
@@ -71,7 +71,7 @@ export default function AccessSuspendedPage() {
 
                     {/* Action Area */}
                     <div className="space-y-4">
-                        <div className="text-left bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <div className="text-left bg-gray-50 p-4 rounded-lg border border-gray-100">
                             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
                                 Suggested Actions
                             </h3>
@@ -90,7 +90,7 @@ export default function AccessSuspendedPage() {
                         <button
                             onClick={handleSignOut}
                             disabled={isSigningOut}
-                            className="w-full py-3.5 px-4 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                            className="w-full py-3.5 px-4 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                         >
                             {isSigningOut ? (
                                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-400 border-t-white" />

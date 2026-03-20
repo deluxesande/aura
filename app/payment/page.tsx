@@ -303,7 +303,7 @@ export default function PaymentPage() {
                 // Dispatch the strictly typed object
                 dispatch(setBusinessDetails(formattedBusinessDetails));
 
-                router.push("/settings");
+                router.push("/products");
                 return "Welcome to Salesense Starter!";
             } else {
                 await axios.post("/api/subscription/downgrade", {
@@ -315,7 +315,7 @@ export default function PaymentPage() {
                 dispatch(setBusinessDetails(res.data));
 
                 setIsDowngradeModalOpen(false);
-                router.push("/settings");
+                router.push("/products");
                 return `Successfully downgraded to ${plan.name} plan.`;
             }
         };
@@ -423,7 +423,7 @@ export default function PaymentPage() {
                             <motion.div
                                 key={plan.id}
                                 whileHover={{ y: -5 }}
-                                className={`relative bg-white rounded-2xl shadow-sm border ${
+                                className={`relative bg-white rounded-lg shadow-sm border ${
                                     isCurrent
                                         ? "border-green-500 ring-2 ring-green-500/20 shadow-lg"
                                         : plan.popular
@@ -508,7 +508,7 @@ export default function PaymentPage() {
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden z-10"
+                            className="relative bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden z-10"
                         >
                             <div className="p-6 text-center border-b border-gray-100">
                                 <h3 className="text-2xl font-bold text-gray-900">
@@ -543,7 +543,7 @@ export default function PaymentPage() {
                                                         e.target.value,
                                                     )
                                                 }
-                                                className="block w-full pl-10 pr-3 py-3 bg-slate-50 outline-none border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                                className="block w-full pl-10 pr-3 py-3 bg-slate-50 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                                             />
                                         </div>
                                     </div>
@@ -552,7 +552,7 @@ export default function PaymentPage() {
                                         disabled={
                                             paymentLoading || !phoneNumber
                                         }
-                                        className="w-full flex justify-center items-center py-4 px-4 rounded-xl shadow-lg text-sm font-black text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 transition-all shadow-green-100"
+                                        className="w-full flex justify-center items-center py-4 px-4 rounded-lg shadow-lg text-sm font-black text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 transition-all shadow-green-100"
                                     >
                                         {paymentLoading ? (
                                             <Loader2 className="animate-spin h-4 w-4 stroke-white" />
@@ -581,7 +581,7 @@ export default function PaymentPage() {
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden z-10"
+                            className="relative bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden z-10"
                         >
                             <div className="p-6 bg-red-50 border-b border-red-100">
                                 <h3 className="text-xl font-bold text-red-600 mb-2">
@@ -637,7 +637,7 @@ export default function PaymentPage() {
                                                         staff.id,
                                                     )
                                                 }
-                                                className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${
+                                                className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${
                                                     isSelected
                                                         ? "border-green-500 bg-green-50 ring-1 ring-green-500"
                                                         : "border-gray-200 hover:border-gray-300"
@@ -690,7 +690,7 @@ export default function PaymentPage() {
                                     onClick={() =>
                                         setIsDowngradeModalOpen(false)
                                     }
-                                    className="flex-1 py-3 px-4 rounded-xl border border-gray-300 text-gray-700 font-bold hover:bg-gray-100 transition-colors"
+                                    className="flex-1 py-3 px-4 rounded-lg border border-gray-300 text-gray-700 font-bold hover:bg-gray-100 transition-colors"
                                 >
                                     Cancel
                                 </button>
@@ -701,7 +701,7 @@ export default function PaymentPage() {
                                         (effectiveStaffLimit > 0 &&
                                             selectedStaffIds.length === 0)
                                     }
-                                    className="flex-1 py-3 px-4 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+                                    className="flex-1 py-3 px-4 rounded-lg bg-red-600 text-white font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
                                 >
                                     {downgradeLoading ? (
                                         <Loader2 className="animate-spin h-4 w-4 stroke-white" />

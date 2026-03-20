@@ -116,7 +116,7 @@ const SubscriptionWarningModal = () => {
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-300 p-4">
             <div
-                className={`w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden p-6 relative ${isExpiredState ? "border-2 border-red-100" : ""}`}
+                className={`w-full max-w-md bg-white rounded-lg shadow-2xl overflow-hidden p-6 relative ${isExpiredState ? "border-2 border-red-100" : ""}`}
             >
                 <div className="flex justify-end mb-2">
                     <button
@@ -198,7 +198,7 @@ const SubscriptionWarningModal = () => {
                     ) : (
                         <button
                             onClick={() => setShowRenewInput(true)}
-                            className="w-full py-3 px-4 rounded-xl text-sm font-bold text-white transition-all shadow-lg hover:scale-[1.01] active:scale-95 bg-green-500 hover:bg-green-600 shadow-green-200"
+                            className="w-full py-3 px-4 rounded-lg text-sm font-bold text-white transition-all shadow-lg hover:scale-[1.01] active:scale-95 bg-green-500 hover:bg-green-600 shadow-green-200"
                         >
                             Renew {currentPlan} Plan
                         </button>
@@ -207,7 +207,7 @@ const SubscriptionWarningModal = () => {
                     {!showRenewInput && (
                         <Link
                             href="/payment"
-                            className="block w-full text-center py-3 px-4 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors"
+                            className="block w-full text-center py-3 px-4 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-lg hover:bg-gray-50 transition-colors"
                         >
                             Upgrade / Change Plan
                         </Link>

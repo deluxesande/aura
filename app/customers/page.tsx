@@ -64,7 +64,7 @@ export default function Page() {
                 creators.add(
                     `${c.CreatedBy.firstName} ${
                         c.CreatedBy.lastName || ""
-                    }`.trim()
+                    }`.trim(),
                 );
             } else {
                 creators.add("Unknown");
@@ -105,7 +105,7 @@ export default function Page() {
 
         try {
             const formattedPhone = formatPhoneNumber(
-                newCustomerDetails.phoneNumber
+                newCustomerDetails.phoneNumber,
             );
             const emailToSave =
                 newCustomerDetails.email.trim() === ""
@@ -221,11 +221,11 @@ export default function Page() {
         <Navbar>
             <div className="p-4 md:p-8">
                 {loading ? (
-                    <div className="w-full h-64 flex flex-col items-center justify-center bg-white rounded-xl border border-gray-100">
+                    <div className="w-full h-64 flex flex-col items-center justify-center bg-white rounded-lg border border-gray-100">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
                     </div>
                 ) : (
-                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden px-8 pb-8">
+                    <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden px-8 pb-8">
                         {/* Header with Search */}
                         <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-white">
                             <div className="flex items-center gap-3 w-full md:w-auto">
@@ -327,7 +327,7 @@ export default function Page() {
                                                 key={customer.id}
                                                 onClick={() =>
                                                     router.push(
-                                                        `/customers/${customer.id}`
+                                                        `/customers/${customer.id}`,
                                                     )
                                                 }
                                                 className="hover:bg-gray-50 transition-colors group cursor-pointer"
@@ -336,14 +336,14 @@ export default function Page() {
                                                     <div className="flex items-center gap-3">
                                                         <div className="h-10 w-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-sm shrink-0 border border-slate-200">
                                                             {customer.firstName?.charAt(
-                                                                0
+                                                                0,
                                                             ) || (
                                                                 <User
                                                                     size={16}
                                                                 />
                                                             )}
                                                             {customer.lastName?.charAt(
-                                                                0
+                                                                0,
                                                             )}
                                                         </div>
                                                         <div>
@@ -357,7 +357,7 @@ export default function Page() {
                                                             </p>
                                                             <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
                                                                 {new Date(
-                                                                    customer.createdAt
+                                                                    customer.createdAt,
                                                                 ).toLocaleDateString()}
                                                             </div>
                                                         </div>
@@ -435,7 +435,7 @@ export default function Page() {
                                                 <td className="p-4 text-sm text-gray-500">
                                                     <div className="flex items-center gap-2">
                                                         {new Date(
-                                                            customer.createdAt
+                                                            customer.createdAt,
                                                         ).toLocaleDateString()}
                                                     </div>
                                                 </td>
@@ -445,7 +445,7 @@ export default function Page() {
                                                         onClick={(e) => {
                                                             e.stopPropagation(); // Prevent row click
                                                             handleDelete(
-                                                                customer.id
+                                                                customer.id,
                                                             );
                                                         }}
                                                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
@@ -490,7 +490,7 @@ export default function Page() {
                                         key={customer.id}
                                         onClick={() =>
                                             router.push(
-                                                `/customers/${customer.id}`
+                                                `/customers/${customer.id}`,
                                             )
                                         }
                                         className="p-4 bg-white cursor-pointer"
@@ -500,10 +500,10 @@ export default function Page() {
                                             <div className="flex items-center gap-3">
                                                 <div className="h-10 w-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-sm shrink-0 border border-slate-200">
                                                     {customer.firstName?.charAt(
-                                                        0
+                                                        0,
                                                     ) || <User size={16} />}
                                                     {customer.lastName?.charAt(
-                                                        0
+                                                        0,
                                                     )}
                                                 </div>
                                                 <div>
@@ -513,7 +513,7 @@ export default function Page() {
                                                     </p>
                                                     <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
                                                         {new Date(
-                                                            customer.createdAt
+                                                            customer.createdAt,
                                                         ).toLocaleDateString()}
                                                     </div>
                                                 </div>

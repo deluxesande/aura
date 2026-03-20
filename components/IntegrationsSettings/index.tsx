@@ -193,7 +193,7 @@ const IntegrationsSettings: React.FC = () => {
     return (
         <section className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 w-full relative min-h-[200px]">
             {isLoading && (
-                <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center rounded-2xl backdrop-blur-sm">
+                <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center rounded-lg backdrop-blur-sm">
                     <Loader2 className="animate-spin h-8 w-8 text-green-600" />
                 </div>
             )}
@@ -212,7 +212,7 @@ const IntegrationsSettings: React.FC = () => {
                 {integrationsList.map((integration) => (
                     <div
                         key={integration.id}
-                        className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between p-5 bg-white border border-gray-200 rounded-xl hover:border-green-200 hover:shadow-md transition-all gap-4 sm:gap-0 group"
+                        className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between p-5 bg-white border border-gray-200 rounded-lg hover:border-green-200 hover:shadow-md transition-all gap-4 sm:gap-0 group"
                     >
                         <div className="flex-1 min-w-0 flex items-center  gap-2">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-1 sm:space-y-0">
@@ -296,7 +296,7 @@ const IntegrationsSettings: React.FC = () => {
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                                 transition={{ duration: 0.2 }}
-                                className="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden relative"
+                                className="bg-white rounded-lg shadow-2xl border border-gray-100 w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden relative"
                             >
                                 {/* --- Background Line Pattern --- */}
                                 <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03] z-0">
@@ -344,7 +344,7 @@ const IntegrationsSettings: React.FC = () => {
                                     onSubmit={handleSaveMpesa}
                                     className="p-6 space-y-5 overflow-y-auto relative z-10"
                                 >
-                                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+                                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
                                         <AlertTriangle className="w-5 h-5 stroke-amber-600 flex-shrink-0 mt-0.5" />
                                         <div className="text-amber-800 text-xs leading-relaxed">
                                             <p className="font-bold mb-0.5 text-amber-600">
@@ -459,7 +459,7 @@ const IntegrationsSettings: React.FC = () => {
                                             <button
                                                 type="button"
                                                 onClick={handleDisconnect}
-                                                className="flex-1 px-4 py-3 text-sm font-bold text-red-600 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition-colors"
+                                                className="flex-1 px-4 py-3 text-sm font-bold text-red-600 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition-colors"
                                             >
                                                 Disconnect
                                             </button>

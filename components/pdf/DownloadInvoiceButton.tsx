@@ -70,7 +70,7 @@ export default function DownloadInvoiceButton({
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-100 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+                <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-100 rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-right">
                     <div className="p-1">
                         <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                             Select Format

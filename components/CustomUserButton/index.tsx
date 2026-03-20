@@ -335,7 +335,7 @@ const CustomUserButton = () => {
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                                 transition={{ duration: 0.2 }}
-                                className="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-gray-100 overflow-hidden relative"
+                                className="bg-white rounded-lg w-full max-w-md shadow-2xl border border-gray-100 overflow-hidden relative"
                             >
                                 {/* Background Line Pattern */}
                                 <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03]">
@@ -388,7 +388,7 @@ const CustomUserButton = () => {
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className="block w-full pl-4 pr-4 py-3 bg-slate-50 outline-none border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm"
+                                                    className="block w-full pl-4 pr-4 py-3 bg-slate-50 outline-none border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm"
                                                     placeholder="colleague@company.com"
                                                     required
                                                     autoFocus
@@ -408,7 +408,7 @@ const CustomUserButton = () => {
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className="block w-full pl-4 pr-10 py-3 bg-slate-50 outline-none border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm appearance-none cursor-pointer"
+                                                    className="block w-full pl-4 pr-10 py-3 bg-slate-50 outline-none border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm appearance-none cursor-pointer"
                                                 >
                                                     <option value="user">
                                                         User (Basic Access)
@@ -437,7 +437,7 @@ const CustomUserButton = () => {
                                                 onClick={() =>
                                                     setShowInviteModal(false)
                                                 }
-                                                className="flex-1 px-4 py-3 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                                                className="flex-1 px-4 py-3 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
                                                 disabled={isSending}
                                             >
                                                 Cancel
@@ -445,7 +445,7 @@ const CustomUserButton = () => {
                                             <button
                                                 type="submit"
                                                 disabled={isSending}
-                                                className="flex-1 px-4 py-3 text-sm font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 transition-all flex items-center justify-center gap-2"
+                                                className="flex-1 px-4 py-3 text-sm font-bold text-white bg-green-500 rounded-lg hover:bg-green-600 transition-all flex items-center justify-center gap-2"
                                             >
                                                 {isSending ? (
                                                     <Loader2 className="animate-spin h-4 w-4 stroke-white" />

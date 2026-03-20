@@ -100,7 +100,7 @@ export default function HelpArticlePage({
                                         return (
                                             <div
                                                 key={i}
-                                                className="flex gap-4 mb-6 p-4 bg-gray-50 rounded-xl border border-gray-100"
+                                                className="flex gap-4 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-100"
                                             >
                                                 <div className="shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold mt-0.5">
                                                     {i + 1}

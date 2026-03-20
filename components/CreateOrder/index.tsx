@@ -14,7 +14,7 @@ interface CreateOrderProps {
 const CreateOrder: React.FC<CreateOrderProps> = ({ children }) => {
     const dispatch = useDispatch();
     const isVisible = useSelector(
-        (state: AppState) => state.visibility.isVisible
+        (state: AppState) => state.visibility.isVisible,
     );
 
     const handleClose = () => {
@@ -26,6 +26,7 @@ const CreateOrder: React.FC<CreateOrderProps> = ({ children }) => {
     return (
         <FloatingPortal>
             <div
+                data-tour="create-order"
                 className="fixed right-0 top-0 h-full w-[20rem] bg-white shadow-md p-4 overflow-y-auto"
                 style={{ zIndex: 9999 }}
             >

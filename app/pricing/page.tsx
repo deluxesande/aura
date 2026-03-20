@@ -77,7 +77,7 @@ export default function PricingPage() {
                     >
                         {/* STARTER TIER */}
                         <motion.div
-                            className="border border-gray-100 bg-white rounded-2xl p-8 hover:border-green-200 transition-all shadow-sm hover:shadow-md"
+                            className="border border-gray-100 bg-white rounded-lg p-8 hover:border-green-200 transition-all shadow-sm hover:shadow-md"
                             variants={itemVariants}
                         >
                             <div className="text-center mb-8">
@@ -135,7 +135,7 @@ export default function PricingPage() {
                             </ul>
                             <a
                                 href="/sign-up"
-                                className="block w-full text-center py-3 border border-green-200 text-green-700 font-semibold rounded-xl hover:bg-green-50 transition-colors"
+                                className="block w-full text-center py-3 border border-green-200 text-green-700 font-semibold rounded-lg hover:bg-green-50 transition-colors"
                             >
                                 Start Free
                             </a>
@@ -143,7 +143,7 @@ export default function PricingPage() {
 
                         {/* STANDARD TIER */}
                         <motion.div
-                            className="border-2 border-green-500 rounded-2xl p-8 relative bg-white shadow-xl scale-105 z-10"
+                            className="border-2 border-green-500 rounded-lg p-8 relative bg-white shadow-xl scale-105 z-10"
                             variants={itemVariants}
                         >
                             <div className="absolute top-0 right-0 left-0 mx-auto w-32 -mt-4 bg-green-500 text-white text-center py-1 rounded-full text-sm font-bold shadow-sm">
@@ -209,7 +209,7 @@ export default function PricingPage() {
                             </ul>
                             <a
                                 href="/sign-up?plan=standard"
-                                className="block w-full text-center py-3.5 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-colors shadow-lg shadow-green-200"
+                                className="block w-full text-center py-3.5 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition-colors shadow-lg shadow-green-200"
                             >
                                 Get Started
                             </a>
@@ -217,7 +217,7 @@ export default function PricingPage() {
 
                         {/* PREMIUM TIER */}
                         <motion.div
-                            className="border border-gray-100 bg-white rounded-2xl p-8 hover:border-green-200 transition-all shadow-sm hover:shadow-md"
+                            className="border border-gray-100 bg-white rounded-lg p-8 hover:border-green-200 transition-all shadow-sm hover:shadow-md"
                             variants={itemVariants}
                         >
                             <div className="text-center mb-8">
@@ -280,7 +280,7 @@ export default function PricingPage() {
                             </ul>
                             <a
                                 href="/sign-up?plan=premium"
-                                className="block w-full text-center py-3 border border-gray-200 text-gray-600 font-semibold rounded-xl hover:border-green-500 hover:text-green-600 transition-colors"
+                                className="block w-full text-center py-3 border border-gray-200 text-gray-600 font-semibold rounded-lg hover:border-green-500 hover:text-green-600 transition-colors"
                             >
                                 Get Premium
                             </a>

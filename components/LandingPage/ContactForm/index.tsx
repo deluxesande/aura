@@ -147,7 +147,7 @@ export default function ContactForm() {
                                         }
                                         required
                                         placeholder="John Doe"
-                                        className="w-full px-4 py-3 outline-none bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all placeholder-gray-400 text-gray-900"
+                                        className="w-full px-4 py-3 outline-none bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all placeholder-gray-400 text-gray-900"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -166,7 +166,7 @@ export default function ContactForm() {
                                         }
                                         required
                                         placeholder="john@example.com"
-                                        className="w-full px-4 py-3 outline-none bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all placeholder-gray-400 text-gray-900"
+                                        className="w-full px-4 py-3 outline-none bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all placeholder-gray-400 text-gray-900"
                                     />
                                 </div>
                             </div>
@@ -185,7 +185,7 @@ export default function ContactForm() {
                                     onChange={(e) => setMessage(e.target.value)}
                                     required
                                     placeholder="Tell us how we can help..."
-                                    className="w-full px-4 py-3 outline-none bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all placeholder-gray-400 text-gray-900 resize-none"
+                                    className="w-full px-4 py-3 outline-none bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all placeholder-gray-400 text-gray-900 resize-none"
                                 />
                             </div>
 
@@ -193,7 +193,7 @@ export default function ContactForm() {
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="w-full md:w-auto min-w-full flex items-center justify-center gap-2 py-3.5 px-8 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold shadow-lg shadow-green-200 transition-all transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
+                                    className="w-full md:w-auto min-w-full flex items-center justify-center gap-2 py-3.5 px-8 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold shadow-lg shadow-green-200 transition-all transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
                                     {isLoading ? (
                                         <>

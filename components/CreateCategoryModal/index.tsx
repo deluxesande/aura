@@ -37,7 +37,7 @@ const CreateCategoryModal: React.FC<ModalProps> = ({
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 10 }}
                             transition={{ duration: 0.2 }}
-                            className="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-gray-100 overflow-hidden relative"
+                            className="bg-white rounded-lg w-full max-w-md shadow-2xl border border-gray-100 overflow-hidden relative"
                         >
                             {/* --- Background Line Pattern --- */}
                             <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03]">
@@ -85,7 +85,7 @@ const CreateCategoryModal: React.FC<ModalProps> = ({
                                             onChange={(e) =>
                                                 setCategoryName(e.target.value)
                                             }
-                                            className="block w-full pl-4 pr-4 py-3 bg-slate-50 outline-none border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm font-medium"
+                                            className="block w-full pl-4 pr-4 py-3 bg-slate-50 outline-none border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm font-medium"
                                             placeholder="e.g., Electronics, Beverages..."
                                             required
                                             autoFocus
@@ -96,13 +96,13 @@ const CreateCategoryModal: React.FC<ModalProps> = ({
                                         <button
                                             type="button"
                                             onClick={onClose}
-                                            className="flex-1 px-4 py-3 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                                            className="flex-1 px-4 py-3 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
                                         >
                                             Cancel
                                         </button>
                                         <button
                                             type="submit"
-                                            className="flex-1 px-4 py-3 text-sm font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 transition-all"
+                                            className="flex-1 px-4 py-3 text-sm font-bold text-white bg-green-500 rounded-lg hover:bg-green-600 transition-all"
                                         >
                                             Create Category
                                         </button>

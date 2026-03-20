@@ -79,12 +79,12 @@ export default function Navbar({
 
                             {/* Dropdown Menu */}
                             <div
-                                className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden transition-all duration-200 origin-top ${isResourcesOpen ? "opacity-100 scale-100 translate-y-0 visible" : "opacity-0 scale-95 -translate-y-2 invisible"}`}
+                                className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden transition-all duration-200 origin-top ${isResourcesOpen ? "opacity-100 scale-100 translate-y-0 visible" : "opacity-0 scale-95 -translate-y-2 invisible"}`}
                             >
                                 <div className="p-2 space-y-1">
                                     <Link
                                         href="/blog"
-                                        className="flex items-start gap-3 p-3 rounded-xl hover:bg-green-50 transition-colors group/item"
+                                        className="flex items-start gap-3 p-3 rounded-lg hover:bg-green-50 transition-colors group/item"
                                     >
                                         <div>
                                             <p className="text-sm font-bold text-gray-900 group-hover/item:text-green-500">
@@ -97,7 +97,7 @@ export default function Navbar({
                                     </Link>
                                     <Link
                                         href="/help-center"
-                                        className="flex items-start gap-3 p-3 rounded-xl hover:bg-green-50 transition-colors group/item"
+                                        className="flex items-start gap-3 p-3 rounded-lg hover:bg-green-50 transition-colors group/item"
                                     >
                                         <div>
                                             <p className="text-sm font-bold text-gray-900 group-hover/item:text-green-500">
@@ -132,7 +132,7 @@ export default function Navbar({
                                 </Link>
                                 <Link
                                     href="/sign-up"
-                                    className="bg-green-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-green-600 transition-all transform hover:-translate-y-0.5"
+                                    className="bg-green-500 text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-green-600 transition-all transform hover:-translate-y-0.5"
                                 >
                                     Get Started
                                 </Link>
@@ -140,7 +140,7 @@ export default function Navbar({
                         ) : (
                             <Link
                                 href="/dashboard"
-                                className="flex items-center gap-2 bg-green-50 text-green-500 px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-green-100 transition-all border border-green-100"
+                                className="flex items-center gap-2 bg-green-50 text-green-500 px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-green-100 transition-all border border-green-100"
                             >
                                 Dashboard
                                 <ChevronRight
@@ -169,19 +169,19 @@ export default function Navbar({
                     <div className="px-4 pt-4 pb-20 space-y-2">
                         <Link
                             href="/features"
-                            className="block px-4 py-3 rounded-xl text-base font-medium text-gray-600 hover:text-green-500 hover:bg-green-50 transition-colors"
+                            className="block px-4 py-3 rounded-lg text-base font-medium text-gray-600 hover:text-green-500 hover:bg-green-50 transition-colors"
                         >
                             Features
                         </Link>
                         <Link
                             href="/pricing"
-                            className="block px-4 py-3 rounded-xl text-base font-medium text-gray-600 hover:text-green-500 hover:bg-green-50 transition-colors"
+                            className="block px-4 py-3 rounded-lg text-base font-medium text-gray-600 hover:text-green-500 hover:bg-green-50 transition-colors"
                         >
                             Pricing
                         </Link>
                         <Link
                             href="/integration"
-                            className="block px-4 py-3 rounded-xl text-base font-medium text-gray-600 hover:text-green-500 hover:bg-green-50 transition-colors"
+                            className="block px-4 py-3 rounded-lg text-base font-medium text-gray-600 hover:text-green-500 hover:bg-green-50 transition-colors"
                         >
                             Integration
                         </Link>
@@ -192,13 +192,13 @@ export default function Navbar({
                             </p>
                             <Link
                                 href="/blog"
-                                className="flex items-center justify-between px-4 py-3 rounded-xl text-base font-medium text-gray-600 hover:text-green-500 hover:bg-green-50 transition-colors"
+                                className="flex items-center justify-between px-4 py-3 rounded-lg text-base font-medium text-gray-600 hover:text-green-500 hover:bg-green-50 transition-colors"
                             >
                                 Blog
                             </Link>
                             <Link
                                 href="/help-center"
-                                className="block px-4 py-3 rounded-xl text-base font-medium text-gray-600 hover:text-green-500 hover:bg-green-50 transition-colors"
+                                className="block px-4 py-3 rounded-lg text-base font-medium text-gray-600 hover:text-green-500 hover:bg-green-50 transition-colors"
                             >
                                 Help Center
                             </Link>
@@ -206,7 +206,7 @@ export default function Navbar({
 
                         <Link
                             href="/about"
-                            className="block px-4 py-3 rounded-xl text-base font-medium text-gray-600 hover:text-green-500 hover:bg-green-50 transition-colors"
+                            className="block px-4 py-3 rounded-lg text-base font-medium text-gray-600 hover:text-green-500 hover:bg-green-50 transition-colors"
                         >
                             About Us
                         </Link>
@@ -216,13 +216,13 @@ export default function Navbar({
                                 <>
                                     <Link
                                         href="/sign-in"
-                                        className="block w-full text-center px-4 py-3 rounded-xl text-base font-bold text-gray-600 hover:bg-gray-50 border border-gray-200"
+                                        className="block w-full text-center px-4 py-3 rounded-lg text-base font-bold text-gray-600 hover:bg-gray-50 border border-gray-200"
                                     >
                                         Sign in
                                     </Link>
                                     <Link
                                         href="/sign-up"
-                                        className="block w-full text-center px-4 py-3 rounded-xl text-base font-bold text-white bg-green-600 hover:bg-green-700 shadow-md"
+                                        className="block w-full text-center px-4 py-3 rounded-lg text-base font-bold text-white bg-green-600 hover:bg-green-700 shadow-md"
                                     >
                                         Get Started
                                     </Link>
@@ -230,7 +230,7 @@ export default function Navbar({
                             ) : (
                                 <Link
                                     href="/dashboard"
-                                    className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-base font-bold text-white bg-green-500 hover:bg-green-600 shadow-md"
+                                    className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg text-base font-bold text-white bg-green-500 hover:bg-green-600 shadow-md"
                                 >
                                     Go to Dashboard
                                     <ChevronRight

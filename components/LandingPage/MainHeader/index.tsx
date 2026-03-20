@@ -82,7 +82,7 @@ export default function MainHeader() {
                                 href="/sign-up"
                                 className="group relative w-full md:w-auto"
                             >
-                                <div className="relative z-10 w-full md:w-auto bg-green-500 text-white px-8 py-3.5 rounded-xl font-semibold shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] hover:shadow-[0_6px_20px_rgba(22,163,74,0.23)] hover:bg-green-600 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center">
+                                <div className="relative z-10 w-full md:w-auto bg-green-500 text-white px-8 py-3.5 rounded-lg font-semibold shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] hover:shadow-[0_6px_20px_rgba(22,163,74,0.23)] hover:bg-green-600 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center">
                                     Start Free Trial
                                     <ChevronRight
                                         className="ml-2 stroke-white transition-transform duration-300 group-hover:translate-x-1.5"
@@ -96,7 +96,7 @@ export default function MainHeader() {
                                 href="/features"
                                 className="group w-full md:w-auto"
                             >
-                                <div className="w-full md:w-auto bg-white text-gray-600 px-8 py-3.5 rounded-xl font-medium border border-gray-200 shadow-sm hover:text-green-700 hover:border-green-200 hover:bg-green-50/50 hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center">
+                                <div className="w-full md:w-auto bg-white text-gray-600 px-8 py-3.5 rounded-lg font-medium border border-gray-200 shadow-sm hover:text-green-700 hover:border-green-200 hover:bg-green-50/50 hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center">
                                     Learn more
                                 </div>
                             </Link>
@@ -111,7 +111,7 @@ export default function MainHeader() {
                         variants={dashboardVariants}
                     >
                         {/* Browser Window Container */}
-                        <div className="relative z-10 bg-white rounded-xl shadow-2xl shadow-gray-200/50 border border-gray-100 overflow-hidden transform lg:rotate-y-6 hover:rotate-y-0 transition-transform duration-700 ease-out p-1">
+                        <div className="relative z-10 bg-white rounded-lg shadow-2xl shadow-gray-200/50 border border-gray-100 overflow-hidden transform lg:rotate-y-6 hover:rotate-y-0 transition-transform duration-700 ease-out p-1">
                             {/* Fake Browser Toolbar */}
                             <div className="bg-gray-50 border-b border-gray-100 px-3 py-2 md:px-4 md:py-2.5 flex items-center gap-2 rounded-t-lg">
                                 <div className="flex gap-1.5">

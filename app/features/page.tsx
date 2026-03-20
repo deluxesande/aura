@@ -104,7 +104,7 @@ export default function FeaturesPage() {
                         className="md:col-span-2 bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
                     >
                         <div className="relative z-10 max-w-md">
-                            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-6">
+                            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-6">
                                 <HandCoins
                                     className="stroke-green-500"
                                     size={24}
@@ -123,7 +123,7 @@ export default function FeaturesPage() {
 
                         {/* Abstract UI Illustration */}
                         <div className="absolute top-8 right-8 w-64 hidden lg:block">
-                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 shadow-sm transform rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                            <div className="bg-gray-50 rounded-lg p-4 border border-gray-100 shadow-sm transform rotate-3 group-hover:rotate-0 transition-transform duration-500">
                                 <div className="flex items-center justify-between mb-3 border-b border-gray-200 pb-2">
                                     <span className="text-xs font-bold text-gray-400">
                                         Recent Transactions
@@ -161,7 +161,7 @@ export default function FeaturesPage() {
                         className="md:row-span-2 bg-green-100 rounded-3xl p-8 border border-green-100 relative overflow-hidden group"
                     >
                         <div className="relative z-10">
-                            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mb-6 shadow-sm">
+                            <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center mb-6 shadow-sm">
                                 <ShieldCheck
                                     className="stroke-green-500"
                                     size={24}
@@ -203,7 +203,7 @@ export default function FeaturesPage() {
                         variants={fadeInUp}
                         className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all group"
                     >
-                        <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-6">
+                        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-6">
                             <BarChart3 className="stroke-green-500" size={24} />
                         </div>
                         <h3 className="text-xl font-bold text-gray-900 mb-2">
@@ -227,7 +227,7 @@ export default function FeaturesPage() {
                         variants={fadeInUp}
                         className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all"
                     >
-                        <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-6">
+                        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-6">
                             <Users className="stroke-green-500" size={24} />
                         </div>
                         <h3 className="text-xl font-bold text-gray-900 mb-2">
@@ -261,14 +261,14 @@ export default function FeaturesPage() {
                                 <ArrowUpRight size={18} />
                             </div>
                         </div>
-                        <div className="relative w-48 h-48 bg-gray-50 rounded-2xl border-4 border-gray-100 flex items-center justify-center shadow-inner">
+                        <div className="relative w-48 h-48 bg-gray-50 rounded-lg border-4 border-gray-100 flex items-center justify-center shadow-inner">
                             <div className="text-center">
                                 <div className="w-10 h-1 rounded-full bg-gray-200 mx-auto mb-4"></div>
-                                <div className="w-12 h-12 rounded-xl mx-auto flex items-center justify-center text-white mb-2 shadow-lg shadow-green-200">
+                                <div className="w-12 h-12 rounded-lg mx-auto flex items-center justify-center text-white mb-2 shadow-lg shadow-green-200">
                                     <Image
                                         src="/logos/salesense-icon.png"
                                         alt="Logo"
-                                        className="rounded-xl"
+                                        className="rounded-lg"
                                         width={48}
                                         height={48}
                                     />
@@ -286,7 +286,7 @@ export default function FeaturesPage() {
                         className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all"
                     >
                         <div className="flex justify-between items-start mb-6">
-                            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                                 <Bell className="stroke-green-500" size={24} />
                             </div>
                             <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
@@ -393,7 +393,7 @@ export default function FeaturesPage() {
                             {/* Green Button for contrast against White Card */}
                             <Link
                                 href="/sign-up"
-                                className="inline-flex items-center justify-center px-8 py-4 text-base font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 hover:-translate-y-1 transition-all shadow-lg shadow-green-200"
+                                className="inline-flex items-center justify-center px-8 py-4 text-base font-bold text-white bg-green-500 rounded-lg hover:bg-green-600 hover:-translate-y-1 transition-all shadow-lg shadow-green-200"
                             >
                                 Get Started Now
                             </Link>

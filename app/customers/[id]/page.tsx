@@ -55,7 +55,7 @@ export default function CustomerDetailsPage() {
     // Stats
     const totalSpent = invoices.reduce(
         (acc, curr) => (curr.status === "PAID" ? acc + curr.totalAmount : acc),
-        0
+        0,
     );
     const totalOrders = invoices.length;
     const avgOrderValue = totalOrders > 0 ? totalSpent / totalOrders : 0;
@@ -65,7 +65,7 @@ export default function CustomerDetailsPage() {
             setLoading(true);
             try {
                 const customerRes = await axios.get(
-                    `/api/customer/${customerId}`
+                    `/api/customer/${customerId}`,
                 );
                 const foundCustomer = customerRes.data;
                 if (foundCustomer) {
@@ -96,7 +96,7 @@ export default function CustomerDetailsPage() {
             try {
                 await axios.delete(`/api/invoice/${id}`);
                 setInvoices((prevInvoices) =>
-                    prevInvoices.filter((invoice) => invoice.id !== id)
+                    prevInvoices.filter((invoice) => invoice.id !== id),
                 );
             } catch (error) {
                 // Handle error appropriately
@@ -115,7 +115,7 @@ export default function CustomerDetailsPage() {
         const fetchInvoices = async () => {
             try {
                 const response = await axios.get(
-                    `/api/invoice/customer?customerId=${customerId}`
+                    `/api/invoice/customer?customerId=${customerId}`,
                 );
                 setInvoices(response.data);
                 console.log(response.data);
@@ -149,7 +149,7 @@ export default function CustomerDetailsPage() {
                         <ArrowLeft className="w-5 h-5 text-gray-600" />
                     </div>
                 </Link>
-                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
                     <div className="p-6 md:p-8">
                         <div className="flex flex-col lg:flex-row justify-between gap-8">
                             <div className="flex flex-col sm:flex-row gap-6 items-start">
@@ -167,7 +167,7 @@ export default function CustomerDetailsPage() {
                                             <span className="flex items-center font-light gap-1">
                                                 Customer since{" "}
                                                 {new Date(
-                                                    customer.createdAt
+                                                    customer.createdAt,
                                                 ).toLocaleDateString()}
                                             </span>
                                         </div>
@@ -256,7 +256,7 @@ export default function CustomerDetailsPage() {
 
                 {/* --- 2. Analytics Cards --- */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div className="bg-white p-5 rounded-lg border border-gray-100 shadow-sm flex items-center justify-between">
                         <div>
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                                 Lifetime Value
@@ -269,7 +269,7 @@ export default function CustomerDetailsPage() {
                             </div>
                         </div>
                     </div>
-                    <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div className="bg-white p-5 rounded-lg border border-gray-100 shadow-sm flex items-center justify-between">
                         <div>
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                                 Total Invoices
@@ -282,7 +282,7 @@ export default function CustomerDetailsPage() {
                             <Receipt className="w-5 h-5 stroke-green-500" />
                         </div>
                     </div>
-                    <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div className="bg-white p-5 rounded-lg border border-gray-100 shadow-sm flex items-center justify-between">
                         <div>
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                                 Avg. Order Value

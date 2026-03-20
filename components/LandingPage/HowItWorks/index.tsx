@@ -60,7 +60,7 @@ export default function HowItWorks() {
                             className="flex-1"
                         >
                             <div className="flex items-center gap-4 mb-6">
-                                <span className="flex items-center justify-center w-12 h-12 rounded-2xl bg-green-100 text-green-700 font-bold text-xl">
+                                <span className="flex items-center justify-center w-12 h-12 rounded-lg bg-green-100 text-green-700 font-bold text-xl">
                                     01
                                 </span>
                                 <h3 className="text-2xl md:text-3xl font-bold text-gray-900">
@@ -103,7 +103,7 @@ export default function HowItWorks() {
                         >
                             <div className="relative bg-gray-50 rounded-3xl border border-gray-100 p-6 md:p-10 shadow-lg shadow-gray-200/50">
                                 {/* Abstract Form UI */}
-                                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
+                                <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 space-y-4">
                                     <div className="space-y-2">
                                         <div className="h-4 w-24 bg-gray-200 rounded-full" />
                                         <div className="h-10 w-full bg-gray-50 border border-gray-200 rounded-lg" />
@@ -121,7 +121,7 @@ export default function HowItWorks() {
                                     </div>
                                 </div>
                                 {/* Floating Badge */}
-                                <div className="absolute -right-4 top-1/2 -translate-y-1/2 bg-white p-4 rounded-xl shadow-xl border border-green-100 flex items-center gap-3">
+                                <div className="absolute -right-4 top-1/2 -translate-y-1/2 bg-white p-4 rounded-lg shadow-xl border border-green-100 flex items-center gap-3">
                                     <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
                                         <CheckCircle2
                                             size={16}
@@ -151,7 +151,7 @@ export default function HowItWorks() {
                             className="flex-1"
                         >
                             <div className="flex items-center gap-4 mb-6">
-                                <span className="flex items-center justify-center w-12 h-12 rounded-2xl bg-green-100 text-green-700 font-bold text-xl">
+                                <span className="flex items-center justify-center w-12 h-12 rounded-lg bg-green-100 text-green-700 font-bold text-xl">
                                     02
                                 </span>
                                 <h3 className="text-2xl md:text-3xl font-bold text-gray-900">
@@ -193,7 +193,7 @@ export default function HowItWorks() {
                         >
                             <div className="relative bg-green-500 rounded-3xl p-6 md:p-10 shadow-lg shadow-green-600/20 overflow-hidden">
                                 {/* Abstract M-Pesa Connection UI */}
-                                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+                                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/10">
                                     <div className="flex items-center justify-between mb-8">
                                         <div className="h-8 w-8 rounded-full bg-green-700" />
                                         <div className="h-0.5 flex-1 mx-4 bg-green-800/30 border-t border-dashed border-green-400/50" />
@@ -235,7 +235,7 @@ export default function HowItWorks() {
                             className="flex-1"
                         >
                             <div className="flex items-center gap-4 mb-6">
-                                <span className="flex items-center justify-center w-12 h-12 rounded-2xl bg-green-100 text-green-700 font-bold text-xl">
+                                <span className="flex items-center justify-center w-12 h-12 rounded-lg bg-green-100 text-green-700 font-bold text-xl">
                                     03
                                 </span>
                                 <h3 className="text-2xl md:text-3xl font-bold text-gray-900">
@@ -268,7 +268,7 @@ export default function HowItWorks() {
                         >
                             <div className="relative bg-gray-50 rounded-3xl border border-gray-100 p-6 md:p-10 shadow-lg shadow-gray-200/50">
                                 {/* Abstract Dashboard UI */}
-                                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 grid grid-cols-2 gap-3">
+                                <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 grid grid-cols-2 gap-3">
                                     <div className="col-span-2 h-32 bg-green-50 rounded-lg border border-green-100 relative overflow-hidden">
                                         <div className="absolute bottom-0 left-0 right-0 h-16 bg-green-200/50 rounded-t-full blur-xl" />
                                         <svg

@@ -169,7 +169,7 @@ const SubscriptionManagement: React.FC = () => {
                 {/* Usage Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {/* Days Left Card */}
-                    <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div className="bg-white p-5 rounded-lg border border-gray-100 shadow-sm flex items-center justify-between">
                         <div>
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                                 Days Remaining
@@ -202,7 +202,7 @@ const SubscriptionManagement: React.FC = () => {
                     </div>
 
                     {/* Allowance Left Card */}
-                    <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div className="bg-white p-5 rounded-lg border border-gray-100 shadow-sm flex items-center justify-between">
                         <div>
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                                 Allowance Left
@@ -217,7 +217,7 @@ const SubscriptionManagement: React.FC = () => {
                     </div>
 
                     {/* Team Invites Card */}
-                    <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div className="bg-white p-5 rounded-lg border border-gray-100 shadow-sm flex items-center justify-between">
                         <div>
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                                 Team Invites
@@ -232,7 +232,7 @@ const SubscriptionManagement: React.FC = () => {
                     </div>
 
                     {/* Billing Status Card */}
-                    <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div className="bg-white p-5 rounded-lg border border-gray-100 shadow-sm flex items-center justify-between">
                         <div>
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                                 Billing Status
@@ -300,7 +300,7 @@ const SubscriptionManagement: React.FC = () => {
                         {plan !== "STARTER" ? (
                             <button
                                 onClick={() => setIsRenewModalOpen(true)}
-                                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-50 transition-all shadow-sm w-full"
+                                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-lg hover:bg-gray-50 transition-all shadow-sm w-full"
                             >
                                 <RefreshCcw size={18} />
                                 Renew Current Plan
@@ -311,7 +311,7 @@ const SubscriptionManagement: React.FC = () => {
 
                         <Link
                             href="/payment"
-                            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-green-500 text-white text-sm font-bold rounded-xl hover:bg-green-700 transition-all shadow-md shadow-green-100 w-full text-center"
+                            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-green-500 text-white text-sm font-bold rounded-lg hover:bg-green-700 transition-all shadow-md shadow-green-100 w-full text-center"
                         >
                             <ArrowUpCircle size={18} className="stroke-white" />
                             Upgrade Plan
@@ -572,7 +572,7 @@ const SubscriptionManagement: React.FC = () => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-3 px-4 bg-green-600 text-white font-black rounded-2xl hover:bg-green-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50 shadow-lg shadow-green-200"
+                                className="w-full py-3 px-4 bg-green-600 text-white font-black rounded-lg hover:bg-green-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50 shadow-lg shadow-green-200"
                             >
                                 {loading ? (
                                     <Loader2 className="animate-spin" />

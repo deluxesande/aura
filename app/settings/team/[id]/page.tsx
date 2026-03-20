@@ -50,7 +50,7 @@ export default function UserDetailsPage() {
     // --- Stats Calculation ---
     const totalRevenue = invoices.reduce(
         (acc, curr) => (curr.status === "PAID" ? acc + curr.totalAmount : acc),
-        0
+        0,
     );
 
     const totalSalesCount = invoices.length;
@@ -95,7 +95,7 @@ export default function UserDetailsPage() {
         const fetchInvoices = async () => {
             try {
                 const response = await axios.get(
-                    `/api/invoice/user?userId=${userId}`
+                    `/api/invoice/user?userId=${userId}`,
                 );
                 setInvoices(response.data);
             } catch (error) {
@@ -153,7 +153,7 @@ export default function UserDetailsPage() {
                 </Link>
 
                 {/* Profile Card */}
-                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
                     <div className="p-6 md:p-8">
                         <div className="flex flex-col lg:flex-row justify-between gap-8">
                             <div className="flex flex-col sm:flex-row gap-6 items-start">
@@ -187,9 +187,9 @@ export default function UserDetailsPage() {
                                                     staffUser.role === "ADMIN"
                                                         ? "bg-purple-100 text-purple-700 border-purple-200"
                                                         : staffUser.role ===
-                                                          "MANAGER"
-                                                        ? "bg-blue-100 text-blue-700 border-blue-200"
-                                                        : "bg-gray-100 text-gray-700 border-gray-200"
+                                                            "MANAGER"
+                                                          ? "bg-blue-100 text-blue-700 border-blue-200"
+                                                          : "bg-gray-100 text-gray-700 border-gray-200"
                                                 }`}
                                             >
                                                 {staffUser.role}
@@ -199,7 +199,7 @@ export default function UserDetailsPage() {
                                             <span className="flex items-center font-light gap-1">
                                                 Joined{" "}
                                                 {new Date(
-                                                    staffUser.createdAt
+                                                    staffUser.createdAt,
                                                 ).toLocaleDateString()}
                                             </span>
                                         </div>
@@ -270,7 +270,7 @@ export default function UserDetailsPage() {
                 {/* --- Analytics Cards (Sales Performance) --- */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* Total Revenue */}
-                    <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div className="bg-white p-5 rounded-lg border border-gray-100 shadow-sm flex items-center justify-between">
                         <div>
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                                 Total Revenue Generated
@@ -285,7 +285,7 @@ export default function UserDetailsPage() {
                     </div>
 
                     {/* Sales Count */}
-                    <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div className="bg-white p-5 rounded-lg border border-gray-100 shadow-sm flex items-center justify-between">
                         <div>
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                                 Orders Processed
@@ -300,7 +300,7 @@ export default function UserDetailsPage() {
                     </div>
 
                     {/* Today's Sales */}
-                    <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                    <div className="bg-white p-5 rounded-lg border border-gray-100 shadow-sm flex items-center justify-between">
                         <div>
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                                 Today&apos;s Sales

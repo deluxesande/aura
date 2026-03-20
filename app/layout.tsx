@@ -12,6 +12,7 @@ import { metadata } from "./metadata";
 import RoleGuard from "@/components/auth/RoleGuard";
 import AuthProvider from "@/components/auth/AuthProvider";
 import PageTransition from "@/components/PageTransitions";
+import WelcomeTour from "@/components/WelcomeTour";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -37,6 +38,7 @@ export default function RootLayout({
                                 <ToastProvider>
                                     <PageTransition>
                                         {children}
+                                        <WelcomeTour />
                                         <Analytics />
                                         <SpeedInsights />
                                     </PageTransition>

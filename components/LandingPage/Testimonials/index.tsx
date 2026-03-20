@@ -90,7 +90,7 @@ export default function Testimonials() {
                         <motion.div
                             key={i}
                             variants={itemVariants}
-                            className={`break-inside-avoid rounded-2xl p-6 md:p-8 border shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1
+                            className={`break-inside-avoid rounded-lg p-6 md:p-8 border shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1
                                 ${
                                     t.highlight
                                         ? "bg-green-600 text-white border-green-500 shadow-green-900/20"

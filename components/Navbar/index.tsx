@@ -287,7 +287,10 @@ export default function Navbar({
                             )}
 
                             {isProductsPage && (
-                                <div className="flex items-center bg-gray-100 rounded-lg shadow-sm w-full">
+                                <div
+                                    data-tour="search-bar"
+                                    className="flex items-center bg-gray-100 rounded-lg shadow-sm w-full"
+                                >
                                     <input
                                         type="text"
                                         placeholder="Search inventory..."
@@ -369,7 +372,7 @@ export default function Navbar({
                                             </button>
                                         </PopoverTrigger>
                                         <FloatingPortal>
-                                            <PopoverContent className="h-[500px] w-[350px] bg-white border border-gray-200 rounded-xl shadow-2xl z-[100] mt-2 overflow-hidden">
+                                            <PopoverContent className="h-[500px] w-[350px] bg-white border border-gray-200 rounded-lg shadow-2xl z-[100] mt-2 overflow-hidden">
                                                 <Notifications />
                                             </PopoverContent>
                                         </FloatingPortal>

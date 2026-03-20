@@ -35,7 +35,6 @@ import React, {
 } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
-
 interface Category {
     id: string;
     name: string;
@@ -52,7 +51,7 @@ interface Customer {
 
 export default function Page() {
     const dispatch = useDispatch();
-    const { user } = useUser();
+    const { user, isLoaded } = useUser();
 
     const cartItems = useSelector((state: AppState) => state.cart.items);
     const productsData = useSelector(
@@ -519,6 +518,14 @@ export default function Page() {
             }
         }
     }, [productsData, selectedCategoryId]);
+
+    useEffect(() => {
+        if (!isLoaded || !user) return;
+        if (user.unsafeMetadata?.hasSeenTour === true) return;
+
+        // Auto-open the sidebar so the tour element exists in the DOM
+        dispatch(show());
+    }, [isLoaded, user, dispatch]);
 
     return (
         <div className="flex h-screen overflow-hidden">

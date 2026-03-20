@@ -113,7 +113,7 @@ export default function CTABanner() {
                         <motion.div variants={buttonVariants}>
                             <Link
                                 href="/sign-up"
-                                className="inline-block bg-white text-green-500 font-bold px-10 py-4 rounded-xl shadow-lg shadow-green-900/30 hover:bg-green-50 hover:scale-105 transition-all duration-300 transform"
+                                className="inline-block bg-white text-green-500 font-bold px-10 py-4 rounded-lg shadow-lg shadow-green-900/30 hover:bg-green-50 hover:scale-105 transition-all duration-300 transform"
                             >
                                 Get Started Now
                             </Link>
