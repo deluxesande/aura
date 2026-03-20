@@ -160,8 +160,7 @@ export default function CreateProductPage() {
             !formData.description ||
             !formData.price ||
             !formData.quantity ||
-            !formData.categoryId ||
-            !productImage
+            !formData.categoryId
         ) {
             toast.error("Please fill in all required fields");
             setIsLoading(false);
@@ -174,16 +173,17 @@ export default function CreateProductPage() {
         // Async operation definition
         const createProductOperation = async () => {
             try {
-                // Step A: Upload to UploadThing
-                const uploadRes = await startUpload([productImage]);
+                let imageUrl = null;
 
-                if (!uploadRes || !uploadRes[0]?.url) {
-                    throw new Error("Failed to upload image to storage");
+                // Only upload if an image was provided
+                if (productImage) {
+                    const uploadRes = await startUpload([productImage]);
+                    if (!uploadRes || !uploadRes[0]?.url) {
+                        throw new Error("Failed to upload image to storage");
+                    }
+                    imageUrl = uploadRes[0].url;
                 }
 
-                const imageUrl = uploadRes[0].url;
-
-                // Step B: Send Data to Backend
                 const payload = {
                     name: formData.name,
                     sku: finalSku,
@@ -192,11 +192,10 @@ export default function CreateProductPage() {
                     quantity: formData.quantity,
                     categoryId: formData.categoryId,
                     inStock: finalInStock,
-                    image: imageUrl,
+                    image: imageUrl, // null if no image provided
                 };
 
                 const response = await axios.post("/api/product", payload);
-
                 dispatch(setProducts([...originalProducts, response.data]));
                 router.push("/products/list");
 
