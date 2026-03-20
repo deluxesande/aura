@@ -173,7 +173,7 @@ export default function CreateProductPage() {
         // Async operation definition
         const createProductOperation = async () => {
             try {
-                let imageUrl = null;
+                let imageUrl = "";
 
                 // Only upload if an image was provided
                 if (productImage) {
