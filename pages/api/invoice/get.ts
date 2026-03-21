@@ -142,39 +142,45 @@ export const getInvoices = async (
         // Get Clerk client to fetch user images
         const clerk = await clerkClient();
 
-        // Fetch user details from database and Clerk
-        const usersMap = new Map();
-        for (const clerkId of userIds) {
-            const dbUser = await prisma.user.findUnique({
-                where: { clerkId },
-                select: {
-                    clerkId: true,
-                    firstName: true,
-                    lastName: true,
-                    role: true,
-                },
-            });
+        // Fetch user details from database and Clerk in Parallel
+        const dbUsers = await prisma.user.findMany({
+            where: { clerkId: { in: userIds } },
+            select: {
+                clerkId: true,
+                firstName: true,
+                lastName: true,
+                role: true,
+            },
+        });
 
-            if (dbUser) {
-                try {
-                    const clerkUser = await clerk.users.getUser(clerkId);
-                    usersMap.set(clerkId, {
-                        firstName: dbUser.firstName || clerkUser.firstName,
-                        lastName: dbUser.lastName || clerkUser.lastName,
-                        role: dbUser.role,
-                        imageUrl: clerkUser.imageUrl,
-                    });
-                } catch (error) {
-                    // If Clerk fetch fails, use database info only
-                    usersMap.set(clerkId, {
-                        firstName: dbUser.firstName,
-                        lastName: dbUser.lastName,
-                        role: dbUser.role,
-                        imageUrl: null,
-                    });
-                }
+        const clerkUsersResults = await Promise.allSettled(
+            userIds.map((clerkId) => clerk.users.getUser(clerkId))
+        );
+
+        const usersMap = new Map();
+        
+        dbUsers.forEach((dbUser) => {
+            const result = clerkUsersResults.find(
+                (r) => r.status === "fulfilled" && r.value.id === dbUser.clerkId
+            );
+
+            if (result && result.status === "fulfilled") {
+                const clerkUser = result.value;
+                usersMap.set(dbUser.clerkId, {
+                    firstName: dbUser.firstName || clerkUser.firstName,
+                    lastName: dbUser.lastName || clerkUser.lastName,
+                    role: dbUser.role,
+                    imageUrl: clerkUser.imageUrl,
+                });
+            } else {
+                usersMap.set(dbUser.clerkId, {
+                    firstName: dbUser.firstName,
+                    lastName: dbUser.lastName,
+                    role: dbUser.role,
+                    imageUrl: null,
+                });
             }
-        }
+        });
 
         const updatedInvoices = invoices.map((invoice) => {
             let mostExpensiveItem: any = null;

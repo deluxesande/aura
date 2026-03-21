@@ -52,22 +52,25 @@ export const getProducts = async (
         // 4. Get Clerk client to fetch user images
         const clerk = await clerkClient();
 
-        // 5. Build the users Map (Merging Prisma Data + Clerk Image)
+        // 5. Build the users Map (Merging Prisma Data + Clerk Image) - Parallelized
         const usersMap = new Map();
 
-        for (const dbUser of businessUsers) {
-            try {
-                // Fetch specific user from Clerk to get the Image URL
-                const clerkUser = await clerk.users.getUser(dbUser.clerkId);
+        const clerkUsersResults = await Promise.allSettled(
+            businessUsers.map((dbUser) => clerk.users.getUser(dbUser.clerkId))
+        );
 
+        businessUsers.forEach((dbUser, index) => {
+            const result = clerkUsersResults[index];
+
+            if (result.status === "fulfilled") {
+                const clerkUser = result.value;
                 usersMap.set(dbUser.clerkId, {
                     firstName: dbUser.firstName || clerkUser.firstName,
                     lastName: dbUser.lastName || clerkUser.lastName,
                     role: dbUser.role,
-                    imageUrl: clerkUser.imageUrl, // This comes from Clerk
+                    imageUrl: clerkUser.imageUrl,
                 });
-            } catch (error) {
-                // If Clerk fetch fails, fallback to database info only with null image
+            } else {
                 usersMap.set(dbUser.clerkId, {
                     firstName: dbUser.firstName,
                     lastName: dbUser.lastName,
@@ -75,7 +78,7 @@ export const getProducts = async (
                     imageUrl: null,
                 });
             }
-        }
+        });
 
         // 6. Attach creator details to products
         const productsWithCreator = products.map((product) => {

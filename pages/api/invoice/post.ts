@@ -136,7 +136,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 }
             }
 
-            // 3. Send Novu Notifications
+            // 3. Send Novu Notifications in Parallel
             const adminsAndManagers = await prisma.user.findMany({
                 where: {
                     businessId: creator.businessId,
@@ -147,9 +147,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 },
             });
 
-            for (const admin of adminsAndManagers) {
-                try {
-                    await novu.trigger({
+            await Promise.allSettled(
+                adminsAndManagers.map((admin) =>
+                    novu.trigger({
                         to: { subscriberId: admin.clerkId },
                         workflowId: "invoice-generated",
                         payload: {
@@ -159,11 +159,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                             createdBy:
                                 creator.firstName + " " + creator.lastName,
                         },
-                    });
-                } catch (error) {
-                    console.error(`Failed to notify ${admin.email}:`, error);
-                }
-            }
+                    }).catch(err => console.error(`Failed to notify ${admin.email}:`, err))
+                )
+            );
         }
 
         res.status(201).json(invoice);
