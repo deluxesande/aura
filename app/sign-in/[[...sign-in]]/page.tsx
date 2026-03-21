@@ -25,7 +25,7 @@ export default function LoginPage() {
         const fetchUserData = async () => {
             if (isSignedIn && userId) {
                 // Redirect to dashboard immediately
-                router.push("/products");
+                router.push("/dashboard");
 
                 // Fetch user data in background
                 try {
@@ -59,7 +59,7 @@ export default function LoginPage() {
                 dispatch(signInAction());
 
                 // Redirect to dashboard immediately
-                router.push("/products");
+                router.push("/dashboard");
 
                 // Fetch user data in background
                 try {
@@ -70,6 +70,12 @@ export default function LoginPage() {
                     // User will be handled by middleware or dashboard page
                 }
             } else if (result.status === "needs_second_factor") {
+                // Skip second factor in development/testing
+                if (process.env.NEXT_PUBLIC_NODE_ENV === "development") {
+                    router.push("/dashboard");
+                    return;
+                }
+
                 // Send the email code
                 await signIn.prepareSecondFactor({
                     strategy: "email_code",
@@ -92,7 +98,7 @@ export default function LoginPage() {
             await signIn.authenticateWithRedirect({
                 strategy: "oauth_google",
                 redirectUrl: "/sign-in",
-                redirectUrlComplete: "/products",
+                redirectUrlComplete: "/dashboard",
                 continueSignUp: false,
             });
             dispatch(signInAction());

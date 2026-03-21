@@ -1,0 +1,82 @@
+config:
+    target: "http://localhost:3000"
+    phases:
+        - name: "Warm up"
+          duration: 30
+          arrivalRate: 5
+        - name: "Ramp up"
+          duration: 60
+          arrivalRate: 5
+          rampTo: 30
+        - name: "Sustained load"
+          duration: 60
+          arrivalRate: 30
+    defaults:
+        headers:
+            Content-Type: "application/json"
+
+scenarios:
+    - name: "Product API"
+      weight: 3
+      flow:
+          - get:
+                url: "/api/product"
+                expect:
+                    - statusCode: 200
+          - get:
+                url: "/api/product/topProduct?timePeriod=7"
+                expect:
+                    - statusCode: 200
+
+    - name: "Invoice API"
+      weight: 3
+      flow:
+          - get:
+                url: "/api/invoice"
+                expect:
+                    - statusCode: 200
+          - get:
+                url: "/api/invoice/analytics?timePeriod=30"
+                expect:
+                    - statusCode: 200
+
+    - name: "Customer API"
+      weight: 2
+      flow:
+          - get:
+                url: "/api/customer"
+                expect:
+                    - statusCode: 200
+
+    - name: "Analytics API"
+      weight: 2
+      flow:
+          - get:
+                url: "/api/analytics/stats?timePeriod=30d"
+                expect:
+                    - statusCode: 200
+
+    - name: "Create Customer"
+      weight: 1
+      flow:
+          - post:
+                url: "/api/customer/post"
+                json:
+                    firstName: "Test"
+                    lastName: "User"
+                    email: "test-{{ $randomNumber(1, 99999) }}@example.com"
+                    phoneNumber: "0700000000"
+                expect:
+                    - statusCode: 200
+
+    - name: "Create Invoice"
+      weight: 1
+      flow:
+          - post:
+                url: "/api/invoice/post"
+                json:
+                    customerId: "test-customer-id"
+                    total: 1000
+                    status: "pending"
+                expect:
+                    - statusCode: 200

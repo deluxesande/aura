@@ -212,7 +212,7 @@ const IntegrationsSettings: React.FC = () => {
                 {integrationsList.map((integration) => (
                     <div
                         key={integration.id}
-                        className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between p-5 bg-white border border-gray-200 rounded-lg hover:border-green-200 hover:shadow-md transition-all gap-4 sm:gap-0 group"
+                        className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between p-5 bg-white border border-gray-200 rounded-lg transition-all gap-4 sm:gap-0 group"
                     >
                         <div className="flex-1 min-w-0 flex items-center  gap-2">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-1 sm:space-y-0">
