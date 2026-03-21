@@ -2,6 +2,7 @@ import { getAuth } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
 import { addCreatedBy } from "../middleware";
 import { prisma } from "@/utils/lib/client";
+import { checkSubscription } from "@/utils/subscription/checkSubscription";
 
 const addCustomerHandler = async (
     req: NextApiRequest,
@@ -13,6 +14,13 @@ const addCustomerHandler = async (
         if (!clerkUserId) {
             return res.status(401).json({ error: "Unauthorized" });
         }
+
+        const { authorized, error: subError } = await checkSubscription(clerkUserId);
+
+        if (!authorized) {
+            return res.status(403).json({ error: subError });
+        }
+
         const dbUser = await prisma.user.findUnique({
             where: { clerkId: clerkUserId },
             select: { id: true, businessId: true },

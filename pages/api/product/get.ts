@@ -25,8 +25,20 @@ export const getProducts = async (
                 .json({ error: "User or business not found" });
         }
 
-        // 2. Get all users in the same business
-        // We select details here to avoid querying Prisma again inside the loop
+        // 2. Get products belonging to the same business
+        const products = await prisma.product.findMany({
+            where: {
+                businessId: currentUser.businessId,
+            },
+            include: {
+                Category: true,
+            },
+            orderBy: {
+                createdAt: "desc",
+            },
+        });
+
+        // 3. Get all users in the same business to map names/images
         const businessUsers = await prisma.user.findMany({
             where: { businessId: currentUser.businessId },
             select: {
@@ -34,23 +46,6 @@ export const getProducts = async (
                 firstName: true,
                 lastName: true,
                 role: true,
-            },
-        });
-
-        const userIds = businessUsers.map((user) => user.clerkId);
-
-        // 3. Get products created by any user in the same business
-        const products = await prisma.product.findMany({
-            where: {
-                createdBy: {
-                    in: userIds,
-                },
-            },
-            include: {
-                Category: true,
-            },
-            orderBy: {
-                createdAt: "desc",
             },
         });
 

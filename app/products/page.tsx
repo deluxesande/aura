@@ -519,13 +519,19 @@ export default function Page() {
         }
     }, [productsData, selectedCategoryId]);
 
+    const reduxUser = useSelector((state: AppState) => state.auth.user);
+
     useEffect(() => {
         if (!isLoaded || !user) return;
         if (user.unsafeMetadata?.hasSeenTour === true) return;
 
+        // Don't auto-open until business is properly set up
+        const businessName = reduxUser?.Business?.name;
+        if (!businessName || businessName === "My New Business") return;
+
         // Auto-open the sidebar so the tour element exists in the DOM
         dispatch(show());
-    }, [isLoaded, user, dispatch]);
+    }, [isLoaded, user, reduxUser, dispatch]);
 
     return (
         <div className="flex h-screen overflow-hidden">

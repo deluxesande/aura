@@ -2,6 +2,8 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { generateSKU } from "@/utils/generateSKU";
 import { addCreatedBy } from "../middleware";
 import { prisma } from "@/utils/lib/client";
+import { getAuth } from "@clerk/nextjs/server";
+import { checkSubscription } from "@/utils/subscription/checkSubscription";
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     if (req.method !== "POST") {
@@ -9,6 +11,19 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     try {
+        const { userId } = getAuth(req);
+
+        if (!userId) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        const { authorized, error, businessId } =
+            await checkSubscription(userId);
+
+        if (!authorized) {
+            return res.status(403).json({ error });
+        }
+
         const {
             name,
             description,
@@ -18,22 +33,20 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             categoryId,
             sku,
             image,
-            createdBy,
         } = req.body;
 
-        if (!image) {
-            return res.status(400).json({ error: "Image URL is required" });
-        }
-
         const finalSku = sku && sku.trim() !== "" ? sku : generateSKU(name);
-
         const parsedQuantity = parseInt(quantity, 10);
         const parsedPrice = parseFloat(price);
 
+        // Check if product already exists for this business
         const existingProduct = await prisma.product.findFirst({
             where: {
                 name,
                 categoryId,
+                Business: {
+                    id: businessId as string,
+                },
             },
         });
 
@@ -47,6 +60,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             return res.status(200).json(updatedProduct);
         }
 
+        // Check for duplicate SKU
         const skuCheck = await prisma.product.findUnique({
             where: { sku: finalSku },
         });
@@ -64,16 +78,19 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 price: parsedPrice,
                 sku: finalSku,
                 quantity: parsedQuantity,
-                image: image,
-                inStock: inStock,
+                image: image ?? "/images/default-product.png",
+                inStock,
                 Category: {
                     connect: { id: categoryId },
                 },
-                createdBy: createdBy,
+                Business: {
+                    connect: { id: businessId as string }, // ← relation instead of raw field
+                },
+                createdBy: userId,
             },
         });
 
-        res.status(201).json(newProduct);
+        return res.status(201).json(newProduct);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: "Failed to add or update product" });

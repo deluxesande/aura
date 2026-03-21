@@ -21,14 +21,14 @@ enum SubscriptionStatus {
 }
 
 model MpesaPayment {
-  id                String   @id @default(uuid()) @map("_id") @db.Uuid
+  id                String  @id @default(uuid()) @map("_id") @db.Uuid
   amount            Float
   phoneNumber       String
   accountReference  String
   transactionDesc   String?
   merchantRequestId String
-  checkoutRequestId String   @unique
-  status            String   @default("PENDING")
+  checkoutRequestId String  @unique
+  status            String  @default("PENDING")
 
   // Relations
   invoiceId  String   @db.Uuid
@@ -57,6 +57,8 @@ model Product {
   invoiceItems InvoiceItem[]
   image        String?       @default("/images/default-product.png") @db.Text
   createdBy    String?
+  businessId   String?       @db.Uuid
+  Business     Business?     @relation(fields: [businessId], references: [id])
 }
 
 model Category {
@@ -65,28 +67,30 @@ model Category {
   description String?
   products    Product[]
   createdBy   String?
+  businessId  String?   @db.Uuid
+  Business    Business? @relation(fields: [businessId], references: [id])
 
   @@unique([name, createdBy])
 }
 
 model Invoice {
-  id            String   @id @default(uuid()) @map("_id") @db.Uuid
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  customerId    String?  @db.Uuid
-  Customer      Customer? @relation(fields: [customerId], references: [id])
-  invoiceItems  InvoiceItem[]
-  totalAmount   Float
-  paymentType   String   @default("CASH")
-  status        String   @default("PENDING")
-  stockRestored Boolean  @default(false)
-  createdBy     String?
-  invoiceName   String   @default("")
-  mpesaPayments      MpesaPayment[]
+  id                  String               @id @default(uuid()) @map("_id") @db.Uuid
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  customerId          String?              @db.Uuid
+  Customer            Customer?            @relation(fields: [customerId], references: [id])
+  invoiceItems        InvoiceItem[]
+  totalAmount         Float
+  paymentType         String               @default("CASH")
+  status              String               @default("PENDING")
+  stockRestored       Boolean              @default(false)
+  createdBy           String?
+  invoiceName         String               @default("")
+  mpesaPayments       MpesaPayment[]
   successfulCallbacks SuccessfulCallback[]
-  failedCallbacks    FailedCallback[]
-  businessId    String?   @db.Uuid
-  Business      Business? @relation(fields: [businessId], references: [id])
+  failedCallbacks     FailedCallback[]
+  businessId          String?              @db.Uuid
+  Business            Business?            @relation(fields: [businessId], references: [id])
 }
 
 model InvoiceItem {
@@ -101,18 +105,18 @@ model InvoiceItem {
 }
 
 model Customer {
-  id          String   @id @default(uuid()) @map("_id") @db.Uuid
+  id          String    @id @default(uuid()) @map("_id") @db.Uuid
   firstName   String?
   lastName    String?
   email       String?
   phoneNumber String
   invoices    Invoice[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  businessId  String   @db.Uuid
-  Business    Business @relation(fields: [businessId], references: [id])
-  createdById String   @db.Uuid
-  CreatedBy   User     @relation("CustomerCreator", fields: [createdById], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  businessId  String    @db.Uuid
+  Business    Business  @relation(fields: [businessId], references: [id])
+  createdById String    @db.Uuid
+  CreatedBy   User      @relation("CustomerCreator", fields: [createdById], references: [id])
 
   @@unique([businessId, email])
   @@unique([businessId, phoneNumber])
@@ -145,47 +149,49 @@ model SuccessfulCallback {
 }
 
 model User {
-  id                 String           @id @default(uuid()) @map("_id") @db.Uuid
-  clerkId            String           @unique
-  email              String           @unique
-  firstName          String?
-  lastName           String?
-  role               String           @default("user") // admin, manager, user
-  status             String           @default("active")
-  businessId         String?          @db.Uuid
-  Business           Business?        @relation(fields: [businessId], references: [id])
-  createdCustomers   Customer[]       @relation("CustomerCreator")
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-  lastLogin          DateTime?
-  mpesaPayments      MpesaPayment[]
+  id               String         @id @default(uuid()) @map("_id") @db.Uuid
+  clerkId          String         @unique
+  email            String         @unique
+  firstName        String?
+  lastName         String?
+  role             String         @default("user") // admin, manager, user
+  status           String         @default("active")
+  businessId       String?        @db.Uuid
+  Business         Business?      @relation(fields: [businessId], references: [id])
+  createdCustomers Customer[]     @relation("CustomerCreator")
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  lastLogin        DateTime?
+  mpesaPayments    MpesaPayment[]
 }
 
 model Business {
   id        String   @id @default(uuid()) @map("_id") @db.Uuid
   name      String
-  email     String?   @unique
+  email     String?  @unique
   address   String?
   logo      String?  @db.Text
   users     User[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  invitations   UserInvitation[]
-  createdBy     String?          @unique
-  
+
+  invitations UserInvitation[]
+  createdBy   String?          @unique
+
   mpesaConsumerKey    String?
   mpesaConsumerSecret String?
   mpesaPassKey        String?
-  mpesaShortCode      String? 
-  
+  mpesaShortCode      String?
+
   mpesaPayments MpesaPayment[]
   customers     Customer[]
   invoices      Invoice[]
-  subscriptions  Subscription[]
+  subscriptions Subscription[]
 
-  kraDetails  KraDetails?
+  kraDetails    KraDetails?
   kraTotReturns KraTotReturn[]
+  Product       Product[]
+  Category      Category[]
 }
 
 model Response {
@@ -212,11 +218,11 @@ model ResultResponse {
 }
 
 model ReferenceData {
-  id              Int             @id @default(autoincrement())
+  id              Int              @id @default(autoincrement())
   referenceItemId Int
-  referenceItem   ReferenceItem   @relation(fields: [referenceItemId], references: [id])
+  referenceItem   ReferenceItem    @relation(fields: [referenceItemId], references: [id])
   resultResponse  ResultResponse[]
-  createdAt       DateTime        @default(now())
+  createdAt       DateTime         @default(now())
 }
 
 model ReferenceItem {
@@ -250,73 +256,74 @@ model UserInvitation {
 }
 
 model Subscription {
-  id                 String   @id @default(uuid()) @map("_id") @db.Uuid
-  
-  businessId         String   @db.Uuid
-  Business           Business @relation(fields: [businessId], references: [id])
-  
-  plan               PlanTier @default(STARTER)
-  status             SubscriptionStatus @default(ACTIVE)
-  
+  id String @id @default(uuid()) @map("_id") @db.Uuid
+
+  businessId String   @db.Uuid
+  Business   Business @relation(fields: [businessId], references: [id])
+
+  plan   PlanTier           @default(STARTER)
+  status SubscriptionStatus @default(ACTIVE)
+
   currentPeriodStart DateTime @default(now())
   currentPeriodEnd   DateTime
-  
-  payments           SubscriptionPayment[] 
 
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  payments SubscriptionPayment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
+
 model SubscriptionPayment {
-  id                 String   @id @default(uuid()) @map("_id") @db.Uuid
-  userId             String   // Clerk ID
-  
-  amount             Float
-  phoneNumber        String
-  planId             String
-  
+  id     String @id @default(uuid()) @map("_id") @db.Uuid
+  userId String // Clerk ID
+
+  amount      Float
+  phoneNumber String
+  planId      String
+
   merchantRequestId  String
-  checkoutRequestId  String   @unique
+  checkoutRequestId  String  @unique
   mpesaReceiptNumber String?
-  
-  status             String   @default("PENDING")
+
+  status String @default("PENDING")
 
   // Optional because payment is created BEFORE the subscription exists
-  subscriptionId     String?       @db.Uuid
-  Subscription       Subscription? @relation(fields: [subscriptionId], references: [id])
-  
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  subscriptionId String?       @db.Uuid
+  Subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model KraDetails {
-  id             String   @id @default(cuid())
-  kraPin         String   @unique 
-  taxpayerType   String   
-  taxpayerName   String  
-  pinStatus      String 
-  isAutoFilingEnabled Boolean  @default(false)  
-  
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                  String  @id @default(cuid())
+  kraPin              String  @unique
+  taxpayerType        String
+  taxpayerName        String
+  pinStatus           String
+  isAutoFilingEnabled Boolean @default(false)
 
-  businessId     String?  @db.Uuid @unique
-  business       Business? @relation(fields: [businessId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  businessId String?   @unique @db.Uuid
+  business   Business? @relation(fields: [businessId], references: [id])
 }
 
 model KraTotReturn {
-  id             String   @id @default(uuid()) @map("_id") @db.Uuid
-  
-  ackNumber      String   @unique 
-  paymentSlip    String   
-  
-  computedTax    Float   
-  taxPayable     Float   
-  utilizedCredit Float    @default(0.0) 
-  
-  period         String  
-  
-  createdAt      DateTime @default(now())
-  
-  businessId     String   @db.Uuid
-  Business       Business @relation(fields: [businessId], references: [id])
+  id String @id @default(uuid()) @map("_id") @db.Uuid
+
+  ackNumber   String @unique
+  paymentSlip String
+
+  computedTax    Float
+  taxPayable     Float
+  utilizedCredit Float @default(0.0)
+
+  period String
+
+  createdAt DateTime @default(now())
+
+  businessId String   @db.Uuid
+  Business   Business @relation(fields: [businessId], references: [id])
 }

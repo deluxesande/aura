@@ -25,20 +25,10 @@ export const getCategories = async (
                 .json({ error: "User or business not found" });
         }
 
-        // Get all users in the same business
-        const businessUsers = await prisma.user.findMany({
-            where: { businessId: currentUser.businessId },
-            select: { clerkId: true },
-        });
-
-        const userIds = businessUsers.map((user) => user.clerkId);
-
-        // Get categories created by any user in the same business
+        // Get categories belonging to the same business
         const categories = await prisma.category.findMany({
             where: {
-                createdBy: {
-                    in: userIds,
-                },
+                businessId: currentUser.businessId,
             },
         });
 

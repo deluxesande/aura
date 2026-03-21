@@ -5,6 +5,7 @@ import { prisma } from "@/utils/lib/client";
 import { Novu } from "@novu/api";
 import { buffer } from "stream/consumers";
 import { getAuth } from "@clerk/nextjs/server";
+import { checkSubscription } from "@/utils/subscription/checkSubscription";
 
 const novu = new Novu({
     secretKey: process.env.NOVU_SECRET_KEY!,
@@ -21,11 +22,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         .split(".")[0];
     const invoiceName = `Invoice-${formattedDate}`;
 
-    // Getting the users db info
     const { userId } = getAuth(req);
 
     if (!userId) {
         return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const { authorized, error: subError, businessId } = await checkSubscription(userId);
+
+    if (!authorized) {
+        return res.status(403).json({ error: subError });
     }
 
     const dbUser = await prisma.user.findUnique({
@@ -74,7 +80,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
         const invoiceData: any = {
             invoiceName,
-            totalAmount,
+            totalAmount: parseFloat(totalAmount),
             invoiceItems: {
                 connect: invoiceItems.map((item: InvoiceItem) => ({
                     id: item.id,
@@ -102,26 +108,31 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             console.error("Creator or business not found");
         } else {
             if (mpesaDetails && paymentType === "MPESA") {
-                try {
-                    await prisma.mpesaPayment.create({
-                        data: {
-                            invoiceId: invoice.id,
-                            businessId: creator.businessId,
-                            userId: creator.id,
-                            amount: parseFloat(totalAmount),
-                            phoneNumber: mpesaDetails.phoneNumber,
-                            accountReference: "Salesense",
-                            transactionDesc: "Invoice Payment",
-                            merchantRequestId: mpesaDetails.merchantRequestId,
-                            checkoutRequestId: mpesaDetails.checkoutRequestId,
-                            status: "PENDING",
-                        },
-                    });
-                } catch (mpesaError) {
-                    console.error(
-                        "Failed to link M-Pesa payment to invoice:",
-                        mpesaError,
-                    );
+                const parsedAmount = parseFloat(totalAmount);
+                if (isNaN(parsedAmount)) {
+                    console.error("Invalid totalAmount for MpesaPayment:", totalAmount);
+                } else {
+                    try {
+                        await prisma.mpesaPayment.create({
+                            data: {
+                                invoiceId: invoice.id,
+                                businessId: creator.businessId,
+                                userId: creator.id,
+                                amount: parsedAmount,
+                                phoneNumber: mpesaDetails.phoneNumber,
+                                accountReference: "Salesense",
+                                transactionDesc: "Invoice Payment",
+                                merchantRequestId: mpesaDetails.merchantRequestId,
+                                checkoutRequestId: mpesaDetails.checkoutRequestId,
+                                status: "PENDING",
+                            },
+                        });
+                    } catch (mpesaError) {
+                        console.error(
+                            "Failed to link M-Pesa payment to invoice:",
+                            mpesaError,
+                        );
+                    }
                 }
             }
 
