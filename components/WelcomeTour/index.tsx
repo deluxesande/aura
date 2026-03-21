@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { useSelector } from "react-redux";
+import { AppState } from "@/store";
 
 interface TourStep {
     target: string;
@@ -242,6 +244,7 @@ function Popover({
 
 export default function WelcomeTour() {
     const { user, isLoaded } = useUser();
+    const reduxUser = useSelector((state: AppState) => state.auth.user);
     const [active, setActive] = useState(false);
     const [index, setIndex] = useState(0);
 
@@ -249,10 +252,16 @@ export default function WelcomeTour() {
         if (!isLoaded || !user) return;
         if (user.unsafeMetadata?.hasSeenTour === true) return;
 
-        // Give auto-opened sidebars/drawers time to mount
+        // Wait for redux user to load
+        if (!reduxUser) return;
+
+        // Don't start tour until business name has been properly set
+        const businessName = reduxUser.Business?.name;
+        if (!businessName || businessName === "My New Business") return;
+
         const timer = setTimeout(() => setActive(true), 800);
         return () => clearTimeout(timer);
-    }, [isLoaded, user]);
+    }, [isLoaded, user, reduxUser]);
 
     const endTour = useCallback(async () => {
         setActive(false);

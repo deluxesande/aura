@@ -13,13 +13,26 @@ export const getInvoices = async (
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        // SELF-HEALING LOGIC: Handle Inventory Sync (Restock & Re-deduct)
+        // 1. Get current user with their business
+        const currentUser = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { businessId: true },
+        });
+
+        if (!currentUser || !currentUser.businessId) {
+            return res
+                .status(404)
+                .json({ error: "User or business not found" });
+        }
+
+        // SELF-HEALING LOGIC: Handle Inventory Sync (Restock & Re-deduct) - Isolated to THIS business
 
         // Find FAILED/CANCELLED invoices where stock hasn't been returned yet
         const failedInvoices = await prisma.invoice.findMany({
             where: {
                 status: { in: ["FAILED", "CANCELLED"] },
                 stockRestored: false,
+                businessId: currentUser.businessId, // FIXED: Isolated to business
             },
             include: { invoiceItems: true },
         });
@@ -49,6 +62,7 @@ export const getInvoices = async (
             where: {
                 status: { in: ["PAID", "COMPLETED"] },
                 stockRestored: true, // This means we previously put items back! We must take them again.
+                businessId: currentUser.businessId, // FIXED: Isolated to business
             },
             include: { invoiceItems: true },
         });
@@ -82,18 +96,6 @@ export const getInvoices = async (
                     });
                 }
             });
-        }
-
-        // Get current user with their business
-        const currentUser = await prisma.user.findUnique({
-            where: { clerkId: userId },
-            select: { businessId: true },
-        });
-
-        if (!currentUser || !currentUser.businessId) {
-            return res
-                .status(404)
-                .json({ error: "User or business not found" });
         }
 
         // Get all users in the same business

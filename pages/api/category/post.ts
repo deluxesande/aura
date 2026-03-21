@@ -1,22 +1,42 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { addCreatedBy } from "../middleware";
 import { prisma } from "@/utils/lib/client";
+import { getAuth } from "@clerk/nextjs/server";
+import { checkSubscription } from "@/utils/subscription/checkSubscription";
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-    const { name, description } = req.body;
+    if (req.method !== "POST") {
+        return res.status(405).json({ error: "Method not allowed" });
+    }
 
     try {
+        const { userId } = getAuth(req);
+
+        if (!userId) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        const { authorized, error, businessId } = await checkSubscription(userId);
+
+        if (!authorized) {
+            return res.status(403).json({ error });
+        }
+
+        const { name, description } = req.body;
+
         const newCategory = await prisma.category.create({
             data: {
                 name,
                 description,
-                createdBy: req.body.createdBy,
+                createdBy: userId,
+                businessId: businessId as string,
             },
         });
 
         res.status(201).json(newCategory);
     } catch (error) {
-        res.status(500).json({ error: "Failed to add category" + error });
+        console.error("Failed to add category:", error);
+        res.status(500).json({ error: "Failed to add category" });
     }
 };
 
