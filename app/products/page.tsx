@@ -23,6 +23,7 @@ import {
     Plus,
     ShoppingCart,
     User as UserIcon,
+    ArrowLeft,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -35,6 +36,7 @@ import React, {
 } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
+
 interface Category {
     id: string;
     name: string;
@@ -89,7 +91,9 @@ export default function Page() {
     const [restockAmount, setRestockAmount] = useState("");
     const [isRestocking, setIsRestocking] = useState(false);
 
-    // RENAMED: This is now the single source of truth for the UI list
+    // Folder Navigation State
+    const [activeFolderTemplate, setActiveFolderTemplate] = useState<Product | null>(null);
+
     const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
 
     const hasFetched = useRef(false);
@@ -99,9 +103,6 @@ export default function Page() {
     const business = useSelector(
         (state: AppState) => state.businessData.businessDetails,
     );
-
-    // Removed the conflicting useMemo here.
-    // The logic below in useEffect and toggleActiveCategory handles the filtering efficiently.
 
     useEffect(() => {
         if (hasFetched.current) return;
@@ -163,15 +164,19 @@ export default function Page() {
         dispatch(hide());
     }, [dispatch]);
 
-    // Update the filtered list when a category is clicked
     const toggleActiveCategory = useCallback(
         (categoryId: string) => {
             setSelectedCategoryId(categoryId);
+            setActiveFolderTemplate(null); // Reset folder view on category change
+            
+            const baseProducts = productsData.filter(
+                (p) => p.type !== "VARIANT",
+            );
 
             if (categoryId === "ALL") {
-                setFilteredProducts(productsData);
+                setFilteredProducts(baseProducts);
             } else {
-                const filtered = productsData.filter(
+                const filtered = baseProducts.filter(
                     (product) => product.categoryId === categoryId,
                 );
                 setFilteredProducts(filtered);
@@ -228,12 +233,19 @@ export default function Page() {
 
     const handleAddToCart = useCallback(
         (product: Product) => {
+            if (product.type === "TEMPLATE") {
+                // Folder Navigation: Enter the template folder
+                setActiveFolderTemplate(product);
+                return;
+            }
+
             const cartItem = cartItems.find((item) => item.id === product.id);
             const currentCartQty = cartItem?.cartQuantity || 0;
 
             if (product.quantity > 0) {
                 if (product.quantity > currentCartQty) {
                     dispatch(addItem(product));
+                    toast.success(`Added ${product.name} to cart`);
 
                     if (
                         typeof window !== "undefined" &&
@@ -301,7 +313,6 @@ export default function Page() {
             console.error(e);
             return null;
         } finally {
-            // Keep loading state true if we are continuing to M-Pesa prompt
             const isMpesaFlow =
                 paymentTypeOverride === "MPESA" && !mpesaDetails;
             if (!isMpesaFlow) {
@@ -466,20 +477,39 @@ export default function Page() {
             if (e.key === "Enter") {
                 if (buffer.length > 2) {
                     e.preventDefault();
-                    const currentProducts = productsRef.current;
-                    const scannedProduct = currentProducts.find(
-                        (p) =>
-                            p.sku === buffer ||
-                            p.sku?.toUpperCase() === buffer.toUpperCase(),
-                    );
+                    
+                    // Always scan against all products (base + variants)
+                    const scannedProduct = productsRef.current.find((p) => {
+                        // If it's a template, check its variants
+                        if (p.type === "TEMPLATE" && p.variants) {
+                            const variantMatch = p.variants.find(v => 
+                                v.sku === buffer || v.sku?.toUpperCase() === buffer.toUpperCase()
+                            );
+                            if (variantMatch) return true; // Found in variants
+                        }
+                        return p.sku === buffer || p.sku?.toUpperCase() === buffer.toUpperCase();
+                    });
 
-                    if (scannedProduct) {
-                        dispatch(addItem(scannedProduct));
-                        toast.success(`Added ${scannedProduct.name}`);
+                    let productToAdd = scannedProduct;
+
+                    // If the match was a template, find the actual variant that matched
+                    if (scannedProduct?.type === "TEMPLATE" && scannedProduct.variants) {
+                         productToAdd = scannedProduct.variants.find(v => 
+                            v.sku === buffer || v.sku?.toUpperCase() === buffer.toUpperCase()
+                        ) || scannedProduct;
+                    }
+
+                    if (productToAdd && productToAdd.type !== "TEMPLATE") {
+                        handleAddToCart(productToAdd);
+                        toast.success(`Scanned ${productToAdd.name}`);
 
                         if (window.innerWidth >= 768) {
                             dispatch(show());
                         }
+                    } else if (productToAdd && productToAdd.type === "TEMPLATE") {
+                        // Should not happen if barcodes are only on variants, but just in case
+                        setActiveFolderTemplate(productToAdd);
+                        toast.info(`Opened ${productToAdd.name} options`);
                     } else {
                         toast.error(`Product not found: ${buffer}`);
                     }
@@ -492,7 +522,7 @@ export default function Page() {
 
         window.addEventListener("keydown", handleGlobalKeyDown);
         return () => window.removeEventListener("keydown", handleGlobalKeyDown);
-    }, [dispatch]);
+    }, [dispatch, handleAddToCart]);
 
     const profileImage = user?.hasImage ? user?.imageUrl : "/images/user.png";
     const cartTotal = useMemo(
@@ -503,15 +533,17 @@ export default function Page() {
         [cartItems],
     );
 
-    // Initial Data Sync:
-    // This ensures that when products load, the list is populated correctly based on the current category.
     useEffect(() => {
         if (productsData && productsData.length > 0) {
+            const baseProducts = productsData.filter(
+                (p) => p.type !== "VARIANT",
+            );
+
             if (selectedCategoryId === "ALL") {
-                setFilteredProducts(productsData);
+                setFilteredProducts(baseProducts);
             } else {
                 setFilteredProducts(
-                    productsData.filter(
+                    baseProducts.filter(
                         (p) => p.categoryId === selectedCategoryId,
                     ),
                 );
@@ -525,13 +557,16 @@ export default function Page() {
         if (!isLoaded || !user) return;
         if (user.unsafeMetadata?.hasSeenTour === true) return;
 
-        // Don't auto-open until business is properly set up
         const businessName = reduxUser?.Business?.name;
         if (!businessName || businessName === "My New Business") return;
 
-        // Auto-open the sidebar so the tour element exists in the DOM
         dispatch(show());
     }, [isLoaded, user, reduxUser, dispatch]);
+
+    // Determine what to display in the main grid
+    const displayItems = activeFolderTemplate 
+        ? (activeFolderTemplate.variants || []) 
+        : filteredProducts;
 
     return (
         <div className="flex h-screen overflow-hidden">
@@ -540,29 +575,51 @@ export default function Page() {
                 className="flex-grow flex flex-col"
                 style={{ width: "calc(100% - 10rem)" }}
             >
-                {/* Navbar now controls filteredProducts */}
                 <Navbar setFilteredProducts={setFilteredProducts}>
-                    <div className="flex overflow-auto gap-6 mt-4 scrollbar-hide">
-                        {categories.map((category) => (
-                            <CategoryBox
-                                key={category.id}
-                                id={category.id}
-                                category={category.name}
-                                active={selectedCategoryId === category.id}
-                                onCategoryClick={toggleActiveCategory}
-                            />
-                        ))}
-                    </div>
+                    {activeFolderTemplate ? (
+                        // Folder View Header
+                        <div className="flex items-center gap-4 mt-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                            <button
+                                onClick={() => setActiveFolderTemplate(null)}
+                                className="p-2 bg-white rounded-lg shadow-sm border border-gray-200 hover:bg-gray-100 transition-colors"
+                            >
+                                <ArrowLeft size={20} className="text-gray-600" />
+                            </button>
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-900">{activeFolderTemplate.name} Options</h2>
+                                <p className="text-xs text-gray-500">Select a specific variation to add to cart</p>
+                            </div>
+                        </div>
+                    ) : (
+                        // Normal Category List
+                        <div className="flex overflow-auto gap-6 mt-4 scrollbar-hide">
+                            {categories.map((category) => (
+                                <CategoryBox
+                                    key={category.id}
+                                    id={category.id}
+                                    category={category.name}
+                                    active={selectedCategoryId === category.id}
+                                    onCategoryClick={toggleActiveCategory}
+                                />
+                            ))}
+                        </div>
+                    )}
 
-                    <div className="flex flex-wrap gap-4 mt-10">
+                    <div className="flex flex-wrap gap-4 mt-6">
                         {loading ? (
                             <div className="w-full m-auto mt-20 flex flex-col items-center justify-center">
                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                             </div>
-                        ) : filteredProducts.length === 0 ? (
+                        ) : displayItems.length === 0 ? (
                             <NoProductsFound />
                         ) : (
-                            filteredProducts.map((product) => (
+                            displayItems.map((product: any) => {
+                                // For variant display, we might want to override the name to show attributes clearly
+                                const displayName = product.type === "VARIANT" && product.attributeValues
+                                    ? `${product.name} - ${product.attributeValues.map((av: any) => av.attributeOption.value).join(" / ")}`
+                                    : product.name;
+
+                                return (
                                 <div
                                     key={product.id}
                                     className="relative group"
@@ -570,10 +627,12 @@ export default function Page() {
                                     <div className="hidden lg:block">
                                         <ProductCard
                                             image={product.image}
-                                            name={product.name}
+                                            name={displayName}
                                             quantity={product.quantity}
                                             price={product.price}
                                             inStock={product.inStock}
+                                            type={product.type}
+                                            variants={product.variants}
                                             onAddToCart={() =>
                                                 handleAddToCart(product)
                                             }
@@ -582,15 +641,25 @@ export default function Page() {
                                     <div className="block lg:hidden">
                                         <MobileProductCard
                                             image={product.image}
-                                            name={product.name}
+                                            name={displayName}
                                             quantity={product.quantity}
                                             price={product.price}
                                             inStock={product.inStock}
+                                            type={product.type}
+                                            variants={product.variants}
                                             onAddToCart={() =>
                                                 handleAddToCart(product)
                                             }
                                         />
                                     </div>
+
+                                    {/* Variant Badge */}
+                                    {product.type === "TEMPLATE" && (
+                                        <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1">
+                                            Variants
+                                        </div>
+                                    )}
+
                                     {/* Restock Button */}
                                     <button
                                         onClick={(e) => {
@@ -598,8 +667,9 @@ export default function Page() {
                                             openRestockModal(product);
                                         }}
                                         className={`${
-                                            product.quantity <= 5
-                                                ? "hidden md:flex"
+                                            product.quantity <= 5 &&
+                                            product.type !== "TEMPLATE"
+                                                ? "flex"
                                                 : "hidden"
                                         } absolute top-1 right-1 md:top-2 md:right-2 items-center justify-center bg-white/95 backdrop-blur-sm p-1.5 md:p-2 rounded-full shadow-sm border border-red-100 text-red-400 hover:text-red-600 hover:bg-red-50 transition-all z-10`}
                                         title="Quick Restock (Low Stock)"
@@ -610,19 +680,27 @@ export default function Page() {
                                         />
                                     </button>
 
-                                    {/* Add to Cart Button */}
+                                    {/* Add/Configure Button */}
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             handleAddToCart(product);
                                         }}
                                         className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-sm hover:bg-green-100 hover:text-green-600 text-gray-400 transition-all border border-gray-100 z-10"
-                                        title="Add to Cart"
+                                        title={
+                                            product.type === "TEMPLATE"
+                                                ? "View Options"
+                                                : "Add to Cart"
+                                        }
                                     >
-                                        <ShoppingCart size={16} />
+                                        {product.type === "TEMPLATE" ? (
+                                            <Plus size={16} />
+                                        ) : (
+                                            <ShoppingCart size={16} />
+                                        )}
                                     </button>
                                 </div>
-                            ))
+                            )})
                         )}
                     </div>
                 </Navbar>

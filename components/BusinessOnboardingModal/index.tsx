@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
 import { AppState } from "@/store";
 import { setBusiness } from "@/store/slices/businessSlice";
+import { setUser } from "@/store/slices/authSlice";
 import { Building2, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -60,6 +61,18 @@ const BusinessOnboardingModal = () => {
                     logo: response.data.logo,
                 }),
             );
+
+            if (user) {
+                dispatch(
+                    setUser({
+                        ...user,
+                        Business: {
+                            ...(user.Business || { id: response.data.id, mpesaShortCode: undefined, mpesaConsumerKey: undefined }),
+                            name: response.data.name,
+                        },
+                    } as any)
+                );
+            }
 
             toast.success("Business profile created!");
 

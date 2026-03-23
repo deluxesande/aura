@@ -6,7 +6,7 @@ export const updateProduct = async (
     res: NextApiResponse
 ) => {
     const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
-    const { name, description, price, quantity, categoryId, image, sku } =
+    const { name, description, price, quantity, categoryId, image, sku, type } =
         req.body;
 
     if (!id) {
@@ -14,6 +14,14 @@ export const updateProduct = async (
     }
 
     try {
+        const product = await prisma.product.findUnique({
+            where: { id },
+        });
+
+        if (!product) {
+            return res.status(404).json({ error: "Product not found" });
+        }
+
         if (sku) {
             const existingSku = await prisma.product.findFirst({
                 where: {
@@ -29,20 +37,31 @@ export const updateProduct = async (
             }
         }
 
+        const data: any = {
+            name,
+            description,
+            categoryId,
+            image,
+            sku,
+        };
+
+        // If it's not a template, we can update price and quantity
+        if (product.type !== "TEMPLATE") {
+            data.price = price;
+            data.quantity = quantity;
+            data.inStock = quantity > 0 ? true : false;
+        } else {
+            // For templates, we don't update price/quantity directly (they are 0)
+            data.price = 0;
+            data.quantity = 0;
+            data.inStock = false;
+        }
+
         const updatedProduct = await prisma.product.update({
             where: {
                 id: id,
             },
-            data: {
-                name,
-                description,
-                price,
-                quantity,
-                categoryId,
-                image,
-                sku,
-                inStock: quantity > 0 ? true : false,
-            },
+            data,
         });
 
         res.status(200).json(updatedProduct);

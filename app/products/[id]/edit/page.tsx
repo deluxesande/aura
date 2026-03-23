@@ -16,6 +16,7 @@ import {
     RefreshCw,
     Save,
     UploadCloud,
+    Info,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -68,11 +69,14 @@ export default function EditProductPage() {
         updatedAt: new Date(),
         Category: { id: "", name: "", products: [] },
         invoiceItems: [],
+        type: "SIMPLE",
     };
 
     const [formData, setFormData] = useState<Product>(
         cachedProduct || initialFormState,
     );
+
+    const isTemplate = formData.type === "TEMPLATE";
 
     useEffect(() => {
         if (!id || hasFetched.current) return;
@@ -160,7 +164,6 @@ export default function EditProductPage() {
                 return;
             }
 
-            // Reset buffer if typing/scanning is too slow (manual entry vs scanner)
             if (currentTime - lastKeyTime > 100) {
                 buffer = "";
             }
@@ -290,14 +293,12 @@ export default function EditProductPage() {
     return (
         <Navbar>
             <div className="max-w-5xl mx-auto px-4 py-8 relative">
-                {/* Loading Spinner - Only shows if data is NOT in Redux and fetching */}
                 {isDataLoading && (
                     <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                     </div>
                 )}
 
-                {/* Header Section */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                     <div className="flex items-center gap-4">
                         <Link
@@ -307,11 +308,18 @@ export default function EditProductPage() {
                             <ArrowLeft className="w-5 h-5 text-gray-600" />
                         </Link>
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-900">
-                                Edit Product
-                            </h1>
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-2xl font-bold text-gray-900">
+                                    Edit Product
+                                </h1>
+                                {isTemplate && (
+                                    <span className="bg-green-100 text-green-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                                        TEMPLATE
+                                    </span>
+                                )}
+                            </div>
                             <p className="text-sm text-gray-500">
-                                Update product details and inventory
+                                {isTemplate ? "Update parent template details" : "Update product details and inventory"}
                             </p>
                         </div>
                     </div>
@@ -342,9 +350,7 @@ export default function EditProductPage() {
                     onSubmit={handleSubmit}
                     className="grid grid-cols-1 lg:grid-cols-3 gap-8"
                 >
-                    {/* LEFT COLUMN - Main Info */}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* General Info Card */}
                         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                             <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
                                 General Information
@@ -367,7 +373,6 @@ export default function EditProductPage() {
                                     />
                                 </div>
 
-                                {/* SKU / Barcode Field */}
                                 <div>
                                     <label
                                         htmlFor="sku"
@@ -421,109 +426,125 @@ export default function EditProductPage() {
                             </div>
                         </div>
 
-                        {/* Pricing & Inventory Card */}
-                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                            <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
-                                Pricing & Inventory
-                            </h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                <div>
-                                    <label
-                                        htmlFor="price"
-                                        className="block text-sm font-medium text-gray-700 mb-1"
-                                    >
-                                        Base Price
-                                    </label>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <span className="text-gray-500 sm:text-sm">
-                                                Ksh
-                                            </span>
-                                        </div>
-                                        <input
-                                            id="price"
-                                            type="number"
-                                            value={formData.price}
-                                            onChange={handleChange}
-                                            className="w-full pl-12 pr-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-green-400 border-2 no-spinner"
-                                            placeholder="0.00"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div className="flex items-center justify-between mb-1">
+                        {!isTemplate && (
+                            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                                <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
+                                    Pricing & Inventory
+                                </h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    <div>
                                         <label
-                                            htmlFor="quantity"
-                                            className="block text-sm font-medium text-gray-700"
+                                            htmlFor="price"
+                                            className="block text-sm font-medium text-gray-700 mb-1"
                                         >
-                                            Stock Quantity
+                                            Base Price
                                         </label>
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setIsRestockModalOpen(true)
-                                            }
-                                            className="text-xs flex items-center gap-1 text-green-500 hover:text-green-700 font-medium"
-                                        >
-                                            <Plus className="w-3 h-3 stroke-green-500" />
-                                            Restock
-                                        </button>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <span className="text-gray-500 sm:text-sm">
+                                                    Ksh
+                                                </span>
+                                            </div>
+                                            <input
+                                                id="price"
+                                                type="number"
+                                                value={formData.price}
+                                                onChange={handleChange}
+                                                className="w-full pl-12 pr-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-green-400 border-2 no-spinner"
+                                                placeholder="0.00"
+                                                required
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="relative">
-                                        <input
-                                            id="quantity"
-                                            type="number"
-                                            value={formData.quantity}
-                                            onChange={handleChange}
-                                            className="w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-green-400 border-2 no-spinner"
-                                            placeholder="0"
-                                            required
-                                        />
+
+                                    <div>
+                                        <div className="flex items-center justify-between mb-1">
+                                            <label
+                                                htmlFor="quantity"
+                                                className="block text-sm font-medium text-gray-700"
+                                            >
+                                                Stock Quantity
+                                            </label>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setIsRestockModalOpen(true)
+                                                }
+                                                className="text-xs flex items-center gap-1 text-green-500 hover:text-green-700 font-medium"
+                                            >
+                                                <Plus className="w-3 h-3 stroke-green-500" />
+                                                Restock
+                                            </button>
+                                        </div>
+                                        <div className="relative">
+                                            <input
+                                                id="quantity"
+                                                type="number"
+                                                value={formData.quantity}
+                                                onChange={handleChange}
+                                                className="w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-green-400 border-2 no-spinner"
+                                                placeholder="0"
+                                                required
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
+
+                        {isTemplate && (
+                            <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 flex gap-4">
+                                <div className="p-2 bg-blue-500 rounded-lg h-fit">
+                                    <Info className="w-5 h-5 stroke-white" />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-sm font-bold text-blue-800">Template Product</p>
+                                    <p className="text-xs text-blue-600 leading-relaxed">
+                                        Templates are used to group different versions of a product (variants). 
+                                        Price and stock are managed individually for each variant. 
+                                        Changes made here will apply to all variants linked to this template.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {/* RIGHT COLUMN - Media & Organization */}
                     <div className="space-y-6">
-                        {/* Status Card */}
-                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                            <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
-                                Status
-                            </h2>
-                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
-                                <div className="flex flex-col">
-                                    <span className="text-sm font-medium text-gray-900">
-                                        In Stock
-                                    </span>
-                                    <span className="text-xs text-gray-500">
-                                        Available for sale
-                                    </span>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={toggleStock}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
-                                        formData.inStock
-                                            ? "bg-green-500"
-                                            : "bg-gray-200"
-                                    }`}
-                                >
-                                    <span
-                                        className={`${
+                        {!isTemplate && (
+                            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                                <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
+                                    Status
+                                </h2>
+                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-medium text-gray-900">
+                                            In Stock
+                                        </span>
+                                        <span className="text-xs text-gray-500">
+                                            Available for sale
+                                        </span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={toggleStock}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
                                             formData.inStock
-                                                ? "translate-x-6"
-                                                : "translate-x-1"
-                                        } inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out`}
-                                    />
-                                </button>
+                                                ? "bg-green-500"
+                                                : "bg-gray-200"
+                                        }`}
+                                    >
+                                        <span
+                                            className={`${
+                                                formData.inStock
+                                                    ? "translate-x-6"
+                                                    : "translate-x-1"
+                                            } inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out`}
+                                        />
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
-                        {/* Organization Card */}
                         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                             <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
                                 Organization
@@ -554,7 +575,6 @@ export default function EditProductPage() {
                             </div>
                         </div>
 
-                        {/* Media Card */}
                         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                             <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
                                 Product Image
@@ -599,7 +619,6 @@ export default function EditProductPage() {
                     </div>
                 </form>
 
-                {/* --- Image Cropper Modal --- */}
                 <FloatingPortal>
                     <ImageCropperModal
                         isOpen={isCropModalOpen}

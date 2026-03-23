@@ -36,6 +36,8 @@ interface Business {
 interface Product {
     name: string;
     price: number;
+    type?: string;
+    attributeValues?: any[];
 }
 
 interface InvoiceItem {
@@ -76,20 +78,21 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({
     const calculatePageHeight = () => {
         if (!isSmall) return { size: "A4" as any };
 
-        const ITEM_HEIGHT = 20;
+        const ITEM_HEIGHT = 30; // Increased to accommodate variant info
         const HEADER_HEIGHT = 140;
         const META_HEIGHT = 100;
         const TABLE_HEADER_HEIGHT = 30;
         const TOTALS_HEIGHT = 100;
-        const FOOTER_HEIGHT = isPremium ? 0 : 80;
+        // Moved powered by to top for thermal, so we add height there
+        const POWERED_BY_HEIGHT = isPremium ? 0 : 50; 
 
         const totalHeight =
+            POWERED_BY_HEIGHT +
             HEADER_HEIGHT +
             META_HEIGHT +
             TABLE_HEADER_HEIGHT +
             invoice.invoiceItems.length * ITEM_HEIGHT +
-            TOTALS_HEIGHT +
-            FOOTER_HEIGHT;
+            TOTALS_HEIGHT;
 
         return { size: [226, totalHeight] as [number, number] };
     };
@@ -104,6 +107,13 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({
             color: "#333",
             flexDirection: "column",
             backgroundColor: "#ffffff",
+        },
+        poweredByTop: {
+            alignItems: "center",
+            marginBottom: 15,
+            paddingBottom: 10,
+            borderBottomWidth: 1,
+            borderBottomColor: "#eee",
         },
         header: {
             flexDirection: isSmall ? "column" : "row",
@@ -174,7 +184,7 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({
             borderBottomWidth: 1,
             borderBottomColor: "#eee",
             padding: isSmall ? 4 : 8,
-            alignItems: "center",
+            alignItems: "flex-start",
         },
         colDesc: { width: isSmall ? "40%" : "50%" },
         colQty: { width: isSmall ? "10%" : "15%", textAlign: "center" },
@@ -257,6 +267,21 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({
     return (
         <Document>
             <Page {...(pageProps as any)} style={styles.page}>
+                {/* --- Powered By (Top for Thermal) --- */}
+                {isSmall && !isPremium && (
+                    <View style={styles.poweredByTop}>
+                        <Text style={styles.footerText}>Powered by</Text>
+                        <Image
+                            src={`${
+                                typeof window !== "undefined"
+                                    ? window.location.origin
+                                    : ""
+                            }${footerLogo}`}
+                            style={{ width: 60, objectFit: "contain" }}
+                        />
+                    </View>
+                )}
+
                 {/* --- Header --- */}
                 <View style={styles.header}>
                     <View>
@@ -350,6 +375,11 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({
                         const qty = Number(item.quantity) || 0;
                         const lineTotal = Number(item.Product.price) * qty;
                         const unitPrice = item.Product.price;
+                        
+                        const isVariant = item.Product.type === "VARIANT";
+                        const attributes = isVariant && item.Product.attributeValues
+                            ? item.Product.attributeValues.map((av: any) => av.attributeOption.value).join(" / ")
+                            : null;
 
                         return (
                             <View
@@ -357,9 +387,16 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({
                                 style={styles.tableRow}
                                 wrap={false}
                             >
-                                <Text style={[styles.value, styles.colDesc]}>
-                                    {item.Product?.name || "Item"}
-                                </Text>
+                                <View style={styles.colDesc}>
+                                    <Text style={styles.value}>
+                                        {item.Product?.name || "Item"}
+                                    </Text>
+                                    {attributes && (
+                                        <Text style={{ fontSize: isSmall ? 7 : 8, color: "#22c55e", marginTop: -2, marginBottom: 2, textTransform: "uppercase" }}>
+                                            {attributes}
+                                        </Text>
+                                    )}
+                                </View>
 
                                 <Text style={[styles.value, styles.colQty]}>
                                     {qty}
@@ -401,8 +438,8 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({
                     </View>
                 </View>
 
-                {/* --- Footer --- */}
-                {!isPremium && (
+                {/* --- Footer (Only for A4) --- */}
+                {!isPremium && !isSmall && (
                     <View style={styles.footer} wrap={false}>
                         <Text style={styles.footerText}>Powered by</Text>
                         <Image

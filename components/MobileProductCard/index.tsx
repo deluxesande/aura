@@ -1,20 +1,29 @@
 import Image from "next/image";
+import { ProductCardProps } from "@/utils/typeDefinition";
 
-const MobileProductCard = ({
+export default function MobileProductCard({
     image,
     name,
     quantity,
     price,
     inStock,
     onAddToCart,
-}: {
-    image: string;
-    name: string;
-    quantity: number;
-    price: number;
-    inStock: boolean;
-    onAddToCart: () => void;
-}) => {
+    type,
+    variantsCount,
+    variants,
+}: ProductCardProps & { variants?: any[] }) {
+    const isTemplate = type === "TEMPLATE";
+
+    // For templates, show the lowest price available among variants
+    const minPrice =
+        isTemplate && variants && variants.length > 0
+            ? Math.min(...variants.map((v) => v.price))
+            : price;
+
+    const displayQuantity = isTemplate && variants 
+        ? variants.reduce((sum, v) => sum + v.quantity, 0)
+        : quantity;
+
     return (
         <div className="w-screen pr-12 cursor-pointer" onClick={onAddToCart}>
             <div className="w-full p-3 rounded-md bg-white shadow-md border border-gray-200 flex items-center gap-4">
@@ -35,27 +44,25 @@ const MobileProductCard = ({
                         <p className="font-bold text-lg text-black max-w-36 whitespace-nowrap truncate">
                             {name}
                         </p>
-                        <span className="text-sm text-gray-400">
-                            {quantity}
+                        <span className={`text-sm ${displayQuantity <= 5 ? "text-red-500" : "text-gray-400"}`}>
+                            {displayQuantity}
                         </span>
                     </div>
 
                     <div className="flex justify-between items-center">
                         <p className="text-green-600 font-light text-md">
-                            ${price}
+                            {isTemplate ? `From $${minPrice}` : `$${price}`}
                         </p>
                         <p
                             className={`text-sm font-light ${
-                                inStock ? "text-green-600" : "text-red-500"
+                                inStock || (isTemplate && displayQuantity > 0) ? "text-green-600" : "text-red-500"
                             }`}
                         >
-                            {inStock ? "In stock" : "Out of stock"}
+                            {inStock || (isTemplate && displayQuantity > 0) ? "In stock" : "Out of stock"}
                         </p>
                     </div>
                 </div>
             </div>
         </div>
     );
-};
-
-export default MobileProductCard;
+}

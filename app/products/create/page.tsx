@@ -5,18 +5,19 @@ import Navbar from "@/components/Navbar";
 import { AppState } from "@/store";
 import { setProducts } from "@/store/slices/productSlice";
 import { generateSKU } from "@/utils/generateSKU";
-import { Category } from "@/utils/typesDefinitions";
+import { Category, Product, ProductType } from "@/utils/typesDefinitions";
 import { useUploadThing } from "@/utils/uploadthing";
 import { FloatingPortal } from "@floating-ui/react";
 import axios from "axios";
 import {
     ArrowLeft,
     CloudUpload,
-    Info,
     Loader2,
+    Plus,
     PlusCircle,
     RefreshCw,
     Save,
+    Trash2,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -30,6 +31,7 @@ const MAX_SIZE = 200 * 1024; // 200KB
 export default function CreateProductPage() {
     const router = useRouter();
     const [categories, setCategories] = useState<Category[]>([]);
+    const [templates, setTemplates] = useState<Product[]>([]);
 
     const [isCropModalOpen, setIsCropModalOpen] = useState(false);
     const [tempImageSrc, setTempImageSrc] = useState<string | null>(null);
@@ -39,6 +41,17 @@ export default function CreateProductPage() {
     const [isLoading, setIsLoading] = useState(false);
     const { startUpload } = useUploadThing("productImage");
 
+    const [type, setType] = useState<ProductType>("SIMPLE");
+    const [attributes, setAttributes] = useState<
+        {
+            name: string;
+            value: string;
+            price: string;
+            quantity: string;
+            sku: string;
+        }[]
+    >([]);
+
     const [formData, setFormData] = useState({
         name: "",
         sku: "",
@@ -47,6 +60,7 @@ export default function CreateProductPage() {
         quantity: "",
         categoryId: "",
         inStock: false,
+        parentId: "",
     });
 
     const originalProducts = useSelector(
@@ -55,18 +69,24 @@ export default function CreateProductPage() {
     const dispatch = useDispatch();
 
     const inputStyle =
-        "w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2 transition-colors";
+        "w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-gray-400 border-2 transition-colors no-spinner";
 
     useEffect(() => {
-        const fetchCategories = async () => {
+        const fetchData = async () => {
             try {
-                const response = await axios.get("/api/category");
-                setCategories(response.data);
+                const [catRes, prodRes] = await Promise.all([
+                    axios.get("/api/category"),
+                    axios.get("/api/product"),
+                ]);
+                setCategories(catRes.data);
+                setTemplates(
+                    prodRes.data.filter((p: Product) => p.type === "TEMPLATE"),
+                );
             } catch (error) {
-                console.error("Error fetching categories:", error);
+                console.error("Error fetching data:", error);
             }
         };
-        fetchCategories();
+        fetchData();
     }, []);
 
     const handleChange = (
@@ -76,6 +96,19 @@ export default function CreateProductPage() {
     ) => {
         const { id, value } = e.target;
         setFormData((prev) => ({ ...prev, [id]: value }));
+
+        if (id === "parentId" && value) {
+            const template = templates.find((t) => t.id === value);
+            if (template) {
+                setFormData((prev) => ({
+                    ...prev,
+                    parentId: value,
+                    categoryId: template.categoryId,
+                    name: template.name,
+                    description: template.description,
+                }));
+            }
+        }
     };
 
     const handleGenerateSKU = () => {
@@ -92,6 +125,27 @@ export default function CreateProductPage() {
 
     const toggleStock = () => {
         setFormData((prev) => ({ ...prev, inStock: !prev.inStock }));
+    };
+
+    const addAttribute = () => {
+        setAttributes([
+            ...attributes,
+            { name: "", value: "", price: "", quantity: "", sku: "" },
+        ]);
+    };
+
+    const removeAttribute = (index: number) => {
+        setAttributes(attributes.filter((_, i) => i !== index));
+    };
+
+    const handleAttributeChange = (
+        index: number,
+        field: "name" | "value" | "price" | "quantity" | "sku",
+        value: string,
+    ) => {
+        const newAttributes = [...attributes];
+        newAttributes[index][field] = value;
+        setAttributes(newAttributes);
     };
 
     const handleImageFileSelect = (
@@ -150,32 +204,27 @@ export default function CreateProductPage() {
         event.preventDefault();
         setIsLoading(true);
 
-        let finalSku = formData.sku;
-        if (!finalSku) {
-            finalSku = generateSKU(formData.name);
-        }
-
         if (
             !formData.name ||
-            !formData.description ||
-            !formData.price ||
-            !formData.quantity ||
-            !formData.categoryId
+            !formData.categoryId ||
+            (type === "SIMPLE" && (!formData.price || !formData.quantity)) ||
+            (type === "VARIANT" && !formData.parentId)
         ) {
             toast.error("Please fill in all required fields");
             setIsLoading(false);
             return;
         }
 
-        const finalInStock =
-            Number(formData.quantity) > 0 ? true : formData.inStock;
+        if (type === "VARIANT" && attributes.length === 0) {
+            toast.error("Please add at least one variant.");
+            setIsLoading(false);
+            return;
+        }
 
-        // Async operation definition
         const createProductOperation = async () => {
             try {
                 let imageUrl = "/images/default-product.png";
 
-                // Only upload if an image was provided
                 if (productImage) {
                     const uploadRes = await startUpload([productImage]);
                     if (!uploadRes || !uploadRes[0]?.url) {
@@ -184,22 +233,54 @@ export default function CreateProductPage() {
                     imageUrl = uploadRes[0].url;
                 }
 
-                const payload = {
-                    name: formData.name,
-                    sku: finalSku,
-                    description: formData.description,
-                    price: formData.price,
-                    quantity: formData.quantity,
-                    categoryId: formData.categoryId,
-                    inStock: finalInStock,
-                    image: imageUrl, // null if no image provided
-                };
+                if (type === "VARIANT") {
+                    // Bulk create variants sequentially
+                    const results = [];
+                    for (const v of attributes) {
+                        const finalSku =
+                            v.sku || generateSKU(`${formData.name}-${v.value}`);
+                        const payload = {
+                            ...formData,
+                            price: v.price || formData.price || 0,
+                            quantity: v.quantity || formData.quantity || 0,
+                            sku: finalSku,
+                            inStock: Number(v.quantity) > 0,
+                            image: imageUrl,
+                            type: "VARIANT",
+                            attributes: [{ name: v.name, value: v.value }],
+                        };
+                        const res = await axios.post("/api/product", payload);
+                        results.push(res.data);
+                    }
 
-                const response = await axios.post("/api/product", payload);
-                dispatch(setProducts([...originalProducts, response.data]));
-                router.push("/products/list");
+                    // Dispatch newly created variants to Redux
+                    dispatch(setProducts([...originalProducts, ...results]));
+                    router.push("/products/list");
+                    return results;
+                } else {
+                    // Simple or Template creation
+                    let finalSku = formData.sku || generateSKU(formData.name);
+                    const finalInStock =
+                        type === "TEMPLATE"
+                            ? false
+                            : Number(formData.quantity) > 0
+                              ? true
+                              : formData.inStock;
 
-                return response.data;
+                    const payload = {
+                        ...formData,
+                        sku: finalSku,
+                        inStock: finalInStock,
+                        image: imageUrl,
+                        type,
+                        attributes: [],
+                    };
+
+                    const response = await axios.post("/api/product", payload);
+                    dispatch(setProducts([...originalProducts, response.data]));
+                    router.push("/products/list");
+                    return response.data;
+                }
             } catch (error) {
                 console.error(error);
                 throw error;
@@ -209,49 +290,17 @@ export default function CreateProductPage() {
         };
 
         toast.promise(createProductOperation(), {
-            loading: "Creating product...",
-            success: "Product added to inventory.",
-            error: (err) => {
-                return err?.message || "Error adding product.";
-            },
+            loading:
+                type === "VARIANT"
+                    ? "Creating variants..."
+                    : "Creating product...",
+            success:
+                type === "VARIANT"
+                    ? "Variants added to inventory."
+                    : "Product added to inventory.",
+            error: (err) => err?.message || "Error adding product.",
         });
     };
-
-    useEffect(() => {
-        let buffer = "";
-        let lastKeyTime = Date.now();
-
-        const handleGlobalKeyDown = (e: KeyboardEvent) => {
-            const currentTime = Date.now();
-            const target = e.target as HTMLElement;
-
-            if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
-                return;
-            }
-
-            if (currentTime - lastKeyTime > 100) {
-                buffer = "";
-            }
-            lastKeyTime = currentTime;
-
-            if (e.key === "Enter") {
-                if (buffer.length > 3) {
-                    e.preventDefault();
-                    setFormData((prev) => ({ ...prev, sku: buffer }));
-                    toast.success("Product scanned successfully");
-                    buffer = "";
-                }
-            } else if (e.key.length === 1) {
-                buffer += e.key;
-            }
-        };
-
-        window.addEventListener("keydown", handleGlobalKeyDown);
-
-        return () => {
-            window.removeEventListener("keydown", handleGlobalKeyDown);
-        };
-    }, []);
 
     return (
         <Navbar>
@@ -269,7 +318,7 @@ export default function CreateProductPage() {
                                 Create Product
                             </h1>
                             <p className="text-sm text-gray-500">
-                                Add a new item to your inventory
+                                Add a new item, template, or variants
                             </p>
                         </div>
                     </div>
@@ -301,11 +350,92 @@ export default function CreateProductPage() {
                     className="grid grid-cols-1 lg:grid-cols-3 gap-8"
                 >
                     <div className="lg:col-span-2 space-y-6">
+                        {/* Type Selection */}
                         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                             <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
-                                General Information
+                                1. What are you creating?
+                            </h2>
+                            <div className="grid grid-cols-3 gap-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setType("SIMPLE")}
+                                    className={`px-4 py-4 rounded-xl border-2 text-left transition-all ${
+                                        type === "SIMPLE"
+                                            ? "border-green-500 bg-green-50"
+                                            : "border-gray-100 bg-gray-50 hover:border-gray-200"
+                                    }`}
+                                >
+                                    <p
+                                        className={`text-sm font-bold ${type === "SIMPLE" ? "text-green-600" : "text-gray-700"}`}
+                                    >
+                                        Simple Product
+                                    </p>
+                                    {/* <p className="text-[10px] text-gray-400 mt-1 leading-tight">Standard item sold as one unit.</p> */}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setType("TEMPLATE")}
+                                    className={`px-4 py-4 rounded-xl border-2 text-left transition-all ${
+                                        type === "TEMPLATE"
+                                            ? "border-green-500 bg-green-50"
+                                            : "border-gray-100 bg-gray-50 hover:border-gray-200"
+                                    }`}
+                                >
+                                    <p
+                                        className={`text-sm font-bold ${type === "TEMPLATE" ? "text-green-600" : "text-gray-700"}`}
+                                    >
+                                        Template
+                                    </p>
+                                    {/* <p className="text-[10px] text-gray-400 mt-1 leading-tight">Parent for items with variants.</p> */}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setType("VARIANT")}
+                                    className={`px-4 py-4 rounded-xl border-2 text-left transition-all ${
+                                        type === "VARIANT"
+                                            ? "border-green-500 bg-green-50"
+                                            : "border-gray-100 bg-gray-50 hover:border-gray-200"
+                                    }`}
+                                >
+                                    <p
+                                        className={`text-sm font-bold ${type === "VARIANT" ? "text-green-600" : "text-gray-700"}`}
+                                    >
+                                        Variants
+                                    </p>
+                                    {/* <p className="text-[10px] text-gray-400 mt-1 leading-tight">Specific versions (e.g. Blue/Large).</p> */}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                            <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
+                                2. General Information
                             </h2>
                             <div className="space-y-4">
+                                {type === "VARIANT" && (
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                            Parent Template:
+                                        </label>
+                                        <select
+                                            id="parentId"
+                                            className={inputStyle}
+                                            value={formData.parentId}
+                                            onChange={handleChange}
+                                            required
+                                        >
+                                            <option value="">
+                                                Select Parent Template
+                                            </option>
+                                            {templates.map((t) => (
+                                                <option key={t.id} value={t.id}>
+                                                    {t.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+
                                 <div>
                                     <label
                                         htmlFor="name"
@@ -320,44 +450,50 @@ export default function CreateProductPage() {
                                         value={formData.name}
                                         onChange={handleChange}
                                         required
+                                        disabled={
+                                            type === "VARIANT" &&
+                                            formData.parentId !== ""
+                                        }
+                                        placeholder={
+                                            type === "TEMPLATE"
+                                                ? "e.g. Cotton T-Shirt"
+                                                : "Product Name"
+                                        }
                                     />
                                 </div>
 
-                                {/* SKU / Barcode Field */}
-                                <div>
-                                    <label
-                                        htmlFor="sku"
-                                        className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5"
-                                    >
-                                        SKU / Barcode:
-                                    </label>
-                                    <div className="flex gap-2">
-                                        <div className="relative flex-1">
-                                            <input
-                                                id="sku"
-                                                type="text"
-                                                className={`${inputStyle} px-4`}
-                                                value={formData.sku}
-                                                onChange={handleChange}
-                                                onKeyDown={handleInputKeyDown}
-                                                autoFocus
-                                                placeholder="Scan barcode or auto-generate"
-                                            />
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={handleGenerateSKU}
-                                            className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 text-gray-700 transition-colors"
-                                            title="Generate Random SKU"
+                                {type !== "VARIANT" && (
+                                    <div>
+                                        <label
+                                            htmlFor="sku"
+                                            className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5"
                                         >
-                                            <RefreshCw className="w-4 h-4" />
-                                        </button>
+                                            SKU / Barcode:
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <div className="relative flex-1">
+                                                <input
+                                                    id="sku"
+                                                    type="text"
+                                                    className={`${inputStyle} px-4`}
+                                                    value={formData.sku}
+                                                    onChange={handleChange}
+                                                    onKeyDown={
+                                                        handleInputKeyDown
+                                                    }
+                                                    placeholder="Scan barcode or auto-generate"
+                                                />
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleGenerateSKU}
+                                                className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 text-gray-700 transition-colors"
+                                            >
+                                                <RefreshCw className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </div>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        Scan a physical product now or click the
-                                        button to generate an ID.
-                                    </p>
-                                </div>
+                                )}
 
                                 <div>
                                     <label
@@ -368,53 +504,175 @@ export default function CreateProductPage() {
                                     </label>
                                     <textarea
                                         id="description"
-                                        rows={1}
+                                        rows={2}
                                         className={inputStyle}
                                         value={formData.description}
                                         onChange={handleChange}
                                         required
+                                        disabled={
+                                            type === "VARIANT" &&
+                                            formData.parentId !== ""
+                                        }
                                     />
                                 </div>
                             </div>
                         </div>
 
-                        {/* Pricing & Inventory */}
-                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                            <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
-                                Pricing & Inventory
-                            </h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                <div>
-                                    <label
-                                        htmlFor="price"
-                                        className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5"
+                        {type === "VARIANT" && (
+                            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-sm font-semibold text-gray-800 uppercase tracking-wider">
+                                        3. Variants (Attributes)
+                                    </h2>
+                                    <button
+                                        type="button"
+                                        onClick={addAttribute}
+                                        className="text-xs font-bold text-green-500 flex items-center gap-1 hover:text-green-600 transition-colors"
                                     >
-                                        Price:
-                                    </label>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <span className="text-gray-500 sm:text-sm">
-                                                Ksh
-                                            </span>
-                                        </div>
-                                        <input
-                                            id="price"
-                                            type="number"
-                                            className={`${inputStyle} pl-12 no-spinner`}
-                                            value={formData.price}
-                                            onChange={handleChange}
-                                            required
-                                        />
-                                    </div>
+                                        <Plus className="w-3 h-3" /> Add Variant
+                                    </button>
                                 </div>
-                                <div>
-                                    <label
-                                        htmlFor="quantity"
-                                        className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5"
-                                    >
-                                        Quantity:
-                                    </label>
-                                    <div className="relative">
+                                <div className="space-y-4">
+                                    {attributes.map((attr, index) => (
+                                        <div
+                                            key={index}
+                                            className="flex flex-wrap gap-3 items-end bg-gray-50 p-3 rounded-lg border border-gray-100"
+                                        >
+                                            <div className="flex-1 min-w-[120px]">
+                                                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
+                                                    Attribute (e.g. Color)
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="e.g. Color"
+                                                    className={inputStyle}
+                                                    value={attr.name}
+                                                    onChange={(e) =>
+                                                        handleAttributeChange(
+                                                            index,
+                                                            "name",
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="flex-1 min-w-[120px]">
+                                                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
+                                                    Value (e.g. Red)
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="e.g. Red"
+                                                    className={inputStyle}
+                                                    value={attr.value}
+                                                    onChange={(e) =>
+                                                        handleAttributeChange(
+                                                            index,
+                                                            "value",
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="w-24">
+                                                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
+                                                    Price
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    placeholder="Ksh"
+                                                    className={inputStyle}
+                                                    value={attr.price}
+                                                    onChange={(e) =>
+                                                        handleAttributeChange(
+                                                            index,
+                                                            "price",
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="w-24">
+                                                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
+                                                    Qty
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    placeholder="0"
+                                                    className={inputStyle}
+                                                    value={attr.quantity}
+                                                    onChange={(e) =>
+                                                        handleAttributeChange(
+                                                            index,
+                                                            "quantity",
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    required
+                                                />
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    removeAttribute(index)
+                                                }
+                                                className="p-2.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-colors mb-0.5"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+
+                                    {attributes.length === 0 && (
+                                        <p className="text-xs text-gray-400 italic text-center py-4 rounded-lg border border-dashed border-gray-200">
+                                            No variants added. Click &quot;Add
+                                            Variant&quot; to create specific
+                                            versions.
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {type === "SIMPLE" && (
+                            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                                <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
+                                    3. Pricing & Inventory
+                                </h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    <div>
+                                        <label
+                                            htmlFor="price"
+                                            className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5"
+                                        >
+                                            Price:
+                                        </label>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <span className="text-gray-500 sm:text-sm">
+                                                    Ksh
+                                                </span>
+                                            </div>
+                                            <input
+                                                id="price"
+                                                type="number"
+                                                className={`${inputStyle} pl-12 no-spinner`}
+                                                value={formData.price}
+                                                onChange={handleChange}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label
+                                            htmlFor="quantity"
+                                            className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5"
+                                        >
+                                            Quantity:
+                                        </label>
                                         <input
                                             id="quantity"
                                             type="number"
@@ -426,63 +684,45 @@ export default function CreateProductPage() {
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        {/* Instructions */}
-                        <div className="bg-green-50 p-5 rounded-lg shadow-sm border border-green-100 mb-2">
-                            <div className="flex items-center gap-2 mb-3">
-                                <Info className="w-5 h-5 stroke-green-500" />
-                                <h2 className="text-sm font-bold text-green-500 uppercase tracking-wider">
-                                    Instructions
-                                </h2>
-                            </div>
-                            <p className="text-sm text-green-700 mb-4 leading-relaxed">
-                                To create a new product, fill in the required
-                                fields. Upload a clear image and indicate if the
-                                item is in stock.
-                            </p>
-                            <div className="text-xs font-medium text-green-800 bg-white/60 p-3 rounded-lg border border-green-200">
-                                <strong>Tip:</strong> If you have no categories,
-                                click the &quot;Create New Category&quot; button
-                                below.
-                            </div>
-                        </div>
+                        )}
                     </div>
 
                     <div className="space-y-6">
                         {/* Status */}
-                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                            <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
-                                Status
-                            </h2>
-                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
-                                <div className="flex flex-col">
-                                    <span className="text-sm font-medium text-gray-900">
-                                        In Stock
-                                    </span>
-                                    <span className="text-xs text-gray-500">
-                                        Available for sale
-                                    </span>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={toggleStock}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
-                                        formData.inStock
-                                            ? "bg-green-500"
-                                            : "bg-gray-200"
-                                    }`}
-                                >
-                                    <span
-                                        className={`${
+                        {type === "SIMPLE" && (
+                            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                                <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
+                                    Status
+                                </h2>
+                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-medium text-gray-900">
+                                            In Stock
+                                        </span>
+                                        <span className="text-xs text-gray-500">
+                                            Available for sale
+                                        </span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={toggleStock}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
                                             formData.inStock
-                                                ? "translate-x-6"
-                                                : "translate-x-1"
-                                        } inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out`}
-                                    />
-                                </button>
+                                                ? "bg-green-500"
+                                                : "bg-gray-200"
+                                        }`}
+                                    >
+                                        <span
+                                            className={`${
+                                                formData.inStock
+                                                    ? "translate-x-6"
+                                                    : "translate-x-1"
+                                            } inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out`}
+                                        />
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Organization */}
                         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -503,6 +743,10 @@ export default function CreateProductPage() {
                                         value={formData.categoryId}
                                         onChange={handleChange}
                                         required
+                                        disabled={
+                                            type === "VARIANT" &&
+                                            formData.parentId !== ""
+                                        }
                                     >
                                         <option value="" disabled>
                                             Select Category
@@ -540,7 +784,6 @@ export default function CreateProductPage() {
                                     accept="image/png"
                                     onChange={handleImageFileSelect}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                    // required={!productImage}
                                 />
 
                                 {imagePreview ? (

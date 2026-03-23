@@ -1,9 +1,11 @@
+import { CategoryBoxProps } from "@/utils/typeDefinition";
+
 export default function CategoryBox({
     id,
     category,
     active,
     onCategoryClick,
-}: CategoryBox) {
+}: CategoryBoxProps) {
     return (
         <div
             className={`px-4 py-2 rounded-lg flex items-center justify-center gap-4 cursor-pointer ${

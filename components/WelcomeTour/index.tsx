@@ -183,7 +183,7 @@ function Popover({
                 width: 300,
                 transition: "all 0.2s ease",
             }}
-            className="bg-white border border-gray-200 rounded-xl shadow-lg p-5"
+            className="bg-white border border-gray-200 rounded-lg shadow-lg p-5"
         >
             {/* Badge */}
             {step.badge && (

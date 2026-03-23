@@ -13,7 +13,6 @@ export const getProducts = async (
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        // 1. Get current user with their business
         const currentUser = await prisma.user.findUnique({
             where: { clerkId: userId },
             select: { businessId: true },
@@ -25,20 +24,40 @@ export const getProducts = async (
                 .json({ error: "User or business not found" });
         }
 
-        // 2. Get products belonging to the same business
         const products = await prisma.product.findMany({
             where: {
                 businessId: currentUser.businessId,
             },
             include: {
                 Category: true,
+                variants: {
+                    include: {
+                        attributeValues: {
+                            include: {
+                                attributeOption: {
+                                    include: {
+                                        attribute: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                attributeValues: {
+                    include: {
+                        attributeOption: {
+                            include: {
+                                attribute: true
+                            }
+                        }
+                    }
+                }
             },
             orderBy: {
                 createdAt: "desc",
             },
         });
 
-        // 3. Get all users in the same business to map names/images
         const businessUsers = await prisma.user.findMany({
             where: { businessId: currentUser.businessId },
             select: {
@@ -49,10 +68,7 @@ export const getProducts = async (
             },
         });
 
-        // 4. Get Clerk client to fetch user images
         const clerk = await clerkClient();
-
-        // 5. Build the users Map (Merging Prisma Data + Clerk Image) - Parallelized
         const usersMap = new Map();
 
         const clerkUsersResults = await Promise.allSettled(
@@ -80,18 +96,22 @@ export const getProducts = async (
             }
         });
 
-        // 6. Attach creator details to products
-        const productsWithCreator = products.map((product) => {
-            // Get creator user info from the map
-            const creator = product.createdBy
-                ? usersMap.get(product.createdBy)
-                : null;
+        // Helper to attach creator to a product and its variants
+        const attachCreator = (product: any) => {
+            const creator = product.createdBy ? usersMap.get(product.createdBy) : null;
+            const productWithCreator = { ...product, creator: creator || null };
+            
+            if (productWithCreator.variants) {
+                productWithCreator.variants = productWithCreator.variants.map((v: any) => ({
+                    ...v,
+                    creator: v.createdBy ? usersMap.get(v.createdBy) : null
+                }));
+            }
+            
+            return productWithCreator;
+        };
 
-            return {
-                ...product,
-                creator: creator || null,
-            };
-        });
+        const productsWithCreator = products.map(attachCreator);
 
         if (productsWithCreator.length === 0) {
             return res.status(200).json([]);

@@ -20,6 +20,12 @@ enum SubscriptionStatus {
   TRIALING
 }
 
+enum ProductType {
+  SIMPLE
+  TEMPLATE
+  VARIANT
+}
+
 model MpesaPayment {
   id                String  @id @default(uuid()) @map("_id") @db.Uuid
   amount            Float
@@ -59,6 +65,43 @@ model Product {
   createdBy    String?
   businessId   String?       @db.Uuid
   Business     Business?     @relation(fields: [businessId], references: [id])
+
+  // Variants Logic
+  type            ProductType             @default(SIMPLE)
+  parentId        String?                 @db.Uuid
+  parent          Product?                @relation("ProductVariants", fields: [parentId], references: [id], onDelete: Cascade)
+  variants        Product[]               @relation("ProductVariants")
+  attributeValues ProductAttributeValue[]
+}
+
+model Attribute {
+  id         String            @id @default(uuid()) @map("_id") @db.Uuid
+  name       String // e.g., "Color", "Size"
+  businessId String            @db.Uuid
+  Business   Business          @relation(fields: [businessId], references: [id])
+  options    AttributeOption[]
+
+  @@unique([name, businessId])
+}
+
+model AttributeOption {
+  id                String                  @id @default(uuid()) @map("_id") @db.Uuid
+  value             String // e.g., "Red", "XL"
+  attributeId       String                  @db.Uuid
+  attribute         Attribute               @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  productAttributes ProductAttributeValue[]
+
+  @@unique([value, attributeId])
+}
+
+model ProductAttributeValue {
+  id                String          @id @default(uuid()) @map("_id") @db.Uuid
+  productId         String          @db.Uuid
+  product           Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  attributeOptionId String          @db.Uuid
+  attributeOption   AttributeOption @relation(fields: [attributeOptionId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, attributeOptionId])
 }
 
 model Category {
@@ -192,6 +235,7 @@ model Business {
   kraTotReturns KraTotReturn[]
   Product       Product[]
   Category      Category[]
+  Attribute     Attribute[]
 }
 
 model Response {

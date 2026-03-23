@@ -124,6 +124,12 @@ export const getInvoices = async (
                             select: {
                                 name: true,
                                 price: true,
+                                type: true,
+                                attributeValues: {
+                                    include: {
+                                        attributeOption: true
+                                    }
+                                }
                             },
                         },
                     },

@@ -292,15 +292,15 @@ function InvoicePageContent() {
                                                         </div>
                                                         <div className="flex flex-col">
                                                             <span className="font-medium text-gray-900">
-                                                                {
-                                                                    item.Product
-                                                                        .name
-                                                                }
+                                                                {item.Product.name}
                                                             </span>
-                                                            <span className="text-xs text-gray-500 truncate max-w-[200px]">
-                                                                {item.Product
-                                                                    .description ||
-                                                                    "No description"}
+                                                            {item.Product.type === "VARIANT" && item.Product.attributeValues && item.Product.attributeValues.length > 0 && (
+                                                                <span className="text-[10px] font-semibold text-green-600 mt-0.5 uppercase tracking-wide">
+                                                                    {item.Product.attributeValues.map((av: any) => av.attributeOption.value).join(" / ")}
+                                                                </span>
+                                                            )}
+                                                            <span className="text-xs text-gray-500 truncate max-w-[200px] mt-0.5">
+                                                                {item.Product.description || "No description"}
                                                             </span>
                                                         </div>
                                                     </div>

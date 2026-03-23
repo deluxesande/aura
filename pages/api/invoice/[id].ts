@@ -20,6 +20,12 @@ async function getInvoiceById(req: NextApiRequest, res: NextApiResponse) {
                                 name: true,
                                 image: true,
                                 price: true,
+                                type: true,
+                                attributeValues: {
+                                    include: {
+                                        attributeOption: true
+                                    }
+                                }
                             },
                         },
                     },

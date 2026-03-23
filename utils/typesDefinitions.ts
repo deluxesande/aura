@@ -5,6 +5,24 @@ export interface Creator {
     imageUrl?: string;
 }
 
+export type ProductType = "SIMPLE" | "TEMPLATE" | "VARIANT";
+
+export interface Attribute {
+    id: string;
+    name: string;
+}
+
+export interface AttributeOption {
+    id: string;
+    value: string;
+    attribute: Attribute;
+}
+
+export interface ProductAttributeValue {
+    id: string;
+    attributeOption: AttributeOption;
+}
+
 export interface Product {
     id: string;
     name: string;
@@ -20,6 +38,11 @@ export interface Product {
     image: string;
     creator?: Creator;
     inStock: boolean;
+    type?: ProductType;
+    parentId?: string;
+    variants?: Product[];
+    variantsCount?: number;
+    attributeValues?: ProductAttributeValue[];
 }
 
 export interface Category {

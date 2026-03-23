@@ -1,23 +1,9 @@
 // store/slices/productSlice.ts
-import { Category, InvoiceItem } from "@/utils/typesDefinitions";
+import { Product } from "@/utils/typesDefinitions";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface ProductState {
-    products: Array<{
-        id: string;
-        name: string;
-        description: string;
-        price: number;
-        sku: string;
-        quantity: number;
-        createdAt: Date;
-        updatedAt: Date;
-        categoryId: string;
-        Category: Category;
-        invoiceItems: InvoiceItem[];
-        image: string;
-        inStock: boolean;
-    }>;
+    products: Product[];
 }
 
 const initialState: ProductState = {
@@ -28,7 +14,7 @@ const productSlice = createSlice({
     name: "product",
     initialState,
     reducers: {
-        setProducts(state, action: PayloadAction<ProductState["products"]>) {
+        setProducts(state, action: PayloadAction<Product[]>) {
             state.products = action.payload;
         },
     },
