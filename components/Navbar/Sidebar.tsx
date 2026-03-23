@@ -4,9 +4,9 @@ import { toggleSideBarState } from "@/store/slices/sideBarSlice";
 import { useClerk, useUser } from "@clerk/nextjs";
 import axios from "axios";
 import {
-    Calculator,
     ChevronLeft,
     ChevronRight,
+    HelpCircle,
     History as HistoryIcon,
     LayoutDashboard,
     LogOut,
@@ -286,6 +286,34 @@ const Sidebar = () => {
                 </div>
 
                 <div className="w-full space-y-2 mt-auto pt-4 border-t border-gray-100 bg-white/80 backdrop-blur-sm flex-shrink-0">
+                    {sideBarState ? (
+                        <Link
+                            href="/help-center"
+                            className="w-full flex items-center space-x-3 px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer group"
+                        >
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#fafafa] group-hover:bg-green-50 transition-colors">
+                                <HelpCircle
+                                    size={18}
+                                    className="stroke-gray-500 group-hover:stroke-green-500 transition-colors"
+                                />
+                            </div>
+                            <span className="text-sm text-gray-600 group-hover:text-green-500 transition-colors">
+                                Help Center
+                            </span>
+                        </Link>
+                    ) : (
+                        <Link
+                            href="/help-center"
+                            className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#fafafa] hover:bg-green-50 transition-colors cursor-pointer mx-auto"
+                            title="Help Center"
+                        >
+                            <HelpCircle
+                                size={18}
+                                className="stroke-gray-500 hover:stroke-green-500"
+                            />
+                        </Link>
+                    )}
+
                     {sideBarState ? (
                         <Link
                             className="w-full flex items-center space-x-3 px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer group"
