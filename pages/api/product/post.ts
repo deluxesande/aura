@@ -33,44 +33,108 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
         const results = await prisma.$transaction(
             async (tx) => {
-                const processedItems = [];
-                const attributeCache = new Map();
-                const optionCache = new Map();
+                // --- STAGE 1: Pre-fetch all necessary metadata in bulk ---
+                const allAttrNames = new Set<string>();
+                const allOptValues = new Set<string>(); // "attrName:value"
+                const parentIds = new Set<string>();
+                const providedSkus = new Set<string>();
+                const simpleProductNames = new Set<string>();
 
-                // Pre-fetch all SKUs in the batch to check for existence
-                const batchSkus = items
-                    .map((i) => i.sku)
-                    .filter((s) => s && s.trim() !== "");
-                const existingSkus =
-                    batchSkus.length > 0
-                        ? await tx.product.findMany({
-                              where: { sku: { in: batchSkus } },
+                items.forEach((item) => {
+                    if (item.sku) providedSkus.add(item.sku);
+                    if (item.type === "VARIANT" && item.parentId) {
+                        parentIds.add(item.parentId);
+                        item.attributes?.forEach((a: any) => {
+                            allAttrNames.add(a.name);
+                            allOptValues.add(`${a.name}:${a.value}`);
+                        });
+                    } else if (item.type === "SIMPLE" || !item.type) {
+                        simpleProductNames.add(item.name);
+                    }
+                });
+
+                // Parallel pre-fetching
+                const [
+                    existingAttrs,
+                    existingSkus,
+                    existingSimples,
+                    existingVariantsForParents,
+                ] = await Promise.all([
+                    tx.attribute.findMany({
+                        where: { businessId: bId, name: { in: Array.from(allAttrNames) } },
+                        include: { options: true },
+                    }),
+                    providedSkus.size > 0
+                        ? tx.product.findMany({
+                              where: { sku: { in: Array.from(providedSkus) } },
                               select: { sku: true, id: true },
                           })
-                        : [];
-                const skuMap = new Map(existingSkus.map((s) => [s.sku, s.id]));
-
-                // Pre-fetch existing simple products for faster lookup
-                const simpleItemNames = items
-                    .filter((i) => (i.type || "SIMPLE") === "SIMPLE")
-                    .map((i) => i.name);
-                const existingSimpleProducts =
-                    simpleItemNames.length > 0
-                        ? await tx.product.findMany({
-                              where: {
-                                  businessId: bId,
-                                  type: "SIMPLE",
-                                  name: { in: simpleItemNames },
-                              },
-                              select: {
-                                  id: true,
-                                  name: true,
-                                  categoryId: true,
-                                  quantity: true,
-                              },
+                        : Promise.resolve([]),
+                    simpleProductNames.size > 0
+                        ? tx.product.findMany({
+                              where: { businessId: bId, type: "SIMPLE", name: { in: Array.from(simpleProductNames) } },
+                              select: { id: true, name: true, categoryId: true, quantity: true },
                           })
-                        : [];
+                        : Promise.resolve([]),
+                    parentIds.size > 0
+                        ? tx.product.findMany({
+                              where: { parentId: { in: Array.from(parentIds) }, type: "VARIANT" },
+                              include: { attributeValues: { include: { attributeOption: true } } },
+                          })
+                        : Promise.resolve([]),
+                ]);
 
+                // --- STAGE 2: Ensure all Attributes and Options exist ---
+                const attrMap = new Map();
+                const optMap = new Map(); // key: "attrId:value"
+
+                existingAttrs.forEach((a) => {
+                    attrMap.set(a.name, a);
+                    a.options.forEach((o) => optMap.set(`${a.id}:${o.value}`, o));
+                });
+
+                // Create missing attributes
+                for (const name of allAttrNames) {
+                    if (!attrMap.has(name)) {
+                        const newAttr = await tx.attribute.create({
+                            data: { name, businessId: bId },
+                        });
+                        attrMap.set(name, newAttr);
+                    }
+                }
+
+                // Create missing options
+                for (const optKey of allOptValues) {
+                    const [aName, val] = optKey.split(":");
+                    const attr = attrMap.get(aName);
+                    if (attr && !optMap.has(`${attr.id}:${val}`)) {
+                        const newOpt = await tx.attributeOption.create({
+                            data: { value: val, attributeId: attr.id },
+                        });
+                        optMap.set(`${attr.id}:${val}`, newOpt);
+                    }
+                }
+
+                // SKU existence check maps
+                const skuMap = new Map(existingSkus.map((s) => [s.sku, s.id]));
+                
+                // Helper to match variants in memory
+                const findVariantInMemory = (pId: string, itemAttrs: any[]) => {
+                    const parentVariants = existingVariantsForParents.filter(v => v.parentId === pId);
+                    return parentVariants.find(v => {
+                        if (v.attributeValues.length !== itemAttrs.length) return false;
+                        return itemAttrs.every(ia => 
+                            v.attributeValues.some(av => 
+                                av.attributeOption.value === ia.value && 
+                                av.attributeOption.attributeId === attrMap.get(ia.name)?.id
+                            )
+                        );
+                    });
+                };
+
+                const processedItems = [];
+
+                // --- STAGE 3: Process items ---
                 for (const item of items) {
                     const {
                         name,
@@ -116,174 +180,58 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     }
 
                     if (type === "VARIANT") {
-                        if (!parentId)
-                            throw new Error(
-                                "Parent ID is required for variants",
-                            );
+                        if (!parentId) throw new Error("Parent ID required for variants");
 
-                        const attrResults = [];
-                        for (const attr of attributes) {
-                            const attrCacheKey = `${attr.name}-${bId}`;
-                            let attribute = attributeCache.get(attrCacheKey);
-                            if (!attribute) {
-                                attribute = await tx.attribute.upsert({
-                                    where: {
-                                        name_businessId: {
-                                            name: attr.name,
-                                            businessId: bId,
-                                        },
-                                    },
-                                    update: {},
-                                    create: {
-                                        name: attr.name,
-                                        businessId: bId,
-                                    },
-                                    select: { id: true, name: true },
-                                });
-                                attributeCache.set(attrCacheKey, attribute);
-                            }
-
-                            const optCacheKey = `${attr.value}-${attribute.id}`;
-                            let option = optionCache.get(optCacheKey);
-                            if (!option) {
-                                option = await tx.attributeOption.upsert({
-                                    where: {
-                                        value_attributeId: {
-                                            value: attr.value,
-                                            attributeId: attribute.id,
-                                        },
-                                    },
-                                    update: {},
-                                    create: {
-                                        value: attr.value,
-                                        attributeId: attribute.id,
-                                    },
-                                    select: { id: true, value: true },
-                                });
-                                optionCache.set(optCacheKey, option);
-                            }
-
-                            attrResults.push({ attribute, option });
-                        }
-
-                        if (attributes.length > 0) {
-                            const optionIds = attrResults.map(
-                                (r) => r.option.id,
-                            );
-                            const existingVariant = await tx.product.findFirst({
-                                where: {
-                                    parentId,
-                                    type: "VARIANT",
-                                    attributeValues: {
-                                        every: {
-                                            attributeOptionId: {
-                                                in: optionIds,
-                                            },
-                                        },
-                                    },
-                                },
-                                select: { id: true, quantity: true },
+                        const existingV = findVariantInMemory(parentId, attributes);
+                        if (existingV) {
+                            const updated = await tx.product.update({
+                                where: { id: existingV.id },
+                                data: { quantity: existingV.quantity + parsedQuantity },
                             });
-
-                            if (existingVariant) {
-                                const updated = await tx.product.update({
-                                    where: { id: existingVariant.id },
-                                    data: {
-                                        quantity:
-                                            existingVariant.quantity +
-                                            parsedQuantity,
-                                    },
-                                });
-                                processedItems.push(updated);
-                                continue;
-                            }
+                            processedItems.push(updated);
+                            continue;
                         }
 
-                        const finalSku =
-                            sku ||
-                            generateSKU(
-                                `${name}-${attributes.map((a: { value: string }) => a.value).join("-")}`,
-                            );
-
-                        if (sku && skuMap.has(sku)) {
-                            throw new Error(`SKU ${sku} already exists`);
-                        }
+                        const finalSku = sku || generateSKU(`${name}-${attributes.map((a: any) => a.value).join("-")}`);
+                        if (sku && skuMap.has(sku)) throw new Error(`SKU ${sku} already exists`);
 
                         const variant = await tx.product.create({
                             data: {
-                                name,
-                                description,
-                                price: parsedPrice,
-                                sku: finalSku,
-                                quantity: parsedQuantity,
-                                image: imageUrl,
-                                inStock,
-                                type: "VARIANT",
+                                name, description, price: parsedPrice, sku: finalSku,
+                                quantity: parsedQuantity, image: imageUrl, inStock, type: "VARIANT",
                                 parent: { connect: { id: parentId } },
                                 Category: { connect: { id: categoryId } },
                                 Business: { connect: { id: bId } },
                                 createdBy: itemCreatedBy,
-                                attributeValues:
-                                    attrResults.length > 0
-                                        ? {
-                                              create: attrResults.map((r) => ({
-                                                  attributeOptionId:
-                                                      r.option.id,
-                                              })),
-                                          }
-                                        : undefined,
+                                attributeValues: {
+                                    create: attributes.map((a: any) => ({
+                                        attributeOptionId: optMap.get(`${attrMap.get(a.name).id}:${a.value}`).id,
+                                    })),
+                                },
                             },
                         });
                         processedItems.push(variant);
                         continue;
                     }
 
-                    const finalSku =
-                        sku && sku.trim() !== "" ? sku : generateSKU(name);
-
-                    const existingProduct = existingSimpleProducts.find(
-                        (p) => p.name === name && p.categoryId === categoryId,
-                    );
-
-                    if (existingProduct) {
+                    // SIMPLE Product handling
+                    const existingP = existingSimples.find(p => p.name === name && p.categoryId === categoryId);
+                    if (existingP) {
                         const updated = await tx.product.update({
-                            where: { id: existingProduct.id },
-                            data: {
-                                quantity:
-                                    existingProduct.quantity + parsedQuantity,
-                            },
+                            where: { id: existingP.id },
+                            data: { quantity: existingP.quantity + parsedQuantity },
                         });
                         processedItems.push(updated);
                         continue;
                     }
 
-                    if (sku && skuMap.has(sku)) {
-                        throw new Error(
-                            `A product with SKU ${sku} already exists.`,
-                        );
-                    }
-
-                    if (!sku || sku.trim() === "") {
-                        const skuCheck = await tx.product.findUnique({
-                            where: { sku: finalSku },
-                            select: { id: true },
-                        });
-                        if (skuCheck)
-                            throw new Error(
-                                `A product with SKU ${finalSku} already exists.`,
-                            );
-                    }
+                    const finalSku = sku && sku.trim() !== "" ? sku : generateSKU(name);
+                    if (sku && skuMap.has(sku)) throw new Error(`SKU ${sku} already exists.`);
 
                     const simple = await tx.product.create({
                         data: {
-                            name,
-                            description,
-                            price: parsedPrice,
-                            sku: finalSku,
-                            quantity: parsedQuantity,
-                            image: imageUrl,
-                            inStock,
-                            type: "SIMPLE",
+                            name, description, price: parsedPrice, sku: finalSku,
+                            quantity: parsedQuantity, image: imageUrl, inStock, type: "SIMPLE",
                             Category: { connect: { id: categoryId } },
                             Business: { connect: { id: bId } },
                             createdBy: itemCreatedBy,
@@ -295,9 +243,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 return processedItems;
             },
             {
-                timeout: 9000, // 9s timeout for Prisma to stay under Vercel's 10s limit
+                timeout: 9500, // Stay within Vercel's 10s limit
             },
         );
+
 
 
         return res.status(201).json(isBatch ? results : results[0]);
