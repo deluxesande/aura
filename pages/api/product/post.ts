@@ -45,16 +45,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             const itemCreatedBy = createdBy || userId;
 
             if (type === "TEMPLATE") {
+                const templateSku = sku || `TMP-${generateSKU(name)}`;
                 return await prisma.product.upsert({
-                    where: {
-                        sku: sku || `TMP-${generateSKU(name)}`,
-                    },
+                    where: { sku: templateSku },
                     update: {},
                     create: {
                         name,
                         description,
                         price: 0,
-                        sku: sku || `TMP-${generateSKU(name)}`,
+                        sku: templateSku,
                         quantity: 0,
                         image: imageUrl,
                         inStock: false,
@@ -67,11 +66,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             }
 
             if (type === "VARIANT") {
-                if (!parentId) {
+                if (!parentId)
                     throw new Error("Parent ID is required for variants");
-                }
 
-                // 1. Upsert all attributes and options in parallel
+                // 1. Upsert attributes
                 const attrResults = await Promise.all(
                     attributes.map(
                         async (attr: { name: string; value: string }) => {
@@ -107,18 +105,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     ),
                 );
 
-                // 2. Check for existing variant with same attributes in one query
+                // 2. Check for existing variant
                 if (attributes.length > 0) {
                     const optionIds = attrResults.map((r) => r.option.id);
-
                     const existingVariant = await prisma.product.findFirst({
                         where: {
                             parentId,
                             type: "VARIANT",
                             attributeValues: {
-                                every: {
-                                    attributeOptionId: { in: optionIds },
-                                },
+                                every: { attributeOptionId: { in: optionIds } },
                             },
                         },
                         select: { id: true, quantity: true },
@@ -135,7 +130,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     }
                 }
 
-                // 3. SKU check
+                // 3. SKU logic
                 const finalSku =
                     sku ||
                     generateSKU(
@@ -150,45 +145,44 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     if (skuCheck) throw new Error(`SKU ${sku} already exists`);
                 }
 
-                // 4. Create variant + attribute values in a single transaction
-                return await prisma.$transaction(async (tx) => {
-                    const variant = await tx.product.create({
-                        data: {
-                            name,
-                            description,
-                            price: parsedPrice,
-                            sku: finalSku,
-                            quantity: parsedQuantity,
-                            image: imageUrl,
-                            inStock,
-                            type: "VARIANT",
-                            parent: { connect: { id: parentId } },
-                            Category: { connect: { id: categoryId } },
-                            Business: { connect: { id: bId } },
-                            createdBy: itemCreatedBy,
-                        },
-                    });
-
-                    // Bulk insert all attribute values at once
-                    if (attrResults.length > 0) {
-                        await tx.productAttributeValue.createMany({
-                            data: attrResults.map((r) => ({
-                                productId: variant.id,
-                                attributeOptionId: r.option.id,
-                            })),
-                        });
-                    }
-
-                    return variant;
+                // 4. Create variant + attribute values (Nested Write)
+                return await prisma.product.create({
+                    data: {
+                        name,
+                        description,
+                        price: parsedPrice,
+                        sku: finalSku,
+                        quantity: parsedQuantity,
+                        image: imageUrl,
+                        inStock,
+                        type: "VARIANT",
+                        parent: { connect: { id: parentId } },
+                        Category: { connect: { id: categoryId } },
+                        Business: { connect: { id: bId } },
+                        createdBy: itemCreatedBy,
+                        attributeValues:
+                            attrResults.length > 0
+                                ? {
+                                      create: attrResults.map((r) => ({
+                                          attributeOptionId: r.option.id,
+                                      })),
+                                  }
+                                : undefined,
+                    },
                 });
             }
 
             const finalSku = sku && sku.trim() !== "" ? sku : generateSKU(name);
 
-            // Combine existing product check + SKU check into one parallel call
+            // Parallel DB check
             const [existingProduct, skuCheck] = await Promise.all([
                 prisma.product.findFirst({
-                    where: { name, categoryId, businessId: bId, type: "SIMPLE" },
+                    where: {
+                        name,
+                        categoryId,
+                        businessId: bId,
+                        type: "SIMPLE",
+                    },
                     select: { id: true, quantity: true },
                 }),
                 prisma.product.findUnique({
@@ -206,11 +200,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 });
             }
 
-            if (skuCheck) {
+            if (skuCheck)
                 throw new Error(
                     `A product with SKU ${finalSku} already exists.`,
                 );
-            }
 
             return await prisma.product.create({
                 data: {
@@ -229,8 +222,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             });
         };
 
-        // Use Promise.all for fast, concurrent processing on the server
-        const results = await Promise.all(items.map((item) => processItem(item)));
+        const CHUNK_SIZE = 8;
+        const results = [];
+
+        for (let i = 0; i < items.length; i += CHUNK_SIZE) {
+            const chunk = items.slice(i, i + CHUNK_SIZE);
+            const chunkResults = await Promise.all(
+                chunk.map((item) => processItem(item)),
+            );
+            results.push(...chunkResults);
+        }
 
         return res.status(201).json(isBatch ? results : results[0]);
     } catch (error: any) {

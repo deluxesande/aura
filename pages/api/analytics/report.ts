@@ -37,7 +37,10 @@ export default async function handler(
             where: {
                 businessId: businessId as string,
                 createdAt: { gte: startDate },
-                status: "PAID",
+                status: {
+                    equals: "PAID",
+                    mode: "insensitive",
+                },
             },
             include: {
                 Customer: {
@@ -68,7 +71,9 @@ export default async function handler(
         invoices.forEach((inv) => {
             totalRevenue += inv.totalAmount;
 
-            if (inv.paymentType === "MPESA") {
+            const pType = (inv.paymentType || "CASH").toUpperCase();
+
+            if (pType === "MPESA") {
                 mpesaTotal += inv.totalAmount;
             } else {
                 cashTotal += inv.totalAmount;
@@ -82,7 +87,7 @@ export default async function handler(
                 date: inv.createdAt.toISOString(),
                 invoiceId: inv.id,
                 customer: customerName || "Walk-in",
-                method: inv.paymentType || "CASH",
+                method: pType,
                 amount: inv.totalAmount,
             });
 

@@ -51,7 +51,10 @@ const styles = StyleSheet.create({
     page: {
         fontFamily: "Helvetica",
         fontSize: 10,
-        padding: 30,
+        paddingTop: 30,
+        paddingLeft: 30,
+        paddingRight: 30,
+        paddingBottom: 90,
         color: "#333",
         flexDirection: "column",
         backgroundColor: "#ffffff",
