@@ -257,4 +257,4 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 };
 
-export default addCreatedBy(handler);
+export const addProduct = addCreatedBy(handler);
