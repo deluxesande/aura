@@ -45,13 +45,30 @@ export default async function handler(
         // Get time period from query parameter (default to 7 days)
         const timePeriod = parseInt(req.query.timePeriod as string) || 7;
 
-        // Fetch invoices created by users in the same business
+        // Filter by time period - use start of day for consistent results
+        const now = new Date();
+        const startDate = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate() - timePeriod,
+            0,
+            0,
+            0,
+            0,
+        );
+
+        // Fetch invoices created by users in the same business within the time period
         const invoices = await prisma.invoice.findMany({
             where: {
                 createdBy: {
                     in: userIds,
                 },
-                status: "PAID",
+                status: {
+                    in: ["PAID", "paid"],
+                },
+                createdAt: {
+                    gte: startDate,
+                },
             },
             select: {
                 id: true,
@@ -61,15 +78,7 @@ export default async function handler(
             },
         });
 
-        // Filter by time period
-        const now = new Date();
-        const startDate = new Date();
-        startDate.setUTCDate(now.getUTCDate() - timePeriod);
-
-        const filteredInvoices = invoices.filter((invoice) => {
-            const invoiceDate = new Date(invoice.createdAt);
-            return invoiceDate >= startDate && invoiceDate <= now;
-        });
+        const filteredInvoices = invoices;
 
         let labels: string[] = [];
         let revenueData: number[] = [];

@@ -28,18 +28,35 @@ export default async function handler(
         if (timePeriod && timePeriod !== "all") {
             const days = parseInt(timePeriod as string, 10);
             if (!isNaN(days)) {
-                startDate = new Date();
-                startDate.setDate(startDate.getDate() - days);
+                const now = new Date();
+                startDate = new Date(
+                    now.getFullYear(),
+                    now.getMonth(),
+                    now.getDate() - days,
+                    0,
+                    0,
+                    0,
+                    0,
+                );
             }
         }
 
+        // Get all users in the same business to match invoice list logic
+        const businessUsers = await prisma.user.findMany({
+            where: { businessId: businessId as string },
+            select: { clerkId: true },
+        });
+        const userIds = businessUsers.map((u) => u.clerkId);
+
         const invoices = await prisma.invoice.findMany({
             where: {
-                businessId: businessId as string,
+                OR: [
+                    { businessId: businessId as string },
+                    { createdBy: { in: userIds } }
+                ],
                 createdAt: { gte: startDate },
                 status: {
-                    equals: "PAID",
-                    mode: "insensitive",
+                    in: ["PAID", "paid", "COMPLETED", "completed"],
                 },
             },
             include: {
