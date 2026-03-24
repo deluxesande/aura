@@ -5,6 +5,7 @@ import {
     ChevronRight,
     ChevronUp,
     Edit,
+    Filter,
     PlusCircle,
     Search,
     Trash,
@@ -12,105 +13,32 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useEffect, useState, useMemo } from "react";
+import { useDispatch } from "react-redux";
+import { setProducts } from "@/store/slices/productSlice"; // <-- Added Redux import
 import NoProductsFound from "../NoProducts";
 
-export default function ProductList({
-    products,
-    handleDelete,
-    loading = false,
-}: {
-    products: Product[];
-    handleDelete: (productId: string) => void;
-    loading?: boolean;
-}) {
-    const router = useRouter();
-    const [currentPage, setCurrentPage] = useState(1);
-    const [selectedCategory, setSelectedCategory] = useState("All");
-    const [searchQuery, setSearchQuery] = useState("");
-    const [expandedTemplates, setExpandedTemplates] = useState<string[]>([]);
-
-    const itemsPerPage = 10;
-
-    const handleEditClick = (productId: string) => {
-        router.push(`/products/${productId}/edit`);
-    };
-
-    const toggleTemplate = (id: string) => {
-        setExpandedTemplates((prev) =>
-            prev.includes(id)
-                ? prev.filter((tid) => tid !== id)
-                : [...prev, id],
-        );
-    };
-
-    // Extract Unique Categories
-    const categories = [
-        "All",
-        ...Array.from(
-            new Set(products.map((p: any) => p.Category?.name).filter(Boolean)),
-        ),
-    ];
-
-    // Filter out variants from the main list (they show under templates)
-    const baseProducts = products.filter((p) => p.type !== "VARIANT");
-
-    const filteredProducts = baseProducts.filter((product: any) => {
-        const matchesCategory =
-            selectedCategory === "All" ||
-            product.Category?.name === selectedCategory;
-
-        const query = searchQuery.toLowerCase();
-        const matchesSearch =
-            product.name.toLowerCase().includes(query) ||
-            product.description?.toLowerCase().includes(query) ||
-            product.sku?.toLowerCase().includes(query);
-
-        return matchesCategory && matchesSearch;
-    });
-
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [selectedCategory, searchQuery]);
-
-    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
-
-    const handlePreviousPage = () =>
-        setCurrentPage((prev) => Math.max(prev - 1, 1));
-    const handleNextPage = () =>
-        setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-    const handlePageClick = (page: number) => setCurrentPage(page);
-
-    const getPageNumbers = () => {
-        const pages = [];
-        const maxPagesToShow = 5;
-        let startPage = Math.max(
-            1,
-            currentPage - Math.floor(maxPagesToShow / 2),
-        );
-        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-        if (endPage - startPage + 1 < maxPagesToShow)
-            startPage = Math.max(1, endPage - maxPagesToShow + 1);
-        for (let i = startPage; i <= endPage; i++) pages.push(i);
-        return pages;
-    };
-
-    const ProductRow = ({
+// 1. EXTRACTED COMPONENT
+const ProductRow = React.memo(
+    ({
         product,
         isVariant = false,
         parentProduct,
+        isExpanded,
+        onToggleTemplate,
+        onEditClick,
+        onDelete,
     }: {
-        product: Product;
+        product: any;
         isVariant?: boolean;
-        parentProduct?: Product;
+        parentProduct?: any;
+        isExpanded?: boolean;
+        onToggleTemplate?: (id: string) => void;
+        onEditClick: (id: string) => void;
+        onDelete: (id: string, parentId?: string) => void; // <-- Updated signature to accept parentId
     }) => {
         const isTemplate = product.type === "TEMPLATE";
-        const isExpanded = expandedTemplates.includes(product.id);
 
-        // Use parent's info for variants to ensure consistency
         const displayCategory =
             isVariant && parentProduct
                 ? parentProduct.Category?.name
@@ -121,13 +49,15 @@ export default function ProductList({
                 ? parentProduct.creator
                 : product.creator;
 
-        // Sum quantities for templates
         const displayQty = isTemplate
-            ? product.variants?.reduce((sum, v) => sum + v.quantity, 0) || 0
+            ? product.variants?.reduce(
+                  (sum: number, v: any) => sum + v.quantity,
+                  0,
+              ) || 0
             : product.quantity;
 
         const attributes = product.attributeValues
-            ?.map((av) => av.attributeOption.value)
+            ?.map((av: any) => av.attributeOption.value)
             .join(" / ");
 
         return (
@@ -139,9 +69,9 @@ export default function ProductList({
                         <div
                             className={`flex items-center gap-4 ${isVariant ? "pl-8" : ""}`}
                         >
-                            {isTemplate && (
+                            {isTemplate && onToggleTemplate && (
                                 <button
-                                    onClick={() => toggleTemplate(product.id)}
+                                    onClick={() => onToggleTemplate(product.id)}
                                     className="p-1 hover:bg-gray-200 rounded transition-colors text-gray-400 hover:text-green-500"
                                 >
                                     {isExpanded ? (
@@ -245,13 +175,16 @@ export default function ProductList({
                         <div className="flex items-center gap-2">
                             <button
                                 className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
-                                onClick={() => handleEditClick(product.id)}
+                                onClick={() => onEditClick(product.id)}
                             >
                                 <Edit size={16} />
                             </button>
                             <button
                                 className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                onClick={() => handleDelete(product.id)}
+                                // Passes the parent ID if this is a variant!
+                                onClick={() =>
+                                    onDelete(product.id, parentProduct?.id)
+                                }
                             >
                                 <Trash size={16} />
                             </button>
@@ -260,16 +193,133 @@ export default function ProductList({
                 </tr>
                 {isTemplate &&
                     isExpanded &&
-                    product.variants?.map((v) => (
+                    product.variants?.map((v: any) => (
                         <ProductRow
                             key={v.id}
                             product={v}
                             isVariant={true}
                             parentProduct={product}
+                            onEditClick={onEditClick}
+                            onDelete={onDelete}
                         />
                     ))}
             </Fragment>
         );
+    },
+);
+
+ProductRow.displayName = "ProductRow";
+
+export default function ProductList({
+    products,
+    handleDelete,
+    loading = false,
+}: {
+    products: Product[];
+    handleDelete: (productId: string) => void;
+    loading?: boolean;
+}) {
+    const router = useRouter();
+    const dispatch = useDispatch(); // <-- Added Redux Dispatch
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [selectedCategory, setSelectedCategory] = useState("All");
+    const [searchQuery, setSearchQuery] = useState("");
+    const [expandedTemplates, setExpandedTemplates] = useState<string[]>([]);
+
+    const itemsPerPage = 10;
+
+    const handleEditClick = (productId: string) => {
+        router.push(`/products/${productId}/edit`);
+    };
+
+    const toggleTemplate = (id: string) => {
+        setExpandedTemplates((prev) =>
+            prev.includes(id)
+                ? prev.filter((tid) => tid !== id)
+                : [...prev, id],
+        );
+    };
+
+    // --- NEW: Redux Delete Wrapper ---
+    const handleDeleteWrapper = (id: string, parentId?: string) => {
+        // 1. Trigger the original API call passed from the parent page
+        handleDelete(id);
+
+        // 2. Immediately update Redux so the UI reacts instantly
+        const updatedProducts = products
+            .filter((p) => p.id !== id) // Removes standard products and templates
+            .map((p) => {
+                // If this is the parent template of the deleted variant, filter it out of the nested array
+                if (parentId && p.id === parentId) {
+                    return {
+                        ...p,
+                        variants: p.variants?.filter((v: any) => v.id !== id),
+                    };
+                }
+                return p;
+            });
+
+        dispatch(setProducts(updatedProducts));
+    };
+
+    const categories = useMemo(() => {
+        return [
+            "All",
+            ...Array.from(
+                new Set(
+                    products.map((p: any) => p.Category?.name).filter(Boolean),
+                ),
+            ),
+        ];
+    }, [products]);
+
+    const filteredProducts = useMemo(() => {
+        const baseProducts = products.filter((p) => p.type !== "VARIANT");
+        const query = searchQuery.toLowerCase();
+
+        return baseProducts.filter((product: any) => {
+            const matchesCategory =
+                selectedCategory === "All" ||
+                product.Category?.name === selectedCategory;
+
+            const matchesSearch =
+                !query ||
+                product.name.toLowerCase().includes(query) ||
+                product.description?.toLowerCase().includes(query) ||
+                product.sku?.toLowerCase().includes(query);
+
+            return matchesCategory && matchesSearch;
+        });
+    }, [products, selectedCategory, searchQuery]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedCategory, searchQuery]);
+
+    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+
+    const handlePreviousPage = () =>
+        setCurrentPage((prev) => Math.max(prev - 1, 1));
+    const handleNextPage = () =>
+        setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+    const handlePageClick = (page: number) => setCurrentPage(page);
+
+    const getPageNumbers = () => {
+        const pages = [];
+        const maxPagesToShow = 5;
+        let startPage = Math.max(
+            1,
+            currentPage - Math.floor(maxPagesToShow / 2),
+        );
+        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+        if (endPage - startPage + 1 < maxPagesToShow)
+            startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        for (let i = startPage; i <= endPage; i++) pages.push(i);
+        return pages;
     };
 
     return (
@@ -279,20 +329,38 @@ export default function ProductList({
 
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
                     {!loading && products.length > 0 && (
-                        <div className="relative w-full sm:w-64">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 stroke-green-500" />
-                            <input
-                                type="text"
-                                placeholder="Search inventory..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg outline-none bg-gray-50 focus:bg-white focus:ring-2 focus:ring-green-500/20 transition-all"
-                            />
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <div className="relative w-full sm:w-64">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 stroke-green-500" />
+                                <input
+                                    type="text"
+                                    placeholder="Search inventory..."
+                                    value={searchQuery}
+                                    onChange={(e) =>
+                                        setSearchQuery(e.target.value)
+                                    }
+                                    className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg outline-none bg-gray-50 focus:bg-white focus:ring-2 focus:ring-green-500/20 transition-all"
+                                />
+                            </div>
+
+                            <select
+                                value={selectedCategory}
+                                onChange={(e) =>
+                                    setSelectedCategory(e.target.value)
+                                }
+                                className="pl-3 pr-8 py-2 text-sm border border-gray-200 rounded-lg outline-none bg-gray-50 focus:bg-white focus:ring-2 focus:ring-green-500/20 transition-all appearance-none cursor-pointer font-medium text-gray-600"
+                            >
+                                {categories.map((cat) => (
+                                    <option key={cat} value={cat as string}>
+                                        {cat as string}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     )}
 
                     <Link href="/products/create">
-                        <button className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-green-600 transition-all shadow-lg shadow-green-100">
+                        <button className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-green-600 transition-all shadow-lg shadow-green-100 whitespace-nowrap">
                             <PlusCircle size={18} className="stroke-white" />
                             Add Product
                         </button>
@@ -339,6 +407,13 @@ export default function ProductList({
                                 <ProductRow
                                     key={product.id}
                                     product={product}
+                                    isExpanded={expandedTemplates.includes(
+                                        product.id,
+                                    )}
+                                    onToggleTemplate={toggleTemplate}
+                                    onEditClick={handleEditClick}
+                                    // Use the new Redux wrapper instead of standard handleDelete
+                                    onDelete={handleDeleteWrapper}
                                 />
                             ))
                         )}

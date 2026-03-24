@@ -18,7 +18,15 @@ export const addCreatedBy = (handler: NextApiHandler) => {
         try {
             const user = getAuth(req);
             if (user && user.userId) {
-                req.body.createdBy = user.userId;
+                if (Array.isArray(req.body)) {
+                    req.body.forEach((item) => {
+                        if (typeof item === "object" && item !== null) {
+                            item.createdBy = user.userId;
+                        }
+                    });
+                } else if (typeof req.body === "object" && req.body !== null) {
+                    req.body.createdBy = user.userId;
+                }
             }
             return handler(req, res);
         } catch (error) {

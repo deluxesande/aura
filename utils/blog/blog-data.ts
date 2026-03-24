@@ -21,12 +21,12 @@ export const BLOG_POSTS: BlogPost[] = [
             "A step-by-step guide to creating an app on the Safaricom Daraja Portal and generating your Consumer Key and Secret.",
         category: "Guides",
         readTime: "5 min read",
-        date: "Jan 28, 2026",
+        date: "March 24, 2026",
         image: "/images/M-PESA-logo-2.png",
         content: [
             {
                 type: "paragraph",
-                text: "To integrate M-Pesa payments into SaleSense (or any custom website), you need two critical pieces of information: the **Consumer Key** and the **Consumer Secret**. These are generated on Safaricom's developer portal, known as Daraja.",
+                text: "To integrate M-Pesa payments into SaleSense, you need two critical pieces of information: the **Consumer Key** and the **Consumer Secret**. These are generated on Safaricom's developer portal, known as Daraja.",
             },
             {
                 type: "heading",
@@ -73,18 +73,18 @@ export const BLOG_POSTS: BlogPost[] = [
             },
             {
                 type: "paragraph",
-                text: "Copy these keys and paste them into your SaleSense settings page to enable automatic payment tracking.",
+                text: "Copy these keys and paste them into your SaleSense settings page under the Integrations tab to enable automatic payment tracking.",
             },
         ],
     },
     {
         slug: "why-compliance-matters",
-        title: "Why KRA Compliance is Crucial for SMEs",
+        title: "Why KRA Compliance is Crucial for Kenyan SMEs",
         excerpt:
-            "Understanding the risks of non-compliance and how automated tools can save you from hefty fines and business closures.",
+            "Understanding the risks of non-compliance and how SaleSense automated tools can save you from hefty fines and business closures.",
         category: "Compliance",
         readTime: "4 min read",
-        date: "Jan 20, 2026",
+        date: "March 20, 2026",
         image: "/images/kra-seeklogo.png",
         content: [
             {
@@ -117,7 +117,7 @@ export const BLOG_POSTS: BlogPost[] = [
             },
             {
                 type: "alert",
-                text: "Did you know? SaleSense automatically calculates your Turnover Tax (TOT) based on your daily sales, so you're always audit-ready.",
+                text: "Did you know? SaleSense automatically tracks your sales and calculates potential tax liabilities, ensuring you are always audit-ready.",
             },
             {
                 type: "paragraph",
@@ -127,12 +127,12 @@ export const BLOG_POSTS: BlogPost[] = [
     },
     {
         slug: "inventory-management-tips",
-        title: "5 Tips to Optimize Your Inventory",
+        title: "5 Tips to Optimize Your Inventory with SaleSense",
         excerpt:
             "Stop losing money to dead stock. Learn how to track your best sellers and manage reorder levels effectively.",
         category: "Growth",
         readTime: "6 min read",
-        date: "Jan 15, 2026",
+        date: "March 15, 2026",
         image: "/images/default-product.png",
         content: [
             {
@@ -157,7 +157,7 @@ export const BLOG_POSTS: BlogPost[] = [
             },
             {
                 type: "step",
-                text: "Check your SaleSense 'Top Products' dashboard to instantly see what is moving fast this month.",
+                text: "Check your SaleSense 'Top Products' chart on the dashboard to instantly see what is moving fast this month.",
             },
             {
                 type: "heading",
@@ -177,7 +177,7 @@ export const BLOG_POSTS: BlogPost[] = [
             },
             {
                 type: "alert",
-                text: "Pro Tip: SaleSense allows you to export your inventory list to Excel, making physical stock-taking much faster.",
+                text: "Pro Tip: Use the SaleSense Inventory list to export your current stock levels, making physical stock-taking much faster.",
             },
         ],
     },

@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import ProductList from "@/components/ProductList";
 import { AppState } from "@/store";
 import { setProducts } from "@/store/slices/productSlice";
+import { Product } from "@/utils/typesDefinitions";
 import axios from "axios";
 import { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -14,8 +15,14 @@ export default function Page() {
     const dispatch = useDispatch();
 
     const products = useSelector((state: AppState) => state.product.products);
+    const [filteredProducts, setFilteredProducts] = useState(products);
 
     const [loading, setLoading] = useState(products.length === 0);
+
+    // Update filtered products when products change
+    useEffect(() => {
+        setFilteredProducts(products);
+    }, [products]);
 
     // Prevent double-fetching in React Strict Mode
     const hasFetched = useRef(false);
@@ -24,7 +31,7 @@ export default function Page() {
         const previousProducts = [...products];
 
         const optimisticList = products.filter(
-            (product) => product.id !== productId
+            (product: Product) => product.id !== productId,
         );
         dispatch(setProducts(optimisticList));
 
@@ -62,17 +69,17 @@ export default function Page() {
     }, [dispatch]); // Removed 'products' dependency to prevent fetch loops
 
     return (
-        <Navbar>
+        <Navbar setFilteredProducts={setFilteredProducts}>
             <div className="hidden lg:block">
                 <ProductList
-                    products={products}
+                    products={filteredProducts}
                     handleDelete={handleDelete}
                     loading={loading}
                 />
             </div>
             <div className="block lg:hidden">
                 <MobileProductList
-                    products={products}
+                    products={filteredProducts}
                     handleDelete={handleDelete}
                     loading={loading}
                 />

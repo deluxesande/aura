@@ -92,7 +92,8 @@ export default function Page() {
     const [isRestocking, setIsRestocking] = useState(false);
 
     // Folder Navigation State
-    const [activeFolderTemplate, setActiveFolderTemplate] = useState<Product | null>(null);
+    const [activeFolderTemplate, setActiveFolderTemplate] =
+        useState<Product | null>(null);
 
     const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
 
@@ -168,7 +169,7 @@ export default function Page() {
         (categoryId: string) => {
             setSelectedCategoryId(categoryId);
             setActiveFolderTemplate(null); // Reset folder view on category change
-            
+
             const baseProducts = productsData.filter(
                 (p) => p.type !== "VARIANT",
             );
@@ -477,26 +478,39 @@ export default function Page() {
             if (e.key === "Enter") {
                 if (buffer.length > 2) {
                     e.preventDefault();
-                    
+
                     // Always scan against all products (base + variants)
                     const scannedProduct = productsRef.current.find((p) => {
                         // If it's a template, check its variants
                         if (p.type === "TEMPLATE" && p.variants) {
-                            const variantMatch = p.variants.find(v => 
-                                v.sku === buffer || v.sku?.toUpperCase() === buffer.toUpperCase()
+                            const variantMatch = p.variants.find(
+                                (v) =>
+                                    v.sku === buffer ||
+                                    v.sku?.toUpperCase() ===
+                                        buffer.toUpperCase(),
                             );
                             if (variantMatch) return true; // Found in variants
                         }
-                        return p.sku === buffer || p.sku?.toUpperCase() === buffer.toUpperCase();
+                        return (
+                            p.sku === buffer ||
+                            p.sku?.toUpperCase() === buffer.toUpperCase()
+                        );
                     });
 
                     let productToAdd = scannedProduct;
 
                     // If the match was a template, find the actual variant that matched
-                    if (scannedProduct?.type === "TEMPLATE" && scannedProduct.variants) {
-                         productToAdd = scannedProduct.variants.find(v => 
-                            v.sku === buffer || v.sku?.toUpperCase() === buffer.toUpperCase()
-                        ) || scannedProduct;
+                    if (
+                        scannedProduct?.type === "TEMPLATE" &&
+                        scannedProduct.variants
+                    ) {
+                        productToAdd =
+                            scannedProduct.variants.find(
+                                (v) =>
+                                    v.sku === buffer ||
+                                    v.sku?.toUpperCase() ===
+                                        buffer.toUpperCase(),
+                            ) || scannedProduct;
                     }
 
                     if (productToAdd && productToAdd.type !== "TEMPLATE") {
@@ -506,7 +520,10 @@ export default function Page() {
                         if (window.innerWidth >= 768) {
                             dispatch(show());
                         }
-                    } else if (productToAdd && productToAdd.type === "TEMPLATE") {
+                    } else if (
+                        productToAdd &&
+                        productToAdd.type === "TEMPLATE"
+                    ) {
                         // Should not happen if barcodes are only on variants, but just in case
                         setActiveFolderTemplate(productToAdd);
                         toast.info(`Opened ${productToAdd.name} options`);
@@ -564,8 +581,8 @@ export default function Page() {
     }, [isLoaded, user, reduxUser, dispatch]);
 
     // Determine what to display in the main grid
-    const displayItems = activeFolderTemplate 
-        ? (activeFolderTemplate.variants || []) 
+    const displayItems = activeFolderTemplate
+        ? activeFolderTemplate.variants || []
         : filteredProducts;
 
     return (
@@ -578,16 +595,23 @@ export default function Page() {
                 <Navbar setFilteredProducts={setFilteredProducts}>
                     {activeFolderTemplate ? (
                         // Folder View Header
-                        <div className="flex items-center gap-4 mt-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <div className="flex items-center gap-4 mt-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
                             <button
                                 onClick={() => setActiveFolderTemplate(null)}
                                 className="p-2 bg-white rounded-lg shadow-sm border border-gray-200 hover:bg-gray-100 transition-colors"
                             >
-                                <ArrowLeft size={20} className="text-gray-600" />
+                                <ArrowLeft
+                                    size={20}
+                                    className="text-gray-600"
+                                />
                             </button>
                             <div>
-                                <h2 className="text-xl font-bold text-gray-900">{activeFolderTemplate.name} Options</h2>
-                                <p className="text-xs text-gray-500">Select a specific variation to add to cart</p>
+                                <h2 className="text-xl font-bold text-gray-900">
+                                    {activeFolderTemplate.name} Options
+                                </h2>
+                                <p className="text-xs text-gray-500">
+                                    Select a specific variation to add to cart
+                                </p>
                             </div>
                         </div>
                     ) : (
@@ -615,92 +639,95 @@ export default function Page() {
                         ) : (
                             displayItems.map((product: any) => {
                                 // For variant display, we might want to override the name to show attributes clearly
-                                const displayName = product.type === "VARIANT" && product.attributeValues
-                                    ? `${product.name} - ${product.attributeValues.map((av: any) => av.attributeOption.value).join(" / ")}`
-                                    : product.name;
+                                const displayName =
+                                    product.type === "VARIANT" &&
+                                    product.attributeValues
+                                        ? `${product.name} - ${product.attributeValues.map((av: any) => av.attributeOption.value).join(" / ")}`
+                                        : product.name;
 
                                 return (
-                                <div
-                                    key={product.id}
-                                    className="relative group"
-                                >
-                                    <div className="hidden lg:block">
-                                        <ProductCard
-                                            image={product.image}
-                                            name={displayName}
-                                            quantity={product.quantity}
-                                            price={product.price}
-                                            inStock={product.inStock}
-                                            type={product.type}
-                                            variants={product.variants}
-                                            onAddToCart={() =>
-                                                handleAddToCart(product)
-                                            }
-                                        />
-                                    </div>
-                                    <div className="block lg:hidden">
-                                        <MobileProductCard
-                                            image={product.image}
-                                            name={displayName}
-                                            quantity={product.quantity}
-                                            price={product.price}
-                                            inStock={product.inStock}
-                                            type={product.type}
-                                            variants={product.variants}
-                                            onAddToCart={() =>
-                                                handleAddToCart(product)
-                                            }
-                                        />
-                                    </div>
-
-                                    {/* Variant Badge */}
-                                    {product.type === "TEMPLATE" && (
-                                        <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1">
-                                            Variants
+                                    <div
+                                        key={product.id}
+                                        className="relative group"
+                                    >
+                                        <div className="hidden lg:block">
+                                            <ProductCard
+                                                image={product.image}
+                                                name={displayName}
+                                                quantity={product.quantity}
+                                                price={product.price}
+                                                inStock={product.inStock}
+                                                type={product.type}
+                                                variants={product.variants}
+                                                onAddToCart={() =>
+                                                    handleAddToCart(product)
+                                                }
+                                            />
                                         </div>
-                                    )}
+                                        <div className="block lg:hidden">
+                                            <MobileProductCard
+                                                image={product.image}
+                                                name={displayName}
+                                                quantity={product.quantity}
+                                                price={product.price}
+                                                inStock={product.inStock}
+                                                type={product.type}
+                                                variants={product.variants}
+                                                onAddToCart={() =>
+                                                    handleAddToCart(product)
+                                                }
+                                            />
+                                        </div>
 
-                                    {/* Restock Button */}
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            openRestockModal(product);
-                                        }}
-                                        className={`${
-                                            product.quantity <= 5 &&
-                                            product.type !== "TEMPLATE"
-                                                ? "flex"
-                                                : "hidden"
-                                        } absolute top-1 right-1 md:top-2 md:right-2 items-center justify-center bg-white/95 backdrop-blur-sm p-1.5 md:p-2 rounded-full shadow-sm border border-red-100 text-red-400 hover:text-red-600 hover:bg-red-50 transition-all z-10`}
-                                        title="Quick Restock (Low Stock)"
-                                    >
-                                        <Plus
-                                            size={14}
-                                            className="md:w-4 md:h-4"
-                                        />
-                                    </button>
-
-                                    {/* Add/Configure Button */}
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleAddToCart(product);
-                                        }}
-                                        className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-sm hover:bg-green-100 hover:text-green-600 text-gray-400 transition-all border border-gray-100 z-10"
-                                        title={
-                                            product.type === "TEMPLATE"
-                                                ? "View Options"
-                                                : "Add to Cart"
-                                        }
-                                    >
-                                        {product.type === "TEMPLATE" ? (
-                                            <Plus size={16} />
-                                        ) : (
-                                            <ShoppingCart size={16} />
+                                        {/* Variant Badge */}
+                                        {product.type === "TEMPLATE" && (
+                                            <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1">
+                                                Variants
+                                            </div>
                                         )}
-                                    </button>
-                                </div>
-                            )})
+
+                                        {/* Restock Button */}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                openRestockModal(product);
+                                            }}
+                                            className={`${
+                                                product.quantity <= 5 &&
+                                                product.type !== "TEMPLATE"
+                                                    ? "flex"
+                                                    : "hidden"
+                                            } absolute top-1 right-1 md:top-2 md:right-2 items-center justify-center bg-white/95 backdrop-blur-sm p-1.5 md:p-2 rounded-full shadow-sm border border-red-100 text-red-400 hover:text-red-600 hover:bg-red-50 transition-all z-10`}
+                                            title="Quick Restock (Low Stock)"
+                                        >
+                                            <Plus
+                                                size={14}
+                                                className="md:w-4 md:h-4"
+                                            />
+                                        </button>
+
+                                        {/* Add/Configure Button */}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleAddToCart(product);
+                                            }}
+                                            className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-sm hover:bg-green-100 hover:text-green-600 text-gray-400 transition-all border border-gray-100 z-10"
+                                            title={
+                                                product.type === "TEMPLATE"
+                                                    ? "View Options"
+                                                    : "Add to Cart"
+                                            }
+                                        >
+                                            {product.type === "TEMPLATE" ? (
+                                                <Plus size={16} />
+                                            ) : (
+                                                <ShoppingCart size={16} />
+                                            )}
+                                        </button>
+                                    </div>
+                                );
+                            })
                         )}
                     </div>
                 </Navbar>

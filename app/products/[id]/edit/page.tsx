@@ -319,7 +319,9 @@ export default function EditProductPage() {
                                 )}
                             </div>
                             <p className="text-sm text-gray-500">
-                                {isTemplate ? "Update parent template details" : "Update product details and inventory"}
+                                {isTemplate
+                                    ? "Update parent template details"
+                                    : "Update product details and inventory"}
                             </p>
                         </div>
                     </div>
@@ -493,16 +495,21 @@ export default function EditProductPage() {
                         )}
 
                         {isTemplate && (
-                            <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 flex gap-4">
+                            <div className="bg-blue-50 p-6 rounded-lg border border-blue-100 flex gap-4">
                                 <div className="p-2 bg-blue-500 rounded-lg h-fit">
                                     <Info className="w-5 h-5 stroke-white" />
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-sm font-bold text-blue-800">Template Product</p>
+                                    <p className="text-sm font-bold text-blue-800">
+                                        Template Product
+                                    </p>
                                     <p className="text-xs text-blue-600 leading-relaxed">
-                                        Templates are used to group different versions of a product (variants). 
-                                        Price and stock are managed individually for each variant. 
-                                        Changes made here will apply to all variants linked to this template.
+                                        Templates are used to group different
+                                        versions of a product (variants). Price
+                                        and stock are managed individually for
+                                        each variant. Changes made here will
+                                        apply to all variants linked to this
+                                        template.
                                     </p>
                                 </div>
                             </div>

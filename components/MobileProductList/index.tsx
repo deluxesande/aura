@@ -24,6 +24,7 @@ export default function MobileProductList({
 }) {
     const router = useRouter();
     const [currentPage, setCurrentPage] = useState(1);
+    const [selectedCategory, setSelectedCategory] = useState("All");
     const [searchQuery, setSearchQuery] = useState("");
     const itemsPerPage = 10;
 
@@ -31,18 +32,31 @@ export default function MobileProductList({
         router.push(`/products/${productId}/edit`);
     };
 
-    const filteredProducts = products.filter((product) => {
+    // Extract Unique Categories
+    const categories = [
+        "All",
+        ...Array.from(
+            new Set(products.map((p: any) => p.Category?.name).filter(Boolean)),
+        ),
+    ];
+
+    const filteredProducts = products.filter((product: any) => {
+        const matchesCategory =
+            selectedCategory === "All" ||
+            product.Category?.name === selectedCategory;
+
         const query = searchQuery.toLowerCase();
-        return (
+        const matchesSearch =
             product.name.toLowerCase().includes(query) ||
             product.description?.toLowerCase().includes(query) ||
-            product.sku?.toLowerCase().includes(query)
-        );
+            product.sku?.toLowerCase().includes(query);
+
+        return matchesCategory && matchesSearch;
     });
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery]);
+    }, [searchQuery, selectedCategory]);
 
     // Calculate pagination based on FILTERED products
     const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -92,17 +106,33 @@ export default function MobileProductList({
                 </div>
 
                 {!loading && products.length > 0 && (
-                    <div className="relative w-full">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Search className="h-4 w-4 stroke-green-500" />
+                    <div className="flex flex-col gap-3">
+                        <select
+                            value={selectedCategory}
+                            onChange={(e) =>
+                                setSelectedCategory(e.target.value)
+                            }
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none bg-gray-50 focus:bg-white focus:ring-2 focus:ring-green-500/20 transition-all cursor-pointer font-medium text-gray-600"
+                        >
+                            {categories.map((cat) => (
+                                <option key={cat} value={cat}>
+                                    {cat}
+                                </option>
+                            ))}
+                        </select>
+
+                        <div className="relative w-full">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Search className="h-4 w-4 stroke-green-500" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Search by name..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none bg-gray-50 text-gray-700 placeholder-gray-400 transition-colors"
+                            />
                         </div>
-                        <input
-                            type="text"
-                            placeholder="Search by name..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none bg-gray-50 text-gray-700 placeholder-gray-400 transition-colors"
-                        />
                     </div>
                 )}
 

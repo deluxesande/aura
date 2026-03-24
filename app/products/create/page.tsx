@@ -234,12 +234,10 @@ export default function CreateProductPage() {
                 }
 
                 if (type === "VARIANT") {
-                    // Bulk create variants sequentially
-                    const results = [];
-                    for (const v of attributes) {
+                    const payloads = attributes.map((v) => {
                         const finalSku =
                             v.sku || generateSKU(`${formData.name}-${v.value}`);
-                        const payload = {
+                        return {
                             ...formData,
                             price: v.price || formData.price || 0,
                             quantity: v.quantity || formData.quantity || 0,
@@ -249,16 +247,15 @@ export default function CreateProductPage() {
                             type: "VARIANT",
                             attributes: [{ name: v.name, value: v.value }],
                         };
-                        const res = await axios.post("/api/product", payload);
-                        results.push(res.data);
-                    }
+                    });
 
-                    // Dispatch newly created variants to Redux
+                    const response = await axios.post("/api/product", payloads);
+                    const results = response.data;
+
                     dispatch(setProducts([...originalProducts, ...results]));
                     router.push("/products/list");
                     return results;
                 } else {
-                    // Simple or Template creation
                     let finalSku = formData.sku || generateSKU(formData.name);
                     const finalInStock =
                         type === "TEMPLATE"
@@ -349,6 +346,7 @@ export default function CreateProductPage() {
                     onSubmit={handleSubmit}
                     className="grid grid-cols-1 lg:grid-cols-3 gap-8"
                 >
+                    {/* LEFT COLUMN */}
                     <div className="lg:col-span-2 space-y-6">
                         {/* Type Selection */}
                         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -359,7 +357,7 @@ export default function CreateProductPage() {
                                 <button
                                     type="button"
                                     onClick={() => setType("SIMPLE")}
-                                    className={`px-4 py-4 rounded-xl border-2 text-left transition-all ${
+                                    className={`px-4 py-3 rounded-lg border-2 text-left transition-all ${
                                         type === "SIMPLE"
                                             ? "border-green-500 bg-green-50"
                                             : "border-gray-100 bg-gray-50 hover:border-gray-200"
@@ -370,12 +368,11 @@ export default function CreateProductPage() {
                                     >
                                         Simple Product
                                     </p>
-                                    {/* <p className="text-[10px] text-gray-400 mt-1 leading-tight">Standard item sold as one unit.</p> */}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setType("TEMPLATE")}
-                                    className={`px-4 py-4 rounded-xl border-2 text-left transition-all ${
+                                    className={`px-4 py-3 rounded-lg border-2 text-left transition-all ${
                                         type === "TEMPLATE"
                                             ? "border-green-500 bg-green-50"
                                             : "border-gray-100 bg-gray-50 hover:border-gray-200"
@@ -386,12 +383,11 @@ export default function CreateProductPage() {
                                     >
                                         Template
                                     </p>
-                                    {/* <p className="text-[10px] text-gray-400 mt-1 leading-tight">Parent for items with variants.</p> */}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setType("VARIANT")}
-                                    className={`px-4 py-4 rounded-xl border-2 text-left transition-all ${
+                                    className={`px-4 py-3 rounded-lg border-2 text-left transition-all ${
                                         type === "VARIANT"
                                             ? "border-green-500 bg-green-50"
                                             : "border-gray-100 bg-gray-50 hover:border-gray-200"
@@ -402,7 +398,6 @@ export default function CreateProductPage() {
                                     >
                                         Variants
                                     </p>
-                                    {/* <p className="text-[10px] text-gray-400 mt-1 leading-tight">Specific versions (e.g. Blue/Large).</p> */}
                                 </button>
                             </div>
                         </div>
@@ -687,7 +682,28 @@ export default function CreateProductPage() {
                         )}
                     </div>
 
+                    {/* RIGHT COLUMN */}
                     <div className="space-y-6">
+                        {/* Dynamic Info Card - Positioned below Price/Variant forms and above Status */}
+                        <div className="p-4 bg-blue-50 rounded-lg border border-blue-100 flex gap-3 transition-all">
+                            <div>
+                                <h3 className="text-sm font-bold text-blue-800 mb-1">
+                                    {type === "SIMPLE" &&
+                                        "About Simple Products"}
+                                    {type === "TEMPLATE" && "About Templates"}
+                                    {type === "VARIANT" && "About Variants"}
+                                </h3>
+                                <p className="text-xs text-blue-600 leading-relaxed">
+                                    {type === "SIMPLE" &&
+                                        "A standard, standalone item sold as a single unit (e.g., a specific book or a hammer). It tracks its own price, SKU, and stock level."}
+                                    {type === "TEMPLATE" &&
+                                        "A parent container used to group items that come in different variations (like a T-Shirt). Templates do not have their own stock or price—they just hold your variants together."}
+                                    {type === "VARIANT" &&
+                                        "A specific version of a Template (e.g., a Red, Large T-Shirt). You must select a Parent Template first. Variants track their own specific price, barcode, and stock quantity."}
+                                </p>
+                            </div>
+                        </div>
+
                         {/* Status */}
                         {type === "SIMPLE" && (
                             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
