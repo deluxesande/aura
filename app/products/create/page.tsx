@@ -128,6 +128,10 @@ export default function CreateProductPage() {
     };
 
     const addAttribute = () => {
+        if (attributes.length >= 1) {
+            toast.info("Batch adding variants is currently disabled to ensure reliable saving. Please add them one by one.");
+            return;
+        }
         setAttributes([
             ...attributes,
             { name: "", value: "", price: "", quantity: "", sku: "" },
@@ -161,7 +165,7 @@ export default function CreateProductPage() {
         }
 
         if (file.size > MAX_SIZE) {
-            toast.error("Image must be under 200KB");
+            toast.error("Image size must be under 200KB");
             event.target.value = "";
             return;
         }
@@ -195,8 +199,8 @@ export default function CreateProductPage() {
 
         toast.promise(promise(), {
             loading: "Creating category...",
-            success: "Category created.",
-            error: "Error creating category.",
+            success: "Category created successfully",
+            error: "Could not create category. Please try again.",
         });
     };
 
@@ -216,7 +220,7 @@ export default function CreateProductPage() {
         }
 
         if (type === "VARIANT" && attributes.length === 0) {
-            toast.error("Please add at least one variant.");
+            toast.error("Please add at least one variant");
             setIsLoading(false);
             return;
         }
@@ -228,7 +232,7 @@ export default function CreateProductPage() {
                 if (productImage) {
                     const uploadRes = await startUpload([productImage]);
                     if (!uploadRes || !uploadRes[0]?.url) {
-                        throw new Error("Failed to upload image to storage");
+                        throw new Error("Image upload failed. Please try again.");
                     }
                     imageUrl = uploadRes[0].url;
                 }
@@ -278,9 +282,10 @@ export default function CreateProductPage() {
                     router.push("/products/list");
                     return response.data;
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error(error);
-                throw error;
+                const errorMessage = error.response?.data?.error || "Something went wrong while saving. Please try again.";
+                throw new Error(errorMessage);
             } finally {
                 setIsLoading(false);
             }
@@ -289,13 +294,13 @@ export default function CreateProductPage() {
         toast.promise(createProductOperation(), {
             loading:
                 type === "VARIANT"
-                    ? "Creating variants..."
-                    : "Creating product...",
+                    ? "Saving variant..."
+                    : "Saving product...",
             success:
                 type === "VARIANT"
-                    ? "Variants added to inventory."
-                    : "Product added to inventory.",
-            error: (err) => err?.message || "Error adding product.",
+                    ? "Variant saved successfully"
+                    : "Product saved successfully",
+            error: (err) => err?.message || "Could not save. Please check your connection.",
         });
     };
 

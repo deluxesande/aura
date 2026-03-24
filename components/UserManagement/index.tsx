@@ -135,7 +135,7 @@ const UserManagement: React.FC = () => {
     useEffect(() => {
         if (error) {
             console.error("Failed to fetch invitations:", error);
-            toast.error("Failed to load invitations");
+            toast.error("We couldn't load the invitations. Try refreshing the page.");
         }
     }, [error]);
 
@@ -153,25 +153,25 @@ const UserManagement: React.FC = () => {
 
         if (businessDetails?.subscription?.status !== "ACTIVE") {
             toast.error(
-                "Cannot invite users: Your subscription plan is not active.",
+                "Your subscription isn't active, so we can't invite new users right now.",
             );
             return;
         }
 
         if (!canInvite) {
             toast.error(
-                `Team limit reached. Your ${plan} plan allows only ${teamLimit} member(s).`,
+                `You've reached your team limit. Your ${plan} plan allows only ${teamLimit} member(s). To add more, please consider upgrading.`,
             );
             return;
         }
 
         if (!inviteEmail) {
-            toast.error("Please enter an email address");
+            toast.error("Please provide an email address to send the invitation.");
             return;
         }
 
         if (inviteRole === "admin") {
-            toast.error("Cannot invite users with Admin role.");
+            toast.error("Admin invitations aren't available right now. Please choose a different role.");
             return;
         }
 
@@ -188,18 +188,18 @@ const UserManagement: React.FC = () => {
         };
 
         toast.promise(sendInvitation(), {
-            loading: "Sending Invitation...",
+            loading: "Sending the invitation...",
             success: () => {
                 setInviteEmail("");
                 setInviteRole("user");
                 setShowInviteModal(false);
                 setIsSending(false);
-                return "Invitation sent successfully.";
+                return "Invitation sent! Your team member will receive an email shortly.";
             },
             error: (err) => {
                 setIsSending(false);
                 return (
-                    err.response?.data?.error || "Sending Invitation Failed."
+                    err.response?.data?.error || "We couldn't send the invitation. Please try again."
                 );
             },
         });
@@ -232,11 +232,11 @@ const UserManagement: React.FC = () => {
             }
         };
         toast.promise(updateRole(), {
-            loading: "Updating role.",
-            success: "Role updated successfully.",
+            loading: "Updating the user's role...",
+            success: "Role updated successfully!",
             error: (err: AxiosError) =>
                 (err.response?.data as { error?: string })?.error ||
-                "Failed to update role.",
+                "We couldn't update the role. Please try again.",
         });
     };
 
@@ -271,11 +271,11 @@ const UserManagement: React.FC = () => {
         };
 
         toast.promise(deleteProcess(), {
-            loading: "Deleting User...",
-            success: "User deleted successfully.",
+            loading: "Removing the user...",
+            success: "User removed successfully.",
             error: (err: AxiosError) =>
                 (err.response?.data as { error?: string })?.error ||
-                "Failed to delete user.",
+                "We couldn't remove the user. Please try again.",
         });
 
         setShowDeleteModal(false);

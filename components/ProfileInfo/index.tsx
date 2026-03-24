@@ -43,16 +43,16 @@ const ProfileInfo: React.FC = () => {
         };
 
         toast.promise(promise, {
-            loading: "Saving...",
-            success: "Profile updated successfully!",
-            error: "Failed to update profile. Please try again.",
+            loading: "Saving your changes...",
+            success: "Profile updated! Your changes have been saved.",
+            error: "We couldn't update your profile. Please try again.",
         });
     };
 
     const handleSendVerification = (event: React.FormEvent) => {
         event.preventDefault();
         // Add send verification logic here
-        toast.success("Verification email sent");
+        toast.success("Verification email sent! Please check your inbox.");
     };
 
     // 1. Intercept File Selection -> Open Cropper
@@ -90,9 +90,9 @@ const ProfileInfo: React.FC = () => {
         };
 
         toast.promise(promise(), {
-            loading: "Uploading image...",
-            success: "Profile image updated successfully!",
-            error: "Failed to upload profile image. Please try again.",
+            loading: "Uploading your new photo...",
+            success: "Looking good! Your profile image has been updated.",
+            error: "We couldn't upload your image. Please try again.",
         });
     };
 

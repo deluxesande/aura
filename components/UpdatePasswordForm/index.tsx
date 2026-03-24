@@ -13,39 +13,39 @@ const UpdatePasswordForm: React.FC = () => {
 
         // Password Regex
         if (newPassword.length < 8) {
-            toast.warning("Password must be at least 8 characters long.");
+            toast.warning("Please use a password with at least 8 characters.");
             return;
         }
         if (!/[A-Z]/.test(newPassword)) {
             toast.warning(
-                "Password must contain at least one uppercase letter."
+                "Your password needs at least one uppercase letter."
             );
             return;
         }
         if (!/[a-z]/.test(newPassword)) {
             toast.warning(
-                "Password must contain at least one lowercase letter."
+                "Your password needs at least one lowercase letter."
             );
             return;
         }
         if (!/\d/.test(newPassword)) {
-            toast.warning("Password must contain at least one number.");
+            toast.warning("Please include at least one number in your password.");
             return;
         }
         if (!/[@$!%*?&]/.test(newPassword)) {
             toast.warning(
-                "Password must contain at least one special character."
+                "Don't forget to add a special character to your password."
             );
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            toast.warning("Passwords do not match");
+            toast.warning("The passwords you entered don't match. Please try again.");
             return;
         }
 
         if (!user) {
-            toast.error("User not found");
+            toast.error("We couldn't find your account. Please check your details.");
             return;
         }
 
@@ -54,12 +54,12 @@ const UpdatePasswordForm: React.FC = () => {
                 currentPassword,
                 newPassword,
             });
-            toast.success("Password updated successfully");
+            toast.success("Your password has been updated! You're all set.");
         } catch (error) {
             if (error instanceof Error) {
-                toast.error(error.message);
+                toast.error("Something went wrong while updating your password. Please try again.");
             } else {
-                toast.error("An unknown error occurred");
+                toast.error("We ran into an unexpected issue. Please try again later.");
             }
         }
     };

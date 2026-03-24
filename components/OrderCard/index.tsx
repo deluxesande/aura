@@ -22,7 +22,7 @@ export default function OrderCard({ product }: { product: Product }) {
         ) {
             dispatch(addItem(product));
         } else {
-            toast.warning("Insufficient product quantity available.");
+            toast.warning("We're sorry, but there isn't enough stock to add more of this item.");
         }
     };
 

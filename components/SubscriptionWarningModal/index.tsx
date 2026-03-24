@@ -75,7 +75,7 @@ const SubscriptionWarningModal = () => {
     const handleRenewSub = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!phoneNumber) {
-            toast.error("Please enter a phone number");
+            toast.error("Please provide a phone number to continue.");
             return;
         }
 
@@ -92,7 +92,7 @@ const SubscriptionWarningModal = () => {
             });
 
             if (res.data.data.CheckoutRequestID) {
-                toast.success("STK Push sent! Please check your phone.");
+                toast.success("We've sent a payment request to your phone. Please check your screen.");
                 router.push(
                     `/payment/checking?id=${res.data.data.CheckoutRequestID}`,
                 );
@@ -100,7 +100,7 @@ const SubscriptionWarningModal = () => {
             }
         } catch (error: any) {
             toast.error(
-                error.response?.data?.error || "Failed to initiate renewal",
+                error.response?.data?.error || "We couldn't start the renewal process. Please try again.",
             );
         } finally {
             setLoading(false);

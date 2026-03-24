@@ -73,7 +73,7 @@ const IntegrationsSettings: React.FC = () => {
     useEffect(() => {
         if (error) {
             console.error("Error fetching integration status:", error);
-            toast.error("Failed to load integration status");
+            toast.error("We couldn't load your integration details. Please try refreshing the page.");
         }
     }, [error]);
 
@@ -112,7 +112,7 @@ const IntegrationsSettings: React.FC = () => {
             !mpesaConfig.shortCode.trim()
         ) {
             toast.error(
-                "All fields are required to enable Live Daraja integration.",
+                "All fields are required to enable the M-PESA integration. Please fill them in to continue.",
             );
             return;
         }
@@ -140,13 +140,13 @@ const IntegrationsSettings: React.FC = () => {
                 setSavedConfig(maskedConfig);
                 setIntegrations((prev) => ({ ...prev, mpesa: true }));
                 setIsModalOpen(false);
-                toast.success("Live M-PESA credentials saved successfully!");
+                toast.success("M-PESA credentials saved! You're now ready to process live payments.");
             }
         } catch (error) {
             const axiosError = error as AxiosError;
             const errorMessage =
                 (axiosError.response?.data as { error?: string })?.error ||
-                "Failed to save credentials.";
+                "We couldn't save your credentials. Please check your details and try again.";
             toast.error(errorMessage);
         }
     };
@@ -183,10 +183,10 @@ const IntegrationsSettings: React.FC = () => {
                     environment: "production",
                 });
                 setIsModalOpen(false);
-                toast.info("M-PESA integration disconnected.");
+                toast.info("M-PESA has been disconnected.");
             }
         } catch (error) {
-            toast.error("Failed to disconnect service.");
+            toast.error("We couldn't disconnect the service. Please try again.");
         }
     };
 

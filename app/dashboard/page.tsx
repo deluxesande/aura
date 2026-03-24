@@ -383,7 +383,7 @@ export default function Page() {
                                     onChange={(e) =>
                                         setReportPeriod(e.target.value)
                                     }
-                                    className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-400 focus:ring-4 focus:ring-green-500/10 transition-all bg-gray-50 hover:bg-gray-100/50 cursor-pointer"
+                                    className="w-full px-4 py-3 text-sm border border-gray-200 rounded-lg outline-none focus:border-green-400 focus:ring-4 focus:ring-green-500/10 transition-all bg-gray-50 hover:bg-gray-100/50 cursor-pointer"
                                 >
                                     <option value="7">Last 7 Days</option>
                                     <option value="30">Last 30 Days</option>
@@ -396,7 +396,7 @@ export default function Page() {
                                 </select>
                             </div>
 
-                            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex gap-3">
+                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 flex gap-3">
                                 <p className="text-xs text-blue-700 leading-relaxed">
                                     This report will include full transaction
                                     details, top-selling products, and revenue
@@ -409,13 +409,13 @@ export default function Page() {
                         <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
                             <button
                                 onClick={() => setIsReportModalOpen(false)}
-                                className="px-5 py-2.5 text-sm font-bold text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+                                className="px-5 py-2.5 text-sm font-bold text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleDownloadReport}
-                                className="px-5 py-2.5 text-sm font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 flex items-center gap-2 shadow-lg shadow-green-500/20 transition-all active:scale-95"
+                                className="px-5 py-2.5 text-sm font-bold text-white bg-green-500 rounded-lg hover:bg-green-600 flex items-center gap-2 shadow-lg shadow-green-500/20 transition-all active:scale-95"
                             >
                                 Download
                             </button>

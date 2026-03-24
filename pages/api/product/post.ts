@@ -31,6 +31,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         const isBatch = Array.isArray(body);
         const items = isBatch ? body : [body];
 
+        // TODO: Revisit batch variant optimization when upgrading from Vercel Hobby (10s limit).
+        // Current implementation uses pre-fetching and in-memory matching to stay under 10s.
         const results = await prisma.$transaction(
             async (tx) => {
                 // --- STAGE 1: Pre-fetch all necessary metadata in bulk ---

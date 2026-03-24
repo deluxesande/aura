@@ -28,23 +28,23 @@ const DeleteUserForm: React.FC = () => {
                     router.push("/sign-up");
                 } catch (err) {
                     if (err instanceof Error) {
-                        toast.error(err.message);
+                        toast.error("Something went wrong while deleting your account. Please try again.");
                     } else {
-                        toast.error("An error occurred");
+                        toast.error("We ran into an unexpected issue. Please try again.");
                     }
                 }
             };
 
             toast.promise(promise(), {
-                loading: "Deleting account...",
+                loading: "Permanently deleting your account...",
                 success: () => {
                     router.push("/sign-up");
-                    return "Account deleted";
+                    return "Your account has been deleted. We're sorry to see you go!";
                 },
-                error: "An error occurred",
+                error: "We couldn't delete your account. Please try again.",
             });
         } else {
-            toast.warning("Username does not match");
+            toast.warning("The name or email you entered doesn't match our records. Please check and try again.");
         }
     };
 

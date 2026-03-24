@@ -63,7 +63,7 @@ const SubscriptionManagement: React.FC = () => {
     useEffect(() => {
         if (error) {
             console.error("Failed to fetch billing history:", error);
-            toast.error("Failed to load billing history");
+            toast.error("We couldn't load your billing history. Please try refreshing the page.");
         }
     }, [error]);
 
@@ -109,14 +109,14 @@ const SubscriptionManagement: React.FC = () => {
             });
 
             if (res.data.data.CheckoutRequestID) {
-                toast.success("STK Push sent! Redirecting...");
+                toast.success("We've sent a payment request to your phone! Redirecting you now...");
                 router.push(
                     `/payment/checking?id=${res.data.data.CheckoutRequestID}`,
                 );
             }
         } catch (error: any) {
             toast.error(
-                error.response?.data?.error || "Failed to initiate renewal",
+                error.response?.data?.error || "We couldn't start the renewal. Please try again.",
             );
         } finally {
             setLoading(false);

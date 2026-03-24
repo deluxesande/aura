@@ -69,12 +69,12 @@ export default function EditCustomerModal({
             };
 
             toast.promise(promise(), {
-                loading: "Updating customer...",
-                success: "Customer updated successfully!",
-                error: "Failed to update customer.",
+                loading: "Saving the customer's new details...",
+                success: "Customer details updated successfully!",
+                error: "We couldn't update the customer's information. Please try again.",
             });
         } catch (error) {
-            toast.error("Failed to update customer. Please try again.");
+            toast.error("We ran into an issue while updating the customer. Please try again.");
         } finally {
             setLoading(false);
         }
