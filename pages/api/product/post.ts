@@ -5,6 +5,14 @@ import { prisma } from "@/utils/lib/client";
 import { getAuth } from "@clerk/nextjs/server";
 import { checkSubscription } from "@/utils/subscription/checkSubscription";
 
+export const config = {
+    api: {
+        bodyParser: {
+            sizeLimit: "10mb",
+        },
+    },
+};
+
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     if (req.method !== "POST") {
         return res.status(405).json({ error: "Method not allowed" });
@@ -26,6 +34,42 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         const results = await prisma.$transaction(
             async (tx) => {
                 const processedItems = [];
+                const attributeCache = new Map();
+                const optionCache = new Map();
+
+                // Pre-fetch all SKUs in the batch to check for existence
+                const batchSkus = items
+                    .map((i) => i.sku)
+                    .filter((s) => s && s.trim() !== "");
+                const existingSkus =
+                    batchSkus.length > 0
+                        ? await tx.product.findMany({
+                              where: { sku: { in: batchSkus } },
+                              select: { sku: true, id: true },
+                          })
+                        : [];
+                const skuMap = new Map(existingSkus.map((s) => [s.sku, s.id]));
+
+                // Pre-fetch existing simple products for faster lookup
+                const simpleItemNames = items
+                    .filter((i) => (i.type || "SIMPLE") === "SIMPLE")
+                    .map((i) => i.name);
+                const existingSimpleProducts =
+                    simpleItemNames.length > 0
+                        ? await tx.product.findMany({
+                              where: {
+                                  businessId: bId,
+                                  type: "SIMPLE",
+                                  name: { in: simpleItemNames },
+                              },
+                              select: {
+                                  id: true,
+                                  name: true,
+                                  categoryId: true,
+                                  quantity: true,
+                              },
+                          })
+                        : [];
 
                 for (const item of items) {
                     const {
@@ -77,40 +121,51 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                                 "Parent ID is required for variants",
                             );
 
-                        // 1. Process attributes sequentially inside the transaction to avoid Postgres deadlocks
                         const attrResults = [];
                         for (const attr of attributes) {
-                            const attribute = await tx.attribute.upsert({
-                                where: {
-                                    name_businessId: {
+                            const attrCacheKey = `${attr.name}-${bId}`;
+                            let attribute = attributeCache.get(attrCacheKey);
+                            if (!attribute) {
+                                attribute = await tx.attribute.upsert({
+                                    where: {
+                                        name_businessId: {
+                                            name: attr.name,
+                                            businessId: bId,
+                                        },
+                                    },
+                                    update: {},
+                                    create: {
                                         name: attr.name,
                                         businessId: bId,
                                     },
-                                },
-                                update: {},
-                                create: { name: attr.name, businessId: bId },
-                                select: { id: true, name: true },
-                            });
+                                    select: { id: true, name: true },
+                                });
+                                attributeCache.set(attrCacheKey, attribute);
+                            }
 
-                            const option = await tx.attributeOption.upsert({
-                                where: {
-                                    value_attributeId: {
+                            const optCacheKey = `${attr.value}-${attribute.id}`;
+                            let option = optionCache.get(optCacheKey);
+                            if (!option) {
+                                option = await tx.attributeOption.upsert({
+                                    where: {
+                                        value_attributeId: {
+                                            value: attr.value,
+                                            attributeId: attribute.id,
+                                        },
+                                    },
+                                    update: {},
+                                    create: {
                                         value: attr.value,
                                         attributeId: attribute.id,
                                     },
-                                },
-                                update: {},
-                                create: {
-                                    value: attr.value,
-                                    attributeId: attribute.id,
-                                },
-                                select: { id: true, value: true },
-                            });
+                                    select: { id: true, value: true },
+                                });
+                                optionCache.set(optCacheKey, option);
+                            }
 
                             attrResults.push({ attribute, option });
                         }
 
-                        // 2. Check for existing variant
                         if (attributes.length > 0) {
                             const optionIds = attrResults.map(
                                 (r) => r.option.id,
@@ -144,20 +199,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                             }
                         }
 
-                        // 3. Create Variant
                         const finalSku =
                             sku ||
                             generateSKU(
                                 `${name}-${attributes.map((a: { value: string }) => a.value).join("-")}`,
                             );
 
-                        if (sku) {
-                            const skuCheck = await tx.product.findUnique({
-                                where: { sku },
-                                select: { id: true },
-                            });
-                            if (skuCheck)
-                                throw new Error(`SKU ${sku} already exists`);
+                        if (sku && skuMap.has(sku)) {
+                            throw new Error(`SKU ${sku} already exists`);
                         }
 
                         const variant = await tx.product.create({
@@ -192,15 +241,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     const finalSku =
                         sku && sku.trim() !== "" ? sku : generateSKU(name);
 
-                    const existingProduct = await tx.product.findFirst({
-                        where: {
-                            name,
-                            categoryId,
-                            businessId: bId,
-                            type: "SIMPLE",
-                        },
-                        select: { id: true, quantity: true },
-                    });
+                    const existingProduct = existingSimpleProducts.find(
+                        (p) => p.name === name && p.categoryId === categoryId,
+                    );
 
                     if (existingProduct) {
                         const updated = await tx.product.update({
@@ -214,14 +257,22 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                         continue;
                     }
 
-                    const skuCheck = await tx.product.findUnique({
-                        where: { sku: finalSku },
-                        select: { id: true },
-                    });
-                    if (skuCheck)
+                    if (sku && skuMap.has(sku)) {
                         throw new Error(
-                            `A product with SKU ${finalSku} already exists.`,
+                            `A product with SKU ${sku} already exists.`,
                         );
+                    }
+
+                    if (!sku || sku.trim() === "") {
+                        const skuCheck = await tx.product.findUnique({
+                            where: { sku: finalSku },
+                            select: { id: true },
+                        });
+                        if (skuCheck)
+                            throw new Error(
+                                `A product with SKU ${finalSku} already exists.`,
+                            );
+                    }
 
                     const simple = await tx.product.create({
                         data: {
@@ -244,9 +295,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 return processedItems;
             },
             {
-                timeout: 10000, // Enforce a 10s timeout matching create-batch
+                timeout: 9000, // 9s timeout for Prisma to stay under Vercel's 10s limit
             },
         );
+
 
         return res.status(201).json(isBatch ? results : results[0]);
     } catch (error: any) {
