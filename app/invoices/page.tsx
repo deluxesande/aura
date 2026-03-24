@@ -3,7 +3,7 @@
 import InvoicesTable from "@/components/InvoicesTable";
 import Navbar from "@/components/Navbar";
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
 import { AppState } from "@/store";
@@ -18,7 +18,7 @@ export default function Page() {
 
     const handleDelete = async (invoiceId: string) => {
         const promise = async () => {
-            await axios.delete(`/api/invoice/${invoiceId}`);
+            await apiClient.delete(`/invoice/${invoiceId}`);
 
             dispatch(removeInvoice(invoiceId));
         };
@@ -37,7 +37,7 @@ export default function Page() {
             }
 
             try {
-                const response = await axios.get("/api/invoice");
+                const response = await apiClient.get("/invoice");
                 dispatch(setInvoices(response.data));
             } catch (error) {
                 // console.error("Error fetching invoices:", error);

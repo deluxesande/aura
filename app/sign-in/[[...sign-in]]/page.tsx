@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { signIn as signInAction, setUser } from "@/store/slices/authSlice";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 
 export default function LoginPage() {
     const { isLoaded, signIn, setActive } = useSignIn();
@@ -29,7 +29,7 @@ export default function LoginPage() {
 
                 // Fetch user data in background
                 try {
-                    const response = await axios.get("/api/auth/user/profile");
+                    const response = await apiClient.get("/auth/user/profile");
                     dispatch(setUser(response.data.user));
                 } catch (error) {
                     // console.error("Error fetching user data:", error);
@@ -63,7 +63,7 @@ export default function LoginPage() {
 
                 // Fetch user data in background
                 try {
-                    const response = await axios.get("/api/auth/user/profile");
+                    const response = await apiClient.get("/auth/user/profile");
                     dispatch(setUser(response.data.user));
                 } catch (error) {
                     // console.error("Error fetching user data:", error);

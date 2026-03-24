@@ -22,7 +22,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@radix-ui/react-popover";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import {
     AlertTriangle,
     LogOut,
@@ -158,7 +158,7 @@ export default function Navbar({
         if (user === null) {
             const fetchUser = async () => {
                 try {
-                    const res = await axios.get("/api/auth/user/profile");
+                    const res = await apiClient.get("/auth/user/profile");
                     if (res.data) dispatch(setUser(res.data.user));
                 } catch (error) {
                     console.error("Error fetching user:", error);
@@ -173,8 +173,8 @@ export default function Navbar({
             const fetchBusinessDetails = async () => {
                 dispatch(setBusinessLoading(true));
                 try {
-                    const res = await axios.get(
-                        `/api/business/${user.businessId}`,
+                    const res = await apiClient.get(
+                        `/business/${user.businessId}`,
                     );
                     dispatch(setBusinessDetails(res.data));
                 } catch (error) {

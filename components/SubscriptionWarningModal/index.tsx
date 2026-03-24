@@ -1,6 +1,6 @@
 "use client";
 import { AppState } from "@/store";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import { AlertTriangle, Loader2, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -85,7 +85,7 @@ const SubscriptionWarningModal = () => {
         setLoading(true);
         try {
             const amount = plan === "STANDARD" ? 1000 : 1500;
-            const res = await axios.post("/api/subscription/stk-push", {
+            const res = await apiClient.post("/subscription/stk-push", {
                 phoneNumber,
                 amount,
                 planId: plan,

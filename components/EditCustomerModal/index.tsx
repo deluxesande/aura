@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import { toast } from "sonner";
 
 interface Customer {
@@ -57,7 +57,7 @@ export default function EditCustomerModal({
 
         try {
             const promise = async () => {
-                await axios.put(`/api/customer/${customer.id}`, {
+                await apiClient.put(`/customer/${customer.id}`, {
                     ...formData,
                 });
 

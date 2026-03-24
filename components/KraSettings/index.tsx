@@ -1,10 +1,10 @@
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import { RefreshCw, Search } from "lucide-react";
 import React, { useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 
-const getFetcher = (url: string) => axios.get(url).then((res) => res.data);
+const getFetcher = (url: string) => apiClient.get(url.replace("/api", "")).then((res) => res.data);
 
 const KraSettings = () => {
     const [inputPin, setInputPin] = useState("");
@@ -25,7 +25,7 @@ const KraSettings = () => {
         setValidationError(null);
 
         try {
-            const response = await axios.post("/api/kra/validate-kra", {
+            const response = await apiClient.post("/kra/validate-kra", {
                 kraPin: inputPin,
             });
 

@@ -2,7 +2,7 @@
 
 import Navbar from "@/components/Navbar";
 import InvoicesTable from "@/components/InvoicesTable";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import {
     ArrowLeft,
     Briefcase,
@@ -73,7 +73,7 @@ export default function UserDetailsPage() {
         const fetchUser = async () => {
             setLoading(true);
             try {
-                const userRes = await axios.get(`/api/users/${userId}`);
+                const userRes = await apiClient.get(`/users/${userId}`);
 
                 if (userRes.data) {
                     setStaffUser(userRes.data);
@@ -94,8 +94,8 @@ export default function UserDetailsPage() {
     useEffect(() => {
         const fetchInvoices = async () => {
             try {
-                const response = await axios.get(
-                    `/api/invoice/user?userId=${userId}`,
+                const response = await apiClient.get(
+                    `/invoice/user?userId=${userId}`,
                 );
                 setInvoices(response.data);
             } catch (error) {
@@ -116,7 +116,7 @@ export default function UserDetailsPage() {
     const handleInvoiceDelete = (id: string) => {
         const promise = async () => {
             try {
-                await axios.delete(`/api/invoice/${id}`);
+                await apiClient.delete(`/invoice/${id}`);
                 setInvoices((prev) => prev.filter((inv) => inv.id !== id));
             } catch (error) {
                 throw error;

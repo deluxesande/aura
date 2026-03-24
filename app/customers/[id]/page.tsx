@@ -2,7 +2,7 @@
 
 import Navbar from "@/components/Navbar";
 import InvoicesTable from "@/components/InvoicesTable";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import {
     ArrowLeft,
     Briefcase,
@@ -64,8 +64,8 @@ export default function CustomerDetailsPage() {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const customerRes = await axios.get(
-                    `/api/customer/${customerId}`,
+                const customerRes = await apiClient.get(
+                    `/customer/${customerId}`,
                 );
                 const foundCustomer = customerRes.data;
                 if (foundCustomer) {
@@ -94,7 +94,7 @@ export default function CustomerDetailsPage() {
     const handleInvoiceDelete = (id: string) => {
         const promise = async () => {
             try {
-                await axios.delete(`/api/invoice/${id}`);
+                await apiClient.delete(`/invoice/${id}`);
                 setInvoices((prevInvoices) =>
                     prevInvoices.filter((invoice) => invoice.id !== id),
                 );
@@ -114,8 +114,8 @@ export default function CustomerDetailsPage() {
         setLoading(true);
         const fetchInvoices = async () => {
             try {
-                const response = await axios.get(
-                    `/api/invoice/customer?customerId=${customerId}`,
+                const response = await apiClient.get(
+                    `/invoice/customer?customerId=${customerId}`,
                 );
                 setInvoices(response.data);
                 console.log(response.data);

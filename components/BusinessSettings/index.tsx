@@ -1,4 +1,4 @@
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import { CloudUpload } from "lucide-react";
 import React, { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
@@ -8,6 +8,7 @@ import { AppState } from "@/store";
 import { setBusiness as setBusinessInStore } from "@/store/slices/businessSlice";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import { FloatingPortal } from "@floating-ui/react";
+import axios from "axios";
 
 interface BusinessSettingsFormProps {
     role: string;
@@ -73,7 +74,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
     };
 
     const createBusiness = async (formData: FormData) => {
-        await axios.post("/api/business", formData, {
+        await apiClient.post("/business", formData, {
             headers: { "Content-Type": "multipart/form-data" },
         });
     };
@@ -85,7 +86,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
         phone?: string;
         address?: string;
     }) => {
-        await axios.put(`/api/business/${businessId}`, data, {
+        await apiClient.put(`/business/${businessId}`, data, {
             headers: { "Content-Type": "application/json" },
         });
     };
@@ -182,7 +183,7 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
         if (user?.businessId && !foundInStore) {
             const fetchAndStoreBusiness = async () => {
                 try {
-                    const response = await axios.get("/api/business");
+                    const response = await apiClient.get("/business");
                     if (response.status === 200 && response.data.length > 0) {
                         const businessData = response.data[0];
                         populateState(businessData);

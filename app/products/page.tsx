@@ -17,7 +17,7 @@ import { hide, show } from "@/store/slices/visibilitySlice";
 import { formatPhoneNumber } from "@/utils/formatPhoneNumber";
 import { Product } from "@/utils/typesDefinitions";
 import { SignedIn, useUser } from "@clerk/nextjs";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import {
     ChevronRight,
     Plus,
@@ -116,9 +116,9 @@ export default function Page() {
             try {
                 const [productsRes, customersRes, categoriesRes] =
                     await Promise.allSettled([
-                        axios.get("/api/product"),
-                        axios.get("/api/customer"),
-                        axios.get("/api/category"),
+                        apiClient.get("/product"),
+                        apiClient.get("/customer"),
+                        apiClient.get("/category"),
                     ]);
 
                 if (
@@ -211,8 +211,8 @@ export default function Page() {
                 inStock: true,
             };
 
-            await axios.put(
-                `/api/product/${productToRestock.id}`,
+            await apiClient.put(
+                `/product/${productToRestock.id}`,
                 updatedProduct,
             );
 
@@ -293,8 +293,8 @@ export default function Page() {
                 customerId: selectedCustomer?.id || null,
             };
 
-            const response = await axios.post(
-                "/api/invoice/create-batch",
+            const response = await apiClient.post(
+                "/invoice/create-batch",
                 payload,
             );
 
@@ -364,7 +364,7 @@ export default function Page() {
 
         try {
             const promise = async () => {
-                const res = await axios.post("/api/customer", {
+                const res = await apiClient.post("/customer", {
                     firstName: newCustomerDetails.firstName,
                     lastName: newCustomerDetails.lastName,
                     phoneNumber: formatted,
@@ -438,8 +438,8 @@ export default function Page() {
             const invoice = await handleOrder("MPESA");
 
             if (invoice?.id) {
-                const res = await axios.post(
-                    "/api/safaricom/c2b/payment/lipa",
+                const res = await apiClient.post(
+                    "/safaricom/c2b/payment/lipa",
                     {
                         phoneNumber: formattedNumber,
                         amount: amount,

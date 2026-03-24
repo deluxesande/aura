@@ -2,7 +2,7 @@
 
 import Navbar from "@/components/Navbar";
 import { FloatingPortal } from "@floating-ui/react";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import {
     ChevronDown,
     ChevronLeft,
@@ -100,7 +100,7 @@ export default function TeamPage() {
     useEffect(() => {
         const fetchTeam = async () => {
             try {
-                const response = await axios.get("/api/users");
+                const response = await apiClient.get("/users");
                 setMembers(response.data);
             } catch (error) {
                 toast.error("Failed to load team members");
@@ -142,7 +142,7 @@ export default function TeamPage() {
         setIsSending(true);
 
         const sendInvitation = async () => {
-            const response = await axios.post("/api/auth/invite/post", {
+            const response = await apiClient.post("/auth/invite/post", {
                 email: inviteEmail,
                 role: inviteRole,
             });

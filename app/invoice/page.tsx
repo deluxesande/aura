@@ -4,7 +4,7 @@ import Navbar from "@/components/Navbar";
 import DownloadInvoiceButton from "@/components/pdf/DownloadInvoiceButton";
 import { AppState } from "@/store";
 import { Invoice, Product } from "@/utils/typesDefinitions";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import { format } from "date-fns";
 import {
     ArrowLeft,
@@ -72,7 +72,7 @@ function InvoicePageContent() {
         setInvoice({ ...invoice, status: newStatus });
         setIsUpdating(true);
         try {
-            await axios.put(`/api/invoice/${invoice.id}`, {
+            await apiClient.put(`/invoice/${invoice.id}`, {
                 status: newStatus,
             });
             toast.success(`Invoice marked as ${newStatus}`);
@@ -89,7 +89,7 @@ function InvoicePageContent() {
         setIsRetrying(true);
         const toastId = toast.loading("Initiating payment retry...");
         try {
-            await axios.post("/api/safaricom/c2b/payment/retry", {
+            await apiClient.post("/safaricom/c2b/payment/retry", {
                 invoiceId: invoice.id,
             });
             toast.success("Payment prompt sent to customer", { id: toastId });
@@ -107,7 +107,7 @@ function InvoicePageContent() {
         const fetchInvoice = async () => {
             if (!id) return;
             try {
-                const response = await axios.get(`/api/invoice/${id}`);
+                const response = await apiClient.get(`/invoice/${id}`);
                 const invoiceData = response.data;
                 setInvoice({
                     ...invoiceData,
@@ -292,15 +292,39 @@ function InvoicePageContent() {
                                                         </div>
                                                         <div className="flex flex-col">
                                                             <span className="font-medium text-gray-900">
-                                                                {item.Product.name}
+                                                                {
+                                                                    item.Product
+                                                                        .name
+                                                                }
                                                             </span>
-                                                            {item.Product.type === "VARIANT" && item.Product.attributeValues && item.Product.attributeValues.length > 0 && (
-                                                                <span className="text-[10px] font-semibold text-green-600 mt-0.5 uppercase tracking-wide">
-                                                                    {item.Product.attributeValues.map((av: any) => av.attributeOption.value).join(" / ")}
-                                                                </span>
-                                                            )}
+                                                            {item.Product
+                                                                .type ===
+                                                                "VARIANT" &&
+                                                                item.Product
+                                                                    .attributeValues &&
+                                                                item.Product
+                                                                    .attributeValues
+                                                                    .length >
+                                                                    0 && (
+                                                                    <span className="text-[10px] font-semibold text-green-600 mt-0.5 uppercase tracking-wide">
+                                                                        {item.Product.attributeValues
+                                                                            .map(
+                                                                                (
+                                                                                    av: any,
+                                                                                ) =>
+                                                                                    av
+                                                                                        .attributeOption
+                                                                                        .value,
+                                                                            )
+                                                                            .join(
+                                                                                " / ",
+                                                                            )}
+                                                                    </span>
+                                                                )}
                                                             <span className="text-xs text-gray-500 truncate max-w-[200px] mt-0.5">
-                                                                {item.Product.description || "No description"}
+                                                                {item.Product
+                                                                    .description ||
+                                                                    "No description"}
                                                             </span>
                                                         </div>
                                                     </div>

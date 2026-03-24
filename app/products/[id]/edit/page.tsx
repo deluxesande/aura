@@ -8,7 +8,7 @@ import { setProducts } from "@/store/slices/productSlice";
 import { generateSKU } from "@/utils/generateSKU";
 import { Category, Product } from "@/utils/typesDefinitions";
 import { FloatingPortal } from "@floating-ui/react";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import {
     ArrowLeft,
     Loader2,
@@ -86,8 +86,8 @@ export default function EditProductPage() {
 
             try {
                 const [productRes, categoriesRes] = await Promise.allSettled([
-                    axios.get(`/api/product/${id}`),
-                    axios.get("/api/category"),
+                    apiClient.get(`/product/${id}`),
+                    apiClient.get("/category"),
                 ]);
 
                 if (productRes.status === "fulfilled") {
@@ -265,8 +265,8 @@ export default function EditProductPage() {
                     sku: formData.sku || generateSKU(formData.name),
                 };
 
-                const response = await axios.put(
-                    `/api/product/${id}`,
+                const response = await apiClient.put(
+                    `/product/${id}`,
                     finalData,
                 );
 

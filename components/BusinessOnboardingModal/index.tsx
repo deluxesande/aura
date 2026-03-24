@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
 import { AppState } from "@/store";
@@ -46,8 +46,8 @@ const BusinessOnboardingModal = () => {
         try {
             const data = { name: businessName };
 
-            const response = await axios.put(
-                `/api/business/${user?.businessId}`,
+            const response = await apiClient.put(
+                `/${user?.businessId}`,
                 data,
                 {
                     headers: { "Content-Type": "application/json" },

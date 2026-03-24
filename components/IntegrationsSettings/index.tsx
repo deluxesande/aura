@@ -1,6 +1,7 @@
 import { AppState } from "@/store";
 import { FloatingPortal } from "@floating-ui/react";
-import axios, { AxiosError } from "axios";
+import { apiClient } from "@/utils/apiClient";
+import { AxiosError } from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Check, Eye, EyeOff, Loader2, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -19,7 +20,7 @@ type User = {
     Business: {};
 };
 
-const fetcher = (url: string) => axios.get(url).then((res) => res.data);
+const fetcher = (url: string) => apiClient.get(url.replace("/api", "")).then((res) => res.data);
 
 const IntegrationsSettings: React.FC = () => {
     const [integrations, setIntegrations] = useState({ mpesa: false });
@@ -125,10 +126,11 @@ const IntegrationsSettings: React.FC = () => {
                 mpesaShortCode: mpesaConfig.shortCode,
             };
 
-            const response = await axios.put(
-                `/api/business/${user?.businessId}`,
+            const response = await apiClient.put(
+                `/business/${user?.businessId}`,
                 payload,
             );
+
 
             if (response.status === 200) {
                 const maskedConfig = {
@@ -167,8 +169,8 @@ const IntegrationsSettings: React.FC = () => {
                 mpesaShortCode: null,
             };
 
-            const response = await axios.put(
-                `/api/business/${user?.businessId}`,
+            const response = await apiClient.put(
+                `/business/${user?.businessId}`,
                 payload,
             );
 

@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import { Loader2, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -20,8 +20,8 @@ function PaymentCheckingContent() {
     const checkStatus = useCallback(async () => {
         if (!checkoutRequestId) return null;
         try {
-            const response = await axios.get(
-                `/api/subscription/check-status?checkoutRequestId=${checkoutRequestId}`,
+            const response = await apiClient.get(
+                `/subscription/check-status?checkoutRequestId=${checkoutRequestId}`,
             );
             const currentStatus = response.data.status;
 

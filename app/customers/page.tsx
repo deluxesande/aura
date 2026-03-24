@@ -3,7 +3,7 @@
 import CustomerModal from "@/components/CustomerModal";
 import Navbar from "@/components/Navbar";
 import { formatPhoneNumber } from "@/utils/formatPhoneNumber";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import {
     ChevronLeft,
     ChevronRight,
@@ -76,7 +76,7 @@ export default function Page() {
     const handleDelete = async (customerId: string) => {
         const promise = async () => {
             try {
-                await axios.delete("/api/customer", {
+                await apiClient.delete("/customer", {
                     data: { id: customerId },
                 });
 
@@ -113,7 +113,7 @@ export default function Page() {
                     : newCustomerDetails.email;
 
             const promise = async () => {
-                const res = await axios.post("/api/customer", {
+                const res = await apiClient.post("/customer", {
                     firstName: newCustomerDetails.firstName,
                     lastName: newCustomerDetails.lastName,
                     phoneNumber: formattedPhone,
@@ -146,7 +146,7 @@ export default function Page() {
         setLoading(true);
         const fetchCustomers = async () => {
             try {
-                const response = await axios.get("/api/customer");
+                const response = await apiClient.get("/customer");
                 setCustomers(response.data);
             } catch (error) {
                 toast.error("Failed to load customers");

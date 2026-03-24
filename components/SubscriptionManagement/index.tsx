@@ -1,6 +1,6 @@
 "use client";
 import { AppState } from "@/store";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import {
     ArrowUpCircle,
     Calendar,
@@ -21,7 +21,7 @@ import React, { Key, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import useSWR from "swr";
-const fetcher = (url: string) => axios.get(url).then((res) => res.data);
+const fetcher = (url: string) => apiClient.get(url.replace("/api", "")).then((res) => res.data);
 
 type BillingHistoryItem = {
     id: string;
@@ -102,7 +102,7 @@ const SubscriptionManagement: React.FC = () => {
         setLoading(true);
         try {
             const amount = plan === "STANDARD" ? 1000 : 1500;
-            const res = await axios.post("/api/subscription/stk-push", {
+            const res = await apiClient.post("/subscription/stk-push", {
                 phoneNumber,
                 amount,
                 planId: plan,

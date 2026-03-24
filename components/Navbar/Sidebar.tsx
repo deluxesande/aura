@@ -2,7 +2,7 @@ import { AppState } from "@/store";
 import { setUser, signOut as signOutAction } from "@/store/slices/authSlice";
 import { toggleSideBarState } from "@/store/slices/sideBarSlice";
 import { useClerk, useUser } from "@clerk/nextjs";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import {
     ChevronLeft,
     ChevronRight,
@@ -117,7 +117,7 @@ const Sidebar = () => {
         if (user === null) {
             const fetchUser = async () => {
                 try {
-                    const res = await axios.get("/api/auth/user/profile");
+                    const res = await apiClient.get("/auth/user/profile");
                     if (res.data) {
                         dispatch(setUser(res.data.user));
                     }

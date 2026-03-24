@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import { Mail, MapPin, Phone, Send, Loader2 } from "lucide-react";
 
 export default function ContactForm() {
@@ -19,7 +19,7 @@ export default function ContactForm() {
         const form = { name, email, message };
 
         try {
-            await axios.post("/api/contact", form);
+            await apiClient.post("/contact", form);
             toast.success(
                 "Message sent successfully! We'll get back to you soon.",
             );

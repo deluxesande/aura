@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth, useClerk } from "@clerk/nextjs";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import AuthLayout from "@components/auth/AuthLayout";
 import Link from "next/link";
 
@@ -35,9 +35,10 @@ function AcceptInvitationContent() {
         const validateInvitation = async () => {
             try {
                 // First, validate that the invitation exists and is valid
-                const response = await axios.get(
-                    `/api/auth/invite/validate?token=${token}`
+                const response = await apiClient.get(
+                    `/auth/invite/get?token=${token}`,
                 );
+
                 setInvitation(response.data.invitation);
                 setShowForm(true);
                 setLoading(false);
@@ -62,7 +63,7 @@ function AcceptInvitationContent() {
         setError(null);
 
         try {
-            const response = await axios.post("/api/auth/invite/accept", {
+            const response = await apiClient.post("/auth/invite/accept", {
                 token,
                 firstName: formData.firstName,
                 lastName: formData.lastName,

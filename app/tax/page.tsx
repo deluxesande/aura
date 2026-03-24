@@ -3,7 +3,7 @@
 import Navbar from "@/components/Navbar";
 import { AppState } from "@/store";
 import { Invoice } from "@/utils/typesDefinitions";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import { format, isSameMonth, parseISO, subMonths } from "date-fns";
 import {
     AlertCircle,
@@ -37,7 +37,7 @@ interface KraDetails {
     isAutoFilingEnabled: boolean;
 }
 
-const fetcher = (url: string) => axios.get(url).then((res) => res.data);
+const fetcher = (url: string) => apiClient.get(url.replace("/api", "")).then((res) => res.data);
 
 const TaxReturnsPage = () => {
     const [selectedMonth, setSelectedMonth] = useState<Date>(
@@ -101,7 +101,7 @@ const TaxReturnsPage = () => {
         setIsSavingSettings(true);
 
         try {
-            await axios.patch("/api/kra/update", {
+            await apiClient.patch("/kra/update", {
                 isAutoFilingEnabled: mode === "AUTO",
             });
             toast.success(`Filing mode updated to ${mode}`);

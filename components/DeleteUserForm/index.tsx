@@ -1,5 +1,5 @@
 import { useUser } from "@clerk/nextjs";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { toast } from "sonner";
@@ -24,7 +24,7 @@ const DeleteUserForm: React.FC = () => {
         ) {
             const promise = async () => {
                 try {
-                    await axios.delete(`/api/auth/delete/${user.id}`);
+                    await apiClient.delete(`/auth/delete/${user.id}`);
                     router.push("/sign-up");
                 } catch (err) {
                     if (err instanceof Error) {

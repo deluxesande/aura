@@ -8,7 +8,7 @@ import UserManagement from "@/components/UserManagement";
 import SubscriptionManagement from "@/components/SubscriptionManagement";
 import { AppState } from "@/store";
 import { setUser } from "@/store/slices/authSlice";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
@@ -24,7 +24,7 @@ const SettingsPage: React.FC = () => {
         if (user === null) {
             const fetchUser = async () => {
                 try {
-                    const res = await axios.get("/api/auth/user/profile");
+                    const res = await apiClient.get("/auth/user/profile");
                     if (res.status === 404) {
                         dispatch(
                             setUser({

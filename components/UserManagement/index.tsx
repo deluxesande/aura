@@ -8,7 +8,8 @@ import {
     updateInvitation,
 } from "@/store/slices/invitationsDataSlice";
 import { FloatingPortal } from "@floating-ui/react";
-import axios, { AxiosError } from "axios";
+import { apiClient } from "@/utils/apiClient";
+import { AxiosError } from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import {
     Trash,
@@ -50,7 +51,7 @@ interface Invitation extends User {
     imageUrl?: string;
 }
 
-const fetcher = (url: string) => axios.get(url).then((res) => res.data);
+const fetcher = (url: string) => apiClient.get(url.replace("/api", "")).then((res) => res.data);
 
 const UserManagement: React.FC = () => {
     const [showInviteModal, setShowInviteModal] = useState(false);
@@ -96,8 +97,8 @@ const UserManagement: React.FC = () => {
             dispatch(setInvitations(rawInvitations));
             const imagePromises = rawInvitations.map(async (user: User) => {
                 try {
-                    const imageResponse = await axios.get(
-                        "/api/auth/user/image",
+                    const imageResponse = await apiClient.get(
+                        "/auth/user/image",
                         {
                             params: { userId: user.id },
                         },
@@ -178,7 +179,7 @@ const UserManagement: React.FC = () => {
         setIsSending(true);
 
         const sendInvitation = async () => {
-            const response = await axios.post("/api/auth/invite/post", {
+            const response = await apiClient.post("/auth/invite/post", {
                 email: inviteEmail,
                 role: inviteRole,
             });
@@ -207,7 +208,7 @@ const UserManagement: React.FC = () => {
 
     const handleRoleChange = (userId: string, newRole: string) => {
         const updateRole = async () => {
-            const response = await axios.put("/api/auth/invite/update", {
+            const response = await apiClient.put("/auth/invite/update", {
                 userId,
                 role: newRole,
             });
@@ -251,11 +252,11 @@ const UserManagement: React.FC = () => {
         const deleteProcess = async () => {
             let response;
             if (userToDelete.status === "accepted") {
-                response = await axios.delete(
-                    `/api/auth/delete/${userToDelete.clerkUserId}`,
+                response = await apiClient.delete(
+                    `/auth/delete/${userToDelete.clerkUserId}`,
                 );
             } else {
-                response = await axios.delete("/api/auth/invite/delete", {
+                response = await apiClient.delete("/auth/invite/delete", {
                     data: { id: userToDelete.id },
                 });
             }

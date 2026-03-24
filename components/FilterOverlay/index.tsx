@@ -1,6 +1,6 @@
 import { AppState } from "@/store";
 import { Product } from "@/utils/typesDefinitions";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
@@ -74,7 +74,7 @@ export default function FilterOverlay({
         setCategoriesLoading(true);
         const fetchCategories = async () => {
             try {
-                const response = await axios.get("/api/category");
+                const response = await apiClient.get("/category");
                 setCategories(
                     response.data.map((category: any) => ({
                         id: category.id,

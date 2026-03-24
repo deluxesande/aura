@@ -2,7 +2,7 @@
 import { AppState } from "@/store";
 import { setBusinessDetails } from "@/store/slices/businessDataSlice";
 import { formatPhoneNumber } from "@/utils/formatPhoneNumber";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Phone, X, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -129,8 +129,8 @@ export default function PaymentPage() {
                 fetchAttempted.current = true;
                 setIsFetching(true);
                 try {
-                    const response = await axios.get(
-                        `/api/business/${user.businessId}`,
+                    const response = await apiClient.get(
+                        `/business/${user.businessId}`,
                     );
                     if (response.data) {
                         dispatch(setBusinessDetails(response.data));
@@ -154,7 +154,7 @@ export default function PaymentPage() {
 
         setLoadingStaff(true);
         try {
-            const response = await axios.get("/api/auth/invite/get");
+            const response = await apiClient.get("/auth/invite/get");
             const data = response.data;
 
             let allSeats: StaffMember[] = [];
@@ -261,7 +261,7 @@ export default function PaymentPage() {
                 formData.append("name", businessName);
 
                 // Create the business
-                const response = await axios.post("/api/business", formData, {
+                const response = await apiClient.post("/business", formData, {
                     headers: { "Content-Type": "multipart/form-data" },
                 });
 
@@ -306,12 +306,12 @@ export default function PaymentPage() {
                 router.push("/products");
                 return "Welcome to Salesense Starter!";
             } else {
-                await axios.post("/api/subscription/downgrade", {
+                await apiClient.post("/subscription/downgrade", {
                     planId: plan.id,
                     activeStaffIds: staffToKeep,
                 });
 
-                const res = await axios.get(`/api/business/${user.businessId}`);
+                const res = await apiClient.get(`/business/${user.businessId}`);
                 dispatch(setBusinessDetails(res.data));
 
                 setIsDowngradeModalOpen(false);
@@ -342,7 +342,7 @@ export default function PaymentPage() {
         }
 
         try {
-            const response = await axios.post("/api/subscription/stk-push", {
+            const response = await apiClient.post("/subscription/stk-push", {
                 phoneNumber: formattedNumber,
                 amount: selectedPlan.price,
                 planId: selectedPlan.id,

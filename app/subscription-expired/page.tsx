@@ -1,7 +1,7 @@
 "use client";
 import Navbar from "@/components/Navbar";
 import { AppState } from "@/store";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import { AlertOctagon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -47,7 +47,7 @@ const SubscriptionExpiredPage = () => {
             // Determine amount based on plan
             const amount = plan === "STANDARD" ? 1000 : 1500;
 
-            const res = await axios.post("/api/subscription/stk-push", {
+            const res = await apiClient.post("/subscription/stk-push", {
                 phoneNumber,
                 amount,
                 planId: plan,

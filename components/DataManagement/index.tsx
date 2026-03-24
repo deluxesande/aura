@@ -1,4 +1,4 @@
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import {
     Download,
     Upload,
@@ -25,7 +25,7 @@ const DataManagement: React.FC = () => {
     const handleDownloadConfirm = async () => {
         setIsDownloading(true);
         try {
-            const response = await axios.get("/api/download/excel", {
+            const response = await apiClient.get("/download/excel", {
                 responseType: "blob",
             });
 
@@ -68,7 +68,7 @@ const DataManagement: React.FC = () => {
         formData.append("file", importFile);
 
         try {
-            await axios.post("/api/import/excel", formData, {
+            await apiClient.post("/import/excel", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
 

@@ -8,7 +8,7 @@ import { generateSKU } from "@/utils/generateSKU";
 import { Category, Product, ProductType } from "@/utils/typesDefinitions";
 import { useUploadThing } from "@/utils/uploadthing";
 import { FloatingPortal } from "@floating-ui/react";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import {
     ArrowLeft,
     CloudUpload,
@@ -75,8 +75,8 @@ export default function CreateProductPage() {
         const fetchData = async () => {
             try {
                 const [catRes, prodRes] = await Promise.all([
-                    axios.get("/api/category"),
-                    axios.get("/api/product"),
+                    apiClient.get("/category"),
+                    apiClient.get("/product"),
                 ]);
                 setCategories(catRes.data);
                 setTemplates(
@@ -188,7 +188,7 @@ export default function CreateProductPage() {
     const handleCreateNewCategory = async (categoryName: string) => {
         const promise = async () => {
             try {
-                const response = await axios.post("/api/category", {
+                const response = await apiClient.post("/category", {
                     name: categoryName,
                 });
                 setCategories([...categories, response.data]);
@@ -253,7 +253,7 @@ export default function CreateProductPage() {
                         };
                     });
 
-                    const response = await axios.post("/api/product", payloads);
+                    const response = await apiClient.post("/product", payloads);
                     const results = response.data;
 
                     dispatch(setProducts([...originalProducts, ...results]));
@@ -277,7 +277,7 @@ export default function CreateProductPage() {
                         attributes: [],
                     };
 
-                    const response = await axios.post("/api/product", payload);
+                    const response = await apiClient.post("/product", payload);
                     dispatch(setProducts([...originalProducts, response.data]));
                     router.push("/products/list");
                     return response.data;

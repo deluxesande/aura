@@ -6,7 +6,7 @@ import ProductList from "@/components/ProductList";
 import { AppState } from "@/store";
 import { setProducts } from "@/store/slices/productSlice";
 import { Product } from "@/utils/typesDefinitions";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
@@ -36,7 +36,7 @@ export default function Page() {
         dispatch(setProducts(optimisticList));
 
         try {
-            await axios.delete(`/api/product/${productId}`);
+            await apiClient.delete(`/product/${productId}`);
             toast.success("Product deleted successfully");
         } catch (error) {
             dispatch(setProducts(previousProducts));
@@ -51,7 +51,7 @@ export default function Page() {
             if (products.length === 0) setLoading(true);
 
             try {
-                const response = await axios.get("/api/product");
+                const response = await apiClient.get("/product");
                 const fetchedProducts = Array.isArray(response.data)
                     ? response.data
                     : [];

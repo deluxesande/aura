@@ -15,7 +15,7 @@ import {
 } from "@/store/slices/analyticsSlice";
 import { setInvoices } from "@/store/slices/invoiceSlice";
 import { pdf } from "@react-pdf/renderer";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import {
     AlertCircle,
     BadgeDollarSign,
@@ -70,7 +70,7 @@ export default function Page() {
             dispatch(startFetching());
 
             try {
-                const response = await axios.get("/api/analytics/stats", {
+                const response = await apiClient.get("/analytics/stats", {
                     params: { timePeriod: timeRange },
                 });
 
@@ -89,7 +89,7 @@ export default function Page() {
             if (invoices.length === 0) setInvoicesLoading(true);
 
             try {
-                const response = await axios.get("/api/invoice");
+                const response = await apiClient.get("/invoice");
                 dispatch(setInvoices(response.data));
             } catch (error) {
                 // Handle error
@@ -106,7 +106,7 @@ export default function Page() {
         setTopProductsLoading(true);
         const fetchTopProducts = async () => {
             try {
-                const response = await axios.get("/api/product/topProduct", {
+                const response = await apiClient.get("/product/topProduct", {
                     params: { timePeriod: topProductsTimePeriod },
                 });
                 setTopProducts(
@@ -133,7 +133,7 @@ export default function Page() {
         });
 
         try {
-            const response = await axios.get("/api/analytics/report", {
+            const response = await apiClient.get("/analytics/report", {
                 params: { timePeriod: reportPeriod },
             });
 

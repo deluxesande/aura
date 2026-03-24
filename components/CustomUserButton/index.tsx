@@ -6,7 +6,7 @@ import {
 } from "@/store/slices/invitationsDataSlice";
 import { setInvitations } from "@/store/slices/invitationSlice";
 import { FloatingPortal } from "@floating-ui/react";
-import axios from "axios";
+import { apiClient } from "@/utils/apiClient";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, ChevronDown, Loader2, Plus, Users } from "lucide-react";
 import Image from "next/image";
@@ -95,7 +95,7 @@ const CustomUserButton = () => {
         const fetchUsers = async () => {
             if (userInvitations.length === 0) setIsLoading(true);
             try {
-                const response = await axios.get("/api/auth/invite/get");
+                const response = await apiClient.get("/auth/invite/get");
                 if (response.data.invitations) {
                     const rawInvitations = response.data.invitations;
                     dispatch(setInvitations(rawInvitations));
@@ -103,8 +103,8 @@ const CustomUserButton = () => {
                     const imagePromises = rawInvitations.map(
                         async (inv: User) => {
                             try {
-                                const imageResponse = await axios.get(
-                                    "/api/auth/user/image",
+                                const imageResponse = await apiClient.get(
+                                    "/auth/user/image",
                                     {
                                         params: { userId: inv.id },
                                     },
@@ -179,7 +179,7 @@ const CustomUserButton = () => {
         setIsSending(true);
 
         const sendInvitation = async () => {
-            const response = await axios.post("/api/auth/invite/post", {
+            const response = await apiClient.post("/auth/invite/post", {
                 email: inviteEmail,
                 role: inviteRole,
             });
