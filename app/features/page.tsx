@@ -256,7 +256,7 @@ export default function FeaturesPage() {
                                 invoices, and check inventory levels from
                                 anywhere using our mobile app.
                             </p>
-                            <div className="flex gap-4 justify-center md:justify-start text-sm font-semibold text-green-600 cursor-pointer hover:text-green-700">
+                            <div className="flex gap-4 justify-center md:justify-start text-sm font-semibold text-green-600 cursor-pointer hover:text-green-600">
                                 <span>Download for Android</span>{" "}
                                 <ArrowUpRight size={18} />
                             </div>

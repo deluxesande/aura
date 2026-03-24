@@ -82,6 +82,7 @@ export default async function handler(
                 lastName: user.lastName,
                 role: user.role,
                 businessId: user.businessId,
+                storeId: user.storeId,
                 status: user.status,
                 Business: maskedBusiness,
             },

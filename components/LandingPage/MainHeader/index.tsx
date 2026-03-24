@@ -96,7 +96,7 @@ export default function MainHeader() {
                                 href="/features"
                                 className="group w-full md:w-auto"
                             >
-                                <div className="w-full md:w-auto bg-white text-gray-600 px-8 py-3.5 rounded-lg font-medium border border-gray-200 shadow-sm hover:text-green-700 hover:border-green-200 hover:bg-green-50/50 hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center">
+                                <div className="w-full md:w-auto bg-white text-gray-600 px-8 py-3.5 rounded-lg font-medium border border-gray-200 shadow-sm hover:text-green-600 hover:border-green-200 hover:bg-green-50/50 hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center">
                                     Learn more
                                 </div>
                             </Link>

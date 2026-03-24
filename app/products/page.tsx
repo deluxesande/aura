@@ -849,7 +849,7 @@ export default function Page() {
                                                     )
                                                         handleClose();
                                                 }}
-                                                className="mt-2 text-xs text-green-500 font-medium flex items-center gap-1 hover:underline hover:text-green-700"
+                                                className="mt-2 text-xs text-green-500 font-medium flex items-center gap-1 hover:underline hover:text-green-600"
                                             >
                                                 Add this number as new customer?
                                             </button>

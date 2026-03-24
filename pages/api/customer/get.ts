@@ -13,6 +13,19 @@ export const getCustomers = async (
             return res.status(401).json({ error: "Unauthorized" });
         }
 
+        const activeStoreHeader = req.headers["x-store-id"] as string;
+
+        const dbUser = await prisma.user.findUnique({
+            where: { clerkId: clerkUserId },
+            select: { role: true, storeId: true }
+        });
+
+        const targetStoreId = dbUser?.role === "admin" ? activeStoreHeader : (dbUser?.storeId as string);
+
+        if (!targetStoreId) {
+            return res.status(400).json({ error: "No active store selected." });
+        }
+
         const user = await prisma.user.findUnique({
             where: { clerkId: clerkUserId },
             select: { businessId: true },
@@ -27,6 +40,7 @@ export const getCustomers = async (
         const customers = await prisma.customer.findMany({
             where: {
                 businessId: user.businessId,
+                storeId: targetStoreId,
             },
             include: {
                 CreatedBy: {

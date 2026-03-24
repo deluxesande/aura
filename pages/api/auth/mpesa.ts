@@ -17,9 +17,18 @@ export default async function handler(
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const business = await prisma.business.findFirst({
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { businessId: true },
+        });
+
+        if (!user || !user.businessId) {
+            return res.status(404).json({ error: "User is not linked to a business" });
+        }
+
+        const business = await prisma.business.findUnique({
             where: {
-                createdBy: userId,
+                id: user.businessId,
             },
             select: {
                 id: true,

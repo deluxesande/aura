@@ -28,6 +28,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         return res.status(401).json({ error: "Unauthorized" });
     }
 
+    const activeStoreHeader = req.headers["x-store-id"] as string;
+
     const { authorized, error: subError, businessId } = await checkSubscription(userId);
 
     if (!authorized) {
@@ -36,7 +38,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const dbUser = await prisma.user.findUnique({
         where: { clerkId: userId },
-        select: { id: true, businessId: true },
+        select: { id: true, businessId: true, role: true, storeId: true },
     });
 
     if (!dbUser) {
@@ -47,6 +49,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         return res
             .status(400)
             .json({ error: "User is not linked to a business" });
+    }
+
+    const targetStoreId = dbUser.role === "admin" ? activeStoreHeader : (dbUser.storeId as string);
+
+    if (!targetStoreId) {
+        return res.status(400).json({ error: "No active store selected." });
     }
 
     try {
@@ -90,6 +98,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             status: invoiceStatus,
             createdBy: req.body.createdBy,
             businessId: dbUser.businessId,
+            storeId: targetStoreId,
         };
 
         if (customerId) {

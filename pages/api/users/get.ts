@@ -56,6 +56,12 @@ export const getUsers = async (req: NextApiRequest, res: NextApiResponse) => {
                 status: true,
                 lastLogin: true,
                 createdAt: true,
+                Store: {
+                    select: {
+                        name: true,
+                        id: true,
+                    }
+                }
             },
             orderBy: {
                 createdAt: "desc",

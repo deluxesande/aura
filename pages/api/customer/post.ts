@@ -21,9 +21,11 @@ const addCustomerHandler = async (
             return res.status(403).json({ error: subError });
         }
 
+        const activeStoreHeader = req.headers["x-store-id"] as string;
+
         const dbUser = await prisma.user.findUnique({
             where: { clerkId: clerkUserId },
-            select: { id: true, businessId: true },
+            select: { id: true, businessId: true, role: true, storeId: true },
         });
 
         if (!dbUser) {
@@ -36,6 +38,12 @@ const addCustomerHandler = async (
                 .json({ error: "User is not linked to a business" });
         }
 
+        const targetStoreId = dbUser.role === "admin" ? activeStoreHeader : (dbUser.storeId as string);
+
+        if (!targetStoreId) {
+            return res.status(400).json({ error: "No active store selected." });
+        }
+
         const { firstName, lastName, phoneNumber, email: rawEmail } = req.body;
         const email = rawEmail && rawEmail.trim() !== "" ? rawEmail : null;
 
@@ -46,6 +54,7 @@ const addCustomerHandler = async (
                 email,
                 phoneNumber,
                 businessId: dbUser.businessId,
+                storeId: targetStoreId,
                 createdById: dbUser.id,
             },
         });

@@ -7,6 +7,7 @@ import {
     setBusinessLoading,
 } from "@/store/slices/businessDataSlice";
 import { hide, show } from "@/store/slices/visibilitySlice";
+import { apiClient } from "@/utils/apiClient";
 import { SignedIn, useClerk, useUser } from "@clerk/nextjs";
 import {
     autoUpdate,
@@ -22,9 +23,9 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@radix-ui/react-popover";
-import { apiClient } from "@/utils/apiClient";
 import {
     AlertTriangle,
+    ChevronDown,
     LogOut,
     Menu,
     Search as SearchIcon,
@@ -86,6 +87,7 @@ type User = {
     email: string;
     role: string;
     businessId: string;
+    storeId: string;
     status: string;
     Business: {};
 };
@@ -186,6 +188,49 @@ export default function Navbar({
         }
     }, [user?.businessId, businessDetails, isFetchingBusiness, dispatch]);
 
+    const [stores, setStores] = useState<any[]>([]);
+    const [activeStore, setActiveStore] = useState<any>(null);
+    const [isStorePickerOpen, setIsStorePickerOpen] = useState(false);
+
+    useEffect(() => {
+        const fetchStores = async () => {
+            if (user?.businessId) {
+                try {
+                    const res = await apiClient.get(
+                        `/business/${user.businessId}/stores`,
+                    );
+                    setStores(res.data || []);
+
+                    const savedStoreId = localStorage.getItem("activeStoreId");
+                    
+                    let currentStore;
+                    
+                    if (user?.role === "admin") {
+                        currentStore = res.data.find((s: any) => s.id === savedStoreId) || res.data[0];
+                    } else {
+                        // Managers and Users MUST strictly use their assigned store
+                        currentStore = res.data.find((s: any) => s.id === user.storeId);
+                    }
+
+                    if (currentStore) {
+                        setActiveStore(currentStore);
+                        localStorage.setItem("activeStoreId", currentStore.id);
+                    }
+                } catch (error) {
+                    console.error("Error fetching stores:", error);
+                }
+            }
+        };
+        fetchStores();
+    }, [user?.businessId]);
+
+    const handleStoreChange = (store: any) => {
+        setActiveStore(store);
+        localStorage.setItem("activeStoreId", store.id);
+        setIsStorePickerOpen(false);
+        window.location.reload(); // Refresh to update all data context
+    };
+
     const links = user
         ? allLinks.filter((link) =>
               link.allowedRoles.some(
@@ -206,12 +251,9 @@ export default function Navbar({
 
     const handleInputValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
-
         if (val.length === 0) {
             setFilteredProducts?.(originalProducts);
         }
-
-        console.log();
         setInputValue(val);
     };
 
@@ -246,8 +288,6 @@ export default function Navbar({
     const handleSignOut = async () => {
         if (isSignedIn) {
             await signOut();
-
-            // Clear user state in Redux
             dispatch(signOutAction());
         }
     };
@@ -316,6 +356,102 @@ export default function Navbar({
 
                         {/* Right Section: Icons, User, and Plan Badge */}
                         <div className="flex items-center gap-2">
+                            {/* Store Switcher */}
+                            {mounted && (
+                                <div className="relative mr-2">
+                                    <button
+                                        onClick={() =>
+                                            user?.role === "admin" &&
+                                            setIsStorePickerOpen(
+                                                !isStorePickerOpen,
+                                            )
+                                        }
+                                        className={`flex flex-col items-start px-4 py-1.5 rounded-lg border transition-all ${
+                                            user?.role === "admin"
+                                                ? "hover:bg-gray-50 bg-white cursor-pointer"
+                                                : "bg-gray-50 cursor-default"
+                                        } border-gray-200 min-w-[160px]`}
+                                    >
+                                        <div className="flex items-center gap-2 w-full">
+                                            <span className="text-sm font-semibold text-gray-800 truncate max-w-[140px]">
+                                                {activeStore?.name || (stores.length === 0 ? "Loading..." : "Select Branch")}
+                                            </span>
+                                            {user?.role === "admin" && (
+                                                <ChevronDown
+                                                    size={12}
+                                                    className="text-gray-400 ml-auto"
+                                                />
+                                            )}
+                                        </div>
+                                    </button>
+
+                                    {isStorePickerOpen &&
+                                        user?.role === "admin" && (
+                                            <div className="absolute top-full right-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-2xl z-[100] py-3 animate-in fade-in slide-in-from-top-2">
+                                                <div className="px-5 py-2 mb-2">
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                                                        Select Location
+                                                    </p>
+                                                </div>
+
+                                                <div className="max-h-[350px] overflow-y-auto px-2">
+                                                    {stores
+                                                        .filter(
+                                                            (s) =>
+                                                                s.isActive !==
+                                                                false,
+                                                        )
+                                                        .map((store) => (
+                                                            <button
+                                                                key={store.id}
+                                                                onClick={() =>
+                                                                    handleStoreChange(
+                                                                        store,
+                                                                    )
+                                                                }
+                                                                className={`w-full flex flex-col gap-0.5 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors text-left ${
+                                                                    activeStore?.id ===
+                                                                    store.id
+                                                                        ? "bg-gray-50"
+                                                                        : ""
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-center justify-between w-full">
+                                                                    <p
+                                                                        className={`text-sm font-bold ${activeStore?.id === store.id ? "text-green-600" : "text-gray-900"}`}
+                                                                    >
+                                                                        {
+                                                                            store.name
+                                                                        }
+                                                                    </p>
+                                                                    {activeStore?.id ===
+                                                                        store.id && (
+                                                                        <span className="text-[8px] font-bold bg-green-100 text-green-500 px-1.5 py-0.5 rounded uppercase">
+                                                                            Active
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <p className="text-[11px] text-gray-500 font-medium truncate w-full">
+                                                                    {store.address ||
+                                                                        "Physical location not specified"}
+                                                                </p>
+                                                            </button>
+                                                        ))}
+                                                </div>
+
+                                                <div className="mt-3 pt-3 border-t border-gray-100 px-4">
+                                                    <Link
+                                                        href="/settings"
+                                                        className="block text-center py-2 text-[11px] font-black text-gray-400 hover:text-green-500 uppercase tracking-widest transition-colors"
+                                                    >
+                                                        Manage All Branches
+                                                    </Link>
+                                                </div>
+                                            </div>
+                                        )}
+                                </div>
+                            )}
+
                             {isProductsPage && (
                                 <>
                                     <button
@@ -551,7 +687,8 @@ export default function Navbar({
                                                         setFilterPopUp
                                                     }
                                                     setFilteredProducts={
-                                                        setFilteredProducts
+                                                        setFilteredProducts ||
+                                                        (() => {})
                                                     }
                                                     toggleFilterPopUp={
                                                         toggleFilterPopUp
@@ -561,7 +698,54 @@ export default function Navbar({
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex flex-col space-y-4">
+
+                                {/* Mobile Store Switcher */}
+                                {user?.role === "admin" && (
+                                    <div className="mt-4 px-2">
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                                            Current Branch
+                                        </p>
+                                        <div className="flex flex-col gap-2 bg-gray-50 rounded-xl p-2">
+                                            {stores
+                                                .filter(
+                                                    (s) => s.isActive !== false,
+                                                )
+                                                .map((store) => (
+                                                    <button
+                                                        key={store.id}
+                                                        onClick={() =>
+                                                            handleStoreChange(
+                                                                store,
+                                                            )
+                                                        }
+                                                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors text-left ${
+                                                            activeStore?.id ===
+                                                            store.id
+                                                                ? "bg-white shadow-sm border border-gray-100"
+                                                                : "hover:bg-gray-100"
+                                                        }`}
+                                                    >
+                                                        <div>
+                                                            <p
+                                                                className={`text-sm font-bold ${activeStore?.id === store.id ? "text-green-600" : "text-gray-700"}`}
+                                                            >
+                                                                {store.name}
+                                                            </p>
+                                                            {activeStore?.id ===
+                                                                store.id && (
+                                                                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">
+                                                                    Active
+                                                                    Location
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="flex flex-col space-y-4 mt-6">
                                     {links.map((link) => (
                                         <a
                                             key={link.href}

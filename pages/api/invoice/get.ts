@@ -13,6 +13,19 @@ export const getInvoices = async (
             return res.status(401).json({ error: "Unauthorized" });
         }
 
+        const activeStoreHeader = req.headers["x-store-id"] as string;
+
+        const dbUser = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { role: true, storeId: true }
+        });
+
+        const targetStoreId = dbUser?.role === "admin" ? activeStoreHeader : (dbUser?.storeId as string);
+
+        if (!targetStoreId) {
+            return res.status(400).json({ error: "No active store selected." });
+        }
+
         // 1. Get current user with their business
         const currentUser = await prisma.user.findUnique({
             where: { clerkId: userId },
@@ -25,14 +38,13 @@ export const getInvoices = async (
                 .json({ error: "User or business not found" });
         }
 
-        // SELF-HEALING LOGIC: Handle Inventory Sync (Restock & Re-deduct) - Isolated to THIS business
-
-        // Find FAILED/CANCELLED invoices where stock hasn't been returned yet
+        // SELF-HEALING LOGIC: Handle Inventory Sync (Restock & Re-deduct) - Isolated to THIS business and store
         const failedInvoices = await prisma.invoice.findMany({
             where: {
                 status: { in: ["FAILED", "CANCELLED"] },
                 stockRestored: false,
-                businessId: currentUser.businessId, // FIXED: Isolated to business
+                businessId: currentUser.businessId,
+                storeId: targetStoreId,
             },
             include: { invoiceItems: true },
         });
@@ -41,13 +53,19 @@ export const getInvoices = async (
             await prisma.$transaction(async (tx) => {
                 for (const invoice of failedInvoices) {
                     for (const item of invoice.invoiceItems) {
-                        await tx.product.update({
-                            where: { id: item.productId },
-                            data: {
-                                quantity: { increment: item.quantity },
-                                inStock: true,
-                            },
+                        const inventory = await tx.storeInventory.findUnique({
+                            where: { storeId_productId: { storeId: targetStoreId, productId: item.productId } }
                         });
+                        if (inventory) {
+                            await tx.storeInventory.update({
+                                where: { id: inventory.id },
+                                data: { quantity: { increment: item.quantity } },
+                            });
+                            await tx.product.update({
+                                where: { id: item.productId },
+                                data: { inStock: true }
+                            });
+                        }
                     }
                     await tx.invoice.update({
                         where: { id: invoice.id },
@@ -57,12 +75,12 @@ export const getInvoices = async (
             });
         }
 
-        // Find PAID invoices that were previously restocked (e.g. late payment)
         const recoveredInvoices = await prisma.invoice.findMany({
             where: {
                 status: { in: ["PAID", "COMPLETED"] },
-                stockRestored: true, // This means we previously put items back! We must take them again.
-                businessId: currentUser.businessId, // FIXED: Isolated to business
+                stockRestored: true,
+                businessId: currentUser.businessId,
+                storeId: targetStoreId,
             },
             include: { invoiceItems: true },
         });
@@ -71,25 +89,24 @@ export const getInvoices = async (
             await prisma.$transaction(async (tx) => {
                 for (const invoice of recoveredInvoices) {
                     for (const item of invoice.invoiceItems) {
-                        const product = await tx.product.findUnique({
-                            where: { id: item.productId },
+                        const inventory = await tx.storeInventory.findUnique({
+                            where: { storeId_productId: { storeId: targetStoreId, productId: item.productId } }
                         });
-
-                        if (product) {
-                            const newQuantity =
-                                product.quantity - item.quantity;
+                        
+                        if (inventory) {
+                            const newQuantity = inventory.quantity - item.quantity;
                             const isStillInStock = newQuantity > 0;
 
+                            await tx.storeInventory.update({
+                                where: { id: inventory.id },
+                                data: { quantity: { decrement: item.quantity } },
+                            });
                             await tx.product.update({
                                 where: { id: item.productId },
-                                data: {
-                                    quantity: { decrement: item.quantity },
-                                    inStock: isStillInStock,
-                                },
+                                data: { inStock: isStillInStock },
                             });
                         }
                     }
-                    // Mark stockRestored as false because the items are "sold" again
                     await tx.invoice.update({
                         where: { id: invoice.id },
                         data: { stockRestored: false },
@@ -106,12 +123,13 @@ export const getInvoices = async (
 
         const userIds = businessUsers.map((user) => user.clerkId);
 
-        // Get invoices created by any user in the same business
+        // Get invoices created by any user in the same business AND for the current store
         const invoices = await prisma.invoice.findMany({
             where: {
                 createdBy: {
                     in: userIds,
                 },
+                storeId: targetStoreId,
             },
             orderBy: {
                 createdAt: "desc",

@@ -90,6 +90,7 @@ export default async function handler(
                     lastName: clerkUser.lastName,
                     role: invitation.role,
                     businessId: invitation.businessId,
+                    storeId: invitation.storeId,
                 },
             });
 

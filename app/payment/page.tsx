@@ -24,6 +24,7 @@ type Plan = {
     cta: string;
     popular: boolean;
     staffLimit: number;
+    storeLimit: number;
 };
 
 type StaffMember = {
@@ -35,6 +36,12 @@ type StaffMember = {
     type: "USER" | "INVITE";
 };
 
+type StoreInfo = {
+    id: string;
+    name: string;
+    isActive: boolean;
+};
+
 const PLANS: Plan[] = [
     {
         id: "STARTER",
@@ -44,6 +51,7 @@ const PLANS: Plan[] = [
         features: [
             { text: "Connect Your Own Paybill", included: true },
             { text: "1 Staff Account", included: true },
+            { text: "1 Branch / Store", included: true },
             { text: "Max 100 Transactions/mo", included: true },
             { text: "Auto-Filing Only", included: true, highlight: "warning" },
             { text: "No Data Export", included: false },
@@ -51,6 +59,7 @@ const PLANS: Plan[] = [
         cta: "Start Free",
         popular: false,
         staffLimit: 1,
+        storeLimit: 1,
     },
     {
         id: "STANDARD",
@@ -60,6 +69,7 @@ const PLANS: Plan[] = [
         features: [
             { text: "Unlimited Transactions", included: true },
             { text: "5 Staff Accounts", included: true },
+            { text: "3 Branches / Stores", included: true },
             { text: "Connect Your Own Paybill", included: true },
             {
                 text: "Auto-Filing Included",
@@ -71,6 +81,7 @@ const PLANS: Plan[] = [
         cta: "Select Standard",
         popular: true,
         staffLimit: 5,
+        storeLimit: 3,
     },
     {
         id: "PREMIUM",
@@ -79,6 +90,7 @@ const PLANS: Plan[] = [
         description: "For businesses that need full control",
         features: [
             { text: "Unlimited Staff & Transactions", included: true },
+            { text: "Up to 10 Branches / Stores", included: true },
             { text: "Remove 'Powered by Salesense'", included: true },
             { text: "Full Excel/CSV Data Export", included: true },
             {
@@ -91,6 +103,7 @@ const PLANS: Plan[] = [
         cta: "Select Premium",
         popular: false,
         staffLimit: 999,
+        storeLimit: 10,
     },
 ];
 
@@ -108,6 +121,7 @@ export default function PaymentPage() {
 
     // Limit tracking
     const [effectiveStaffLimit, setEffectiveStaffLimit] = useState(0);
+    const [effectiveStoreLimit, setEffectiveStoreLimit] = useState(0);
 
     // Payment State
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -117,9 +131,14 @@ export default function PaymentPage() {
     // Downgrade State
     const [isDowngradeModalOpen, setIsDowngradeModalOpen] = useState(false);
     const [staffList, setStaffList] = useState<StaffMember[]>([]);
-    const [loadingStaff, setLoadingStaff] = useState(false);
+    const [storeList, setStoreList] = useState<StoreInfo[]>([]);
+    const [loadingLimits, setLoadingLimits] = useState(false);
     const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
+    const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
     const [downgradeLoading, setDowngradeLoading] = useState(false);
+
+    // Step state inside downgrade modal: "STAFF" or "STORES"
+    const [downgradeStep, setDowngradeStep] = useState<"STAFF" | "STORES">("STAFF");
 
     const fetchAttempted = useRef(false);
 
@@ -147,32 +166,38 @@ export default function PaymentPage() {
 
     const currentPlanId = businessDetails?.subscription?.plan || null;
 
-    const checkStaffForDowngrade = async (targetPlan: Plan) => {
+    const checkLimitsForDowngrade = async (targetPlan: Plan) => {
         if (!user?.businessId) {
             return true;
         }
 
-        setLoadingStaff(true);
+        setLoadingLimits(true);
         try {
-            const response = await apiClient.get("/auth/invite/get");
-            const data = response.data;
+            // Fetch both staff and stores
+            const [staffRes, storesRes] = await Promise.all([
+                apiClient.get("/auth/invite/get"),
+                apiClient.get(`/business/${user.businessId}/stores`)
+            ]);
+
+            const staffData = staffRes.data;
+            const storesData = storesRes.data as StoreInfo[];
 
             let allSeats: StaffMember[] = [];
 
-            if (Array.isArray(data)) {
-                allSeats = data.map((item: any) => ({
+            if (Array.isArray(staffData)) {
+                allSeats = staffData.map((item: any) => ({
                     id: item.id,
                     email: item.email,
                     name: item.name || item.email,
                     role: item.role,
                     type: item.status === "accepted" ? "USER" : "INVITE",
                 }));
-            } else if (data && (data.users || data.invitations)) {
-                const users = (data.users || []).map((u: any) => ({
+            } else if (staffData && (staffData.users || staffData.invitations)) {
+                const users = (staffData.users || []).map((u: any) => ({
                     ...u,
                     type: "USER",
                 }));
-                const invites = (data.invitations || []).map((i: any) => ({
+                const invites = (staffData.invitations || []).map((i: any) => ({
                     ...i,
                     type: "INVITE",
                 }));
@@ -190,9 +215,15 @@ export default function PaymentPage() {
                 ? targetPlan.staffLimit
                 : Math.max(0, targetPlan.staffLimit - 1);
 
-            if (totalHeadcount > targetPlan.staffLimit) {
+            const staffLimitReached = totalHeadcount > targetPlan.staffLimit;
+            const storeLimitReached = storesData.length > targetPlan.storeLimit;
+
+            if (staffLimitReached || storeLimitReached) {
                 setStaffList(allSeats);
                 setEffectiveStaffLimit(slotsForList);
+
+                setStoreList(storesData);
+                setEffectiveStoreLimit(targetPlan.storeLimit);
 
                 // Auto-select owner if present
                 if (isOwnerInList) {
@@ -200,6 +231,22 @@ export default function PaymentPage() {
                     if (owner) setSelectedStaffIds([owner.id]);
                 } else {
                     setSelectedStaffIds([]);
+                }
+                
+                // Set initial step
+                if (staffLimitReached) {
+                    setDowngradeStep("STAFF");
+                } else {
+                    setDowngradeStep("STORES");
+                    // Pre-fill valid staff if limit not reached
+                    setSelectedStaffIds(allSeats.map((s) => s.id));
+                }
+                
+                // Pre-fill valid stores if limit not reached
+                if (!storeLimitReached) {
+                    setSelectedStoreIds(storesData.map((s) => s.id));
+                } else {
+                    setSelectedStoreIds([]);
                 }
 
                 setSelectedPlan(targetPlan);
@@ -209,10 +256,10 @@ export default function PaymentPage() {
 
             return true;
         } catch (error) {
-            toast.error("Failed to verify staff count.", { duration: 5000 });
+            toast.error("Failed to verify limits.", { duration: 5000 });
             return false;
         } finally {
-            setLoadingStaff(false);
+            setLoadingLimits(false);
         }
     };
 
@@ -223,7 +270,7 @@ export default function PaymentPage() {
         }
 
         // Check limits for ALL plans to ensure safety
-        const isWithinLimits = await checkStaffForDowngrade(plan);
+        const isWithinLimits = await checkLimitsForDowngrade(plan);
 
         if (!isWithinLimits) return;
 
@@ -235,11 +282,19 @@ export default function PaymentPage() {
         }
     };
 
+    const handleDowngradeNextStep = () => {
+        if (downgradeStep === "STAFF" && storeList.length > (selectedPlan?.storeLimit || 0)) {
+            setDowngradeStep("STORES");
+        } else {
+            handleDowngradeConfirmation();
+        }
+    };
+
     const handleDowngradeConfirmation = () => {
         if (!selectedPlan) return;
 
         if (selectedPlan.price === 0) {
-            processFreePlanSwitch(selectedPlan, selectedStaffIds);
+            processFreePlanSwitch(selectedPlan, selectedStaffIds, selectedStoreIds);
         } else {
             setIsDowngradeModalOpen(false);
             setIsPaymentModalOpen(true);
@@ -249,6 +304,7 @@ export default function PaymentPage() {
     const processFreePlanSwitch = async (
         plan: Plan,
         staffToKeep?: string[],
+        storesToKeep?: string[],
     ) => {
         setDowngradeLoading(true);
 
@@ -309,6 +365,7 @@ export default function PaymentPage() {
                 await apiClient.post("/subscription/downgrade", {
                     planId: plan.id,
                     activeStaffIds: staffToKeep,
+                    activeStoreIds: storesToKeep,
                 });
 
                 const res = await apiClient.get(`/business/${user.businessId}`);
@@ -383,15 +440,32 @@ export default function PaymentPage() {
             setSelectedStaffIds((prev) => [...prev, staffId]);
         }
     };
+    
+    const toggleStoreSelection = (storeId: string) => {
+        if (selectedStoreIds.includes(storeId)) {
+            setSelectedStoreIds((prev) => prev.filter((id) => id !== storeId));
+        } else {
+            if (
+                selectedPlan &&
+                selectedStoreIds.length >= effectiveStoreLimit
+            ) {
+                toast.warning(
+                    `You can only select ${effectiveStoreLimit} store(s).`,
+                );
+                return;
+            }
+            setSelectedStoreIds((prev) => [...prev, storeId]);
+        }
+    };
 
-    if (isFetching || loadingStaff) {
+    if (isFetching || loadingLimits) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="flex flex-col items-center gap-4">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                     <p className="text-gray-500 animate-pulse text-sm font-medium">
-                        {loadingStaff
-                            ? "Verifying staff limits..."
+                        {loadingLimits
+                            ? "Verifying plan limits..."
                             : "Syncing your plan details..."}
                     </p>
                 </div>
@@ -587,97 +661,91 @@ export default function PaymentPage() {
                                 <h3 className="text-xl font-bold text-red-600 mb-2">
                                     Limit Reached
                                 </h3>
-                                <p className="text-gray-700 text-sm">
-                                    The <strong>{selectedPlan.name}</strong>{" "}
-                                    plan allows{" "}
-                                    <strong>{selectedPlan.staffLimit}</strong>{" "}
-                                    total seat(s).
-                                    <br />
-                                    You currently have{" "}
-                                    <strong>
-                                        {staffList.length +
-                                            (staffList.some(
-                                                (s) => s.email === user?.email,
-                                            )
-                                                ? 0
-                                                : 1)}
-                                    </strong>{" "}
-                                    (You + active users + pending invites).
-                                </p>
-                                <p className="text-xs text-red-500 mt-3 font-semibold bg-red-100/50 p-2 rounded-lg">
-                                    Please select exactly {effectiveStaffLimit}{" "}
-                                    person(s) from this list to keep active.
-                                    Unselected users will be suspended and
-                                    invites cancelled.
-                                </p>
+                                
+                                {downgradeStep === "STAFF" && (
+                                    <>
+                                        <p className="text-gray-700 text-sm">
+                                            The <strong>{selectedPlan.name}</strong> plan allows{" "}
+                                            <strong>{selectedPlan.staffLimit}</strong> total seat(s).
+                                            <br />
+                                            You currently have{" "}
+                                            <strong>
+                                                {staffList.length +
+                                                    (staffList.some((s) => s.email === user?.email) ? 0 : 1)}
+                                            </strong>{" "}
+                                            (You + active users + pending invites).
+                                        </p>
+                                        <p className="text-xs text-red-500 mt-3 font-semibold bg-red-100/50 p-2 rounded-lg">
+                                            Please select exactly {effectiveStaffLimit} person(s) from this list to keep active.
+                                        </p>
+                                    </>
+                                )}
+
+                                {downgradeStep === "STORES" && (
+                                    <>
+                                        <p className="text-gray-700 text-sm">
+                                            The <strong>{selectedPlan.name}</strong> plan allows{" "}
+                                            <strong>{selectedPlan.storeLimit}</strong> total branch(es).
+                                            <br />
+                                            You currently have <strong>{storeList.length}</strong> active branches.
+                                        </p>
+                                        <p className="text-xs text-red-500 mt-3 font-semibold bg-red-100/50 p-2 rounded-lg">
+                                            Please select exactly {effectiveStoreLimit} branch(es) to keep active. Unselected branches will be suspended.
+                                        </p>
+                                    </>
+                                )}
                             </div>
 
                             <div className="p-6 max-h-[300px] overflow-y-auto">
                                 <div className="space-y-3">
-                                    {staffList.map((staff) => {
-                                        const isSelected =
-                                            selectedStaffIds.includes(staff.id);
-                                        const isInvite =
-                                            staff.type === "INVITE";
-
-                                        const isMaxReached =
-                                            selectedStaffIds.length >=
-                                            effectiveStaffLimit;
-
-                                        const isDisabled =
-                                            isInvite ||
-                                            (isMaxReached && !isSelected);
+                                    {downgradeStep === "STAFF" && staffList.map((staff) => {
+                                        const isSelected = selectedStaffIds.includes(staff.id);
+                                        const isInvite = staff.type === "INVITE";
+                                        const isMaxReached = selectedStaffIds.length >= effectiveStaffLimit;
+                                        const isDisabled = isInvite || (isMaxReached && !isSelected);
 
                                         return (
                                             <div
                                                 key={staff.id}
-                                                onClick={() =>
-                                                    !isDisabled &&
-                                                    toggleStaffSelection(
-                                                        staff.id,
-                                                    )
-                                                }
+                                                onClick={() => !isDisabled && toggleStaffSelection(staff.id)}
                                                 className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${
-                                                    isSelected
-                                                        ? "border-green-500 bg-green-50 ring-1 ring-green-500"
-                                                        : "border-gray-200 hover:border-gray-300"
+                                                    isSelected ? "border-green-500 bg-green-50 ring-1 ring-green-500" : "border-gray-200 hover:border-gray-300"
                                                 } ${isDisabled ? "opacity-50 cursor-not-allowed grayscale-[0.5]" : ""}`}
                                             >
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2">
-                                                        <p className="font-semibold text-gray-900">
-                                                            {staff.name ||
-                                                                "Staff Member"}
-                                                        </p>
-                                                        {isInvite && (
-                                                            <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full font-bold">
-                                                                INVITE
-                                                            </span>
-                                                        )}
-                                                        {staff.email ===
-                                                            user?.email && (
-                                                            <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full font-bold">
-                                                                YOU
-                                                            </span>
-                                                        )}
+                                                        <p className="font-semibold text-gray-900">{staff.name || "Staff Member"}</p>
+                                                        {isInvite && <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full font-bold">INVITE</span>}
+                                                        {staff.email === user?.email && <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full font-bold">YOU</span>}
                                                     </div>
-                                                    <p className="text-xs text-gray-500">
-                                                        {staff.email}
-                                                    </p>
+                                                    <p className="text-xs text-gray-500">{staff.email}</p>
                                                 </div>
-                                                <div
-                                                    className={`w-6 h-6 rounded-full border flex items-center justify-center ${
-                                                        isSelected
-                                                            ? "bg-green-600 border-green-600"
-                                                            : "border-gray-300"
-                                                    }`}
-                                                >
-                                                    {isSelected && (
-                                                        <Check
-                                                            size={14}
-                                                            className="stroke-white"
-                                                        />
-                                                    )}
+                                                <div className={`w-6 h-6 rounded-full border flex items-center justify-center ${isSelected ? "bg-green-600 border-green-600" : "border-gray-300"}`}>
+                                                    {isSelected && <Check size={14} className="stroke-white" />}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+
+                                    {downgradeStep === "STORES" && storeList.map((store) => {
+                                        const isSelected = selectedStoreIds.includes(store.id);
+                                        const isMaxReached = selectedStoreIds.length >= effectiveStoreLimit;
+                                        const isDisabled = isMaxReached && !isSelected;
+
+                                        return (
+                                            <div
+                                                key={store.id}
+                                                onClick={() => !isDisabled && toggleStoreSelection(store.id)}
+                                                className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${
+                                                    isSelected ? "border-green-500 bg-green-50 ring-1 ring-green-500" : "border-gray-200 hover:border-gray-300"
+                                                } ${isDisabled ? "opacity-50 cursor-not-allowed grayscale-[0.5]" : ""}`}
+                                            >
+                                                <div className="flex-1">
+                                                    <p className="font-semibold text-gray-900">{store.name}</p>
+                                                    <p className="text-xs text-gray-500">{store.address || "No address provided"}</p>
+                                                </div>
+                                                <div className={`w-6 h-6 rounded-full border flex items-center justify-center ${isSelected ? "bg-green-600 border-green-600" : "border-gray-300"}`}>
+                                                    {isSelected && <Check size={14} className="stroke-white" />}
                                                 </div>
                                             </div>
                                         );
@@ -687,26 +755,26 @@ export default function PaymentPage() {
 
                             <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-4">
                                 <button
-                                    onClick={() =>
-                                        setIsDowngradeModalOpen(false)
-                                    }
+                                    onClick={() => setIsDowngradeModalOpen(false)}
                                     className="flex-1 py-3 px-4 rounded-lg border border-gray-300 text-gray-700 font-bold hover:bg-gray-100 transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
-                                    onClick={handleDowngradeConfirmation}
+                                    onClick={handleDowngradeNextStep}
                                     disabled={
                                         downgradeLoading ||
-                                        (effectiveStaffLimit > 0 &&
-                                            selectedStaffIds.length === 0)
+                                        (downgradeStep === "STAFF" && effectiveStaffLimit > 0 && selectedStaffIds.length === 0) ||
+                                        (downgradeStep === "STORES" && effectiveStoreLimit > 0 && selectedStoreIds.length === 0)
                                     }
                                     className="flex-1 py-3 px-4 rounded-lg bg-red-600 text-white font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
                                 >
                                     {downgradeLoading ? (
                                         <Loader2 className="animate-spin h-4 w-4 stroke-white" />
                                     ) : (
-                                        "Confirm & Continue"
+                                        downgradeStep === "STAFF" && storeList.length > (selectedPlan?.storeLimit || 0)
+                                            ? "Next: Select Branches"
+                                            : "Confirm & Continue"
                                     )}
                                 </button>
                             </div>

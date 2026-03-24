@@ -22,19 +22,35 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         const { userId } = getAuth(req);
         if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
+        const activeStoreHeader = req.headers["x-store-id"] as string;
+
         const { authorized, error, businessId } =
             await checkSubscription(userId);
         if (!authorized) return res.status(403).json({ error });
 
         const bId = businessId as string;
+        
+        // Fetch current user and their store access
+        const currentUser = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { role: true, storeId: true }
+        });
+
+        if (!currentUser) return res.status(404).json({ error: "User not found" });
+
+        const targetStoreId = currentUser.role === "admin" ? activeStoreHeader : (currentUser.storeId as string);
+
+        if (!targetStoreId) {
+            return res.status(400).json({ error: "No active store selected. Please select a branch first." });
+        }
+
         const body = req.body;
         const isBatch = Array.isArray(body);
         const items = isBatch ? body : [body];
 
-        // TODO: Revisit batch variant optimization when upgrading from Vercel Hobby (10s limit).
-        // Current implementation uses pre-fetching and in-memory matching to stay under 10s.
         const results = await prisma.$transaction(
             async (tx) => {
+                // ... (Attribute and Option pre-fetching logic remains similar)
                 // --- STAGE 1: Pre-fetch all necessary metadata in bulk ---
                 const allAttrNames = new Set<string>();
                 const allOptValues = new Set<string>(); // "attrName:value"
@@ -75,7 +91,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     simpleProductNames.size > 0
                         ? tx.product.findMany({
                               where: { businessId: bId, type: "SIMPLE", name: { in: Array.from(simpleProductNames) } },
-                              select: { id: true, name: true, categoryId: true, quantity: true },
+                              select: { id: true, name: true, categoryId: true },
                           })
                         : Promise.resolve([]),
                     parentIds.size > 0
@@ -117,10 +133,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     }
                 }
 
-                // SKU existence check maps
                 const skuMap = new Map(existingSkus.map((s) => [s.sku, s.id]));
                 
-                // Helper to match variants in memory
                 const findVariantInMemory = (pId: string, itemAttrs: any[]) => {
                     const parentVariants = existingVariantsForParents.filter(v => v.parentId === pId);
                     return parentVariants.find(v => {
@@ -136,7 +150,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
                 const processedItems = [];
 
-                // --- STAGE 3: Process items ---
                 for (const item of items) {
                     const {
                         name,
@@ -158,95 +171,94 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     const imageUrl = image ?? "/images/default-product.png";
                     const itemCreatedBy = createdBy || userId;
 
+                    let product;
+
                     if (type === "TEMPLATE") {
                         const templateSku = sku || `TMP-${generateSKU(name)}`;
-                        const template = await tx.product.upsert({
+                        product = await tx.product.upsert({
                             where: { sku: templateSku },
                             update: {},
                             create: {
-                                name,
-                                description,
-                                price: 0,
-                                sku: templateSku,
-                                quantity: 0,
-                                image: imageUrl,
-                                inStock: false,
-                                type: "TEMPLATE",
+                                name, description, price: 0, sku: templateSku,
+                                quantity: 0, image: imageUrl, inStock: false, type: "TEMPLATE",
                                 Category: { connect: { id: categoryId } },
                                 Business: { connect: { id: bId } },
                                 createdBy: itemCreatedBy,
                             },
                         });
-                        processedItems.push(template);
-                        continue;
+                    } else if (type === "VARIANT") {
+                        if (!parentId) throw new Error("Parent ID required for variants");
+                        const existingV = findVariantInMemory(parentId, attributes);
+                        
+                        if (existingV) {
+                            product = existingV;
+                        } else {
+                            const finalSku = sku || generateSKU(`${name}-${attributes.map((a: any) => a.value).join("-")}`);
+                            if (sku && skuMap.has(sku)) throw new Error(`SKU ${sku} already exists`);
+
+                            product = await tx.product.create({
+                                data: {
+                                    name, description, price: parsedPrice, sku: finalSku,
+                                    quantity: 0, image: imageUrl, inStock, type: "VARIANT",
+                                    parent: { connect: { id: parentId } },
+                                    Category: { connect: { id: categoryId } },
+                                    Business: { connect: { id: bId } },
+                                    createdBy: itemCreatedBy,
+                                    attributeValues: {
+                                        create: attributes.map((a: any) => ({
+                                            attributeOptionId: optMap.get(`${attrMap.get(a.name).id}:${a.value}`).id,
+                                        })),
+                                    },
+                                },
+                            });
+                        }
+                    } else {
+                        const existingP = existingSimples.find(p => p.name === name && p.categoryId === categoryId);
+                        if (existingP) {
+                            product = existingP;
+                        } else {
+                            const finalSku = sku && sku.trim() !== "" ? sku : generateSKU(name);
+                            if (sku && skuMap.has(sku)) throw new Error(`SKU ${sku} already exists.`);
+
+                            product = await tx.product.create({
+                                data: {
+                                    name, description, price: parsedPrice, sku: finalSku,
+                                    quantity: 0, image: imageUrl, inStock, type: "SIMPLE",
+                                    Category: { connect: { id: categoryId } },
+                                    Business: { connect: { id: bId } },
+                                    createdBy: itemCreatedBy,
+                                },
+                            });
+                        }
                     }
 
-                    if (type === "VARIANT") {
-                        if (!parentId) throw new Error("Parent ID required for variants");
-
-                        const existingV = findVariantInMemory(parentId, attributes);
-                        if (existingV) {
-                            const updated = await tx.product.update({
-                                where: { id: existingV.id },
-                                data: { quantity: existingV.quantity + parsedQuantity },
-                            });
-                            processedItems.push(updated);
-                            continue;
-                        }
-
-                        const finalSku = sku || generateSKU(`${name}-${attributes.map((a: any) => a.value).join("-")}`);
-                        if (sku && skuMap.has(sku)) throw new Error(`SKU ${sku} already exists`);
-
-                        const variant = await tx.product.create({
-                            data: {
-                                name, description, price: parsedPrice, sku: finalSku,
-                                quantity: parsedQuantity, image: imageUrl, inStock, type: "VARIANT",
-                                parent: { connect: { id: parentId } },
-                                Category: { connect: { id: categoryId } },
-                                Business: { connect: { id: bId } },
-                                createdBy: itemCreatedBy,
-                                attributeValues: {
-                                    create: attributes.map((a: any) => ({
-                                        attributeOptionId: optMap.get(`${attrMap.get(a.name).id}:${a.value}`).id,
-                                    })),
+                    // Update StoreInventory regardless of type (except template maybe, but keep logic simple)
+                    if (type !== "TEMPLATE") {
+                        const inventory = await tx.storeInventory.upsert({
+                            where: {
+                                storeId_productId: {
+                                    storeId: targetStoreId,
+                                    productId: product.id,
                                 },
                             },
+                            update: {
+                                quantity: { increment: parsedQuantity },
+                            },
+                            create: {
+                                storeId: targetStoreId,
+                                productId: product.id,
+                                quantity: parsedQuantity,
+                            },
                         });
-                        processedItems.push(variant);
-                        continue;
+                        processedItems.push({ ...product, quantity: inventory.quantity });
+                    } else {
+                        processedItems.push(product);
                     }
-
-                    // SIMPLE Product handling
-                    const existingP = existingSimples.find(p => p.name === name && p.categoryId === categoryId);
-                    if (existingP) {
-                        const updated = await tx.product.update({
-                            where: { id: existingP.id },
-                            data: { quantity: existingP.quantity + parsedQuantity },
-                        });
-                        processedItems.push(updated);
-                        continue;
-                    }
-
-                    const finalSku = sku && sku.trim() !== "" ? sku : generateSKU(name);
-                    if (sku && skuMap.has(sku)) throw new Error(`SKU ${sku} already exists.`);
-
-                    const simple = await tx.product.create({
-                        data: {
-                            name, description, price: parsedPrice, sku: finalSku,
-                            quantity: parsedQuantity, image: imageUrl, inStock, type: "SIMPLE",
-                            Category: { connect: { id: categoryId } },
-                            Business: { connect: { id: bId } },
-                            createdBy: itemCreatedBy,
-                        },
-                    });
-                    processedItems.push(simple);
                 }
 
                 return processedItems;
             },
-            {
-                timeout: 9500, // Stay within Vercel's 10s limit
-            },
+            { timeout: 9500 },
         );
 
 

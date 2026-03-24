@@ -35,6 +35,10 @@ interface TeamMember {
     createdAt: string;
     invoicesSold: number;
     invitedBy: string;
+    Store?: {
+        name: string;
+        id: string;
+    };
 }
 
 interface User {
@@ -92,16 +96,23 @@ export default function TeamPage() {
     // Search & Filter State
     const [searchQuery, setSearchQuery] = useState("");
     const [filterRole, setFilterRole] = useState<string>("All");
+    const [filterStore, setFilterStore] = useState<string>("All");
+    const [stores, setStores] = useState<any[]>([]);
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
     useEffect(() => {
-        const fetchTeam = async () => {
+        const fetchTeamAndStores = async () => {
             try {
                 const response = await apiClient.get("/users");
                 setMembers(response.data);
+                
+                if (businessDetails?.id) {
+                    const storesResponse = await apiClient.get(`/business/${businessDetails.id}/stores`);
+                    setStores(storesResponse.data || []);
+                }
             } catch (error) {
                 toast.error("Failed to load team members");
             } finally {
@@ -109,8 +120,10 @@ export default function TeamPage() {
             }
         };
 
-        fetchTeam();
-    }, []);
+        if (businessDetails?.id || !loading) {
+            fetchTeamAndStores();
+        }
+    }, [businessDetails?.id]);
 
     const handleInviteUser = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -181,7 +194,14 @@ export default function TeamPage() {
                 ? true
                 : member.role.toLowerCase() === filterRole.toLowerCase();
 
-        return matchesSearch && matchesRole;
+        const matchesStore =
+            filterStore === "All"
+                ? true
+                : filterStore === "All Branches"
+                ? !member.Store?.id // Admin or unassigned
+                : member.Store?.id === filterStore;
+
+        return matchesSearch && matchesRole && matchesStore;
     });
 
     const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
@@ -191,7 +211,7 @@ export default function TeamPage() {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery, filterRole]);
+    }, [searchQuery, filterRole, filterStore]);
 
     const getRoleBadgeColor = (role: string) => {
         switch (role.toLowerCase()) {
@@ -269,28 +289,44 @@ export default function TeamPage() {
                             />
                         </div>
 
-                        <div className="flex items-center bg-gray-100 p-1 rounded-lg overflow-x-auto">
-                            {(["All", "Manager", "Admin", "User"] as const).map(
-                                (role) => (
-                                    <button
-                                        key={role}
-                                        onClick={() => setFilterRole(role)}
-                                        className={`
-                  px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 whitespace-nowrap
-                  ${
-                      filterRole === role
-                          ? "bg-green-500 text-white shadow-sm"
-                          : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
-                  }
-                `}
-                                    >
-                                        {role === "All"
-                                            ? "All Roles"
-                                            : role.charAt(0) +
-                                              role.slice(1).toLowerCase()}
-                                    </button>
-                                ),
-                            )}
+                        <div className="flex flex-col sm:flex-row gap-2">
+                            <div className="flex items-center bg-gray-100 p-1 rounded-lg overflow-x-auto">
+                                {(["All", "Manager", "Admin", "User"] as const).map(
+                                    (role) => (
+                                        <button
+                                            key={role}
+                                            onClick={() => setFilterRole(role)}
+                                            className={`
+                    px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 whitespace-nowrap
+                    ${
+                        filterRole === role
+                            ? "bg-green-500 text-white shadow-sm"
+                            : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
+                    }
+                    `}
+                                        >
+                                            {role === "All"
+                                                ? "All Roles"
+                                                : role.charAt(0) +
+                                                  role.slice(1).toLowerCase()}
+                                        </button>
+                                    ),
+                                )}
+                            </div>
+                            
+                            <div className="relative">
+                                <select
+                                    value={filterStore}
+                                    onChange={(e) => setFilterStore(e.target.value)}
+                                    className="pl-3 pr-8 py-1.5 h-full bg-gray-100 text-gray-500 text-xs font-medium border-0 rounded-lg focus:ring-2 focus:ring-green-500 outline-none appearance-none cursor-pointer hover:bg-gray-200/50 transition-colors"
+                                >
+                                    <option value="All">All Branches</option>
+                                    {stores.map(store => (
+                                        <option key={store.id} value={store.id}>{store.name}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none h-3 w-3" />
+                            </div>
                         </div>
                     </div>
 
@@ -304,6 +340,9 @@ export default function TeamPage() {
                                         </th>
                                         <th className="py-3 px-4 border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                             Role
+                                        </th>
+                                        <th className="py-3 px-4 border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                            Branch
                                         </th>
                                         <th className="py-3 px-4 border-b border-gray-200 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                             Performance
@@ -394,6 +433,11 @@ export default function TeamPage() {
                                                         {member.role}
                                                     </span>
                                                 </td>
+                                                <td className="py-3 px-4 whitespace-nowrap">
+                                                    <span className="text-sm text-gray-600 font-medium">
+                                                        {member.Store?.name || "All Branches"}
+                                                    </span>
+                                                </td>
 
                                                 <td className="py-3 px-4 whitespace-nowrap">
                                                     <div className="flex flex-col">
@@ -477,13 +521,18 @@ export default function TeamPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <span
-                                            className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium border ${getRoleBadgeColor(
-                                                member.role,
-                                            )}`}
-                                        >
-                                            {member.role}
-                                        </span>
+                                        <div className="flex flex-col items-end gap-1">
+                                            <span
+                                                className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium border ${getRoleBadgeColor(
+                                                    member.role,
+                                                )}`}
+                                            >
+                                                {member.role}
+                                            </span>
+                                            <span className="text-[10px] text-gray-500 font-medium">
+                                                {member.Store?.name || "All Branches"}
+                                            </span>
+                                        </div>
                                     </div>
 
                                     <div className="border-t border-gray-200 my-3"></div>

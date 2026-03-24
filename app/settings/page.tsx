@@ -1,5 +1,6 @@
 "use client";
 import BusinessSettingsForm from "@/components/BusinessSettings";
+import BranchManagement from "@/components/BranchManagement";
 import DataManagement from "@/components/DataManagement";
 import IntegrationsSettings from "@/components/IntegrationsSettings";
 import Navbar from "@/components/Navbar";
@@ -88,6 +89,12 @@ const SettingsPage: React.FC = () => {
                                             <KraSettings />
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+
+                            <div className="w-full mb-6">
+                                <div className="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                                    <BranchManagement />
                                 </div>
                             </div>
 

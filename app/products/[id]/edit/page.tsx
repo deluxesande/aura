@@ -472,7 +472,7 @@ export default function EditProductPage() {
                                                 onClick={() =>
                                                     setIsRestockModalOpen(true)
                                                 }
-                                                className="text-xs flex items-center gap-1 text-green-500 hover:text-green-700 font-medium"
+                                                className="text-xs flex items-center gap-1 text-green-500 hover:text-green-600 font-medium"
                                             >
                                                 <Plus className="w-3 h-3 stroke-green-500" />
                                                 Restock

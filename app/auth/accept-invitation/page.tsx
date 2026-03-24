@@ -36,7 +36,7 @@ function AcceptInvitationContent() {
             try {
                 // First, validate that the invitation exists and is valid
                 const response = await apiClient.get(
-                    `/auth/invite/get?token=${token}`,
+                    `/auth/invite/validate?token=${token}`,
                 );
 
                 setInvitation(response.data.invitation);

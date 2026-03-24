@@ -9,36 +9,59 @@ const novu = new Novu({
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const { invoiceId = null, productId, quantity, price } = req.body;
-    const userId = req.body.createdBy; // Extracted from middleware
+    const userId = req.body.createdBy; // Clerk ID
+
+    const activeStoreHeader = req.headers["x-store-id"] as string;
 
     try {
-        // 1. Check if the productId exists
-        const product = await prisma.product.findUnique({
-            where: { id: productId },
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { role: true, storeId: true }
         });
 
-        if (!product) {
-            return res.status(400).json({ error: "Invalid productId" });
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        const targetStoreId = user.role === "admin" ? activeStoreHeader : (user.storeId as string);
+
+        if (!targetStoreId) {
+            return res.status(400).json({ error: "No active store selected." });
         }
 
-        // 2. Check if the product has enough quantity
-        if (product.quantity < quantity) {
+        // 1. Check if the inventory exists for this store
+        const inventory = await prisma.storeInventory.findUnique({
+            where: {
+                storeId_productId: {
+                    storeId: targetStoreId,
+                    productId: productId,
+                },
+            },
+            include: { Product: true }
+        });
+
+        if (!inventory) {
+            return res.status(400).json({ error: "Product not found in this store's inventory" });
+        }
+
+        // 2. Check if the store has enough quantity
+        if (inventory.quantity < quantity) {
             return res
                 .status(400)
-                .json({ error: "Insufficient product quantity" });
+                .json({ error: "Insufficient product quantity in this store" });
         }
 
-        // 3. Reduce the product quantity and update inStock
-        // We capture the 'updatedProduct' to check its new quantity immediately
-        const updatedProduct = await prisma.product.update({
-            where: { id: productId },
-            data: {
-                quantity: {
-                    decrement: quantity,
+        // 3. Update StoreInventory and global Product inStock status
+        const [updatedInventory, updatedProduct] = await prisma.$transaction([
+            prisma.storeInventory.update({
+                where: { id: inventory.id },
+                data: { quantity: { decrement: quantity } },
+            }),
+            prisma.product.update({
+                where: { id: productId },
+                data: {
+                    inStock: inventory.quantity - quantity === 0 ? false : undefined,
                 },
-                inStock: product.quantity - quantity === 0 ? false : undefined,
-            },
-        });
+            })
+        ]);
 
         // 4. Create the invoice item
         const invoiceItem = await prisma.invoiceItem.create({
@@ -51,12 +74,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             },
         });
 
-        // 5. Check if updated product quantity is at or below threshold (5)
+        // 5. Check if updated inventory quantity is at or below threshold (5)
         try {
-            if (updatedProduct.quantity <= 5) {
+            if (updatedInventory.quantity <= 5) {
                 // Get current user to identify the business
                 const currentUser = await prisma.user.findUnique({
-                    where: { clerkId: req.body.createdBy },
+                    where: { clerkId: userId },
                 });
 
                 if (currentUser?.businessId) {
@@ -78,7 +101,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                                 workflowId: "low-stock-alert",
                                 payload: {
                                     name: updatedProduct.name,
-                                    quantity: String(updatedProduct.quantity),
+                                    quantity: String(updatedInventory.quantity),
                                 },
                             });
                         })

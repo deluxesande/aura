@@ -24,14 +24,52 @@ export const getProducts = async (
                 .json({ error: "User or business not found" });
         }
 
+        const activeStoreHeader = req.headers["x-store-id"] as string;
+        
+        // Fetch User role and fixed storeId
+        const userWithRole = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { role: true, storeId: true }
+        });
+
+        const targetStoreId = userWithRole?.role === "admin" ? activeStoreHeader : (userWithRole?.storeId as string);
+
+        if (!targetStoreId) {
+            return res.status(400).json({ error: "No active store selected." });
+        }
+
         const products = await prisma.product.findMany({
             where: {
                 businessId: currentUser.businessId,
+                OR: [
+                    {
+                        storeInventories: {
+                            some: { storeId: targetStoreId }
+                        }
+                    },
+                    {
+                        variants: {
+                            some: {
+                                storeInventories: {
+                                    some: { storeId: targetStoreId }
+                                }
+                            }
+                        }
+                    }
+                ]
             },
             include: {
                 Category: true,
+                storeInventories: {
+                    where: { storeId: targetStoreId },
+                    select: { quantity: true }
+                },
                 variants: {
                     include: {
+                        storeInventories: {
+                            where: { storeId: targetStoreId },
+                            select: { quantity: true }
+                        },
                         attributeValues: {
                             include: {
                                 attributeOption: {
@@ -56,6 +94,16 @@ export const getProducts = async (
             orderBy: {
                 createdAt: "desc",
             },
+        });
+
+        // Map quantity from storeInventories to the flat quantity field for frontend compatibility
+        const productsWithQuantity = products.map(p => {
+            const quantity = p.storeInventories[0]?.quantity || 0;
+            const variants = p.variants.map(v => ({
+                ...v,
+                quantity: v.storeInventories[0]?.quantity || 0
+            }));
+            return { ...p, quantity, variants };
         });
 
         const businessUsers = await prisma.user.findMany({
@@ -111,7 +159,7 @@ export const getProducts = async (
             return productWithCreator;
         };
 
-        const productsWithCreator = products.map(attachCreator);
+        const productsWithCreator = productsWithQuantity.map(attachCreator);
 
         if (productsWithCreator.length === 0) {
             return res.status(200).json([]);

@@ -47,6 +47,9 @@ export default async function handler(
                 Business: {
                     select: { name: true },
                 },
+                Store: {
+                    select: { name: true },
+                },
             },
             orderBy: { createdAt: "desc" },
         });

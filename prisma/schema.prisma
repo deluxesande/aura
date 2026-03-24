@@ -72,6 +72,8 @@ model Product {
   parent          Product?                @relation("ProductVariants", fields: [parentId], references: [id], onDelete: Cascade)
   variants        Product[]               @relation("ProductVariants")
   attributeValues ProductAttributeValue[]
+  storeInventories StoreInventory[]
+  stockTransfers   StockTransfer[]
 }
 
 model Attribute {
@@ -134,6 +136,8 @@ model Invoice {
   failedCallbacks     FailedCallback[]
   businessId          String?              @db.Uuid
   Business            Business?            @relation(fields: [businessId], references: [id])
+  storeId             String?              @db.Uuid
+  Store               Store?               @relation(fields: [storeId], references: [id])
 }
 
 model InvoiceItem {
@@ -158,6 +162,8 @@ model Customer {
   updatedAt   DateTime  @updatedAt
   businessId  String    @db.Uuid
   Business    Business  @relation(fields: [businessId], references: [id])
+  storeId     String?   @db.Uuid
+  Store       Store?    @relation(fields: [storeId], references: [id])
   createdById String    @db.Uuid
   CreatedBy   User      @relation("CustomerCreator", fields: [createdById], references: [id])
 
@@ -201,11 +207,14 @@ model User {
   status           String         @default("active")
   businessId       String?        @db.Uuid
   Business         Business?      @relation(fields: [businessId], references: [id])
+  storeId          String?        @db.Uuid
+  Store            Store?         @relation(fields: [storeId], references: [id])
   createdCustomers Customer[]     @relation("CustomerCreator")
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   lastLogin        DateTime?
   mpesaPayments    MpesaPayment[]
+  stockTransfers   StockTransfer[]
 }
 
 model Business {
@@ -236,6 +245,59 @@ model Business {
   Product       Product[]
   Category      Category[]
   Attribute     Attribute[]
+  stores        Store[]
+}
+
+model Store {
+  id          String   @id @default(uuid()) @map("_id") @db.Uuid
+  name        String
+  address     String?
+  isActive    Boolean  @default(true)
+  businessId  String   @db.Uuid
+  Business    Business @relation(fields: [businessId], references: [id])
+  
+  users       User[]           
+  inventory   StoreInventory[] 
+  invoices    Invoice[]        
+  customers   Customer[]
+  invitations UserInvitation[]
+  
+  transfersOut StockTransfer[] @relation("OriginStore")
+  transfersIn  StockTransfer[] @relation("DestinationStore")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([name, businessId])
+}
+
+model StoreInventory {
+  id        String  @id @default(uuid()) @map("_id") @db.Uuid
+  storeId   String  @db.Uuid
+  productId String  @db.Uuid
+  quantity  Int     @default(0)
+  
+  Store     Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  Product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, productId])
+}
+
+model StockTransfer {
+  id             String   @id @default(uuid()) @map("_id") @db.Uuid
+  productId      String   @db.Uuid
+  quantity       Int
+  originStoreId  String   @db.Uuid
+  destStoreId    String   @db.Uuid
+  createdById    String   @db.Uuid 
+  status         String   @default("COMPLETED")
+  
+  Product        Product  @relation(fields: [productId], references: [id])
+  OriginStore    Store    @relation("OriginStore", fields: [originStoreId], references: [id])
+  DestinationStore Store  @relation("DestinationStore", fields: [destStoreId], references: [id])
+  CreatedBy      User     @relation(fields: [createdById], references: [id])
+
+  createdAt      DateTime @default(now())
 }
 
 model Response {
@@ -290,6 +352,8 @@ model UserInvitation {
   role              String   @default("user")
   businessId        String   @db.Uuid
   Business          Business @relation(fields: [businessId], references: [id])
+  storeId           String?  @db.Uuid
+  Store             Store?   @relation(fields: [storeId], references: [id])
   invitedBy         String   @db.Uuid
   status            String   @default("pending")
   token             String   @unique

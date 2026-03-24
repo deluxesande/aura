@@ -8,5 +8,11 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const activeStoreId = localStorage.getItem("activeStoreId");
+    if (activeStoreId) {
+      config.headers["x-store-id"] = activeStoreId;
+    }
+  }
   return config;
 });

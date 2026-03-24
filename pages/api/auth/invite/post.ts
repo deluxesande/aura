@@ -9,6 +9,7 @@ const inviteSchema = z.object({
     email: z.string().email("Invalid email address"),
     role: z.enum(["manager", "user"]).default("user"),
     businessId: z.string().uuid("Invalid business ID").optional(),
+    storeId: z.string().uuid("Invalid store ID").optional().nullable(),
 });
 
 export default async function handler(
@@ -35,7 +36,7 @@ export default async function handler(
         }
 
         const validatedData = inviteSchema.parse(req.body);
-        const { email, role } = validatedData;
+        const { email, role, storeId } = validatedData;
         const businessId = validatedData.businessId || currentUser.businessId;
 
         if (!businessId) {
@@ -52,6 +53,11 @@ export default async function handler(
             return res
                 .status(403)
                 .json({ error: "Forbidden: Insufficient permissions" });
+        }
+
+        // Must specify a store if they are not an admin
+        if (!storeId && role !== "admin") {
+             return res.status(400).json({ error: "A branch must be selected for this role." });
         }
 
         const business = await prisma.business.findUnique({
@@ -149,6 +155,7 @@ export default async function handler(
                 email,
                 role,
                 businessId,
+                storeId: storeId || null,
                 invitedBy: currentUser.id,
                 token,
                 expiresAt,

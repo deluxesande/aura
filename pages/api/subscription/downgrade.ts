@@ -8,6 +8,7 @@ const prisma = new PrismaClient();
 const downgradeSchema = z.object({
     planId: z.string().min(1, "Plan ID is required"),
     activeStaffIds: z.array(z.string()).optional(),
+    activeStoreIds: z.array(z.string()).optional(),
 });
 
 export default async function handler(
@@ -41,7 +42,7 @@ export default async function handler(
                 .json({ error: "No business found for user." });
         }
 
-        const { planId, activeStaffIds } = downgradeSchema.parse(req.body);
+        const { planId, activeStaffIds, activeStoreIds } = downgradeSchema.parse(req.body);
         const businessId = currentUser.businessId;
 
         const planTierMap: Record<string, PlanTier> = {
@@ -94,6 +95,24 @@ export default async function handler(
                         id: { notIn: [...activeStaffIds, currentUser.id] },
                     },
                     data: { status: "inactive" },
+                });
+            }
+
+            if (activeStoreIds && Array.isArray(activeStoreIds)) {
+                await tx.store.updateMany({
+                    where: {
+                        businessId: businessId,
+                        id: { in: activeStoreIds },
+                    },
+                    data: { isActive: true },
+                });
+
+                await tx.store.updateMany({
+                    where: {
+                        businessId: businessId,
+                        id: { notIn: activeStoreIds },
+                    },
+                    data: { isActive: false },
                 });
             }
         });
