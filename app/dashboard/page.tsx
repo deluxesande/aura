@@ -1,5 +1,6 @@
 "use client";
 
+import { FinancialReportPDF } from "@/components/FinancialReportPDF";
 import InfoCard from "@/components/InfoCard";
 import InvoicesTable from "@/components/InvoicesTable";
 import LineChart from "@/components/LineChart";
@@ -13,15 +14,17 @@ import {
     startFetching,
 } from "@/store/slices/analyticsSlice";
 import { setInvoices } from "@/store/slices/invoiceSlice";
+import { pdf } from "@react-pdf/renderer";
 import axios from "axios";
 import {
     AlertCircle,
     BadgeDollarSign,
     CheckCircle2,
+    Download,
     FileText,
     HandCoins,
-    ReceiptText,
     Smartphone,
+    X,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -54,6 +57,10 @@ export default function Page() {
     const [invoicesLoading, setInvoicesLoading] = useState<boolean>(
         invoices.length === 0,
     );
+
+    // --- NEW: Report Modal State ---
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [reportPeriod, setReportPeriod] = useState("30");
 
     const userRole = user?.role || "user";
     const isAdminOrManager = userRole === "admin" || userRole === "manager";
@@ -114,12 +121,60 @@ export default function Page() {
         fetchTopProducts();
     }, [topProductsTimePeriod]);
 
-    const handleWithdrawal = () => {
-        toast.info("Withdrawal Initiated (Feature Coming Soon)");
+    const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+
+    const handleDownloadReport = async () => {
+        const periodText =
+            reportPeriod === "all" ? "All Time" : `Last ${reportPeriod} Days`;
+
+        setIsGeneratingReport(true);
+        toast.loading(`Gathering data for ${periodText}...`, {
+            id: "report-toast",
+        });
+
+        try {
+            const response = await axios.get("/api/analytics/report", {
+                params: { timePeriod: reportPeriod },
+            });
+
+            const blob = await pdf(
+                <FinancialReportPDF
+                    data={response.data}
+                    periodLabel={periodText}
+                />,
+            ).toBlob();
+
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            const safeLabel = periodText.replace(/[^a-zA-Z0-9]/g, "_");
+            link.download = `Salesense_Report_${safeLabel}.pdf`;
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            toast.success("Report downloaded successfully!", {
+                id: "report-toast",
+            });
+            setIsReportModalOpen(false);
+        } catch (error) {
+            console.error("Failed to generate report", error);
+            toast.error("Failed to generate report. Please try again.", {
+                id: "report-toast",
+            });
+        } finally {
+            setIsGeneratingReport(false);
+        }
     };
 
     const handleTimeRangeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         dispatch(setTimeRange(e.target.value));
+    };
+
+    const handleOpenReportModal = () => {
+        setIsReportModalOpen(true);
     };
 
     const stats = analyticsData?.stats;
@@ -141,14 +196,8 @@ export default function Page() {
         {
             title: "Paid Invoices",
             number: stats?.paidInvoices || 0,
-            icon: ReceiptText,
-            percentageChange: percentageChanges?.paidInvoices || 0,
-        },
-        {
-            title: "Profit",
-            number: `Ksh ${(stats?.profit || 0).toLocaleString()}`,
             icon: HandCoins,
-            percentageChange: percentageChanges?.profit || 0,
+            percentageChange: percentageChanges?.paidInvoices || 0,
         },
     ];
 
@@ -175,10 +224,22 @@ export default function Page() {
                             number={card.number}
                             icon={card.icon}
                             percentageChange={card.percentageChange}
-                            // You can pass a loading prop to InfoCard if you want skeleton loaders
-                            // loading={analyticsLoading}
                         />
                     ))}
+
+                    {/* Generate Reports Action Card */}
+                    <div
+                        onClick={handleOpenReportModal}
+                        className="bg-white rounded-lg p-6 flex flex-col justify-center items-center shadow-sm border border-transparent hover:shadow-md hover:border-green-200 transition-all duration-200 cursor-pointer group h-full"
+                    >
+                        <div className="p-3 bg-green-50 rounded-full mb-3 group-hover:scale-110 transition-transform">
+                            <Download className="stroke-green-500 w-5 h-5" />
+                        </div>
+                        <h3 className="font-bold text-gray-700">
+                            Generate Reports
+                        </h3>
+                        <p className="text-xs text-gray-400 mt-1">Export PDF</p>
+                    </div>
                 </div>
 
                 {isAdminOrManager && (
@@ -295,6 +356,73 @@ export default function Page() {
                 loading={invoicesLoading}
                 itemsPerPage={5}
             />
+
+            {/* Report Generation Modal */}
+            {isReportModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                Export Data Report
+                            </h2>
+                            <button
+                                onClick={() => setIsReportModalOpen(false)}
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">
+                                    Select Time Period
+                                </label>
+                                <select
+                                    value={reportPeriod}
+                                    onChange={(e) =>
+                                        setReportPeriod(e.target.value)
+                                    }
+                                    className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-400 focus:ring-4 focus:ring-green-500/10 transition-all bg-gray-50 hover:bg-gray-100/50 cursor-pointer"
+                                >
+                                    <option value="7">Last 7 Days</option>
+                                    <option value="30">Last 30 Days</option>
+                                    <option value="90">Last 90 Days</option>
+                                    <option value="180">Last 6 Months</option>
+                                    <option value="365">Last 1 Year</option>
+                                    <option value="all">
+                                        All Time (Complete History)
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex gap-3">
+                                <p className="text-xs text-blue-700 leading-relaxed">
+                                    This report will include full transaction
+                                    details, top-selling products, and revenue
+                                    breakdowns for the selected period. It will
+                                    be downloaded as a PDF file.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+                            <button
+                                onClick={() => setIsReportModalOpen(false)}
+                                className="px-5 py-2.5 text-sm font-bold text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDownloadReport}
+                                className="px-5 py-2.5 text-sm font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 flex items-center gap-2 shadow-lg shadow-green-500/20 transition-all active:scale-95"
+                            >
+                                Download
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </Navbar>
     );
 }
