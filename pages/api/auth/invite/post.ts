@@ -40,7 +40,7 @@ export default async function handler(
             await tx.$queryRaw`
                 SELECT 1
                 FROM "Business"
-                WHERE "businessId" = ${requestor.businessId}::uuid
+                WHERE "_id" = ${requestor.businessId}::uuid
                 FOR UPDATE
             `;
 
