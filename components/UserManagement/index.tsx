@@ -7,24 +7,24 @@ import {
     setInvitationsWithImages,
     updateInvitation,
 } from "@/store/slices/invitationsDataSlice";
-import { FloatingPortal } from "@floating-ui/react";
 import { apiClient } from "@/utils/apiClient";
+import { FloatingPortal } from "@floating-ui/react";
 import { AxiosError } from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-    Trash,
-    Users,
     AlertCircle,
-    UserX,
-    Loader2,
-    PlusCircle,
-    X,
     ChevronLeft,
     ChevronRight,
+    Loader2,
+    PlusCircle,
+    Trash,
+    Users,
+    UserX,
+    X,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import useSWR from "swr";
@@ -384,12 +384,14 @@ const UserManagement: React.FC = () => {
                             onClick={() => setShowInviteModal(true)}
                             className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700 transition-colors whitespace-nowrap"
                         >
-                            <PlusCircle size={16} className="stroke-white mr-2" />
+                            <PlusCircle
+                                size={16}
+                                className="stroke-white mr-2"
+                            />
                             Invite User
                         </button>
                     ) : (
                         <div className="flex items-center gap-2 px-3 py-2 text-amber-700 bg-amber-50 border border-amber-200 rounded text-sm font-medium whitespace-nowrap">
-                            <AlertCircle size={16} />
                             Team Limit Reached
                         </div>
                     )}
@@ -456,7 +458,9 @@ const UserManagement: React.FC = () => {
                                         className="px-6 py-12 text-center"
                                     >
                                         <div className="flex justify-center mb-3">
-                                            <UserX className="h-8 w-8 text-gray-400" />
+                                            <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mb-5">
+                                                <UserX className="h-8 w-8 stroke-green-500" />
+                                            </div>
                                         </div>
                                         <p className="text-sm font-medium text-gray-900">
                                             No members found
