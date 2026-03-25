@@ -1,34 +1,19 @@
 "use client";
 
 import { AppState } from "@/store";
-import { setInvitations } from "@/store/slices/invitationSlice";
 import {
     addInvitation,
-    removeInvitation,
     setInvitationsWithImages,
-    updateInvitation,
 } from "@/store/slices/invitationsDataSlice";
-import { apiClient } from "@/utils/apiClient";
+import { setInvitations } from "@/store/slices/invitationSlice";
 import { FloatingPortal } from "@floating-ui/react";
-import { AxiosError } from "axios";
+import { apiClient } from "@/utils/apiClient";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-    AlertCircle,
-    ChevronLeft,
-    ChevronRight,
-    Loader2,
-    PlusCircle,
-    Trash,
-    Users,
-    UserX,
-    X,
-} from "lucide-react";
+import { AlertCircle, Loader2, Plus, X } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
-import useSWR from "swr";
 
 interface User {
     id: string;
@@ -44,35 +29,38 @@ interface User {
     Business: {
         name: string;
     };
-    Store?: {
-        name: string;
-    };
     inviter: {
         firstName: string;
         lastName: string;
     };
-    clerkUserId: string | null;
 }
 
 interface Invitation extends User {
     imageUrl?: string;
 }
 
-const fetcher = (url: string) =>
-    apiClient.get(url.replace("/api", "")).then((res) => res.data);
+interface StoreUser {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    businessId: string;
+    status: string;
+    Business: {};
+}
 
-const CustomUserButton: React.FC = () => {
+interface Store {
+    id: string;
+    name: string;
+    isActive?: boolean;
+}
+
+const CustomUserButton = () => {
     const [showInviteModal, setShowInviteModal] = useState(false);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [userToDelete, setUserToDelete] = useState<User | null>(null);
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteRole, setInviteRole] = useState("user");
     const [inviteStoreId, setInviteStoreId] = useState("");
-    const [isSending, setIsSending] = useState(false);
-
-    const [currentPage, setCurrentPage] = useState(1);
-    const acceptedItemsPerPage = 5;
-
+    const [storesData, setStoresData] = useState<Store[]>([]);
     const dispatch = useDispatch();
 
     const invitations = useSelector(
@@ -83,150 +71,138 @@ const CustomUserButton: React.FC = () => {
         (state: AppState) => state.invitationsData.invitationsWithImages,
     ) as Invitation[];
 
+    const user = useSelector(
+        (state: AppState) => state.auth.user,
+    ) as StoreUser | null;
+
     const businessDetails = useSelector(
         (state: AppState) => state.businessData?.businessDetails,
     );
 
-    const {
-        data: invitationsData,
-        error,
-        isLoading,
-    } = useSWR("/api/auth/invite/get", fetcher, {
-        revalidateOnFocus: true,
-        revalidateOnReconnect: true,
-        dedupingInterval: 5000,
-        refreshInterval: 60000,
-    });
-
-    const { data: storesData } = useSWR(
-        businessDetails?.id
-            ? `/api/business/${businessDetails.id}/stores`
-            : null,
-        fetcher,
-    );
-
-    useEffect(() => {
-        if (invitationsData?.invitations) {
-            const rawInvitations = invitationsData.invitations;
-
-            dispatch(setInvitations(rawInvitations));
-
-            const imagePromises = rawInvitations.map(async (user: User) => {
-                try {
-                    const imageResponse = await apiClient.get(
-                        "/auth/user/image",
-                        { params: { userId: user.id } },
-                    );
-                    return {
-                        ...user,
-                        imageUrl:
-                            imageResponse.data.imageUrl || "/images/user.png",
-                    } as Invitation;
-                } catch {
-                    return {
-                        ...user,
-                        imageUrl: "/images/user.png",
-                    } as Invitation;
-                }
-            });
-
-            const processImages = async () => {
-                const results = await Promise.allSettled(imagePromises);
-                const usersWithImages = results.map((result, index) => {
-                    if (result.status === "fulfilled") return result.value;
-                    return {
-                        ...rawInvitations[index],
-                        imageUrl: "/images/user.png",
-                    } as Invitation;
-                });
-                dispatch(setInvitationsWithImages(usersWithImages));
-            };
-
-            processImages();
-        }
-    }, [invitationsData, dispatch]);
-
-    useEffect(() => {
-        if (error) {
-            console.error("Failed to fetch invitations:", error);
-            toast.error(
-                "We couldn't load the invitations. Try refreshing the page.",
-            );
-        }
-    }, [error]);
+    const [isLoading, setIsLoading] = useState(userInvitations.length === 0);
+    const [isSending, setIsSending] = useState(false);
+    const hasFetched = useRef(false);
 
     const plan = businessDetails?.subscription?.plan || "STARTER";
     const staffCount = businessDetails?.usage?.staffCount || 0;
+
     const teamLimit =
         plan === "STARTER" ? 1 : plan === "STANDARD" ? 5 : Infinity;
-    const canInvite = staffCount < teamLimit;
+    const canInviteMore = staffCount < teamLimit;
 
-    const {
-        pendingUsers,
-        paginatedAccepted,
-        totalAcceptedPages,
-        totalAcceptedCount,
-    } = useMemo(() => {
-        const pending = userInvitations.filter((u) => u.status === "pending");
+    useEffect(() => {
+        if (
+            user?.role?.toLowerCase() !== "admin" &&
+            user?.role?.toLowerCase() !== "manager"
+        ) {
+            setIsLoading(false);
+            return;
+        }
 
-        const accepted = userInvitations
-            .filter((u) => u.status !== "pending")
-            .sort(
-                (a, b) =>
-                    new Date(b.createdAt).getTime() -
-                    new Date(a.createdAt).getTime(),
-            );
+        if (hasFetched.current) return;
 
-        const totalPages =
-            Math.ceil(accepted.length / acceptedItemsPerPage) || 1;
-        const safePage = Math.min(currentPage, totalPages);
+        const fetchUsers = async () => {
+            if (userInvitations.length === 0) setIsLoading(true);
+            try {
+                const response = await apiClient.get("/auth/invite/get");
+                if (response.data.invitations) {
+                    const rawInvitations = response.data.invitations;
+                    dispatch(setInvitations(rawInvitations));
 
-        const paginated = accepted.slice(
-            (safePage - 1) * acceptedItemsPerPage,
-            safePage * acceptedItemsPerPage,
-        );
+                    const imagePromises = rawInvitations.map(
+                        async (inv: User) => {
+                            try {
+                                const imageResponse = await apiClient.get(
+                                    "/auth/user/image",
+                                    {
+                                        params: { userId: inv.id },
+                                    },
+                                );
+                                return {
+                                    ...inv,
+                                    imageUrl:
+                                        imageResponse.data.imageUrl ||
+                                        undefined,
+                                } as Invitation;
+                            } catch {
+                                return {
+                                    ...inv,
+                                    imageUrl: undefined,
+                                } as Invitation;
+                            }
+                        },
+                    );
 
-        return {
-            pendingUsers: pending,
-            paginatedAccepted: paginated,
-            totalAcceptedPages: totalPages,
-            totalAcceptedCount: accepted.length,
+                    const results = await Promise.allSettled(imagePromises);
+                    const usersWithImages = results.map((result, index) => {
+                        if (result.status === "fulfilled") return result.value;
+                        return {
+                            ...rawInvitations[index],
+                            imageUrl: undefined,
+                        } as Invitation;
+                    });
+                    dispatch(setInvitationsWithImages(usersWithImages));
+                }
+            } catch (error) {
+                console.error("Fetch team error", error);
+            } finally {
+                setIsLoading(false);
+                hasFetched.current = true;
+            }
         };
-    }, [userInvitations, currentPage]);
 
-    const displayUsers = [...pendingUsers, ...paginatedAccepted];
+        fetchUsers();
+    }, [dispatch, user?.role, userInvitations.length]);
+
+    useEffect(() => {
+        try {
+            const cached = JSON.parse(
+                localStorage.getItem("storesCache") || "[]",
+            );
+            if (Array.isArray(cached)) {
+                setStoresData(cached);
+                if (!inviteStoreId && cached.length > 0) {
+                    setInviteStoreId(cached[0].id);
+                }
+            }
+        } catch {
+            setStoresData([]);
+        }
+    }, [showInviteModal, inviteStoreId]);
+
+    if (plan === "STARTER") {
+        return <div className="mr-8"></div>;
+    }
 
     const handleInviteUser = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (businessDetails?.subscription?.status !== "ACTIVE") {
             toast.error(
-                "Your subscription isn't active, so we can't invite new users right now.",
+                "Cannot invite users: Your subscription plan is not active.",
             );
             return;
         }
 
-        if (!canInvite) {
+        if (!canInviteMore) {
             toast.error(
-                `You've reached your team limit. Your ${plan} plan allows only ${teamLimit} member(s).`,
+                `Team limit reached. Your ${plan} plan allows only ${teamLimit} member(s).`,
             );
             return;
         }
 
         if (!inviteEmail) {
-            toast.error(
-                "Please provide an email address to send the invitation.",
-            );
+            toast.error("Please enter an email address");
+            return;
+        }
+
+        if (!inviteStoreId) {
+            toast.error("Please select a branch");
             return;
         }
 
         if (inviteRole === "admin") {
-            toast.error("Admin invitations aren't available right now.");
-            return;
-        }
-
-        if (inviteRole !== "admin" && !inviteStoreId) {
-            toast.error("Please select a branch to assign this user to.");
+            toast.error("Cannot invite users with Admin role.");
             return;
         }
 
@@ -236,368 +212,142 @@ const CustomUserButton: React.FC = () => {
             const response = await apiClient.post("/auth/invite/post", {
                 email: inviteEmail,
                 role: inviteRole,
-                storeId: inviteStoreId || undefined,
+                storeId: inviteStoreId,
             });
-
             const newInvitation = response.data.invitation;
             dispatch(setInvitations([...invitations, newInvitation]));
             dispatch(addInvitation({ ...newInvitation, imageUrl: undefined }));
         };
 
         toast.promise(sendInvitation(), {
-            loading: "Sending the invitation...",
+            loading: "Sending Invitation...",
             success: () => {
                 setInviteEmail("");
                 setInviteRole("user");
-                setInviteStoreId("");
+                setInviteStoreId(storesData[0]?.id || "");
                 setShowInviteModal(false);
                 setIsSending(false);
-                return "Invitation sent! Your team member will receive an email shortly.";
+                return "Invitation sent successfully.";
             },
-            error: (err: any) => {
+            error: (err) => {
                 setIsSending(false);
                 return (
-                    err?.response?.data?.error ||
-                    "We couldn't send the invitation. Please try again."
+                    err.response?.data?.error || "Sending Invitation Failed."
                 );
             },
         });
     };
 
-    const handleRoleChange = (userId: string, newRole: string) => {
-        const updateRole = async () => {
-            const response = await apiClient.put("/auth/invite/update", {
-                userId,
-                role: newRole,
-            });
-
-            if (response.status === 200) {
-                dispatch(
-                    setInvitations(
-                        invitations.map((user) =>
-                            user.id === userId
-                                ? { ...user, role: newRole }
-                                : user,
-                        ),
-                    ),
-                );
-                dispatch(
-                    updateInvitation({
-                        id: userId,
-                        updates: { role: newRole },
-                    }),
-                );
-            }
-        };
-
-        toast.promise(updateRole(), {
-            loading: "Updating the user's role...",
-            success: "Role updated successfully!",
-            error: (err: AxiosError) =>
-                (err.response?.data as { error?: string })?.error ||
-                "We couldn't update the role.",
-        });
-    };
-
-    const handleDeleteUser = (user: User) => {
-        setUserToDelete(user);
-        setShowDeleteModal(true);
-    };
-
-    const confirmDeleteUser = () => {
-        if (!userToDelete) return;
-
-        const deleteProcess = async () => {
-            let response;
-            if (
-                userToDelete.status === "accepted" &&
-                userToDelete.clerkUserId
-            ) {
-                response = await apiClient.delete(
-                    `/auth/delete/${userToDelete.clerkUserId}`,
-                );
-            } else {
-                response = await apiClient.delete("/auth/invite/delete", {
-                    data: { id: userToDelete.id },
-                });
-            }
-
-            if (response.status === 200) {
-                dispatch(
-                    setInvitations(
-                        invitations.filter((inv) => inv.id !== userToDelete.id),
-                    ),
-                );
-                dispatch(removeInvitation(userToDelete.id));
-            }
-        };
-
-        toast.promise(deleteProcess(), {
-            loading: "Removing the user...",
-            success: "User removed successfully.",
-            error: (err: AxiosError) =>
-                (err.response?.data as { error?: string })?.error ||
-                "We couldn't remove the user.",
-        });
-
-        setShowDeleteModal(false);
-        setUserToDelete(null);
-    };
-
-    const getRoleColor = (role: string) => {
-        switch (role) {
-            case "admin":
-                return "bg-purple-100 text-purple-800";
-            case "manager":
-                return "bg-blue-100 text-blue-800";
-            default:
-                return "bg-gray-100 text-gray-800";
+    const handleOpenModal = () => {
+        if (!canInviteMore) {
+            toast.warning(
+                `Team full: Your ${plan} plan is limited to ${teamLimit} member(s).`,
+            );
+            return;
         }
+        setShowInviteModal(true);
     };
 
-    const getStatusColor = (status: string) => {
-        return status === "accepted"
-            ? "bg-green-100 text-green-800"
-            : "bg-amber-100 text-amber-800";
-    };
+    const isAdminOrManager =
+        user?.role?.toLowerCase() === "admin" ||
+        user?.role?.toLowerCase() === "manager";
+
+    if (!isAdminOrManager) return null;
+
+    const acceptedUsers = userInvitations
+        .filter((invitation) => invitation.status === "accepted")
+        .slice(0, 3);
+
+    const defaultImage = "https://placehold.co/100x100/f1f5f9/94a3b8?text=U";
 
     return (
-        <section className="relative w-full">
-            <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-                <div>
-                    <h2 className="text-xl font-semibold text-gray-900">
-                        User Management
-                    </h2>
-                    <p className="mt-1 text-sm text-gray-500">
-                        Manage user roles, permissions, and account access for
-                        your team.
-                    </p>
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                    <Link
-                        href="/settings/team"
-                        className="flex items-center justify-center w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors whitespace-nowrap"
-                    >
-                        <Users className="w-4 h-4 mr-2" />
-                        View Active Members
-                    </Link>
-
-                    {canInvite ? (
-                        <button
-                            onClick={() => setShowInviteModal(true)}
-                            className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700 transition-colors whitespace-nowrap"
-                        >
-                            <PlusCircle
-                                size={16}
-                                className="stroke-white mr-2"
+        <>
+            {/* --- TRIGGER AREA (Avatars + Add Button) --- */}
+            <div className="flex items-center space-x-3 pr-6">
+                {isLoading ? (
+                    <div className="flex items-center -space-x-2">
+                        {[1, 2, 3].map((i) => (
+                            <div
+                                key={i}
+                                className="h-9 w-9 rounded-full border-2 border-white bg-slate-100 animate-pulse"
                             />
-                            Invite User
-                        </button>
-                    ) : (
-                        <div className="flex items-center gap-2 px-3 py-2 text-amber-700 bg-amber-50 border border-amber-200 rounded text-sm font-medium whitespace-nowrap">
-                            Team Limit Reached
-                        </div>
-                    )}
-                </div>
-            </header>
-
-            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden relative min-h-[200px]">
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    User
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Status
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Branch
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Role
-                                </th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Actions
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {isLoading && (
-                                <tr>
-                                    <td
-                                        colSpan={5}
-                                        className="px-6 py-8 text-center text-sm text-gray-500"
-                                    >
-                                        <div className="flex flex-col items-center justify-center my-10">
-                                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )}
-
-                            {!isLoading && displayUsers.length === 0 && (
-                                <tr>
-                                    <td
-                                        colSpan={5}
-                                        className="px-6 py-12 text-center"
-                                    >
-                                        <div className="flex justify-center mb-3">
-                                            <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mb-5">
-                                                <UserX className="h-8 w-8 stroke-green-500" />
-                                            </div>
-                                        </div>
-                                        <p className="text-sm font-medium text-gray-900">
-                                            No members found
-                                        </p>
-                                        <p className="text-sm text-gray-500 mt-1">
-                                            Try inviting team members to get
-                                            started.
-                                        </p>
-                                    </td>
-                                </tr>
-                            )}
-
-                            {!isLoading &&
-                                displayUsers.map((user) => (
-                                    <tr
-                                        key={user.id}
-                                        className={`hover:bg-gray-50 transition-colors ${user.status === "pending" ? "bg-amber-50/20" : ""}`}
-                                    >
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center">
-                                                <div className="flex-shrink-0 h-10 w-10 relative rounded-full overflow-hidden bg-gray-100 border border-gray-200">
-                                                    {user.imageUrl ? (
-                                                        <Image
-                                                            src={user.imageUrl}
-                                                            alt={user.email}
-                                                            className="object-cover"
-                                                            fill
-                                                            sizes="40px"
-                                                        />
-                                                    ) : (
-                                                        <span className="flex h-full w-full items-center justify-center text-sm font-medium text-gray-500">
-                                                            {user.email
-                                                                .substring(0, 2)
-                                                                .toUpperCase()}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="ml-4">
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        {user.email}
-                                                    </div>
-                                                    <div className="text-xs text-gray-500">
-                                                        Invited by{" "}
-                                                        {user.inviter
-                                                            ?.firstName ||
-                                                            "Admin"}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span
-                                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium uppercase tracking-wider ${getStatusColor(user.status)}`}
-                                            >
-                                                {user.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                            {user.Store?.name ||
-                                                "All Branches (Admin)"}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <select
-                                                value={user.role}
-                                                onChange={(e) =>
-                                                    handleRoleChange(
-                                                        user.id,
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                className={`text-xs font-medium px-2 py-1 rounded outline-none border border-transparent hover:border-gray-300 focus:border-green-500 focus:ring-1 focus:ring-green-500 cursor-pointer ${getRoleColor(user.role)}`}
-                                            >
-                                                <option
-                                                    value="user"
-                                                    className="bg-white text-gray-900"
-                                                >
-                                                    User
-                                                </option>
-                                                <option
-                                                    value="manager"
-                                                    className="bg-white text-gray-900"
-                                                >
-                                                    Manager
-                                                </option>
-                                            </select>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <button
-                                                onClick={() =>
-                                                    handleDeleteUser(user)
-                                                }
-                                                className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded transition-colors"
-                                                title="Delete User"
-                                            >
-                                                <Trash className="w-4 h-4" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                {!isLoading && totalAcceptedCount > acceptedItemsPerPage && (
-                    <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <p className="text-xs text-gray-500 font-medium">
-                            Showing all pending invites and{" "}
-                            <span className="font-bold text-gray-900">
-                                {(currentPage - 1) * acceptedItemsPerPage + 1}
-                            </span>{" "}
-                            to{" "}
-                            <span className="font-bold text-gray-900">
-                                {Math.min(
-                                    currentPage * acceptedItemsPerPage,
-                                    totalAcceptedCount,
-                                )}
-                            </span>{" "}
-                            of{" "}
-                            <span className="font-bold text-gray-900">
-                                {totalAcceptedCount}
-                            </span>{" "}
-                            accepted members.
+                        ))}
+                    </div>
+                ) : acceptedUsers.length === 0 ? (
+                    <div className="flex items-center gap-3">
+                        <p className="text-sm font-medium text-gray-400">
+                            No team members
                         </p>
-                        <div className="flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setCurrentPage((p) => Math.max(1, p - 1))
-                                }
-                                disabled={currentPage === 1}
-                                className="p-1.5 rounded border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                <ChevronLeft size={16} />
-                            </button>
-                            <span className="text-xs font-medium text-gray-700 min-w-[3rem] text-center">
-                                Page {currentPage} of {totalAcceptedPages}
-                            </span>
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setCurrentPage((p) =>
-                                        Math.min(totalAcceptedPages, p + 1),
-                                    )
-                                }
-                                disabled={currentPage === totalAcceptedPages}
-                                className="p-1.5 rounded border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                <ChevronRight size={16} />
-                            </button>
+                        <button
+                            onClick={handleOpenModal}
+                            className={`h-9 w-9 rounded-full flex items-center justify-center border border-dashed border-gray-300 transition-all ${
+                                canInviteMore
+                                    ? "bg-white hover:border-green-500 hover:text-green-500 text-gray-400"
+                                    : "bg-gray-50 cursor-not-allowed opacity-60"
+                            }`}
+                            title={
+                                canInviteMore
+                                    ? "Add team member"
+                                    : "Limit reached"
+                            }
+                        >
+                            {canInviteMore ? (
+                                <Plus size={16} />
+                            ) : (
+                                <AlertCircle size={16} />
+                            )}
+                        </button>
+                    </div>
+                ) : (
+                    <div className="flex items-center">
+                        <div className="flex items-center -space-x-3 mr-3">
+                            {acceptedUsers.map((acceptedUser, index) => (
+                                <div
+                                    key={acceptedUser.id}
+                                    className="h-9 w-9 rounded-full overflow-hidden border-2 border-white cursor-pointer hover:scale-105 transition-transform relative ring-1 ring-gray-100 shadow-sm"
+                                    style={{
+                                        zIndex: acceptedUsers.length - index,
+                                    }}
+                                    title={acceptedUser.email}
+                                >
+                                    <Image
+                                        src={
+                                            acceptedUser.imageUrl ||
+                                            defaultImage
+                                        }
+                                        fill
+                                        sizes="36px"
+                                        alt={acceptedUser.email}
+                                        className="object-cover"
+                                    />
+                                </div>
+                            ))}
                         </div>
+
+                        <button
+                            onClick={handleOpenModal}
+                            className={`h-9 w-9 rounded-full flex items-center justify-center border-2 border-white shadow-sm transition-all transform hover:scale-105 active:scale-95 ${
+                                canInviteMore
+                                    ? "bg-green-600 hover:bg-green-700 text-white"
+                                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                            }`}
+                            style={{ zIndex: 0 }}
+                            title={
+                                canInviteMore
+                                    ? "Add team member"
+                                    : "Limit reached"
+                            }
+                        >
+                            {canInviteMore ? (
+                                <Plus
+                                    size={18}
+                                    strokeWidth={2.5}
+                                    className="stroke-white"
+                                />
+                            ) : (
+                                <AlertCircle size={18} />
+                            )}
+                        </button>
                     </div>
                 )}
             </div>
@@ -618,6 +368,23 @@ const CustomUserButton: React.FC = () => {
                                 transition={{ duration: 0.2 }}
                                 className="bg-white w-full max-w-md rounded-lg shadow-2xl border border-gray-100 overflow-hidden relative"
                             >
+                                <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03] z-0">
+                                    <div className="absolute -top-[10%] -left-[10%] w-[80%] h-[40%] rounded-full bg-green-900/20 blur-[60px]" />
+                                    <svg
+                                        className="absolute inset-0 w-full h-full"
+                                        viewBox="0 0 100 100"
+                                        fill="none"
+                                        preserveAspectRatio="none"
+                                    >
+                                        <path
+                                            d="M0 100 C 20 0 50 0 100 100 Z"
+                                            stroke="black"
+                                            strokeWidth="0.5"
+                                            className="opacity-20"
+                                        />
+                                    </svg>
+                                </div>
+
                                 <div className="p-5 border-b border-gray-100 flex items-center justify-between relative z-10 bg-white/50 backdrop-blur-sm">
                                     <div>
                                         <h3 className="font-bold text-lg text-gray-900">
@@ -704,11 +471,11 @@ const CustomUserButton: React.FC = () => {
                                                     </option>
                                                     {storesData
                                                         ?.filter(
-                                                            (s: any) =>
+                                                            (s) =>
                                                                 s.isActive !==
                                                                 false,
                                                         )
-                                                        .map((store: any) => (
+                                                        .map((store) => (
                                                             <option
                                                                 key={store.id}
                                                                 value={store.id}
@@ -749,59 +516,7 @@ const CustomUserButton: React.FC = () => {
                     </FloatingPortal>
                 )}
             </AnimatePresence>
-
-            <AnimatePresence>
-                {showDeleteModal && userToDelete && (
-                    <FloatingPortal>
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-                        >
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                                transition={{ duration: 0.2 }}
-                                className="bg-white rounded-lg p-6 w-full max-w-sm shadow-2xl relative"
-                            >
-                                <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
-                                    <AlertCircle className="w-6 h-6 text-red-600" />
-                                </div>
-                                <h3 className="text-lg font-bold text-center text-gray-900 mb-2">
-                                    Remove User
-                                </h3>
-                                <p className="text-sm text-center text-gray-500 mb-6">
-                                    Are you sure you want to remove{" "}
-                                    <span className="font-bold text-gray-700">
-                                        {userToDelete.email}
-                                    </span>
-                                    ? They will lose all access to this
-                                    workspace.
-                                </p>
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={() =>
-                                            setShowDeleteModal(false)
-                                        }
-                                        className="flex-1 py-2.5 px-4 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={confirmDeleteUser}
-                                        className="flex-1 py-2.5 px-4 text-sm font-bold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-                                    >
-                                        Remove
-                                    </button>
-                                </div>
-                            </motion.div>
-                        </motion.div>
-                    </FloatingPortal>
-                )}
-            </AnimatePresence>
-        </section>
+        </>
     );
 };
 
