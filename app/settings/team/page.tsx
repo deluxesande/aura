@@ -56,14 +56,14 @@ interface User {
     Business: {
         name: string;
     };
+    Store?: {
+        name: string;
+        id: string;
+    };
     inviter: {
         firstName: string;
         lastName: string;
     };
-}
-
-interface Invitation extends User {
-    imageUrl?: string;
 }
 
 export default function TeamPage() {
@@ -75,7 +75,7 @@ export default function TeamPage() {
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteRole, setInviteRole] = useState("user");
-    const [isInviting, setIsInviting] = useState(false);
+    const [inviteStoreId, setInviteStoreId] = useState("");
     const [isSending, setIsSending] = useState(false);
 
     // Edit Member State
@@ -123,14 +123,14 @@ export default function TeamPage() {
                     );
                     setStores(storesResponse.data || []);
                 }
-            } catch (error) {
+            } catch {
                 toast.error("Failed to load team members");
             } finally {
                 setLoading(false);
             }
         };
 
-        if (businessDetails?.id || !loading) {
+        if (businessDetails?.id) {
             fetchTeamAndStores();
         }
     }, [businessDetails?.id]);
@@ -158,7 +158,6 @@ export default function TeamPage() {
 
             toast.success("User updated successfully");
 
-            // Update local state
             setMembers((prev) =>
                 prev.map((m) =>
                     m.clerkId === editMember.clerkId
@@ -205,12 +204,18 @@ export default function TeamPage() {
             return;
         }
 
+        if (inviteRole !== "admin" && !inviteStoreId) {
+            toast.error("Please select a branch to assign this user.");
+            return;
+        }
+
         setIsSending(true);
 
         const sendInvitation = async () => {
             const response = await apiClient.post("/auth/invite/post", {
                 email: inviteEmail,
                 role: inviteRole,
+                storeId: inviteStoreId || undefined,
             });
             const newInvitation = response.data.invitation;
             dispatch(setInvitations([...invitations, newInvitation]));
@@ -222,14 +227,15 @@ export default function TeamPage() {
             success: () => {
                 setInviteEmail("");
                 setInviteRole("user");
+                setInviteStoreId("");
                 setShowInviteModal(false);
                 setIsSending(false);
                 return "Invitation sent successfully.";
             },
-            error: (err) => {
+            error: (err: any) => {
                 setIsSending(false);
                 return (
-                    err.response?.data?.error || "Sending Invitation Failed."
+                    err?.response?.data?.error || "Sending Invitation Failed."
                 );
             },
         });
@@ -251,7 +257,7 @@ export default function TeamPage() {
             filterStore === "All"
                 ? true
                 : filterStore === "All Branches"
-                  ? !member.Store?.id // Admin or unassigned
+                  ? !member.Store?.id
                   : member.Store?.id === filterStore;
 
         return matchesSearch && matchesRole && matchesStore;
@@ -316,7 +322,6 @@ export default function TeamPage() {
                                 Manage access and view team performance.
                             </p>
                         </div>
-                        {/* Only show button if cap not reached */}
                         {canInviteMore && (
                             <button
                                 onClick={() => setShowInviteModal(true)}
@@ -708,7 +713,6 @@ export default function TeamPage() {
                 </div>
             </div>
 
-            {/* Modal - only show if cap not reached */}
             {showInviteModal && canInviteMore && (
                 <FloatingPortal>
                     <motion.div
@@ -724,7 +728,6 @@ export default function TeamPage() {
                             transition={{ duration: 0.2 }}
                             className="bg-white rounded-lg w-full max-w-md shadow-2xl border border-gray-100 overflow-hidden relative"
                         >
-                            {/* Background Line Pattern */}
                             <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03]">
                                 <div className="absolute -top-[10%] -left-[10%] w-[80%] h-[40%] rounded-full bg-green-900/20 blur-[60px]" />
                                 <svg
@@ -743,7 +746,6 @@ export default function TeamPage() {
                                 </svg>
                             </div>
 
-                            {/* Modal Header */}
                             <div className="p-6 pb-0 relative z-10 text-center">
                                 <h3 className="text-xl font-bold text-gray-900">
                                     Invite Team Member
@@ -755,7 +757,6 @@ export default function TeamPage() {
                                 </div>
                             </div>
 
-                            {/* Modal Form */}
                             <div className="p-6 relative z-10">
                                 <form
                                     onSubmit={handleInviteUser}
@@ -806,7 +807,6 @@ export default function TeamPage() {
                                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none h-4 w-4" />
                                         </div>
 
-                                        {/* Role Description Helper */}
                                         <div className="mt-2 flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
                                             <p className="text-xs text-blue-700 leading-relaxed">
                                                 {inviteRole === "manager" &&
@@ -816,6 +816,45 @@ export default function TeamPage() {
                                             </p>
                                         </div>
                                     </div>
+
+                                    {inviteRole !== "admin" && (
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                                Assign to Branch
+                                            </label>
+                                            <div className="relative">
+                                                <select
+                                                    value={inviteStoreId}
+                                                    onChange={(e) =>
+                                                        setInviteStoreId(
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    className="block w-full pl-4 pr-10 py-3 bg-slate-50 outline-none border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm appearance-none cursor-pointer"
+                                                    required
+                                                >
+                                                    <option value="" disabled>
+                                                        Select a branch...
+                                                    </option>
+                                                    {stores
+                                                        .filter(
+                                                            (s) =>
+                                                                s.isActive !==
+                                                                false,
+                                                        )
+                                                        .map((store) => (
+                                                            <option
+                                                                key={store.id}
+                                                                value={store.id}
+                                                            >
+                                                                {store.name}
+                                                            </option>
+                                                        ))}
+                                                </select>
+                                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none h-4 w-4" />
+                                            </div>
+                                        </div>
+                                    )}
 
                                     <div className="flex gap-3 pt-2">
                                         <button
@@ -847,7 +886,6 @@ export default function TeamPage() {
                 </FloatingPortal>
             )}
 
-            {/* Edit Modal */}
             {showEditModal && editMember && (
                 <FloatingPortal>
                     <motion.div
@@ -918,6 +956,9 @@ export default function TeamPage() {
                                                 }
                                                 className="block w-full pl-4 pr-10 py-3 bg-slate-50 outline-none border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm appearance-none cursor-pointer"
                                             >
+                                                <option value="All">
+                                                    All Branches
+                                                </option>
                                                 {stores.map((store) => (
                                                     <option
                                                         key={store.id}
