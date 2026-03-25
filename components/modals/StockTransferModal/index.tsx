@@ -215,7 +215,7 @@ export default function StockTransferModal({
                                         onChange={(e) =>
                                             setQuantity(Number(e.target.value))
                                         }
-                                        className="block w-full px-4 py-3 bg-slate-50 outline-none border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm"
+                                        className="block w-full px-4 py-3 bg-slate-50 outline-none border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm no-spinner"
                                         placeholder="e.g. 10"
                                         required
                                     />
