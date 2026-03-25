@@ -12,7 +12,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import PaymentModal from "@/components/modals/PaymentModal";
 import DowngradeModal from "@/components/modals/DowngradeModal";
-import InactiveResourcesList from "@/components/payment/InactiveResourcesList";
 
 type Plan = {
     id: string;
