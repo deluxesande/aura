@@ -50,12 +50,11 @@ export default async function handler(
         const parsedQty = Number(quantity);
 
         const result = await prisma.$transaction(async (tx) => {
-            // 1. Fetch origin stock and lock row via dummy update or rely on tx isolation
             const originStock = await tx.storeInventory.findFirst({
                 where: {
                     storeId: fromStoreId,
                     productId: productId,
-                    businessId: requestor.businessId,
+                    Store: { businessId: requestor.businessId! },
                 },
             });
 
@@ -63,22 +62,19 @@ export default async function handler(
                 throw new Error("Insufficient stock at the origin branch.");
             }
 
-            // 2. Decrement origin stock safely
             await tx.storeInventory.update({
                 where: { id: originStock.id },
                 data: { quantity: { decrement: parsedQty } },
             });
 
-            // 3. Find destination stock
             const destStock = await tx.storeInventory.findFirst({
                 where: {
                     storeId: toStoreId,
                     productId: productId,
-                    businessId: requestor.businessId,
+                    Store: { businessId: requestor.businessId! },
                 },
             });
 
-            // 4. Increment existing or create new destination stock
             if (destStock) {
                 await tx.storeInventory.update({
                     where: { id: destStock.id },
@@ -89,7 +85,6 @@ export default async function handler(
                     data: {
                         storeId: toStoreId,
                         productId: productId,
-                        businessId: requestor.businessId,
                         quantity: parsedQty,
                     },
                 });
