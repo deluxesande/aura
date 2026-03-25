@@ -3,7 +3,10 @@ import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
 import crypto from "crypto";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+    req: NextApiRequest,
+    res: NextApiResponse,
+) {
     if (req.method !== "POST") return res.status(405).end();
 
     const { userId: clerkId } = getAuth(req);
@@ -16,11 +19,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             // 1. Authoritatively identify the requestor
             const requestor = await tx.user.findUnique({
                 where: { clerkId },
-                select: { id: true, businessId: true, role: true }
+                select: { id: true, businessId: true, role: true },
             });
 
-            if (!requestor?.businessId || !["admin", "manager"].includes(requestor.role)) {
-                throw new Error("Forbidden: Insufficient permissions to invite team members.");
+            if (
+                !requestor?.businessId ||
+                !["admin", "manager"].includes(requestor.role)
+            ) {
+                throw new Error(
+                    "Forbidden: Insufficient permissions to invite team members.",
+                );
             }
 
             // Must specify a store if they are not an admin
@@ -32,36 +40,46 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             await tx.$queryRaw`SELECT id FROM "Business" WHERE id = ${requestor.businessId}::uuid FOR UPDATE`;
 
             // 3. Fetch current plan limits
-            const subscription = await tx.subscription.findUnique({
+            const subscription = await tx.subscription.findFirst({
                 where: { businessId: requestor.businessId },
-                select: { plan: true, status: true }
+                select: { plan: true, status: true },
+                orderBy: { createdAt: "desc" }, // optional: pick latest if multiple exist
             });
 
-            if (subscription?.status !== "ACTIVE" && subscription?.status !== "TRIALING") {
-                throw new Error("Active subscription required to invite users.");
+            if (
+                subscription?.status !== "ACTIVE" &&
+                subscription?.status !== "TRIALING"
+            ) {
+                throw new Error(
+                    "Active subscription required to invite users.",
+                );
             }
 
             // 4. Count current staff + pending invitations
             const [staffCount, invitationCount] = await Promise.all([
                 tx.user.count({ where: { businessId: requestor.businessId } }),
-                tx.userInvitation.count({ 
-                    where: { 
+                tx.userInvitation.count({
+                    where: {
                         businessId: requestor.businessId,
-                        status: "pending"
-                    } 
-                })
+                        status: "pending",
+                    },
+                }),
             ]);
 
             const teamLimits = { STARTER: 1, STANDARD: 5, PREMIUM: 100 };
-            const maxTeam = teamLimits[subscription.plan as keyof typeof teamLimits] || 1;
+            const maxTeam =
+                teamLimits[subscription.plan as keyof typeof teamLimits] || 1;
 
             if (staffCount + invitationCount >= maxTeam) {
-                throw new Error(`Team limit reached: Your ${subscription.plan} plan allows only ${maxTeam} member(s).`);
+                throw new Error(
+                    `Team limit reached: Your ${subscription.plan} plan allows only ${maxTeam} member(s).`,
+                );
             }
 
             // 5. Validation: Check for existing users
             const existingUser = await tx.user.findUnique({ where: { email } });
-            if (existingUser) throw new Error("User already exists in the system.");
+            if (existingUser)
+                throw new Error("User already exists in the system.");
 
             const existingInvitation = await tx.userInvitation.findFirst({
                 where: {
@@ -90,7 +108,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     expiresAt,
                     status: "pending",
                 },
-                include: { Business: true }
+                include: { Business: true },
             });
 
             // 7. Integrate with Clerk
@@ -109,7 +127,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return await tx.userInvitation.update({
                 where: { id: invitation.id },
                 data: { clerkInvitationId: clerkInvitation.id },
-                include: { Business: true }
+                include: { Business: true },
             });
         });
 
@@ -123,10 +141,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 expiresAt: result.expiresAt,
                 status: result.status,
                 clerkInvitationId: result.clerkInvitationId,
-            }
+            },
         });
     } catch (error: any) {
         console.error("User Invitation Security Error:", error.message);
-        return res.status(400).json({ error: error.message || "Failed to send invitation" });
+        return res
+            .status(400)
+            .json({ error: error.message || "Failed to send invitation" });
     }
 }
