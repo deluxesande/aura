@@ -36,7 +36,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import BusinessOnboardingModal from "../BusinessOnboardingModal";
@@ -188,51 +188,82 @@ export default function Navbar({
         }
     }, [user?.businessId, businessDetails, isFetchingBusiness, dispatch]);
 
-    const [stores, setStores] = useState<any[]>([]);
-    const [activeStore, setActiveStore] = useState<any>(null);
+    const [stores, setStores] = useState<any[]>(() => {
+        if (typeof window === "undefined") return [];
+        try {
+            return JSON.parse(localStorage.getItem("storesCache") || "[]");
+        } catch {
+            return [];
+        }
+    });
+
+    const [activeStore, setActiveStore] = useState<any | null>(() => {
+        if (typeof window === "undefined") return null;
+        try {
+            return JSON.parse(localStorage.getItem("activeStore") || "null");
+        } catch {
+            return null;
+        }
+    });
     const [isStorePickerOpen, setIsStorePickerOpen] = useState(false);
+
+    const storeLabel = useMemo(() => {
+        if (activeStore?.name) return activeStore.name;
+        if (user?.role !== "admin") return "Assigned Branch";
+        return stores.length === 0 ? "Loading..." : "Select Branch";
+    }, [activeStore?.name, user?.role, stores.length]);
 
     useEffect(() => {
         const fetchStores = async () => {
-            if (user?.businessId) {
-                try {
-                    const res = await apiClient.get(
-                        `/business/${user.businessId}/stores`,
-                    );
-                    setStores(res.data || []);
+            if (!user?.businessId) return;
 
-                    const savedStoreId = localStorage.getItem("activeStoreId");
+            try {
+                const res = await apiClient.get(
+                    `/business/${user.businessId}/stores`,
+                );
+                const fetchedStores = res.data || [];
+                setStores(fetchedStores);
+                localStorage.setItem(
+                    "storesCache",
+                    JSON.stringify(fetchedStores),
+                );
 
-                    let currentStore;
+                const savedStoreId = localStorage.getItem("activeStoreId");
+                let currentStore = null;
 
-                    if (user?.role === "admin") {
-                        currentStore =
-                            res.data.find((s: any) => s.id === savedStoreId) ||
-                            res.data[0];
-                    } else {
-                        // Managers and Users MUST strictly use their assigned store
-                        currentStore = res.data.find(
-                            (s: any) => s.id === user.storeId,
-                        );
-                    }
-
-                    if (currentStore) {
-                        setActiveStore(currentStore);
-                        localStorage.setItem("activeStoreId", currentStore.id);
-                    }
-                } catch (error) {
-                    console.error("Error fetching stores:", error);
+                if (user?.role === "admin") {
+                    currentStore =
+                        fetchedStores.find((s: any) => s.id === savedStoreId) ||
+                        fetchedStores[0] ||
+                        null;
+                } else {
+                    currentStore =
+                        fetchedStores.find((s: any) => s.id === user.storeId) ||
+                        null;
                 }
+
+                if (currentStore) {
+                    setActiveStore(currentStore);
+                    localStorage.setItem("activeStoreId", currentStore.id);
+                    localStorage.setItem(
+                        "activeStore",
+                        JSON.stringify(currentStore),
+                    );
+                }
+            } catch (error) {
+                console.error("Error fetching stores:", error);
             }
         };
+
         fetchStores();
-    }, [user?.businessId]);
+    }, [user?.businessId, user?.role, user?.storeId]);
 
     const handleStoreChange = (store: any) => {
         setActiveStore(store);
         localStorage.setItem("activeStoreId", store.id);
+        localStorage.setItem("activeStore", JSON.stringify(store));
         setIsStorePickerOpen(false);
-        window.location.reload(); // Refresh to update all data context
+        window.location.reload();
     };
 
     const links = user
@@ -378,10 +409,7 @@ export default function Navbar({
                                     >
                                         <div className="flex items-center gap-2 w-full">
                                             <span className="text-sm font-semibold text-gray-800 truncate max-w-[140px]">
-                                                {activeStore?.name ||
-                                                    (stores.length === 0
-                                                        ? "Loading..."
-                                                        : "Select Branch")}
+                                                {storeLabel}
                                             </span>
                                             {user?.role === "admin" && (
                                                 <ChevronDown
