@@ -202,14 +202,18 @@ export default function Navbar({
                     setStores(res.data || []);
 
                     const savedStoreId = localStorage.getItem("activeStoreId");
-                    
+
                     let currentStore;
-                    
+
                     if (user?.role === "admin") {
-                        currentStore = res.data.find((s: any) => s.id === savedStoreId) || res.data[0];
+                        currentStore =
+                            res.data.find((s: any) => s.id === savedStoreId) ||
+                            res.data[0];
                     } else {
                         // Managers and Users MUST strictly use their assigned store
-                        currentStore = res.data.find((s: any) => s.id === user.storeId);
+                        currentStore = res.data.find(
+                            (s: any) => s.id === user.storeId,
+                        );
                     }
 
                     if (currentStore) {
@@ -374,7 +378,10 @@ export default function Navbar({
                                     >
                                         <div className="flex items-center gap-2 w-full">
                                             <span className="text-sm font-semibold text-gray-800 truncate max-w-[140px]">
-                                                {activeStore?.name || (stores.length === 0 ? "Loading..." : "Select Branch")}
+                                                {activeStore?.name ||
+                                                    (stores.length === 0
+                                                        ? "Loading..."
+                                                        : "Select Branch")}
                                             </span>
                                             {user?.role === "admin" && (
                                                 <ChevronDown
@@ -387,7 +394,7 @@ export default function Navbar({
 
                                     {isStorePickerOpen &&
                                         user?.role === "admin" && (
-                                            <div className="absolute top-full right-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-2xl z-[100] py-3 animate-in fade-in slide-in-from-top-2">
+                                            <div className="absolute top-full right-0 mt-2 w-72 bg-white border border-gray-200 rounded-lg shadow-2xl z-[100] py-3 animate-in fade-in slide-in-from-top-2">
                                                 <div className="px-5 py-2 mb-2">
                                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
                                                         Select Location
@@ -705,7 +712,7 @@ export default function Navbar({
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
                                             Current Branch
                                         </p>
-                                        <div className="flex flex-col gap-2 bg-gray-50 rounded-xl p-2">
+                                        <div className="flex flex-col gap-2 bg-gray-50 rounded-lg p-2">
                                             {stores
                                                 .filter(
                                                     (s) => s.isActive !== false,
