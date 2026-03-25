@@ -41,12 +41,11 @@ export default async function handler(
                 }
 
                 // 2. CRITICAL: Lock the tenant record to prevent concurrent "Team Stuffing"
-                await tx.$queryRaw`
-                SELECT 1 
-                FROM "Business" 
-                WHERE "_id" = ${requestor.businessId} 
-                FOR UPDATE
-            `;
+                await tx.business.update({
+                    where: { id: requestor.businessId },
+                    data: { updatedAt: new Date() },
+                    select: { id: true }, // Keep the payload tiny, we only want the lock
+                });
 
                 // 3. Fetch current plan limits
                 const subscription = await tx.subscription.findFirst({

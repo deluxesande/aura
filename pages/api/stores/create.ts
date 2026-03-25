@@ -23,11 +23,14 @@ export default async function handler(
                 throw new Error("Unauthorized: Admin access required.");
             }
 
-            // 2. CRITICAL: Row-Level Lock on the Business record
-            // This serializes all store creation attempts for this specific tenant
-            await tx.$executeRaw`
-    SELECT pg_advisory_xact_lock(hashtext(${user.businessId}::text))
-`;
+            // 2. CRITICAL: Row-Level Lock via Prisma Native Update
+            // This acquires a ROW EXCLUSIVE lock on the Business record until the transaction ends,
+            // perfectly serializing concurrent store creation attempts without raw SQL.
+            await tx.business.update({
+                where: { id: user.businessId },
+                data: { updatedAt: new Date() },
+                select: { id: true }, // Minimal payload
+            });
             // 3. Fetch Subscription Limits
             const subscription = await tx.subscription.findFirst({
                 where: { businessId: user.businessId },
