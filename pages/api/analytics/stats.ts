@@ -13,10 +13,10 @@ export default async function handler(
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
     try {
-        // 1. Get the business ID
+        // 1. Get the business ID, role and storeId
         const user = await prisma.user.findUnique({
             where: { clerkId: userId },
-            select: { businessId: true },
+            select: { businessId: true, role: true, storeId: true },
         });
 
         if (!user || !user.businessId) {
@@ -35,6 +35,13 @@ export default async function handler(
                 },
                 mpesaBalance: 0,
             });
+        }
+
+        const activeStoreHeader = req.headers["x-store-id"] as string;
+        const targetStoreId = user.role === "admin" ? activeStoreHeader : (user.storeId as string);
+
+        if (!targetStoreId) {
+            return res.status(400).json({ error: "No active store selected." });
         }
 
         const businessId = user.businessId;
@@ -73,6 +80,7 @@ export default async function handler(
 
             const whereClause: any = {
                 createdBy: { in: userIds },
+                storeId: targetStoreId,
             };
 
             // Only add createdAt to query if dates are provided
@@ -90,7 +98,7 @@ export default async function handler(
             const paidData = await prisma.invoice.aggregate({
                 where: {
                     ...whereClause,
-                    status: "PAID",
+                    status: { in: ["PAID", "paid", "COMPLETED", "completed"] },
                 },
                 _count: { id: true }, // Paid Invoices count
                 _sum: { totalAmount: true }, // Total Revenue
@@ -115,7 +123,13 @@ export default async function handler(
                 getStats(startOfToday), // Today
                 getStats(startOfYesterday, endOfYesterday), // Yesterday
                 prisma.mpesaPayment.aggregate({
-                    where: { businessId, status: "COMPLETED" },
+                    where: { 
+                        businessId, 
+                        status: "COMPLETED",
+                        Invoice: {
+                            storeId: targetStoreId
+                        }
+                    },
                     _sum: { amount: true },
                 }),
             ]);

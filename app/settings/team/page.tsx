@@ -1,12 +1,17 @@
 "use client";
 
 import Navbar from "@/components/Navbar";
-import { FloatingPortal } from "@floating-ui/react";
+import { AppState } from "@/store";
+import { addInvitation } from "@/store/slices/invitationsDataSlice";
+import { setInvitations } from "@/store/slices/invitationSlice";
 import { apiClient } from "@/utils/apiClient";
+import { FloatingPortal } from "@floating-ui/react";
+import { motion } from "framer-motion";
 import {
     ChevronDown,
     ChevronLeft,
     ChevronRight,
+    Edit,
     Loader2,
     Mail,
     Plus,
@@ -19,10 +24,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
-import { addInvitation } from "@/store/slices/invitationsDataSlice";
-import { setInvitations } from "@/store/slices/invitationSlice";
-import { AppState } from "@/store";
-import { motion } from "framer-motion";
 
 interface TeamMember {
     id: string;
@@ -77,6 +78,13 @@ export default function TeamPage() {
     const [isInviting, setIsInviting] = useState(false);
     const [isSending, setIsSending] = useState(false);
 
+    // Edit Member State
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editMember, setEditMember] = useState<TeamMember | null>(null);
+    const [editRole, setEditRole] = useState("user");
+    const [editStoreId, setEditStoreId] = useState<string>("All");
+    const [isUpdating, setIsUpdating] = useState(false);
+
     // Redux Selectors
     const invitations = useSelector(
         (state: AppState) => state.invitations.invitations,
@@ -108,9 +116,11 @@ export default function TeamPage() {
             try {
                 const response = await apiClient.get("/users");
                 setMembers(response.data);
-                
+
                 if (businessDetails?.id) {
-                    const storesResponse = await apiClient.get(`/business/${businessDetails.id}/stores`);
+                    const storesResponse = await apiClient.get(
+                        `/business/${businessDetails.id}/stores`,
+                    );
                     setStores(storesResponse.data || []);
                 }
             } catch (error) {
@@ -124,6 +134,49 @@ export default function TeamPage() {
             fetchTeamAndStores();
         }
     }, [businessDetails?.id]);
+
+    const openEditModal = (member: TeamMember) => {
+        setEditMember(member);
+        setEditRole(member.role.toLowerCase());
+        setEditStoreId(member.Store?.id || "All");
+        setShowEditModal(true);
+    };
+
+    const handleUpdateMember = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editMember) return;
+        setIsUpdating(true);
+
+        try {
+            const response = await apiClient.patch(
+                `/users/${editMember.clerkId}`,
+                {
+                    role: editRole,
+                    storeId: editStoreId === "All" ? null : editStoreId,
+                },
+            );
+
+            toast.success("User updated successfully");
+
+            // Update local state
+            setMembers((prev) =>
+                prev.map((m) =>
+                    m.clerkId === editMember.clerkId
+                        ? {
+                              ...m,
+                              role: response.data.role,
+                              Store: response.data.Store,
+                          }
+                        : m,
+                ),
+            );
+            setShowEditModal(false);
+        } catch (error: any) {
+            toast.error(error.response?.data?.error || "Failed to update user");
+        } finally {
+            setIsUpdating(false);
+        }
+    };
 
     const handleInviteUser = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -198,8 +251,8 @@ export default function TeamPage() {
             filterStore === "All"
                 ? true
                 : filterStore === "All Branches"
-                ? !member.Store?.id // Admin or unassigned
-                : member.Store?.id === filterStore;
+                  ? !member.Store?.id // Admin or unassigned
+                  : member.Store?.id === filterStore;
 
         return matchesSearch && matchesRole && matchesStore;
     });
@@ -291,12 +344,13 @@ export default function TeamPage() {
 
                         <div className="flex flex-col sm:flex-row gap-2">
                             <div className="flex items-center bg-gray-100 p-1 rounded-lg overflow-x-auto">
-                                {(["All", "Manager", "Admin", "User"] as const).map(
-                                    (role) => (
-                                        <button
-                                            key={role}
-                                            onClick={() => setFilterRole(role)}
-                                            className={`
+                                {(
+                                    ["All", "Manager", "Admin", "User"] as const
+                                ).map((role) => (
+                                    <button
+                                        key={role}
+                                        onClick={() => setFilterRole(role)}
+                                        className={`
                     px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 whitespace-nowrap
                     ${
                         filterRole === role
@@ -304,25 +358,28 @@ export default function TeamPage() {
                             : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
                     }
                     `}
-                                        >
-                                            {role === "All"
-                                                ? "All Roles"
-                                                : role.charAt(0) +
-                                                  role.slice(1).toLowerCase()}
-                                        </button>
-                                    ),
-                                )}
+                                    >
+                                        {role === "All"
+                                            ? "All Roles"
+                                            : role.charAt(0) +
+                                              role.slice(1).toLowerCase()}
+                                    </button>
+                                ))}
                             </div>
-                            
+
                             <div className="relative">
                                 <select
                                     value={filterStore}
-                                    onChange={(e) => setFilterStore(e.target.value)}
+                                    onChange={(e) =>
+                                        setFilterStore(e.target.value)
+                                    }
                                     className="pl-3 pr-8 py-1.5 h-full bg-gray-100 text-gray-500 text-xs font-medium border-0 rounded-lg focus:ring-2 focus:ring-green-500 outline-none appearance-none cursor-pointer hover:bg-gray-200/50 transition-colors"
                                 >
                                     <option value="All">All Branches</option>
-                                    {stores.map(store => (
-                                        <option key={store.id} value={store.id}>{store.name}</option>
+                                    {stores.map((store) => (
+                                        <option key={store.id} value={store.id}>
+                                            {store.name}
+                                        </option>
                                     ))}
                                 </select>
                                 <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none h-3 w-3" />
@@ -435,7 +492,8 @@ export default function TeamPage() {
                                                 </td>
                                                 <td className="py-3 px-4 whitespace-nowrap">
                                                     <span className="text-sm text-gray-600 font-medium">
-                                                        {member.Store?.name || "All Branches"}
+                                                        {member.Store?.name ||
+                                                            "All Branches"}
                                                     </span>
                                                 </td>
 
@@ -459,12 +517,24 @@ export default function TeamPage() {
                                                 </td>
 
                                                 <td className="py-3 px-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <Link
-                                                        href={`/settings/team/${member.clerkId}`}
-                                                        className="text-green-600 hover:text-green-900 text-xs border border-green-200 hover:bg-green-50 px-3 py-1 rounded-md transition-colors"
-                                                    >
-                                                        View
-                                                    </Link>
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <button
+                                                            onClick={() =>
+                                                                openEditModal(
+                                                                    member,
+                                                                )
+                                                            }
+                                                            className="text-gray-600 hover:text-green-600 text-xs border border-gray-200 hover:border-green-200 hover:bg-green-50 px-3 py-1 rounded-md transition-colors flex items-center gap-1"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <Link
+                                                            href={`/settings/team/${member.clerkId}`}
+                                                            className="text-green-600 hover:text-green-900 text-xs border border-green-200 hover:bg-green-50 px-3 py-1 rounded-md transition-colors"
+                                                        >
+                                                            View
+                                                        </Link>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))
@@ -530,7 +600,8 @@ export default function TeamPage() {
                                                 {member.role}
                                             </span>
                                             <span className="text-[10px] text-gray-500 font-medium">
-                                                {member.Store?.name || "All Branches"}
+                                                {member.Store?.name ||
+                                                    "All Branches"}
                                             </span>
                                         </div>
                                     </div>
@@ -556,17 +627,29 @@ export default function TeamPage() {
                                         </div>
                                     </div>
 
-                                    <div className="flex justify-between items-center text-xs bg-white p-2 rounded border border-gray-100">
+                                    <div className="flex justify-between items-center text-xs bg-white p-2 rounded border border-gray-100 mt-3">
                                         <span className="text-gray-400">
                                             Joined{" "}
                                             {new Date(
                                                 member.createdAt,
                                             ).toLocaleDateString()}
                                         </span>
-                                        <span className="text-green-600 font-medium flex items-center">
-                                            View Profile{" "}
-                                            <ChevronRight className="w-3 h-3 ml-1" />
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    openEditModal(member);
+                                                }}
+                                                className="text-gray-600 hover:text-green-600 font-medium flex items-center px-2 py-1 bg-gray-50 rounded border border-gray-200 transition-colors"
+                                            >
+                                                <Edit className="w-3 h-3 mr-1" />
+                                                Edit
+                                            </button>
+                                            <span className="text-green-600 font-medium flex items-center">
+                                                View{" "}
+                                                <ChevronRight className="w-3 h-3 ml-1" />
+                                            </span>
+                                        </div>
                                     </div>
                                 </Link>
                             ))
@@ -754,6 +837,120 @@ export default function TeamPage() {
                                                 <Loader2 className="animate-spin h-4 w-4 stroke-white" />
                                             ) : (
                                                 <>Send Invitation</>
+                                            )}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                </FloatingPortal>
+            )}
+
+            {/* Edit Modal */}
+            {showEditModal && editMember && (
+                <FloatingPortal>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            transition={{ duration: 0.2 }}
+                            className="bg-white rounded-lg w-full max-w-md shadow-2xl border border-gray-100 overflow-hidden relative"
+                        >
+                            <div className="p-6 pb-0 relative z-10 text-center">
+                                <h3 className="text-xl font-bold text-gray-900">
+                                    Edit Team Member
+                                </h3>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    {editMember.firstName} {editMember.lastName}{" "}
+                                    ({editMember.email})
+                                </p>
+                            </div>
+
+                            <div className="p-6 relative z-10">
+                                <form
+                                    onSubmit={handleUpdateMember}
+                                    className="space-y-5"
+                                >
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                            Role Permission
+                                        </label>
+                                        <div className="relative">
+                                            <select
+                                                value={editRole}
+                                                onChange={(e) =>
+                                                    setEditRole(e.target.value)
+                                                }
+                                                className="block w-full pl-4 pr-10 py-3 bg-slate-50 outline-none border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm appearance-none cursor-pointer"
+                                            >
+                                                <option value="user">
+                                                    User (Basic Access)
+                                                </option>
+                                                <option value="manager">
+                                                    Manager (Edit Access)
+                                                </option>
+                                                <option value="admin">
+                                                    Admin (Full Access)
+                                                </option>
+                                            </select>
+                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none h-4 w-4" />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                            Assigned Branch
+                                        </label>
+                                        <div className="relative">
+                                            <select
+                                                value={editStoreId}
+                                                onChange={(e) =>
+                                                    setEditStoreId(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="block w-full pl-4 pr-10 py-3 bg-slate-50 outline-none border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm appearance-none cursor-pointer"
+                                            >
+                                                {stores.map((store) => (
+                                                    <option
+                                                        key={store.id}
+                                                        value={store.id}
+                                                    >
+                                                        {store.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none h-4 w-4" />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-3 pt-2">
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setShowEditModal(false)
+                                            }
+                                            className="flex-1 px-4 py-3 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                                            disabled={isUpdating}
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={isUpdating}
+                                            className="flex-1 px-4 py-3 text-sm font-bold text-white bg-green-500 rounded-lg hover:bg-green-600 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            {isUpdating ? (
+                                                <Loader2 className="animate-spin h-4 w-4 stroke-white" />
+                                            ) : (
+                                                <>Save Changes</>
                                             )}
                                         </button>
                                     </div>

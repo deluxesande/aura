@@ -22,16 +22,24 @@ export default async function handler(
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        // Get current user with their business
+        const activeStoreHeader = req.headers["x-store-id"] as string;
+
+        // Get current user with their business and role
         const currentUser = await prisma.user.findUnique({
             where: { clerkId: userId },
-            select: { businessId: true },
+            select: { businessId: true, role: true, storeId: true },
         });
 
         if (!currentUser || !currentUser.businessId) {
             return res
                 .status(404)
                 .json({ error: "User or business not found" });
+        }
+
+        const targetStoreId = currentUser.role === "admin" ? activeStoreHeader : (currentUser.storeId as string);
+
+        if (!targetStoreId) {
+            return res.status(400).json({ error: "No active store selected." });
         }
 
         // Get all users in the same business
@@ -57,14 +65,15 @@ export default async function handler(
             0,
         );
 
-        // Fetch invoices created by users in the same business within the time period
+        // Fetch invoices created by users in the same business within the time period for the specific store
         const invoices = await prisma.invoice.findMany({
             where: {
                 createdBy: {
                     in: userIds,
                 },
+                storeId: targetStoreId,
                 status: {
-                    in: ["PAID", "paid"],
+                    in: ["PAID", "paid", "COMPLETED", "completed"],
                 },
                 createdAt: {
                     gte: startDate,

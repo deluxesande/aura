@@ -68,15 +68,30 @@ export const deleteInvoice = async (
         });
 
         await prisma.$transaction(async (tx) => {
-            // 1. Restore product quantities
-            for (const item of invoiceItems) {
-                await tx.product.update({
-                    where: { id: item.productId },
-                    data: {
-                        quantity: { increment: item.quantity },
-                        inStock: true,
-                    },
-                });
+            // 1. Restore product quantities to StoreInventory
+            if (deletedInvoice.storeId) {
+                for (const item of invoiceItems) {
+                    // Skip if it's a template
+                    if (item.Product.type === "TEMPLATE") continue;
+
+                    await tx.storeInventory.updateMany({
+                        where: {
+                            storeId: deletedInvoice.storeId,
+                            productId: item.productId,
+                        },
+                        data: {
+                            quantity: { increment: item.quantity },
+                        },
+                    });
+
+                    // Update global inStock status
+                    await tx.product.update({
+                        where: { id: item.productId },
+                        data: {
+                            inStock: true,
+                        },
+                    });
+                }
             }
 
             // 2. Clean up M-Pesa related data linked to this invoice

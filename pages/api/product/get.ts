@@ -42,6 +42,7 @@ export const getProducts = async (
             where: {
                 businessId: currentUser.businessId,
                 OR: [
+                    { type: "TEMPLATE" },
                     {
                         storeInventories: {
                             some: { storeId: targetStoreId }

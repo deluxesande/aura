@@ -15,12 +15,27 @@ export default async function handler(
         const { userId } = getAuth(req);
         if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-        const { authorized, businessId } = await checkSubscription(userId);
-        if (!authorized || !businessId) {
+        const activeStoreHeader = req.headers["x-store-id"] as string;
+
+        // Get current user with their business and role
+        const currentUser = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { businessId: true, role: true, storeId: true },
+        });
+
+        if (!currentUser || !currentUser.businessId) {
             return res
-                .status(403)
-                .json({ error: "Unauthorized or no business linked" });
+                .status(404)
+                .json({ error: "User or business not found" });
         }
+
+        const targetStoreId = currentUser.role === "admin" ? activeStoreHeader : (currentUser.storeId as string);
+
+        if (!targetStoreId) {
+            return res.status(400).json({ error: "No active store selected." });
+        }
+
+        const businessId = currentUser.businessId;
 
         const { timePeriod } = req.query;
         let startDate = new Date(0);
@@ -43,17 +58,15 @@ export default async function handler(
 
         // Get all users in the same business to match invoice list logic
         const businessUsers = await prisma.user.findMany({
-            where: { businessId: businessId as string },
+            where: { businessId: businessId },
             select: { clerkId: true },
         });
         const userIds = businessUsers.map((u) => u.clerkId);
 
         const invoices = await prisma.invoice.findMany({
             where: {
-                OR: [
-                    { businessId: businessId as string },
-                    { createdBy: { in: userIds } }
-                ],
+                createdBy: { in: userIds },
+                storeId: targetStoreId,
                 createdAt: { gte: startDate },
                 status: {
                     in: ["PAID", "paid", "COMPLETED", "completed"],

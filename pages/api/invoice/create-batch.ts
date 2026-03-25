@@ -41,11 +41,23 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 .json({ error: "User is not linked to a business" });
         }
 
+        const activeStoreHeader = req.headers["x-store-id"] as string;
+        const targetStoreId = creator.role === "admin" ? activeStoreHeader : (creator.storeId as string);
+
+        if (!targetStoreId) {
+            return res.status(400).json({ error: "No active store selected." });
+        }
+
         const result = await prisma.$transaction(
             async (tx) => {
                 const productIds = cartItems.map((item: any) => item.productId);
                 const dbProducts = await tx.product.findMany({
                     where: { id: { in: productIds } },
+                    include: {
+                        storeInventories: {
+                            where: { storeId: targetStoreId }
+                        }
+                    }
                 });
 
                 const productMap = new Map(dbProducts.map((p) => [p.id, p]));
@@ -59,26 +71,43 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                         throw new Error(`Product not found: ${item.productId}`);
                     }
 
-                    if (product.quantity < item.quantity) {
+                    // For TEMPLATE products, we bypass the stock check and decrement
+                    if (product.type === "TEMPLATE") {
+                        continue;
+                    }
+
+                    const inventory = product.storeInventories[0];
+                    const availableQuantity = inventory?.quantity || 0;
+
+                    if (availableQuantity < item.quantity) {
                         throw new Error(
-                            `Insufficient stock for ${product.name}. Available: ${product.quantity}`,
+                            `Insufficient stock for ${product.name}. Available: ${availableQuantity}`,
                         );
                     }
 
-                    const updatePromise = tx.product.update({
-                        where: { id: item.productId },
+                    const updatePromise = tx.storeInventory.update({
+                        where: { id: inventory.id },
                         data: {
                             quantity: { decrement: item.quantity },
-                            inStock: product.quantity - item.quantity > 0,
                         },
                     });
                     updatePromises.push(updatePromise);
 
+                    // Also update the global product's inStock status if it hits 0 in this store
+                    // This matches the behavior in pages/api/invoiceItem/post.ts
+                    const productUpdate = tx.product.update({
+                        where: { id: item.productId },
+                        data: {
+                            inStock: availableQuantity - item.quantity > 0,
+                        },
+                    });
+                    updatePromises.push(productUpdate);
+
                     // Check for low stock based on calculation
-                    if (product.quantity - item.quantity <= 5) {
+                    if (availableQuantity - item.quantity <= 5) {
                         lowStockAlerts.push({
                             name: product.name,
-                            quantity: product.quantity - item.quantity,
+                            quantity: availableQuantity - item.quantity,
                         });
                     }
                 }
@@ -91,6 +120,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                         status: invoiceStatus,
                         customerId: customerId || null,
                         businessId: creator.businessId,
+                        storeId: targetStoreId,
                         createdBy,
                     },
                 });

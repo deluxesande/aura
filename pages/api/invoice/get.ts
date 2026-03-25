@@ -46,13 +46,15 @@ export const getInvoices = async (
                 businessId: currentUser.businessId,
                 storeId: targetStoreId,
             },
-            include: { invoiceItems: true },
+            include: { invoiceItems: { include: { Product: { select: { type: true } } } } },
         });
 
         if (failedInvoices.length > 0) {
             await prisma.$transaction(async (tx) => {
                 for (const invoice of failedInvoices) {
                     for (const item of invoice.invoiceItems) {
+                        if (item.Product.type === "TEMPLATE") continue;
+
                         const inventory = await tx.storeInventory.findUnique({
                             where: { storeId_productId: { storeId: targetStoreId, productId: item.productId } }
                         });
@@ -82,13 +84,15 @@ export const getInvoices = async (
                 businessId: currentUser.businessId,
                 storeId: targetStoreId,
             },
-            include: { invoiceItems: true },
+            include: { invoiceItems: { include: { Product: { select: { type: true } } } } },
         });
 
         if (recoveredInvoices.length > 0) {
             await prisma.$transaction(async (tx) => {
                 for (const invoice of recoveredInvoices) {
                     for (const item of invoice.invoiceItems) {
+                        if (item.Product.type === "TEMPLATE") continue;
+
                         const inventory = await tx.storeInventory.findUnique({
                             where: { storeId_productId: { storeId: targetStoreId, productId: item.productId } }
                         });
