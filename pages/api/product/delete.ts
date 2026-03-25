@@ -1,10 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/utils/lib/client";
-import { utapi, extractFileKey } from "@/utils/server/uploadthingServer";
+// import { utapi, extractFileKey } from "@/utils/server/uploadthingServer";
 
 export const deleteProduct = async (
     req: NextApiRequest,
-    res: NextApiResponse
+    res: NextApiResponse,
 ) => {
     const id = req.query.id as string;
 
@@ -22,6 +22,8 @@ export const deleteProduct = async (
             return res.status(404).json({ error: "Product not found" });
         }
 
+        // UploadThing deletion commented out to preserve images for historical invoices
+        /*
         if (product.image) {
             const isUploadThing = product.image.includes("utfs.io");
 
@@ -31,21 +33,33 @@ export const deleteProduct = async (
                     try {
                         await utapi.deleteFiles(fileKey);
                     } catch (utError) {
-                        // We proceed with DB delete even if cloud delete fails to avoid orphaned DB records
+                        console.error("Failed to delete from UploadThing:", utError);
                     }
                 }
             }
         }
+        */
 
-        await prisma.product.delete({
+        await prisma.product.update({
             where: { id },
+            data: { isArchived: true },
         });
 
         return res
             .status(200)
-            .json({ message: "Product deleted successfully" });
+            .json({ message: "Product archived successfully" });
     } catch (error) {
-        console.error("Delete Product Error:", error);
+        console.error("Archive Product Error:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 };
+
+export default async function handler(
+    req: NextApiRequest,
+    res: NextApiResponse,
+) {
+    if (req.method === "DELETE") {
+        return deleteProduct(req, res);
+    }
+    return res.status(405).json({ error: "Method not allowed" });
+}

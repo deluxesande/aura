@@ -4,7 +4,7 @@ import { prisma } from "@/utils/lib/client";
 
 export const getProducts = async (
     req: NextApiRequest,
-    res: NextApiResponse
+    res: NextApiResponse,
 ) => {
     try {
         const { userId } = getAuth(req);
@@ -25,14 +25,17 @@ export const getProducts = async (
         }
 
         const activeStoreHeader = req.headers["x-store-id"] as string;
-        
+
         // Fetch User role and fixed storeId
         const userWithRole = await prisma.user.findUnique({
             where: { clerkId: userId },
-            select: { role: true, storeId: true }
+            select: { role: true, storeId: true },
         });
 
-        const targetStoreId = userWithRole?.role === "admin" ? activeStoreHeader : (userWithRole?.storeId as string);
+        const targetStoreId =
+            userWithRole?.role === "admin"
+                ? activeStoreHeader
+                : (userWithRole?.storeId as string);
 
         if (!targetStoreId) {
             return res.status(400).json({ error: "No active store selected." });
@@ -41,56 +44,59 @@ export const getProducts = async (
         const products = await prisma.product.findMany({
             where: {
                 businessId: currentUser.businessId,
+                isArchived: false,
                 OR: [
                     { type: "TEMPLATE" },
                     {
                         storeInventories: {
-                            some: { storeId: targetStoreId }
-                        }
+                            some: { storeId: targetStoreId },
+                        },
                     },
                     {
                         variants: {
                             some: {
+                                isArchived: false,
                                 storeInventories: {
-                                    some: { storeId: targetStoreId }
-                                }
-                            }
-                        }
-                    }
-                ]
+                                    some: { storeId: targetStoreId },
+                                },
+                            },
+                        },
+                    },
+                ],
             },
             include: {
                 Category: true,
                 storeInventories: {
                     where: { storeId: targetStoreId },
-                    select: { quantity: true }
+                    select: { quantity: true },
                 },
                 variants: {
+                    where: { isArchived: false },
                     include: {
                         storeInventories: {
                             where: { storeId: targetStoreId },
-                            select: { quantity: true }
+                            select: { quantity: true },
                         },
                         attributeValues: {
                             include: {
                                 attributeOption: {
                                     include: {
-                                        attribute: true
-                                    }
-                                }
-                            }
-                        }
-                    }
+                                        attribute: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
                 },
                 attributeValues: {
                     include: {
                         attributeOption: {
                             include: {
-                                attribute: true
-                            }
-                        }
-                    }
-                }
+                                attribute: true,
+                            },
+                        },
+                    },
+                },
             },
             orderBy: {
                 createdAt: "desc",
@@ -98,11 +104,11 @@ export const getProducts = async (
         });
 
         // Map quantity from storeInventories to the flat quantity field for frontend compatibility
-        const productsWithQuantity = products.map(p => {
+        const productsWithQuantity = products.map((p) => {
             const quantity = p.storeInventories[0]?.quantity || 0;
-            const variants = p.variants.map(v => ({
+            const variants = p.variants.map((v) => ({
                 ...v,
-                quantity: v.storeInventories[0]?.quantity || 0
+                quantity: v.storeInventories[0]?.quantity || 0,
             }));
             return { ...p, quantity, variants };
         });
@@ -121,7 +127,7 @@ export const getProducts = async (
         const usersMap = new Map();
 
         const clerkUsersResults = await Promise.allSettled(
-            businessUsers.map((dbUser) => clerk.users.getUser(dbUser.clerkId))
+            businessUsers.map((dbUser) => clerk.users.getUser(dbUser.clerkId)),
         );
 
         businessUsers.forEach((dbUser, index) => {
@@ -147,16 +153,20 @@ export const getProducts = async (
 
         // Helper to attach creator to a product and its variants
         const attachCreator = (product: any) => {
-            const creator = product.createdBy ? usersMap.get(product.createdBy) : null;
+            const creator = product.createdBy
+                ? usersMap.get(product.createdBy)
+                : null;
             const productWithCreator = { ...product, creator: creator || null };
-            
+
             if (productWithCreator.variants) {
-                productWithCreator.variants = productWithCreator.variants.map((v: any) => ({
-                    ...v,
-                    creator: v.createdBy ? usersMap.get(v.createdBy) : null
-                }));
+                productWithCreator.variants = productWithCreator.variants.map(
+                    (v: any) => ({
+                        ...v,
+                        creator: v.createdBy ? usersMap.get(v.createdBy) : null,
+                    }),
+                );
             }
-            
+
             return productWithCreator;
         };
 

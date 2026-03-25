@@ -1,3 +1,5 @@
+// prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -49,22 +51,23 @@ model MpesaPayment {
 }
 
 model Product {
-  id           String        @id @default(uuid()) @map("_id") @db.Uuid
-  name         String
-  description  String
-  price        Float
-  sku          String        @unique
-  quantity     Int           @default(0)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  categoryId   String        @db.Uuid
-  Category     Category      @relation(fields: [categoryId], references: [id])
-  inStock      Boolean       @default(false)
+  id          String   @id @default(uuid()) @map("_id") @db.Uuid
+  name        String
+  description String
+  price       Float
+  sku         String   @unique
+  quantity    Int      @default(0)
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  categoryId  String   @db.Uuid
+  Category    Category @relation(fields: [categoryId], references: [id])
+  inStock     Boolean  @default(false)
   invoiceItems InvoiceItem[]
-  image        String?       @default("/images/default-product.png") @db.Text
-  createdBy    String?
-  businessId   String?       @db.Uuid
-  Business     Business?     @relation(fields: [businessId], references: [id])
+  image       String?  @default("/images/default-product.png") @db.Text
+  createdBy   String?
+  businessId  String?  @db.Uuid
+  Business    Business? @relation(fields: [businessId], references: [id])
 
   // Variants Logic
   type            ProductType             @default(SIMPLE)
@@ -123,25 +126,25 @@ model Category {
 }
 
 model Invoice {
-  id                  String               @id @default(uuid()) @map("_id") @db.Uuid
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  customerId          String?              @db.Uuid
-  Customer            Customer?            @relation(fields: [customerId], references: [id])
-  invoiceItems        InvoiceItem[]
-  totalAmount         Float
-  paymentType         String               @default("CASH")
-  status              String               @default("PENDING")
-  stockRestored       Boolean              @default(false)
-  createdBy           String?
-  invoiceName         String               @default("")
-  mpesaPayments       MpesaPayment[]
+  id                 String               @id @default(uuid()) @map("_id") @db.Uuid
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  customerId         String?              @db.Uuid
+  Customer           Customer?            @relation(fields: [customerId], references: [id])
+  invoiceItems       InvoiceItem[]
+  totalAmount        Float
+  paymentType        String               @default("CASH")
+  status             String               @default("PENDING")
+  stockRestored      Boolean              @default(false)
+  createdBy          String?
+  invoiceName        String               @default("")
+  mpesaPayments      MpesaPayment[]
   successfulCallbacks SuccessfulCallback[]
-  failedCallbacks     FailedCallback[]
-  businessId          String?              @db.Uuid
-  Business            Business?            @relation(fields: [businessId], references: [id])
-  storeId             String?              @db.Uuid
-  Store               Store?               @relation(fields: [storeId], references: [id])
+  failedCallbacks    FailedCallback[]
+  businessId         String?              @db.Uuid
+  Business           Business?            @relation(fields: [businessId], references: [id])
+  storeId            String?              @db.Uuid
+  Store              Store?               @relation(fields: [storeId], references: [id])
 }
 
 model InvoiceItem {
@@ -202,32 +205,32 @@ model SuccessfulCallback {
 }
 
 model User {
-  id               String         @id @default(uuid()) @map("_id") @db.Uuid
-  clerkId          String         @unique
-  email            String         @unique
+  id               String          @id @default(uuid()) @map("_id") @db.Uuid
+  clerkId          String          @unique
+  email            String          @unique
   firstName        String?
   lastName         String?
-  role             String         @default("user") // admin, manager, user
-  status           String         @default("active")
-  businessId       String?        @db.Uuid
-  Business         Business?      @relation(fields: [businessId], references: [id])
-  storeId          String?        @db.Uuid
-  Store            Store?         @relation(fields: [storeId], references: [id])
-  createdCustomers Customer[]     @relation("CustomerCreator")
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  role             String          @default("user") // admin, manager, user
+  status           String          @default("active")
+  businessId       String?         @db.Uuid
+  Business         Business?       @relation(fields: [businessId], references: [id])
+  storeId          String?         @db.Uuid
+  Store            Store?          @relation(fields: [storeId], references: [id])
+  createdCustomers Customer[]      @relation("CustomerCreator")
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
   lastLogin        DateTime?
   mpesaPayments    MpesaPayment[]
   stockTransfers   StockTransfer[]
 }
 
 model Business {
-  id        String   @id @default(uuid()) @map("_id") @db.Uuid
-  name      String
-  email     String?  @unique
-  address   String?
-  logo      String?  @db.Text
-  users     User[]
+  id      String   @id @default(uuid()) @map("_id") @db.Uuid
+  name    String
+  email   String?  @unique
+  address String?
+  logo    String?  @db.Text
+  users   User[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -253,12 +256,12 @@ model Business {
 }
 
 model Store {
-  id          String   @id @default(uuid()) @map("_id") @db.Uuid
-  name        String
-  address     String?
-  isActive    Boolean  @default(true)
-  businessId  String   @db.Uuid
-  Business    Business @relation(fields: [businessId], references: [id])
+  id         String   @id @default(uuid()) @map("_id") @db.Uuid
+  name       String
+  address    String?
+  isActive   Boolean  @default(true)
+  businessId String   @db.Uuid
+  Business   Business @relation(fields: [businessId], references: [id])
   
   users       User[]           
   inventory   StoreInventory[] 
@@ -282,8 +285,8 @@ model StoreInventory {
   productId String  @db.Uuid
   quantity  Int     @default(0)
   
-  Store     Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  Product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  Store   Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  Product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([storeId, productId])
 }

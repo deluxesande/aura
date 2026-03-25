@@ -1,14 +1,18 @@
 "use client";
+
 import { AppState } from "@/store";
 import { setBusinessDetails } from "@/store/slices/businessDataSlice";
 import { formatPhoneNumber } from "@/utils/formatPhoneNumber";
 import { apiClient } from "@/utils/apiClient";
-import { AnimatePresence, motion } from "framer-motion";
-import { Check, Phone, X, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
+import { Check, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
+import PaymentModal from "@/components/modals/PaymentModal";
+import DowngradeModal from "@/components/modals/DowngradeModal";
+import InactiveResourcesList from "@/components/payment/InactiveResourcesList";
 
 type Plan = {
     id: string;
@@ -138,7 +142,6 @@ export default function PaymentPage() {
     const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
     const [downgradeLoading, setDowngradeLoading] = useState(false);
 
-    // Step state inside downgrade modal: "STAFF" or "STORES"
     const [downgradeStep, setDowngradeStep] = useState<"STAFF" | "STORES">(
         "STAFF",
     );
@@ -168,22 +171,23 @@ export default function PaymentPage() {
     }, [user, businessDetails, dispatch]);
 
     const currentPlanId = businessDetails?.subscription?.plan || null;
+    const currentPlanLimit =
+        PLANS.find((p) => p.id === currentPlanId) || PLANS[0];
 
     const checkLimitsForDowngrade = async (targetPlan: Plan) => {
-        if (!user?.businessId) {
-            return true;
-        }
+        if (!user?.businessId) return true;
 
         setLoadingLimits(true);
         try {
-            // Fetch both staff and stores
             const [staffRes, storesRes] = await Promise.all([
                 apiClient.get("/auth/invite/get"),
                 apiClient.get(`/business/${user.businessId}/stores`),
             ]);
 
             const staffData = staffRes.data;
-            const storesData = storesRes.data as StoreInfo[];
+            const storesData = (storesRes.data as StoreInfo[]).filter(
+                (s) => s.isActive !== false,
+            );
 
             let allSeats: StaffMember[] = [];
 
@@ -199,10 +203,9 @@ export default function PaymentPage() {
                 staffData &&
                 (staffData.users || staffData.invitations)
             ) {
-                const users = (staffData.users || []).map((u: any) => ({
-                    ...u,
-                    type: "USER",
-                }));
+                const users = (staffData.users || [])
+                    .filter((u: any) => u.status !== "inactive")
+                    .map((u: any) => ({ ...u, type: "USER" }));
                 const invites = (staffData.invitations || []).map((i: any) => ({
                     ...i,
                     type: "INVITE",
@@ -210,28 +213,22 @@ export default function PaymentPage() {
                 allSeats = [...users, ...invites];
             }
 
-            // Calculate TOTAL HEADCOUNT (You + Others)
             const isOwnerInList = allSeats.some((s) => s.email === user?.email);
             let totalHeadcount = allSeats.length;
-            if (!isOwnerInList) {
-                totalHeadcount += 1;
-            }
+            if (!isOwnerInList) totalHeadcount += 1;
 
             const slotsForList = isOwnerInList
                 ? targetPlan.staffLimit
                 : Math.max(0, targetPlan.staffLimit - 1);
-
             const staffLimitReached = totalHeadcount > targetPlan.staffLimit;
             const storeLimitReached = storesData.length > targetPlan.storeLimit;
 
             if (staffLimitReached || storeLimitReached) {
                 setStaffList(allSeats);
                 setEffectiveStaffLimit(slotsForList);
-
                 setStoreList(storesData);
                 setEffectiveStoreLimit(targetPlan.storeLimit);
 
-                // Auto-select owner if present
                 if (isOwnerInList) {
                     const owner = allSeats.find((s) => s.email === user?.email);
                     if (owner) setSelectedStaffIds([owner.id]);
@@ -239,16 +236,13 @@ export default function PaymentPage() {
                     setSelectedStaffIds([]);
                 }
 
-                // Set initial step
                 if (staffLimitReached) {
                     setDowngradeStep("STAFF");
                 } else {
                     setDowngradeStep("STORES");
-                    // Pre-fill valid staff if limit not reached
                     setSelectedStaffIds(allSeats.map((s) => s.id));
                 }
 
-                // Pre-fill valid stores if limit not reached
                 if (!storeLimitReached) {
                     setSelectedStoreIds(storesData.map((s) => s.id));
                 } else {
@@ -275,9 +269,7 @@ export default function PaymentPage() {
             return;
         }
 
-        // Check limits for ALL plans to ensure safety
         const isWithinLimits = await checkLimitsForDowngrade(plan);
-
         if (!isWithinLimits) return;
 
         if (plan.price === 0) {
@@ -329,14 +321,11 @@ export default function PaymentPage() {
                     : "My New Business";
                 formData.append("name", businessName);
 
-                // Create the business
                 const response = await apiClient.post("/business", formData, {
                     headers: { "Content-Type": "multipart/form-data" },
                 });
 
                 const newBusiness = response.data;
-
-                // Format it to STRICTLY match your Redux type
                 const formattedBusinessDetails = {
                     id: newBusiness.id,
                     name: newBusiness.name,
@@ -348,8 +337,6 @@ export default function PaymentPage() {
                     mpesaConsumerSecret: newBusiness.mpesaConsumerSecret || "",
                     mpesaPassKey: newBusiness.mpesaPassKey || "",
                     mpesaShortCode: newBusiness.mpesaShortCode || "",
-
-                    // Set default Starter subscription details
                     subscription: newBusiness.subscription || {
                         plan: "STARTER" as const,
                         status: "ACTIVE",
@@ -358,20 +345,16 @@ export default function PaymentPage() {
                             new Date().setMonth(new Date().getMonth() + 1),
                         ).toISOString(),
                     },
-
-                    // Provide default usage block to prevent UI crashes
                     usage: newBusiness.usage || {
                         transactionCount: 0,
-                        staffCount: 1, // Just the owner
+                        staffCount: 1,
                         isLimitReached: false,
                         canExportData: false,
                         hasCustomBranding: false,
                     },
                 };
 
-                // Dispatch the strictly typed object
                 dispatch(setBusinessDetails(formattedBusinessDetails));
-
                 router.push("/products");
                 return "Welcome to Salesense Starter!";
             } else {
@@ -428,7 +411,6 @@ export default function PaymentPage() {
             const checkoutRequestId = response.data.data.CheckoutRequestID;
             router.push(`/payment/checking?id=${checkoutRequestId}`);
         } catch (error: any) {
-            console.error("Payment Error:", error);
             const message =
                 error.response?.data?.error || "Payment request failed.";
             toast.error(message, { duration: 5000 });
@@ -585,313 +567,36 @@ export default function PaymentPage() {
                         );
                     })}
                 </div>
+
+                <PaymentModal
+                    isOpen={isPaymentModalOpen}
+                    onClose={() => setIsPaymentModalOpen(false)}
+                    plan={selectedPlan}
+                    currentPlanId={currentPlanId}
+                    phoneNumber={phoneNumber}
+                    setPhoneNumber={setPhoneNumber}
+                    handlePayment={handlePayment}
+                    paymentLoading={paymentLoading}
+                />
+
+                <DowngradeModal
+                    isOpen={isDowngradeModalOpen}
+                    onClose={() => setIsDowngradeModalOpen(false)}
+                    plan={selectedPlan}
+                    staffList={staffList}
+                    storeList={storeList}
+                    effectiveStaffLimit={effectiveStaffLimit}
+                    effectiveStoreLimit={effectiveStoreLimit}
+                    selectedStaffIds={selectedStaffIds}
+                    toggleStaffSelection={toggleStaffSelection}
+                    selectedStoreIds={selectedStoreIds}
+                    toggleStoreSelection={toggleStoreSelection}
+                    downgradeStep={downgradeStep}
+                    handleDowngradeNextStep={handleDowngradeNextStep}
+                    downgradeLoading={downgradeLoading}
+                    userEmail={user?.email}
+                />
             </div>
-
-            {/* --- PAYMENT MODAL --- */}
-            <AnimatePresence>
-                {isPaymentModalOpen && selectedPlan && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                        <motion.div
-                            initial={{ scale: 0.95, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.95, opacity: 0 }}
-                            className="relative bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden z-10"
-                        >
-                            <div className="p-6 text-center border-b border-gray-100">
-                                <h3 className="text-2xl font-bold text-gray-900">
-                                    {currentPlanId
-                                        ? "Confirm Upgrade"
-                                        : "Confirm Payment"}
-                                </h3>
-                                <p className="text-gray-500 mt-1 italic">
-                                    Subscribe to {selectedPlan.name}
-                                </p>
-                                <div className="mt-4 text-3xl font-black text-green-600">
-                                    KSh {selectedPlan.price.toLocaleString()}
-                                </div>
-                            </div>
-                            <div className="p-8">
-                                <form
-                                    onSubmit={handlePayment}
-                                    className="space-y-6"
-                                >
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
-                                            M-Pesa Phone Number
-                                        </label>
-                                        <div className="relative">
-                                            <input
-                                                type="tel"
-                                                required
-                                                placeholder="07XXXXXXXX"
-                                                value={phoneNumber}
-                                                onChange={(e) =>
-                                                    setPhoneNumber(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                className="block w-full pl-10 pr-3 py-3 bg-slate-50 outline-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                                            />
-                                        </div>
-                                    </div>
-                                    <button
-                                        type="submit"
-                                        disabled={
-                                            paymentLoading || !phoneNumber
-                                        }
-                                        className="w-full flex justify-center items-center py-4 px-4 rounded-lg shadow-lg text-sm font-black text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 transition-all shadow-green-100"
-                                    >
-                                        {paymentLoading ? (
-                                            <Loader2 className="animate-spin h-4 w-4 stroke-white" />
-                                        ) : (
-                                            `Pay KSh ${selectedPlan.price.toLocaleString()}`
-                                        )}
-                                    </button>
-                                </form>
-                                <button
-                                    onClick={() => setIsPaymentModalOpen(false)}
-                                    className="mt-4 w-full text-center text-sm font-medium text-gray-400 hover:text-gray-600 transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-
-            {/* --- DOWNGRADE SELECTION MODAL --- */}
-            <AnimatePresence>
-                {isDowngradeModalOpen && selectedPlan && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                        <motion.div
-                            initial={{ scale: 0.95, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.95, opacity: 0 }}
-                            className="relative bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden z-10"
-                        >
-                            <div className="p-6 bg-red-50 border-b border-red-100">
-                                <h3 className="text-xl font-bold text-red-600 mb-2">
-                                    Limit Reached
-                                </h3>
-
-                                {downgradeStep === "STAFF" && (
-                                    <>
-                                        <p className="text-gray-700 text-sm">
-                                            The{" "}
-                                            <strong>{selectedPlan.name}</strong>{" "}
-                                            plan allows{" "}
-                                            <strong>
-                                                {selectedPlan.staffLimit}
-                                            </strong>{" "}
-                                            total seat(s).
-                                            <br />
-                                            You currently have{" "}
-                                            <strong>
-                                                {staffList.length +
-                                                    (staffList.some(
-                                                        (s) =>
-                                                            s.email ===
-                                                            user?.email,
-                                                    )
-                                                        ? 0
-                                                        : 1)}
-                                            </strong>{" "}
-                                            (You + active users + pending
-                                            invites).
-                                        </p>
-                                        <p className="text-xs text-red-500 mt-3 font-semibold bg-red-100/50 p-2 rounded-lg">
-                                            Please select exactly{" "}
-                                            {effectiveStaffLimit} person(s) from
-                                            this list to keep active.
-                                        </p>
-                                    </>
-                                )}
-
-                                {downgradeStep === "STORES" && (
-                                    <>
-                                        <p className="text-gray-700 text-sm">
-                                            The{" "}
-                                            <strong>{selectedPlan.name}</strong>{" "}
-                                            plan allows{" "}
-                                            <strong>
-                                                {selectedPlan.storeLimit}
-                                            </strong>{" "}
-                                            total branch(es).
-                                            <br />
-                                            You currently have{" "}
-                                            <strong>
-                                                {storeList.length}
-                                            </strong>{" "}
-                                            active branches.
-                                        </p>
-                                        <p className="text-xs text-red-500 mt-3 font-semibold bg-red-100/50 p-2 rounded-lg">
-                                            Please select exactly{" "}
-                                            {effectiveStoreLimit} branch(es) to
-                                            keep active. Unselected branches
-                                            will be suspended.
-                                        </p>
-                                    </>
-                                )}
-                            </div>
-
-                            <div className="p-6 max-h-[300px] overflow-y-auto">
-                                <div className="space-y-3">
-                                    {downgradeStep === "STAFF" &&
-                                        staffList.map((staff) => {
-                                            const isSelected =
-                                                selectedStaffIds.includes(
-                                                    staff.id,
-                                                );
-                                            const isInvite =
-                                                staff.type === "INVITE";
-                                            const isMaxReached =
-                                                selectedStaffIds.length >=
-                                                effectiveStaffLimit;
-                                            const isDisabled =
-                                                isInvite ||
-                                                (isMaxReached && !isSelected);
-
-                                            return (
-                                                <div
-                                                    key={staff.id}
-                                                    onClick={() =>
-                                                        !isDisabled &&
-                                                        toggleStaffSelection(
-                                                            staff.id,
-                                                        )
-                                                    }
-                                                    className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${
-                                                        isSelected
-                                                            ? "border-green-500 bg-green-50 ring-1 ring-green-500"
-                                                            : "border-gray-200 hover:border-gray-300"
-                                                    } ${isDisabled ? "opacity-50 cursor-not-allowed grayscale-[0.5]" : ""}`}
-                                                >
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-2">
-                                                            <p className="font-semibold text-gray-900">
-                                                                {staff.name ||
-                                                                    "Staff Member"}
-                                                            </p>
-                                                            {isInvite && (
-                                                                <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full font-bold">
-                                                                    INVITE
-                                                                </span>
-                                                            )}
-                                                            {staff.email ===
-                                                                user?.email && (
-                                                                <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full font-bold">
-                                                                    YOU
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <p className="text-xs text-gray-500">
-                                                            {staff.email}
-                                                        </p>
-                                                    </div>
-                                                    <div
-                                                        className={`w-6 h-6 rounded-full border flex items-center justify-center ${isSelected ? "bg-green-600 border-green-600" : "border-gray-300"}`}
-                                                    >
-                                                        {isSelected && (
-                                                            <Check
-                                                                size={14}
-                                                                className="stroke-white"
-                                                            />
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-
-                                    {downgradeStep === "STORES" &&
-                                        storeList.map((store) => {
-                                            const isSelected =
-                                                selectedStoreIds.includes(
-                                                    store.id,
-                                                );
-                                            const isMaxReached =
-                                                selectedStoreIds.length >=
-                                                effectiveStoreLimit;
-                                            const isDisabled =
-                                                isMaxReached && !isSelected;
-
-                                            return (
-                                                <div
-                                                    key={store.id}
-                                                    onClick={() =>
-                                                        !isDisabled &&
-                                                        toggleStoreSelection(
-                                                            store.id,
-                                                        )
-                                                    }
-                                                    className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${
-                                                        isSelected
-                                                            ? "border-green-500 bg-green-50 ring-1 ring-green-500"
-                                                            : "border-gray-200 hover:border-gray-300"
-                                                    } ${isDisabled ? "opacity-50 cursor-not-allowed grayscale-[0.5]" : ""}`}
-                                                >
-                                                    <div className="flex-1">
-                                                        <p className="font-semibold text-gray-900">
-                                                            {store.name}
-                                                        </p>
-                                                        <p className="text-xs text-gray-500">
-                                                            {store.address ||
-                                                                "No address provided"}
-                                                        </p>
-                                                    </div>
-                                                    <div
-                                                        className={`w-6 h-6 rounded-full border flex items-center justify-center ${isSelected ? "bg-green-600 border-green-600" : "border-gray-300"}`}
-                                                    >
-                                                        {isSelected && (
-                                                            <Check
-                                                                size={14}
-                                                                className="stroke-white"
-                                                            />
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                </div>
-                            </div>
-
-                            <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-4">
-                                <button
-                                    onClick={() =>
-                                        setIsDowngradeModalOpen(false)
-                                    }
-                                    className="flex-1 py-3 px-4 rounded-lg border border-gray-300 text-gray-700 font-bold hover:bg-gray-100 transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleDowngradeNextStep}
-                                    disabled={
-                                        downgradeLoading ||
-                                        (downgradeStep === "STAFF" &&
-                                            effectiveStaffLimit > 0 &&
-                                            selectedStaffIds.length === 0) ||
-                                        (downgradeStep === "STORES" &&
-                                            effectiveStoreLimit > 0 &&
-                                            selectedStoreIds.length === 0)
-                                    }
-                                    className="flex-1 py-3 px-4 rounded-lg bg-red-600 text-white font-bold hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
-                                >
-                                    {downgradeLoading ? (
-                                        <Loader2 className="animate-spin h-4 w-4 stroke-white" />
-                                    ) : downgradeStep === "STAFF" &&
-                                      storeList.length >
-                                          (selectedPlan?.storeLimit || 0) ? (
-                                        "Next: Select Branches"
-                                    ) : (
-                                        "Confirm & Continue"
-                                    )}
-                                </button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
         </div>
     );
 }

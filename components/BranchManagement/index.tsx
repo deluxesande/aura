@@ -93,6 +93,33 @@ const BranchManagement: React.FC = () => {
         }
     };
 
+    const handleReactivateStore = async (storeId: string) => {
+        if (!canCreate) {
+            toast.error(
+                `Branch limit reached. Your ${businessDetails?.subscription?.plan || "STARTER"} plan allows only ${maxStores} active branch(es).`,
+            );
+            return;
+        }
+
+        const reactivatePromise = apiClient.post(
+            `/stores/${storeId}/reactivate`,
+        );
+
+        toast.promise(reactivatePromise, {
+            loading: "Reactivating branch...",
+            success: () => {
+                setStores((prev) =>
+                    prev.map((s) =>
+                        s.id === storeId ? { ...s, isActive: true } : s,
+                    ),
+                );
+                return "Branch reactivated successfully.";
+            },
+            error: (err) =>
+                err.response?.data?.error || "Failed to reactivate branch",
+        });
+    };
+
     const openEditModal = (store: any) => {
         setEditStore({
             id: store.id,
@@ -109,7 +136,8 @@ const BranchManagement: React.FC = () => {
               ? 3
               : 1;
 
-    const currentCount = stores.length;
+    // Only count ACTIVE stores against the limit
+    const currentCount = stores.filter((s) => s.isActive !== false).length;
     const canCreate = currentCount < maxStores;
 
     return (
@@ -231,13 +259,15 @@ const BranchManagement: React.FC = () => {
                                                     <span className="text-sm font-medium text-gray-900">
                                                         {store.name}
                                                     </span>
-                                                    {!store.isActive && (
+                                                    {store.isActive ===
+                                                        false && (
                                                         <span className="ml-3 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
                                                             Suspended
                                                         </span>
                                                     )}
                                                     {isSelectedStore &&
-                                                        store.isActive && (
+                                                        store.isActive !==
+                                                            false && (
                                                             <span className="ml-3 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-500">
                                                                 Active
                                                             </span>
@@ -254,14 +284,30 @@ const BranchManagement: React.FC = () => {
                                             </td>
                                             {user?.role === "admin" && (
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <button
-                                                        onClick={() =>
-                                                            openEditModal(store)
-                                                        }
-                                                        className="text-green-500 hover:text-green-600"
-                                                    >
-                                                        Edit
-                                                    </button>
+                                                    {store.isActive ===
+                                                    false ? (
+                                                        <button
+                                                            onClick={() =>
+                                                                handleReactivateStore(
+                                                                    store.id,
+                                                                )
+                                                            }
+                                                            className="text-green-500 hover:text-green-600"
+                                                        >
+                                                            Reactivate
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() =>
+                                                                openEditModal(
+                                                                    store,
+                                                                )
+                                                            }
+                                                            className="text-green-500 hover:text-green-600"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                    )}
                                                 </td>
                                             )}
                                         </tr>

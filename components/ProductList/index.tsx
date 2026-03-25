@@ -1,5 +1,6 @@
 import { Product } from "@/utils/typesDefinitions";
 import {
+    ArrowRightLeft,
     ChevronDown,
     ChevronLeft,
     ChevronRight,
@@ -15,10 +16,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { Fragment, useEffect, useState, useMemo } from "react";
 import { useDispatch } from "react-redux";
-import { setProducts } from "@/store/slices/productSlice"; // <-- Added Redux import
+import { setProducts } from "@/store/slices/productSlice";
 import NoProductsFound from "../NoProducts";
 
-// 1. EXTRACTED COMPONENT
 const ProductRow = React.memo(
     ({
         product,
@@ -28,6 +28,7 @@ const ProductRow = React.memo(
         onToggleTemplate,
         onEditClick,
         onDelete,
+        onTransferClick,
     }: {
         product: any;
         isVariant?: boolean;
@@ -35,7 +36,8 @@ const ProductRow = React.memo(
         isExpanded?: boolean;
         onToggleTemplate?: (id: string) => void;
         onEditClick: (id: string) => void;
-        onDelete: (id: string, parentId?: string) => void; // <-- Updated signature to accept parentId
+        onDelete: (id: string, parentId?: string) => void;
+        onTransferClick: (product: any) => void;
     }) => {
         const isTemplate = product.type === "TEMPLATE";
 
@@ -173,6 +175,15 @@ const ProductRow = React.memo(
 
                     <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
+                            {!isTemplate && (
+                                <button
+                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                    onClick={() => onTransferClick(product)}
+                                    title="Transfer Stock"
+                                >
+                                    <ArrowRightLeft size={16} />
+                                </button>
+                            )}
                             <button
                                 className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
                                 onClick={() => onEditClick(product.id)}
@@ -181,7 +192,6 @@ const ProductRow = React.memo(
                             </button>
                             <button
                                 className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                // Passes the parent ID if this is a variant!
                                 onClick={() =>
                                     onDelete(product.id, parentProduct?.id)
                                 }
@@ -201,6 +211,7 @@ const ProductRow = React.memo(
                             parentProduct={product}
                             onEditClick={onEditClick}
                             onDelete={onDelete}
+                            onTransferClick={onTransferClick}
                         />
                     ))}
             </Fragment>
@@ -213,14 +224,16 @@ ProductRow.displayName = "ProductRow";
 export default function ProductList({
     products,
     handleDelete,
+    onTransferClick,
     loading = false,
 }: {
     products: Product[];
     handleDelete: (productId: string) => void;
+    onTransferClick: (product: any) => void;
     loading?: boolean;
 }) {
     const router = useRouter();
-    const dispatch = useDispatch(); // <-- Added Redux Dispatch
+    const dispatch = useDispatch();
 
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedCategory, setSelectedCategory] = useState("All");
@@ -241,16 +254,12 @@ export default function ProductList({
         );
     };
 
-    // --- NEW: Redux Delete Wrapper ---
     const handleDeleteWrapper = (id: string, parentId?: string) => {
-        // 1. Trigger the original API call passed from the parent page
         handleDelete(id);
 
-        // 2. Immediately update Redux so the UI reacts instantly
         const updatedProducts = products
-            .filter((p) => p.id !== id) // Removes standard products and templates
+            .filter((p) => p.id !== id)
             .map((p) => {
-                // If this is the parent template of the deleted variant, filter it out of the nested array
                 if (parentId && p.id === parentId) {
                     return {
                         ...p,
@@ -412,8 +421,8 @@ export default function ProductList({
                                     )}
                                     onToggleTemplate={toggleTemplate}
                                     onEditClick={handleEditClick}
-                                    // Use the new Redux wrapper instead of standard handleDelete
                                     onDelete={handleDeleteWrapper}
+                                    onTransferClick={onTransferClick}
                                 />
                             ))
                         )}

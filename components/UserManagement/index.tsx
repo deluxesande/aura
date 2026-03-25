@@ -382,7 +382,7 @@ const UserManagement: React.FC = () => {
                     {canInvite ? (
                         <button
                             onClick={() => setShowInviteModal(true)}
-                            className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700 transition-colors whitespace-nowrap"
+                            className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-green-500 text-white rounded text-sm font-medium hover:bg-green-600 transition-colors whitespace-nowrap"
                         >
                             <PlusCircle
                                 size={16}

@@ -6,6 +6,7 @@ import {
     ChevronLeft,
     ChevronRight,
     Search,
+    ArrowRightLeft,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -16,10 +17,12 @@ import NoProductsFound from "../NoProducts";
 export default function MobileProductList({
     products,
     handleDelete,
+    onTransferClick,
     loading = false,
 }: {
     products: Product[];
     handleDelete: (productId: string) => void;
+    onTransferClick: (product: any) => void;
     loading?: boolean;
 }) {
     const router = useRouter();
@@ -82,7 +85,7 @@ export default function MobileProductList({
         const maxPagesToShow = 3;
         let startPage = Math.max(
             1,
-            currentPage - Math.floor(maxPagesToShow / 2)
+            currentPage - Math.floor(maxPagesToShow / 2),
         );
         let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
 
@@ -115,8 +118,8 @@ export default function MobileProductList({
                             className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none bg-gray-50 focus:bg-white focus:ring-2 focus:ring-green-500/20 transition-all cursor-pointer font-medium text-gray-600"
                         >
                             {categories.map((cat) => (
-                                <option key={cat} value={cat}>
-                                    {cat}
+                                <option key={cat} value={cat as string}>
+                                    {cat as string}
                                 </option>
                             ))}
                         </select>
@@ -151,7 +154,6 @@ export default function MobileProductList({
             ) : paginatedProducts.length === 0 ? (
                 <div className="p-8 text-center">
                     {products.length > 0 ? (
-                        // No results from search
                         <div className="flex flex-col items-center gap-2">
                             <p className="text-gray-500">
                                 No products found matching &quot;{searchQuery}
@@ -175,9 +177,7 @@ export default function MobileProductList({
                             key={index}
                             className="p-4 border rounded-lg shadow-sm bg-gray-50 flex flex-col gap-3"
                         >
-                            {/* TOP SECTION: Image & Main Details */}
                             <div className="flex gap-4">
-                                {/* Product Image */}
                                 <div className="w-20 h-20 relative rounded-md overflow-hidden bg-gray-200 shrink-0 border border-gray-200">
                                     {product.image ? (
                                         <Image
@@ -193,7 +193,6 @@ export default function MobileProductList({
                                     )}
                                 </div>
 
-                                {/* Details */}
                                 <div className="flex-1 min-w-0 flex flex-col justify-center">
                                     <h3 className="font-bold text-base text-gray-900 truncate">
                                         {product.name}
@@ -201,7 +200,6 @@ export default function MobileProductList({
                                     <p className="text-xs text-gray-500 truncate mt-1">
                                         {product.description}
                                     </p>
-                                    {/* Quantity Badge */}
                                     <div className="mt-2">
                                         <span
                                             className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
@@ -218,7 +216,6 @@ export default function MobileProductList({
 
                             <div className="border-t border-gray-200 my-1"></div>
 
-                            {/* MIDDLE SECTION: Creator Info */}
                             <div className="flex items-center justify-between">
                                 <span className="text-xs text-gray-400">
                                     Created by:
@@ -247,12 +244,23 @@ export default function MobileProductList({
                                 )}
                             </div>
 
-                            {/* BOTTOM SECTION: Price & Actions */}
                             <div className="flex justify-between items-center mt-1 bg-white p-2 rounded border border-gray-100">
                                 <p className="text-green-600 font-bold text-lg">
                                     Ksh {product.price}
                                 </p>
                                 <div className="flex space-x-1">
+                                    {product.type !== "TEMPLATE" && (
+                                        <button
+                                            className="btn btn-sm btn-ghost text-gray-600 hover:text-blue-600"
+                                            onClick={() =>
+                                                onTransferClick(product)
+                                            }
+                                            title="Transfer Stock"
+                                        >
+                                            <ArrowRightLeft className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                    <div className="border-l border-gray-300 h-5 mx-1 self-center"></div>
                                     <button
                                         className="btn btn-sm btn-ghost text-gray-600 hover:text-green-600"
                                         onClick={() =>
@@ -278,7 +286,6 @@ export default function MobileProductList({
             {/* Pagination - Only show if we have filtered items */}
             {!loading && filteredProducts.length > 0 && (
                 <div className="flex justify-center items-center pt-4 my-4 space-x-4">
-                    {/* Previous Button */}
                     <button
                         className="btn btn-xs btn-ghost flex items-center bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
                         onClick={handlePreviousPage}
@@ -288,7 +295,6 @@ export default function MobileProductList({
                         <span className="hidden sm:inline text-sm">Back</span>
                     </button>
 
-                    {/* Page Numbers */}
                     <div className="flex space-x-2">
                         {getPageNumbers().map((page) => (
                             <button
@@ -305,7 +311,6 @@ export default function MobileProductList({
                         ))}
                     </div>
 
-                    {/* Next Button */}
                     <button
                         className="btn btn-xs btn-ghost flex items-center bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
                         onClick={handleNextPage}

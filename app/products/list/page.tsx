@@ -3,13 +3,15 @@
 import MobileProductList from "@/components/MobileProductList";
 import Navbar from "@/components/Navbar";
 import ProductList from "@/components/ProductList";
+import StockTransferModal from "@/components/modals/StockTransferModal";
 import { AppState } from "@/store";
 import { setProducts } from "@/store/slices/productSlice";
 import { Product } from "@/utils/typesDefinitions";
 import { apiClient } from "@/utils/apiClient";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
+import { AnimatePresence } from "framer-motion";
 
 export default function Page() {
     const dispatch = useDispatch();
@@ -19,6 +21,11 @@ export default function Page() {
 
     const [loading, setLoading] = useState(products.length === 0);
 
+    // Transfer Modal State
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+    const [selectedTransferProduct, setSelectedTransferProduct] =
+        useState<Product | null>(null);
+
     // Update filtered products when products change
     useEffect(() => {
         setFilteredProducts(products);
@@ -26,6 +33,18 @@ export default function Page() {
 
     // Prevent double-fetching in React Strict Mode
     const hasFetched = useRef(false);
+
+    const fetchProducts = useCallback(async () => {
+        try {
+            const response = await apiClient.get("/product");
+            const fetchedProducts = Array.isArray(response.data)
+                ? response.data
+                : [];
+            dispatch(setProducts(fetchedProducts));
+        } catch (error) {
+            console.error("Background update failed");
+        }
+    }, [dispatch]);
 
     const handleDelete = async (productId: string) => {
         const previousProducts = [...products];
@@ -44,29 +63,23 @@ export default function Page() {
         }
     };
 
+    const handleTransferClick = (product: Product) => {
+        setSelectedTransferProduct(product);
+        setIsTransferModalOpen(true);
+    };
+
     useEffect(() => {
         if (hasFetched.current) return;
 
-        const fetchProducts = async () => {
+        const loadInitial = async () => {
             if (products.length === 0) setLoading(true);
-
-            try {
-                const response = await apiClient.get("/product");
-                const fetchedProducts = Array.isArray(response.data)
-                    ? response.data
-                    : [];
-                dispatch(setProducts(fetchedProducts));
-            } catch (error) {
-                console.error("Background update failed");
-            } finally {
-                setLoading(false);
-                hasFetched.current = true;
-            }
+            await fetchProducts();
+            setLoading(false);
+            hasFetched.current = true;
         };
 
-        fetchProducts();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dispatch]); // Removed 'products' dependency to prevent fetch loops
+        loadInitial();
+    }, [fetchProducts, products.length]);
 
     return (
         <Navbar setFilteredProducts={setFilteredProducts}>
@@ -74,6 +87,7 @@ export default function Page() {
                 <ProductList
                     products={filteredProducts}
                     handleDelete={handleDelete}
+                    onTransferClick={handleTransferClick}
                     loading={loading}
                 />
             </div>
@@ -81,9 +95,21 @@ export default function Page() {
                 <MobileProductList
                     products={filteredProducts}
                     handleDelete={handleDelete}
+                    onTransferClick={handleTransferClick}
                     loading={loading}
                 />
             </div>
+
+            <AnimatePresence>
+                {isTransferModalOpen && selectedTransferProduct && (
+                    <StockTransferModal
+                        isOpen={isTransferModalOpen}
+                        onClose={() => setIsTransferModalOpen(false)}
+                        product={selectedTransferProduct}
+                        onSuccess={() => fetchProducts()}
+                    />
+                )}
+            </AnimatePresence>
         </Navbar>
     );
 }

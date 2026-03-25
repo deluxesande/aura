@@ -54,7 +54,7 @@ async function getUserById(req: NextApiRequest, res: NextApiResponse) {
             }
         } catch (clerkError) {
             console.warn(
-                `Could not fetch Clerk image for ${targetUser.clerkId}`
+                `Could not fetch Clerk image for ${targetUser.clerkId}`,
             );
         }
 
@@ -80,7 +80,7 @@ async function getUserById(req: NextApiRequest, res: NextApiResponse) {
                 let inviterImage = "/images/user.png";
                 try {
                     const inviterClerk = await client.users.getUser(
-                        inviter.clerkId
+                        inviter.clerkId,
                     );
                     if (inviterClerk.imageUrl) {
                         inviterImage = inviterClerk.imageUrl;
@@ -135,8 +135,10 @@ async function updateUser(req: NextApiRequest, res: NextApiResponse) {
                 .json({ error: "You are not linked to a business" });
         }
 
-        if (requestor.role !== "admin") {
-            return res.status(403).json({ error: "Only admins can modify users" });
+        if (requestor.role !== "admin" && requestor.role !== "manager") {
+            return res
+                .status(403)
+                .json({ error: "Insufficient permissions to modify users" });
         }
 
         const targetId = Array.isArray(req.query.id)
@@ -160,9 +162,36 @@ async function updateUser(req: NextApiRequest, res: NextApiResponse) {
             return res.status(404).json({ error: "User not found" });
         }
 
+        // STRICT RBAC VALIDATION
+        // 1. The Admin cannot be edited by ANYONE (including themselves, to prevent accidental lockouts)
+        if (targetUser.role === "admin") {
+            return res
+                .status(403)
+                .json({
+                    error: "The primary Admin account cannot be modified.",
+                });
+        }
+
+        // 2. Managers can only edit regular Users
+        if (requestor.role === "manager" && targetUser.role === "manager") {
+            return res
+                .status(403)
+                .json({ error: "Managers cannot modify other Managers." });
+        }
+
+        // 3. Enforce valid role assignments
+        if (role && role.toLowerCase() === "admin") {
+            return res
+                .status(403)
+                .json({
+                    error: "Cannot assign Admin role. There can be only one Admin per business.",
+                });
+        }
+
         const updateData: any = {};
         if (storeId !== undefined) {
-            updateData.storeId = storeId === "null" || storeId === null ? null : storeId;
+            updateData.storeId =
+                storeId === "null" || storeId === null ? null : storeId;
         }
         if (role) {
             updateData.role = role.toLowerCase();
@@ -171,7 +200,7 @@ async function updateUser(req: NextApiRequest, res: NextApiResponse) {
         const updatedUser = await prisma.user.update({
             where: { clerkId: targetId },
             data: updateData,
-            include: { Store: { select: { id: true, name: true } } }
+            include: { Store: { select: { id: true, name: true } } },
         });
 
         return res.status(200).json(updatedUser);
@@ -192,4 +221,3 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
             res.status(405).end(`Method ${req.method} Not Allowed`);
     }
 }
-
