@@ -20,7 +20,8 @@ type User = {
     Business: {};
 };
 
-const fetcher = (url: string) => apiClient.get(url.replace("/api", "")).then((res) => res.data);
+const fetcher = (url: string) =>
+    apiClient.get(url.replace("/api", "")).then((res) => res.data);
 
 const IntegrationsSettings: React.FC = () => {
     const [integrations, setIntegrations] = useState({ mpesa: false });
@@ -74,7 +75,9 @@ const IntegrationsSettings: React.FC = () => {
     useEffect(() => {
         if (error) {
             console.error("Error fetching integration status:", error);
-            toast.error("We couldn't load your integration details. Please try refreshing the page.");
+            toast.error(
+                "We couldn't load your integration details. Please try refreshing the page.",
+            );
         }
     }, [error]);
 
@@ -131,7 +134,6 @@ const IntegrationsSettings: React.FC = () => {
                 payload,
             );
 
-
             if (response.status === 200) {
                 const maskedConfig = {
                     ...mpesaConfig,
@@ -142,7 +144,9 @@ const IntegrationsSettings: React.FC = () => {
                 setSavedConfig(maskedConfig);
                 setIntegrations((prev) => ({ ...prev, mpesa: true }));
                 setIsModalOpen(false);
-                toast.success("M-PESA credentials saved! You're now ready to process live payments.");
+                toast.success(
+                    "M-PESA credentials saved! You're now ready to process live payments.",
+                );
             }
         } catch (error) {
             const axiosError = error as AxiosError;
@@ -188,15 +192,17 @@ const IntegrationsSettings: React.FC = () => {
                 toast.info("M-PESA has been disconnected.");
             }
         } catch (error) {
-            toast.error("We couldn't disconnect the service. Please try again.");
+            toast.error(
+                "We couldn't disconnect the service. Please try again.",
+            );
         }
     };
 
     return (
         <section className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 w-full relative min-h-[200px]">
             {isLoading && (
-                <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center rounded-lg backdrop-blur-sm">
-                    <Loader2 className="animate-spin h-8 w-8 text-green-600" />
+                <div className="flex flex-col items-center justify-center my-10">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                 </div>
             )}
 

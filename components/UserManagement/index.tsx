@@ -443,9 +443,8 @@ const UserManagement: React.FC = () => {
                                         colSpan={5}
                                         className="px-6 py-8 text-center text-sm text-gray-500"
                                     >
-                                        <div className="flex justify-center items-center">
-                                            <Loader2 className="animate-spin h-5 w-5 mr-2 text-gray-400" />
-                                            Loading users...
+                                        <div className="flex flex-col items-center justify-center my-10">
+                                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                                         </div>
                                     </td>
                                 </tr>

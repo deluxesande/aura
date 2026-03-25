@@ -76,6 +76,8 @@ export default function EditProductPage() {
         cachedProduct || initialFormState,
     );
 
+    const [isRestocking, setIsRestocking] = useState(false);
+
     const isTemplate = formData.type === "TEMPLATE";
 
     useEffect(() => {
@@ -197,22 +199,49 @@ export default function EditProductPage() {
         setFormData((prev) => ({ ...prev, inStock: !prev.inStock }));
     };
 
-    const handleRestock = () => {
+    const handleRestock = async (e?: React.FormEvent) => {
+        e?.preventDefault();
+
         const amountToAdd = parseInt(restockAmount, 10);
         if (isNaN(amountToAdd) || amountToAdd <= 0) {
-            toast.error("Please enter a valid amount");
+            toast.error("Please enter a valid quantity");
             return;
         }
 
-        setFormData((prev) => ({
-            ...prev,
-            quantity: (prev.quantity || 0) + amountToAdd,
-            inStock: true,
-        }));
+        setIsRestocking(true);
+        try {
+            const newQuantity = (formData.quantity || 0) + amountToAdd;
+            const updatedProduct = {
+                ...formData,
+                quantity: newQuantity,
+                inStock: true,
+            };
 
-        toast.success(`Added ${amountToAdd} units to stock count.`);
-        setIsRestockModalOpen(false);
-        setRestockAmount("");
+            const response = await apiClient.put(
+                `/product/${id}`,
+                updatedProduct,
+            );
+            const savedProduct = response.data || updatedProduct;
+
+            // Update local form state
+            setFormData((prev) => ({ ...prev, ...savedProduct }));
+
+            // Update Redux product list
+            const updatedProductsList = originalProducts.map((p) =>
+                p.id === id ? { ...p, ...savedProduct } : p,
+            );
+            dispatch(setProducts(updatedProductsList));
+
+            toast.success(
+                `${formData.name} restocked! New Qty: ${newQuantity}`,
+            );
+            setIsRestockModalOpen(false);
+            setRestockAmount("");
+        } catch (error) {
+            toast.error("Failed to restock product");
+        } finally {
+            setIsRestocking(false);
+        }
     };
 
     const handleImageFileSelect = (

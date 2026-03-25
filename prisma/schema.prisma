@@ -74,6 +74,10 @@ model Product {
   attributeValues ProductAttributeValue[]
   storeInventories StoreInventory[]
   stockTransfers   StockTransfer[]
+
+  @@index([businessId])
+  @@index([businessId, sku])
+  @@index([businessId, categoryId])
 }
 
 model Attribute {
@@ -269,6 +273,7 @@ model Store {
   updatedAt   DateTime @updatedAt
 
   @@unique([name, businessId])
+  @@index([businessId])
 }
 
 model StoreInventory {
@@ -379,6 +384,9 @@ model Subscription {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([status])
 }
 
 model SubscriptionPayment {
@@ -434,4 +442,6 @@ model KraTotReturn {
 
   businessId String   @db.Uuid
   Business   Business @relation(fields: [businessId], references: [id])
+
+  @@index([businessId])
 }

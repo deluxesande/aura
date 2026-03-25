@@ -192,9 +192,11 @@ const BranchManagement: React.FC = () => {
                                 <tr>
                                     <td
                                         colSpan={user?.role === "admin" ? 4 : 3}
-                                        className="px-6 py-8 text-center text-sm text-gray-500"
+                                        className="px-6 py-8 text-center"
                                     >
-                                        Loading branches...
+                                        <div className="flex flex-col items-center justify-center my-10">
+                                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                                        </div>
                                     </td>
                                 </tr>
                             )}
@@ -213,7 +215,8 @@ const BranchManagement: React.FC = () => {
 
                             {!loading &&
                                 stores.map((store) => {
-                                    const isSelectedStore = store.id === activeStoreId;
+                                    const isSelectedStore =
+                                        store.id === activeStoreId;
                                     return (
                                         <tr
                                             key={store.id}
@@ -233,11 +236,12 @@ const BranchManagement: React.FC = () => {
                                                             Suspended
                                                         </span>
                                                     )}
-                                                    {isSelectedStore && store.isActive && (
-                                                        <span className="ml-3 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-500">
-                                                            Active
-                                                        </span>
-                                                    )}
+                                                    {isSelectedStore &&
+                                                        store.isActive && (
+                                                            <span className="ml-3 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-500">
+                                                                Active
+                                                            </span>
+                                                        )}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
