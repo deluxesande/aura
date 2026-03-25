@@ -956,8 +956,8 @@ export default function TeamPage() {
                                                 }
                                                 className="block w-full pl-4 pr-10 py-3 bg-slate-50 outline-none border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-sm appearance-none cursor-pointer"
                                             >
-                                                <option value="All">
-                                                    All Branches
+                                                <option value="" disabled>
+                                                    Select a branch...
                                                 </option>
                                                 {stores.map((store) => (
                                                     <option
