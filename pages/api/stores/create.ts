@@ -25,8 +25,9 @@ export default async function handler(
 
             // 2. CRITICAL: Row-Level Lock on the Business record
             // This serializes all store creation attempts for this specific tenant
-            await tx.$queryRaw`SELECT id FROM "Business" WHERE id = ${user.businessId}::uuid FOR UPDATE`;
-
+            await tx.$executeRaw`
+    SELECT pg_advisory_xact_lock(hashtext(${user.businessId}::text))
+`;
             // 3. Fetch Subscription Limits
             const subscription = await tx.subscription.findFirst({
                 where: { businessId: user.businessId },
