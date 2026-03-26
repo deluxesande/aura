@@ -81,6 +81,7 @@ export default async function handler(
             const whereClause: any = {
                 createdBy: { in: userIds },
                 storeId: targetStoreId,
+                isDeleted: false,
             };
 
             // Only add createdAt to query if dates are provided
@@ -127,7 +128,8 @@ export default async function handler(
                         businessId, 
                         status: "COMPLETED",
                         Invoice: {
-                            storeId: targetStoreId
+                            storeId: targetStoreId,
+                            isDeleted: false,
                         }
                     },
                     _sum: { amount: true },

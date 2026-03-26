@@ -219,7 +219,7 @@ export default function ExpensesPage() {
                             <span className="text-sm text-gray-500 font-bold uppercase tracking-wider">
                                 Total:
                             </span>
-                            <span className="text-lg font-black text-gray-900">
+                            <span className="text-lg font-semibold text-gray-900">
                                 KSh {totalExpenses.toLocaleString()}
                             </span>
                         </div>

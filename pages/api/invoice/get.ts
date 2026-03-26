@@ -134,6 +134,7 @@ export const getInvoices = async (
                     in: userIds,
                 },
                 storeId: targetStoreId,
+                isDeleted: false,
             },
             orderBy: {
                 createdAt: "desc",

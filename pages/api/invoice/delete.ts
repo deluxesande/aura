@@ -54,12 +54,12 @@ export const deleteInvoice = async (
     if (!id) return res.status(400).json({ error: "Missing invoice ID" });
 
     try {
-        const deletedInvoice = await prisma.invoice.findUnique({
+        const existingInvoice = await prisma.invoice.findUnique({
             where: { id: id },
         });
 
-        if (!deletedInvoice) {
-            return res.status(404).json({ error: "Invoice not found" });
+        if (!existingInvoice || existingInvoice.isDeleted) {
+            return res.status(404).json({ error: "Invoice not found or already deleted" });
         }
 
         const invoiceItems = await prisma.invoiceItem.findMany({
@@ -69,14 +69,14 @@ export const deleteInvoice = async (
 
         await prisma.$transaction(async (tx) => {
             // 1. Restore product quantities to StoreInventory
-            if (deletedInvoice.storeId) {
+            if (existingInvoice.storeId) {
                 for (const item of invoiceItems) {
                     // Skip if it's a template
                     if (item.Product.type === "TEMPLATE") continue;
 
                     await tx.storeInventory.updateMany({
                         where: {
-                            storeId: deletedInvoice.storeId,
+                            storeId: existingInvoice.storeId,
                             productId: item.productId,
                         },
                         data: {
@@ -94,22 +94,15 @@ export const deleteInvoice = async (
                 }
             }
 
-            // 2. Clean up M-Pesa related data linked to this invoice
-            await tx.successfulCallback.deleteMany({
-                where: { invoiceId: id },
-            });
-
-            await tx.failedCallback.deleteMany({
-                where: { invoiceId: id },
-            });
-
-            await tx.mpesaPayment.deleteMany({
-                where: { invoiceId: id },
-            });
-
-            // 3. Delete the invoice (Cascade will handle InvoiceItems)
-            await tx.invoice.delete({
+            // SOFT DELETE: Update the invoice status and isDeleted flag
+            // We keep M-Pesa related data for historical reference in soft-deleted invoices
+            await tx.invoice.update({
                 where: { id: id },
+                data: {
+                    isDeleted: true,
+                    status: "VOIDED",
+                    stockRestored: true, // Mark as restored since we just did it above
+                },
             });
         });
 
@@ -119,11 +112,11 @@ export const deleteInvoice = async (
             select: { firstName: true, lastName: true },
         });
 
-        sendDeleteNotification(deletedInvoice, deleteBy).catch((err) =>
+        sendDeleteNotification(existingInvoice, deleteBy).catch((err) =>
             console.error("Notification Error:", err)
         );
 
-        res.status(204).end();
+        res.status(200).json({ message: "Invoice voided successfully" });
     } catch (error) {
         console.error("Failed to delete invoice:", error);
         res.status(500).json({ error: "Failed to delete invoice" });

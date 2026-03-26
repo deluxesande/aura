@@ -116,6 +116,7 @@ export default async function handler(
                     storeId: targetStoreId,
                     createdAt: { gte: startDate, lte: endDate },
                     status: { in: ["PAID", "paid", "COMPLETED", "completed"] },
+                    isDeleted: false,
                 },
                 include: {
                     invoiceItems: {

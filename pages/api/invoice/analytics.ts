@@ -75,6 +75,7 @@ export default async function handler(
                 status: {
                     in: ["PAID", "paid", "COMPLETED", "completed"],
                 },
+                isDeleted: false,
                 createdAt: {
                     gte: startDate,
                 },

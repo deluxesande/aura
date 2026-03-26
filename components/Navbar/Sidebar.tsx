@@ -1,3 +1,5 @@
+"use client";
+
 import { AppState } from "@/store";
 import { setUser, signOut as signOutAction } from "@/store/slices/authSlice";
 import { toggleSideBarState } from "@/store/slices/sideBarSlice";
@@ -6,6 +8,7 @@ import { useClerk, useUser } from "@clerk/nextjs";
 import {
     ChevronLeft,
     ChevronRight,
+    ChevronDown,
     HandCoins,
     HelpCircle,
     LayoutDashboard,
@@ -15,11 +18,15 @@ import {
     ShoppingBasket,
     Users,
     WalletMinimal,
+    Truck,
+    Building2,
+    ClipboardList,
+    History,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 const linkGroups = [
@@ -52,6 +59,27 @@ const linkGroups = [
         ],
     },
     {
+        label: "Supply Chain",
+        items: [
+            {
+                label: "Supplies",
+                icon: Truck,
+                allowedRoles: ["admin", "manager"],
+                subItems: [
+                    { href: "/suppliers", label: "Suppliers" },
+                    {
+                        href: "/suppliers/orders",
+                        label: "Orders",
+                    },
+                    {
+                        href: "/suppliers/history",
+                        label: "History",
+                    },
+                ],
+            },
+        ],
+    },
+    {
         label: "Finance",
         items: [
             {
@@ -66,12 +94,6 @@ const linkGroups = [
                 icon: HandCoins,
                 allowedRoles: ["admin", "manager", "user"],
             },
-            // {
-            //     href: "/tax",
-            //     label: "Tax Returns",
-            //     icon: Calculator,
-            //     allowedRoles: ["admin", "manager"],
-            // },
             {
                 href: "/expenses",
                 label: "Expenses",
@@ -114,7 +136,14 @@ const Sidebar = () => {
         (state: AppState) => state.auth.user,
     ) as storeUser | null;
 
-    const [toggleSideBar, setToggleSidebar] = React.useState(sideBarState);
+    const [toggleSideBar, setToggleSidebar] = useState(sideBarState);
+
+    // State to track which accordions are open
+    const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>(
+        {
+            Supplies: pathname?.startsWith("/suppliers") || false,
+        },
+    );
 
     useEffect(() => {
         setToggleSidebar(sideBarState);
@@ -149,6 +178,16 @@ const Sidebar = () => {
         dispatch(toggleSideBarState());
     };
 
+    const toggleDropdown = (label: string) => {
+        if (!toggleSideBar) {
+            // Auto-expand sidebar if clicking a collapsed accordion parent
+            toggleSidebarFunc();
+            setOpenDropdowns((prev) => ({ ...prev, [label]: true }));
+        } else {
+            setOpenDropdowns((prev) => ({ ...prev, [label]: !prev[label] }));
+        }
+    };
+
     if (user == null) return null;
 
     const profileImage = clerkUser?.hasImage
@@ -160,7 +199,7 @@ const Sidebar = () => {
             data-tour="sidebar"
             className={`${
                 toggleSideBar ? "w-44" : "w-20"
-            } h-screen bg-white shadow-sm border-r border-gray-100 hidden lg:flex flex-col sticky top-0 transition-all duration-300 ease-in-out overflow-visible`}
+            } h-screen bg-white shadow-sm border-r border-gray-100 hidden lg:flex flex-col sticky top-0 transition-all duration-300 ease-in-out overflow-visible no-scrollbar`}
         >
             {/* BACKGROUND PATTERN */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03] z-0">
@@ -230,7 +269,7 @@ const Sidebar = () => {
                                 <div
                                     key={groupIdx}
                                     data-tour={`nav-${group.label.toLowerCase()}`}
-                                    className="w-full"
+                                    className="w-full "
                                 >
                                     {toggleSideBar && (
                                         <h3 className="px-3 mb-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
@@ -238,7 +277,120 @@ const Sidebar = () => {
                                         </h3>
                                     )}
                                     <ul className="flex flex-col gap-2">
-                                        {visibleLinks.map((link) => {
+                                        {visibleLinks.map((link: any) => {
+                                            // Handle Dropdown Accordion Item
+                                            if (link.subItems) {
+                                                const isOpen =
+                                                    openDropdowns[link.label];
+                                                const isChildActive =
+                                                    link.subItems.some(
+                                                        (sub: any) =>
+                                                            pathname ===
+                                                                sub.href ||
+                                                            (sub.href !==
+                                                                "/suppliers" &&
+                                                                pathname?.startsWith(
+                                                                    sub.href,
+                                                                )),
+                                                    );
+                                                const Icon = link.icon;
+
+                                                return (
+                                                    <li
+                                                        key={link.label}
+                                                        className="flex flex-col gap-1"
+                                                    >
+                                                        <button
+                                                            onClick={() =>
+                                                                toggleDropdown(
+                                                                    link.label,
+                                                                )
+                                                            }
+                                                            className={`flex items-center justify-between px-2 py-2 rounded-lg transition-all duration-200 group ${isChildActive && !isOpen ? "bg-green-50 text-green-600" : "hover:bg-green-50 text-gray-600"} ${!toggleSideBar ? "justify-center" : ""}`}
+                                                            title={
+                                                                !toggleSideBar
+                                                                    ? link.label
+                                                                    : ""
+                                                            }
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="flex-shrink-0">
+                                                                    <Icon
+                                                                        size={
+                                                                            20
+                                                                        }
+                                                                        className={
+                                                                            isChildActive
+                                                                                ? "stroke-green-500"
+                                                                                : "stroke-green-500 group-hover:stroke-green-500"
+                                                                        }
+                                                                    />
+                                                                </div>
+                                                                {toggleSideBar && (
+                                                                    <span
+                                                                        className={`text-sm font-medium whitespace-nowrap overflow-hidden ${isChildActive ? "text-green-500 font-bold" : "text-gray-600 group-hover:text-green-500"}`}
+                                                                    >
+                                                                        {
+                                                                            link.label
+                                                                        }
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            {toggleSideBar && (
+                                                                <ChevronDown
+                                                                    size={14}
+                                                                    className={`text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                                                                />
+                                                            )}
+                                                        </button>
+
+                                                        {/* Sub Items */}
+                                                        {isOpen &&
+                                                            toggleSideBar && (
+                                                                <ul className="flex flex-col gap-1 pl-4 pr-2 mt-1">
+                                                                    {link.subItems.map(
+                                                                        (
+                                                                            sub: any,
+                                                                        ) => {
+                                                                            const isSubActive =
+                                                                                pathname ===
+                                                                                    sub.href ||
+                                                                                (sub.href !==
+                                                                                    "/suppliers" &&
+                                                                                    pathname?.startsWith(
+                                                                                        sub.href,
+                                                                                    ));
+                                                                            return (
+                                                                                <li
+                                                                                    key={
+                                                                                        sub.href
+                                                                                    }
+                                                                                >
+                                                                                    <Link
+                                                                                        href={
+                                                                                            sub.href
+                                                                                        }
+                                                                                        className={`flex items-center gap-3 px-2 py-1.5 rounded-md transition-all duration-200 group ${isSubActive ? "bg-[#22c55e] text-white shadow-sm" : "hover:bg-green-50 text-gray-500"}`}
+                                                                                    >
+                                                                                        <span
+                                                                                            className={`text-xs font-medium ${isSubActive ? "text-white font-bold" : "group-hover:text-green-600"}`}
+                                                                                        >
+                                                                                            {
+                                                                                                sub.label
+                                                                                            }
+                                                                                        </span>
+                                                                                    </Link>
+                                                                                </li>
+                                                                            );
+                                                                        },
+                                                                    )}
+                                                                </ul>
+                                                            )}
+                                                    </li>
+                                                );
+                                            }
+
+                                            // Standard Link Rendering
                                             const isActive =
                                                 pathname === link.href;
                                             const Icon = link.icon;
@@ -249,7 +401,7 @@ const Sidebar = () => {
                                                         href={link.href}
                                                         className={`flex items-center gap-3 px-2 py-2 rounded-lg transition-all duration-200 group ${
                                                             isActive
-                                                                ? "bg-[#22c55e] text-white"
+                                                                ? "bg-[#22c55e] text-white shadow-sm"
                                                                 : "hover:bg-green-50 text-gray-600"
                                                         } ${!toggleSideBar ? "justify-center" : ""}`}
                                                         title={
@@ -258,15 +410,13 @@ const Sidebar = () => {
                                                                 : ""
                                                         }
                                                     >
-                                                        <div
-                                                            className={`flex-shrink-0`}
-                                                        >
+                                                        <div className="flex-shrink-0">
                                                             <Icon
                                                                 size={20}
                                                                 className={
                                                                     isActive
                                                                         ? "stroke-white"
-                                                                        : "stroke-green-500"
+                                                                        : "stroke-green-500 group-hover:stroke-green-600"
                                                                 }
                                                             />
                                                         </div>

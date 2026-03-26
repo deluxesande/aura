@@ -453,7 +453,7 @@ export default function Navbar({
                                                             >
                                                                 <div className="flex items-center justify-between w-full">
                                                                     <p
-                                                                        className={`text-sm font-bold ${activeStore?.id === store.id ? "text-green-600" : "text-gray-900"}`}
+                                                                        className={`text-sm font-bold ${activeStore?.id === store.id ? "text-green-500" : "text-gray-900"}`}
                                                                     >
                                                                         {
                                                                             store.name

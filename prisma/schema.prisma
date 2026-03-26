@@ -77,6 +77,8 @@ model Product {
   attributeValues ProductAttributeValue[]
   storeInventories StoreInventory[]
   stockTransfers   StockTransfer[]
+  stockReceipts    StockReceipt[]
+  purchaseOrderItems PurchaseOrderItem[]
 
   @@index([businessId])
   @@index([businessId, sku])
@@ -145,6 +147,7 @@ model Invoice {
   Business           Business?            @relation(fields: [businessId], references: [id])
   storeId            String?              @db.Uuid
   Store              Store?               @relation(fields: [storeId], references: [id])
+  isDeleted          Boolean              @default(false)
 }
 
 model InvoiceItem {
@@ -222,7 +225,6 @@ model User {
   lastLogin        DateTime?
   mpesaPayments    MpesaPayment[]
   stockTransfers   StockTransfer[]
-  expenses         Expense[]       @relation("UserExpenses")
 }
 
 model Business {
@@ -255,6 +257,9 @@ model Business {
   Attribute     Attribute[]
   stores        Store[]
   expenses      Expense[]
+  suppliers     Supplier[]
+  stockReceipts StockReceipt[]
+  purchaseOrders PurchaseOrder[]
 }
 
 model Store {
@@ -271,6 +276,7 @@ model Store {
   customers   Customer[]
   invitations UserInvitation[]
   expenses    Expense[]
+  stockReceipts StockReceipt[]
   
   transfersOut StockTransfer[] @relation("OriginStore")
   transfersIn  StockTransfer[] @relation("DestinationStore")
@@ -280,6 +286,93 @@ model Store {
 
   @@unique([name, businessId])
   @@index([businessId])
+}
+
+model Supplier {
+  id            String          @id @default(uuid()) @map("_id") @db.Uuid
+  name          String
+  email         String?
+  phoneNumber   String?
+  address       String?
+  isDeleted     Boolean         @default(false)
+  
+  businessId    String          @db.Uuid
+  Business      Business        @relation(fields: [businessId], references: [id])
+  
+  purchaseOrders PurchaseOrder[]
+  stockReceipts  StockReceipt[]
+
+  createdBy     String?         // Clerk ID
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([businessId])
+}
+
+model PurchaseOrder {
+  id            String              @id @default(uuid()) @map("_id") @db.Uuid
+  reference     String
+  totalAmount   Float
+  status        String              @default("PENDING") // PENDING, DELIVERED, CANCELLED
+  isDeleted     Boolean             @default(false)
+
+  supplierId    String              @db.Uuid
+  Supplier      Supplier            @relation(fields: [supplierId], references: [id])
+
+  items         PurchaseOrderItem[]
+
+  businessId    String              @db.Uuid
+  Business      Business            @relation(fields: [businessId], references: [id])
+
+  createdBy     String?             // Clerk ID
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([businessId])
+  @@index([supplierId])
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(uuid()) @map("_id") @db.Uuid
+  quantity        Int
+  unitCost        Float
+
+  productId       String        @db.Uuid
+  Product         Product       @relation(fields: [productId], references: [id])
+
+  purchaseOrderId String        @db.Uuid
+  PurchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model StockReceipt {
+  id          String   @id @default(uuid()) @map("_id") @db.Uuid
+  quantity    Int
+  unitCost    Float
+  totalCost   Float
+  reference   String?
+
+  productId   String   @db.Uuid
+  Product     Product  @relation(fields: [productId], references: [id])
+
+  storeId     String   @db.Uuid
+  Store       Store    @relation(fields: [storeId], references: [id])
+
+  supplierId  String?  @db.Uuid
+  Supplier    Supplier? @relation(fields: [supplierId], references: [id])
+
+  businessId  String   @db.Uuid
+  Business    Business @relation(fields: [businessId], references: [id])
+
+  createdBy   String?  // Clerk ID
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([storeId])
+  @@index([productId])
 }
 
 model StoreInventory {
@@ -372,8 +465,7 @@ model Expense {
   storeId     String?  @db.Uuid
   Store       Store?   @relation(fields: [storeId], references: [id])
   
-  createdById String   @db.Uuid
-  CreatedBy   User     @relation("UserExpenses", fields: [createdById], references: [id])
+  createdBy   String?  // Clerk ID
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
