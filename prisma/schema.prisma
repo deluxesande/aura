@@ -222,6 +222,7 @@ model User {
   lastLogin        DateTime?
   mpesaPayments    MpesaPayment[]
   stockTransfers   StockTransfer[]
+  expenses         Expense[]       @relation("UserExpenses")
 }
 
 model Business {
@@ -253,6 +254,7 @@ model Business {
   Category      Category[]
   Attribute     Attribute[]
   stores        Store[]
+  expenses      Expense[]
 }
 
 model Store {
@@ -268,6 +270,7 @@ model Store {
   invoices    Invoice[]        
   customers   Customer[]
   invitations UserInvitation[]
+  expenses    Expense[]
   
   transfersOut StockTransfer[] @relation("OriginStore")
   transfersIn  StockTransfer[] @relation("DestinationStore")
@@ -352,6 +355,32 @@ model ContactFormMessage {
   name    String
   email   String
   message String
+}
+
+model Expense {
+  id          String   @id @default(uuid()) @map("_id") @db.Uuid
+  title       String
+  category    String
+  amount      Float
+  date        DateTime @default(now())
+  notes       String?
+  status      String   @default("ACTIVE") // ACTIVE, VOIDED
+
+  businessId  String   @db.Uuid
+  Business    Business @relation(fields: [businessId], references: [id])
+  
+  storeId     String?  @db.Uuid
+  Store       Store?   @relation(fields: [storeId], references: [id])
+  
+  createdById String   @db.Uuid
+  CreatedBy   User     @relation("UserExpenses", fields: [createdById], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([storeId])
+  @@index([status])
 }
 
 model UserInvitation {

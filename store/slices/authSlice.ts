@@ -7,6 +7,7 @@ interface User {
     lastName: string | null;
     role: string;
     businessId: string | null;
+    storeId?: string | null;
     status: string;
     Business?: {
         id: string;

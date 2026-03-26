@@ -149,6 +149,13 @@ async function updateUser(req: NextApiRequest, res: NextApiResponse) {
             return res.status(400).json({ error: "Missing user ID" });
         }
 
+        // PREVENT SELF-EDITING
+        if (targetId === requestorClerkId) {
+            return res
+                .status(403)
+                .json({ error: "You cannot modify your own account." });
+        }
+
         const { storeId, role } = req.body;
 
         const targetUser = await prisma.user.findFirst({
@@ -165,11 +172,9 @@ async function updateUser(req: NextApiRequest, res: NextApiResponse) {
         // STRICT RBAC VALIDATION
         // 1. The Admin cannot be edited by ANYONE (including themselves, to prevent accidental lockouts)
         if (targetUser.role === "admin") {
-            return res
-                .status(403)
-                .json({
-                    error: "The primary Admin account cannot be modified.",
-                });
+            return res.status(403).json({
+                error: "The primary Admin account cannot be modified.",
+            });
         }
 
         // 2. Managers can only edit regular Users
@@ -181,11 +186,9 @@ async function updateUser(req: NextApiRequest, res: NextApiResponse) {
 
         // 3. Enforce valid role assignments
         if (role && role.toLowerCase() === "admin") {
-            return res
-                .status(403)
-                .json({
-                    error: "Cannot assign Admin role. There can be only one Admin per business.",
-                });
+            return res.status(403).json({
+                error: "Cannot assign Admin role. There can be only one Admin per business.",
+            });
         }
 
         const updateData: any = {};

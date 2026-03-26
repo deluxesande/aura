@@ -30,11 +30,12 @@ const PUBLIC_PREFIXES = ["/auth/accept-invitation", "/blog", "/help-center"];
 const ROLE_PERMISSIONS: Record<string, string[]> = {
     "/settings/team": ["admin", "manager"],
     "/settings": ["admin", "manager"],
-    "/dashboard": ["admin"],
+    "/dashboard": ["admin", "manager"],
     "/invoices": ["admin", "manager", "user"],
     "/invoice": ["admin", "manager", "user"],
     "/products": ["admin", "manager", "user"],
     "/customers": ["admin", "manager", "user"],
+    "/expenses": ["admin", "manager"],
 };
 
 const SORTED_PROTECTED_ROUTES = Object.keys(ROLE_PERMISSIONS).sort(

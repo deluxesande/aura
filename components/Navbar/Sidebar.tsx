@@ -1,19 +1,20 @@
 import { AppState } from "@/store";
 import { setUser, signOut as signOutAction } from "@/store/slices/authSlice";
 import { toggleSideBarState } from "@/store/slices/sideBarSlice";
-import { useClerk, useUser } from "@clerk/nextjs";
 import { apiClient } from "@/utils/apiClient";
+import { useClerk, useUser } from "@clerk/nextjs";
 import {
     ChevronLeft,
     ChevronRight,
+    HandCoins,
     HelpCircle,
-    History as HistoryIcon,
     LayoutDashboard,
     LogOut,
     PackageSearch,
     Settings,
     ShoppingBasket,
     Users,
+    WalletMinimal,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -62,7 +63,7 @@ const linkGroups = [
             {
                 href: "/invoices",
                 label: "Invoices",
-                icon: HistoryIcon,
+                icon: HandCoins,
                 allowedRoles: ["admin", "manager", "user"],
             },
             // {
@@ -71,6 +72,12 @@ const linkGroups = [
             //     icon: Calculator,
             //     allowedRoles: ["admin", "manager"],
             // },
+            {
+                href: "/expenses",
+                label: "Expenses",
+                icon: WalletMinimal,
+                allowedRoles: ["admin", "manager"],
+            },
         ],
     },
     {
