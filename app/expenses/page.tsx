@@ -29,6 +29,7 @@ export default function ExpensesPage() {
 
     const [searchQuery, setSearchQuery] = useState("");
     const [filterCategory, setFilterCategory] = useState("All");
+    const [filterBranch, setFilterBranch] = useState("All");
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -52,7 +53,7 @@ export default function ExpensesPage() {
     // Reset pagination when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery, filterCategory]);
+    }, [searchQuery, filterCategory, filterBranch]);
 
     const handleVoid = async (expenseId: string) => {
         if (
@@ -80,6 +81,13 @@ export default function ExpensesPage() {
         ...Array.from(new Set(expenses.map((e) => e.category).filter(Boolean))),
     ];
 
+    const branches = [
+        "All",
+        ...Array.from(
+            new Set(expenses.map((e) => e.Store?.name || "All Branches")),
+        ),
+    ];
+
     const filteredExpenses = expenses.filter((expense) => {
         const matchesSearch =
             expense.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -89,7 +97,11 @@ export default function ExpensesPage() {
                     .includes(searchQuery.toLowerCase()));
         const matchesCategory =
             filterCategory === "All" || expense.category === filterCategory;
-        return matchesSearch && matchesCategory;
+        const matchesBranch =
+            filterBranch === "All" ||
+            (expense.Store?.name || "All Branches") === filterBranch;
+
+        return matchesSearch && matchesCategory && matchesBranch;
     });
 
     const totalExpenses = filteredExpenses.reduce(
@@ -180,6 +192,24 @@ export default function ExpensesPage() {
                                         value={cat}
                                     >
                                         {cat}
+                                    </option>
+                                ))}
+                            </select>
+                            <select
+                                value={filterBranch}
+                                onChange={(e) =>
+                                    setFilterBranch(e.target.value)
+                                }
+                                className="px-4 py-2.5 text-sm border border-gray-200 rounded-lg outline-none bg-slate-50 focus:ring-2 focus:ring-green-500/20 transition-all font-medium text-gray-600 w-full sm:w-auto cursor-pointer"
+                            >
+                                {branches.map((branch, idx) => (
+                                    <option
+                                        key={`filter-branch-${branch}-${idx}`}
+                                        value={branch}
+                                    >
+                                        {branch === "All"
+                                            ? "All Branches"
+                                            : branch}
                                     </option>
                                 ))}
                             </select>
