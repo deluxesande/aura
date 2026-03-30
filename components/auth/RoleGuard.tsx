@@ -23,6 +23,7 @@ const PUBLIC_ROUTES = new Set([
     "/blog",
     "/help-center",
     "/access-suspended",
+    "/subscription-expired",
 ]);
 
 const PUBLIC_PREFIXES = ["/auth/accept-invitation", "/blog", "/help-center"];
@@ -36,6 +37,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     "/products": ["admin", "manager", "user"],
     "/customers": ["admin", "manager", "user"],
     "/expenses": ["admin", "manager"],
+    "/suppliers": ["admin", "manager"],
 };
 
 const SORTED_PROTECTED_ROUTES = Object.keys(ROLE_PERMISSIONS).sort(
