@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     if (!user || !user.businessId) return res.status(403).json({ error: "Forbidden" });
-    const { businessId } = user;
+    const { businessId, id: userId } = user;
 
     try {
         const { items, storeId, reference } = req.body; // items: { productId, receivedQty, unitCost }[]
@@ -43,7 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                         storeId: storeId,
                         supplierId: po.supplierId,
                         businessId: businessId,
-                        createdBy: clerkId,
+                        createdById: userId,
                     },
                 });
 

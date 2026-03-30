@@ -51,33 +51,33 @@ model MpesaPayment {
 }
 
 model Product {
-  id          String   @id @default(uuid()) @map("_id") @db.Uuid
-  name        String
-  description String
-  price       Float
-  sku         String   @unique
-  quantity    Int      @default(0)
-  isArchived  Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  categoryId  String   @db.Uuid
-  Category    Category @relation(fields: [categoryId], references: [id])
-  inStock     Boolean  @default(false)
+  id           String        @id @default(uuid()) @map("_id") @db.Uuid
+  name         String
+  description  String
+  price        Float
+  sku          String        @unique
+  quantity     Int           @default(0)
+  isArchived   Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  categoryId   String        @db.Uuid
+  Category     Category      @relation(fields: [categoryId], references: [id])
+  inStock      Boolean       @default(false)
   invoiceItems InvoiceItem[]
-  image       String?  @default("/images/default-product.png") @db.Text
-  createdBy   String?
-  businessId  String?  @db.Uuid
-  Business    Business? @relation(fields: [businessId], references: [id])
+  image        String?       @default("/images/default-product.png") @db.Text
+  createdBy    String?
+  businessId   String?       @db.Uuid
+  Business     Business?     @relation(fields: [businessId], references: [id])
 
   // Variants Logic
-  type            ProductType             @default(SIMPLE)
-  parentId        String?                 @db.Uuid
-  parent          Product?                @relation("ProductVariants", fields: [parentId], references: [id], onDelete: Cascade)
-  variants        Product[]               @relation("ProductVariants")
-  attributeValues ProductAttributeValue[]
-  storeInventories StoreInventory[]
-  stockTransfers   StockTransfer[]
-  stockReceipts    StockReceipt[]
+  type               ProductType             @default(SIMPLE)
+  parentId           String?                 @db.Uuid
+  parent             Product?                @relation("ProductVariants", fields: [parentId], references: [id], onDelete: Cascade)
+  variants           Product[]               @relation("ProductVariants")
+  attributeValues    ProductAttributeValue[]
+  storeInventories   StoreInventory[]
+  stockTransfers     StockTransfer[]
+  stockReceipts      StockReceipt[]
   purchaseOrderItems PurchaseOrderItem[]
 
   @@index([businessId])
@@ -128,26 +128,26 @@ model Category {
 }
 
 model Invoice {
-  id                 String               @id @default(uuid()) @map("_id") @db.Uuid
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  customerId         String?              @db.Uuid
-  Customer           Customer?            @relation(fields: [customerId], references: [id])
-  invoiceItems       InvoiceItem[]
-  totalAmount        Float
-  paymentType        String               @default("CASH")
-  status             String               @default("PENDING")
-  stockRestored      Boolean              @default(false)
-  createdBy          String?
-  invoiceName        String               @default("")
-  mpesaPayments      MpesaPayment[]
+  id                  String               @id @default(uuid()) @map("_id") @db.Uuid
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  customerId          String?              @db.Uuid
+  Customer            Customer?            @relation(fields: [customerId], references: [id])
+  invoiceItems        InvoiceItem[]
+  totalAmount         Float
+  paymentType         String               @default("CASH")
+  status              String               @default("PENDING")
+  stockRestored       Boolean              @default(false)
+  createdBy           String?
+  invoiceName         String               @default("")
+  mpesaPayments       MpesaPayment[]
   successfulCallbacks SuccessfulCallback[]
-  failedCallbacks    FailedCallback[]
-  businessId         String?              @db.Uuid
-  Business           Business?            @relation(fields: [businessId], references: [id])
-  storeId            String?              @db.Uuid
-  Store              Store?               @relation(fields: [storeId], references: [id])
-  isDeleted          Boolean              @default(false)
+  failedCallbacks     FailedCallback[]
+  businessId          String?              @db.Uuid
+  Business            Business?            @relation(fields: [businessId], references: [id])
+  storeId             String?              @db.Uuid
+  Store               Store?               @relation(fields: [storeId], references: [id])
+  isDeleted           Boolean              @default(false)
 }
 
 model InvoiceItem {
@@ -208,32 +208,36 @@ model SuccessfulCallback {
 }
 
 model User {
-  id               String          @id @default(uuid()) @map("_id") @db.Uuid
-  clerkId          String          @unique
-  email            String          @unique
-  firstName        String?
-  lastName         String?
-  role             String          @default("user") // admin, manager, user
-  status           String          @default("active")
-  businessId       String?         @db.Uuid
-  Business         Business?       @relation(fields: [businessId], references: [id])
-  storeId          String?         @db.Uuid
-  Store            Store?          @relation(fields: [storeId], references: [id])
-  createdCustomers Customer[]      @relation("CustomerCreator")
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  lastLogin        DateTime?
-  mpesaPayments    MpesaPayment[]
-  stockTransfers   StockTransfer[]
+  id                    String          @id @default(uuid()) @map("_id") @db.Uuid
+  clerkId               String          @unique
+  email                 String          @unique
+  firstName             String?
+  lastName              String?
+  role                  String          @default("user") // admin, manager, user
+  status                String          @default("active")
+  businessId            String?         @db.Uuid
+  Business              Business?       @relation(fields: [businessId], references: [id])
+  storeId               String?         @db.Uuid
+  Store                 Store?          @relation(fields: [storeId], references: [id])
+  createdCustomers      Customer[]      @relation("CustomerCreator")
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  lastLogin             DateTime?
+  mpesaPayments         MpesaPayment[]
+  stockTransfers        StockTransfer[]
+  createdSuppliers      Supplier[]      @relation("SupplierCreator")
+  createdPurchaseOrders PurchaseOrder[] @relation("POCreator")
+  createdStockReceipts  StockReceipt[]  @relation("ReceiptCreator")
+  createdDeliveries     Delivery[]
 }
 
 model Business {
-  id      String   @id @default(uuid()) @map("_id") @db.Uuid
-  name    String
-  email   String?  @unique
-  address String?
-  logo    String?  @db.Text
-  users   User[]
+  id        String   @id @default(uuid()) @map("_id") @db.Uuid
+  name      String
+  email     String?  @unique
+  address   String?
+  logo      String?  @db.Text
+  users     User[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -250,16 +254,17 @@ model Business {
   invoices      Invoice[]
   subscriptions Subscription[]
 
-  kraDetails    KraDetails?
-  kraTotReturns KraTotReturn[]
-  Product       Product[]
-  Category      Category[]
-  Attribute     Attribute[]
-  stores        Store[]
-  expenses      Expense[]
-  suppliers     Supplier[]
-  stockReceipts StockReceipt[]
+  kraDetails     KraDetails?
+  kraTotReturns  KraTotReturn[]
+  Product        Product[]
+  Category       Category[]
+  Attribute      Attribute[]
+  stores         Store[]
+  expenses       Expense[]
+  suppliers      Supplier[]
+  stockReceipts  StockReceipt[]
   purchaseOrders PurchaseOrder[]
+  Delivery       Delivery[]
 }
 
 model Store {
@@ -269,106 +274,115 @@ model Store {
   isActive   Boolean  @default(true)
   businessId String   @db.Uuid
   Business   Business @relation(fields: [businessId], references: [id])
-  
-  users       User[]           
-  inventory   StoreInventory[] 
-  invoices    Invoice[]        
-  customers   Customer[]
-  invitations UserInvitation[]
-  expenses    Expense[]
+
+  users         User[]
+  inventory     StoreInventory[]
+  invoices      Invoice[]
+  customers     Customer[]
+  invitations   UserInvitation[]
+  expenses      Expense[]
   stockReceipts StockReceipt[]
-  
+
   transfersOut StockTransfer[] @relation("OriginStore")
   transfersIn  StockTransfer[] @relation("DestinationStore")
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deliveries Delivery[]
 
   @@unique([name, businessId])
   @@index([businessId])
 }
 
 model Supplier {
-  id            String          @id @default(uuid()) @map("_id") @db.Uuid
-  name          String
-  email         String?
-  phoneNumber   String?
-  address       String?
-  isDeleted     Boolean         @default(false)
-  
-  businessId    String          @db.Uuid
-  Business      Business        @relation(fields: [businessId], references: [id])
-  
+  id          String  @id @default(uuid()) @map("_id") @db.Uuid
+  name        String
+  email       String?
+  phoneNumber String?
+  address     String?
+  isDeleted   Boolean @default(false)
+
+  businessId String   @db.Uuid
+  Business   Business @relation(fields: [businessId], references: [id])
+
   purchaseOrders PurchaseOrder[]
   stockReceipts  StockReceipt[]
 
-  createdBy     String?         // Clerk ID
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  createdById String     @db.Uuid
+  CreatedBy   User       @relation("SupplierCreator", fields: [createdById], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deliveries  Delivery[]
 
   @@index([businessId])
 }
 
 model PurchaseOrder {
-  id            String              @id @default(uuid()) @map("_id") @db.Uuid
-  reference     String
-  totalAmount   Float
-  status        String              @default("PENDING") // PENDING, DELIVERED, CANCELLED
-  isDeleted     Boolean             @default(false)
+  id          String  @id @default(uuid()) @map("_id") @db.Uuid
+  reference   String
+  totalAmount Float
+  status      String  @default("PENDING") // PENDING, DELIVERED, CANCELLED
+  isDeleted   Boolean @default(false)
 
-  supplierId    String              @db.Uuid
-  Supplier      Supplier            @relation(fields: [supplierId], references: [id])
+  supplierId String   @db.Uuid
+  Supplier   Supplier @relation(fields: [supplierId], references: [id])
 
-  items         PurchaseOrderItem[]
+  items PurchaseOrderItem[]
 
-  businessId    String              @db.Uuid
-  Business      Business            @relation(fields: [businessId], references: [id])
+  businessId String   @db.Uuid
+  Business   Business @relation(fields: [businessId], references: [id])
 
-  createdBy     String?             // Clerk ID
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  createdById String   @db.Uuid
+  CreatedBy   User     @relation("POCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([businessId])
   @@index([supplierId])
 }
 
 model PurchaseOrderItem {
-  id              String        @id @default(uuid()) @map("_id") @db.Uuid
-  quantity        Int
-  unitCost        Float
+  id       String @id @default(uuid()) @map("_id") @db.Uuid
+  quantity Int
+  unitCost Float
 
-  productId       String        @db.Uuid
-  Product         Product       @relation(fields: [productId], references: [id])
+  productId String  @db.Uuid
+  Product   Product @relation(fields: [productId], references: [id])
 
   purchaseOrderId String        @db.Uuid
   PurchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
 
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model StockReceipt {
-  id          String   @id @default(uuid()) @map("_id") @db.Uuid
-  quantity    Int
-  unitCost    Float
-  totalCost   Float
-  reference   String?
+  id        String  @id @default(uuid()) @map("_id") @db.Uuid
+  quantity  Int
+  unitCost  Float
+  totalCost Float
+  reference String?
 
-  productId   String   @db.Uuid
-  Product     Product  @relation(fields: [productId], references: [id])
+  productId String  @db.Uuid
+  Product   Product @relation(fields: [productId], references: [id])
 
-  storeId     String   @db.Uuid
-  Store       Store    @relation(fields: [storeId], references: [id])
+  storeId String @db.Uuid
+  Store   Store  @relation(fields: [storeId], references: [id])
 
-  supplierId  String?  @db.Uuid
-  Supplier    Supplier? @relation(fields: [supplierId], references: [id])
+  supplierId String?   @db.Uuid
+  Supplier   Supplier? @relation(fields: [supplierId], references: [id])
 
-  businessId  String   @db.Uuid
-  Business    Business @relation(fields: [businessId], references: [id])
+  businessId String   @db.Uuid
+  Business   Business @relation(fields: [businessId], references: [id])
 
-  createdBy   String?  // Clerk ID
+  createdById String   @db.Uuid
+  CreatedBy   User     @relation("ReceiptCreator", fields: [createdById], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  deliveryId String?   @db.Uuid
+  Delivery   Delivery? @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
 
   @@index([businessId])
   @@index([storeId])
@@ -376,11 +390,11 @@ model StockReceipt {
 }
 
 model StoreInventory {
-  id        String  @id @default(uuid()) @map("_id") @db.Uuid
-  storeId   String  @db.Uuid
-  productId String  @db.Uuid
-  quantity  Int     @default(0)
-  
+  id        String @id @default(uuid()) @map("_id") @db.Uuid
+  storeId   String @db.Uuid
+  productId String @db.Uuid
+  quantity  Int    @default(0)
+
   Store   Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
   Product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
@@ -388,20 +402,20 @@ model StoreInventory {
 }
 
 model StockTransfer {
-  id             String   @id @default(uuid()) @map("_id") @db.Uuid
-  productId      String   @db.Uuid
-  quantity       Int
-  originStoreId  String   @db.Uuid
-  destStoreId    String   @db.Uuid
-  createdById    String   @db.Uuid 
-  status         String   @default("COMPLETED")
-  
-  Product        Product  @relation(fields: [productId], references: [id])
-  OriginStore    Store    @relation("OriginStore", fields: [originStoreId], references: [id])
-  DestinationStore Store  @relation("DestinationStore", fields: [destStoreId], references: [id])
-  CreatedBy      User     @relation(fields: [createdById], references: [id])
+  id            String @id @default(uuid()) @map("_id") @db.Uuid
+  productId     String @db.Uuid
+  quantity      Int
+  originStoreId String @db.Uuid
+  destStoreId   String @db.Uuid
+  createdById   String @db.Uuid
+  status        String @default("COMPLETED")
 
-  createdAt      DateTime @default(now())
+  Product          Product @relation(fields: [productId], references: [id])
+  OriginStore      Store   @relation("OriginStore", fields: [originStoreId], references: [id])
+  DestinationStore Store   @relation("DestinationStore", fields: [destStoreId], references: [id])
+  CreatedBy        User    @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
 }
 
 model Response {
@@ -451,24 +465,24 @@ model ContactFormMessage {
 }
 
 model Expense {
-  id          String   @id @default(uuid()) @map("_id") @db.Uuid
-  title       String
-  category    String
-  amount      Float
-  date        DateTime @default(now())
-  notes       String?
-  status      String   @default("ACTIVE") // ACTIVE, VOIDED
+  id       String   @id @default(uuid()) @map("_id") @db.Uuid
+  title    String
+  category String
+  amount   Float
+  date     DateTime @default(now())
+  notes    String?
+  status   String   @default("ACTIVE") // ACTIVE, VOIDED
 
-  businessId  String   @db.Uuid
-  Business    Business @relation(fields: [businessId], references: [id])
-  
-  storeId     String?  @db.Uuid
-  Store       Store?   @relation(fields: [storeId], references: [id])
-  
-  createdBy   String?  // Clerk ID
+  businessId String   @db.Uuid
+  Business   Business @relation(fields: [businessId], references: [id])
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  storeId String? @db.Uuid
+  Store   Store?  @relation(fields: [storeId], references: [id])
+
+  createdBy String? // Clerk ID
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([businessId])
   @@index([storeId])
@@ -568,4 +582,26 @@ model KraTotReturn {
   Business   Business @relation(fields: [businessId], references: [id])
 
   @@index([businessId])
+}
+model Delivery {
+  id        String  @id @default(uuid()) @map("_id") @db.Uuid
+  reference String?
+  totalCost Float   @default(0)
+  status    String  @default("RECEIVED")
+
+  supplierId String?   @db.Uuid
+  Supplier   Supplier? @relation(fields: [supplierId], references: [id])
+
+  storeId String @db.Uuid
+  Store   Store  @relation(fields: [storeId], references: [id])
+
+  businessId String   @db.Uuid
+  Business   Business @relation(fields: [businessId], references: [id])
+
+  createdById String @db.Uuid
+  CreatedBy   User   @relation(fields: [createdById], references: [id])
+
+  receipts StockReceipt[]
+
+  createdAt DateTime @default(now())
 }

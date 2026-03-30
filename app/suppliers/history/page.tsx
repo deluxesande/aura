@@ -2,6 +2,7 @@
 
 import Navbar from "@/components/Navbar";
 import { apiClient } from "@/utils/apiClient";
+import Image from "next/image";
 import {
     Loader2,
     Search,
@@ -34,7 +35,7 @@ export default function PurchaseHistoryPage() {
           : null;
     const isPaidPlan = activeSub && activeSub.plan !== "STARTER";
 
-    const [allReceipts, setAllReceipts] = useState<any[]>([]);
+    const [allDeliveries, setAllDeliveries] = useState<any[]>([]);
     const [suppliers, setSuppliers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showReceiveModal, setShowReceiveModal] = useState(false);
@@ -45,30 +46,18 @@ export default function PurchaseHistoryPage() {
 
     const fetchData = async () => {
         try {
-            // Flatten stock receipts from suppliers endpoint (per previous structure)
-            const res = await apiClient.get("/suppliers");
-            const sups = res.data || [];
-            setSuppliers(sups);
+            const [supRes, deliveryRes] = await Promise.all([
+                apiClient.get("/suppliers"),
+                apiClient.get("/inventory/receipt"),
+            ]);
 
-            const receipts = sups
-                .flatMap((s: any) =>
-                    (s.stockReceipts || []).map((r: any) => ({
-                        ...r,
-                        supplierName: s.name,
-                    })),
-                )
-                .sort(
-                    (a: any, b: any) =>
-                        new Date(b.createdAt).getTime() -
-                        new Date(a.createdAt).getTime(),
-                );
-
-            setAllReceipts(receipts);
+            setSuppliers(supRes.data || []);
+            setAllDeliveries(deliveryRes.data || []);
         } catch (error: any) {
             if (error.response?.status !== 404) {
-                toast.error("Failed to load purchase history");
+                toast.error("Failed to load delivery history");
             }
-            setAllReceipts([]);
+            setAllDeliveries([]);
         } finally {
             setLoading(false);
         }
@@ -88,20 +77,25 @@ export default function PurchaseHistoryPage() {
         setCurrentPage(1);
     }, [searchQuery]);
 
-    const filteredReceipts = allReceipts.filter((r) => {
+    const filteredDeliveries = allDeliveries.filter((d) => {
         const searchLower = searchQuery.toLowerCase();
+
+        const productMatch = d.receipts?.some((r: any) =>
+            r.Product?.name?.toLowerCase().includes(searchLower),
+        );
+
         return (
-            r.reference?.toLowerCase().includes(searchLower) ||
-            r.Product?.name?.toLowerCase().includes(searchLower) ||
-            r.supplierName?.toLowerCase().includes(searchLower) ||
-            r.Store?.name?.toLowerCase().includes(searchLower)
+            d.reference?.toLowerCase().includes(searchLower) ||
+            productMatch ||
+            d.Supplier?.name?.toLowerCase().includes(searchLower) ||
+            d.Store?.name?.toLowerCase().includes(searchLower)
         );
     });
 
-    const totalPages = Math.ceil(filteredReceipts.length / itemsPerPage) || 1;
+    const totalPages = Math.ceil(filteredDeliveries.length / itemsPerPage) || 1;
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const paginatedReceipts = filteredReceipts.slice(startIndex, endIndex);
+    const paginatedDeliveries = filteredDeliveries.slice(startIndex, endIndex);
 
     const handlePreviousPage = () =>
         setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -127,7 +121,7 @@ export default function PurchaseHistoryPage() {
     if (!businessDetails || loading) {
         return (
             <Navbar>
-                <div className="flex items-center justify-center min-h-screen">
+                <div className="flex items-center justify-center min-h-[80vh]">
                     <div className="flex flex-col items-center justify-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                     </div>
@@ -141,8 +135,8 @@ export default function PurchaseHistoryPage() {
             <Navbar>
                 <div className="p-4 md:p-8 mx-auto min-h-screen font-sans flex items-center justify-center">
                     <div className="bg-white shadow-lg rounded-xl p-10 border border-gray-100 max-w-md text-center">
-                        <div className="w-16 h-16 bg-gray-50 border border-gray-100 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
-                            <Lock className="w-8 h-8 text-gray-400" />
+                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
+                            <Lock className="w-8 h-8 stroke-green-500" />
                         </div>
                         <h2 className="text-xl font-bold text-gray-900 mb-2">
                             Premium Feature
@@ -154,7 +148,7 @@ export default function PurchaseHistoryPage() {
                         </p>
                         <button
                             onClick={() => router.push("/settings")}
-                            className="w-full py-3 bg-gray-900 text-white font-bold text-sm rounded-lg hover:bg-gray-800 transition-colors shadow-md"
+                            className="w-full py-3 bg-green-500 text-white font-bold text-sm rounded-lg hover:bg-green-600 transition-colors shadow-md"
                         >
                             View Subscription Plans
                         </button>
@@ -215,8 +209,11 @@ export default function PurchaseHistoryPage() {
                                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">
                                         Product & Dest.
                                     </th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">
+                                        Logged By
+                                    </th>
                                     <th className="px-6 py-4 text-right text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                        Qty Received
+                                        Total Qty
                                     </th>
                                     <th className="px-6 py-4 text-right text-xs font-bold text-gray-400 uppercase tracking-widest">
                                         Total Value
@@ -224,69 +221,144 @@ export default function PurchaseHistoryPage() {
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-100">
-                                {paginatedReceipts.length === 0 ? (
+                                {paginatedDeliveries.length === 0 ? (
                                     <tr>
                                         <td
-                                            colSpan={5}
+                                            colSpan={6}
                                             className="px-6 py-12 text-center text-sm text-gray-500"
                                         >
                                             No deliveries found.
                                         </td>
                                     </tr>
                                 ) : (
-                                    paginatedReceipts.map((receipt, index) => (
-                                        <tr
-                                            key={`history-row-${receipt?.id || index}`}
-                                            className="hover:bg-gray-50 transition-colors"
-                                        >
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <p className="text-sm font-medium text-gray-500">
-                                                    {new Date(
-                                                        receipt.createdAt,
-                                                    ).toLocaleDateString()}
-                                                </p>
-                                                <p className="text-xs font-bold text-gray-900 mt-0.5">
-                                                    {receipt.reference ||
-                                                        "NO-REF"}
-                                                </p>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <p className="text-sm font-bold text-gray-900">
-                                                    {receipt.supplierName}
-                                                </p>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <p className="text-sm font-bold text-gray-900">
-                                                    {receipt.Product?.name ||
-                                                        "Unknown Product"}
-                                                </p>
-                                                <p className="text-xs text-gray-500 mt-0.5">
-                                                    To:{" "}
-                                                    {receipt.Store?.name ||
-                                                        "Unknown Branch"}
-                                                </p>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                <p className="text-sm font-black text-gray-900">
-                                                    {receipt.quantity}
-                                                </p>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                <span className="text-sm font-bold text-gray-900">
-                                                    KSh{" "}
-                                                    {(
-                                                        receipt.totalCost || 0
-                                                    ).toLocaleString()}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))
+                                    paginatedDeliveries.map(
+                                        (delivery, index) => {
+                                            const itemCount =
+                                                delivery.receipts?.length || 0;
+                                            const firstProductName =
+                                                itemCount > 0
+                                                    ? delivery.receipts[0]
+                                                          .Product?.name
+                                                    : "Unknown Product";
+                                            const totalQuantity =
+                                                delivery.receipts?.reduce(
+                                                    (sum: number, r: any) =>
+                                                        sum + (r.quantity || 0),
+                                                    0,
+                                                ) || 0;
+
+                                            return (
+                                                <tr
+                                                    key={`history-row-${delivery?.id || index}`}
+                                                    className="hover:bg-gray-50 transition-colors cursor-pointer"
+                                                    onClick={() =>
+                                                        router.push(
+                                                            `/suppliers/history/${delivery.id}`,
+                                                        )
+                                                    }
+                                                >
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <p className="text-sm font-medium text-gray-500">
+                                                            {new Date(
+                                                                delivery.createdAt,
+                                                            ).toLocaleDateString()}
+                                                        </p>
+                                                        <p className="text-xs font-bold text-gray-900 mt-0.5">
+                                                            {delivery.reference ||
+                                                                "NO-REF"}
+                                                        </p>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <p className="text-sm font-bold text-gray-900">
+                                                            {delivery.Supplier
+                                                                ?.name ||
+                                                                "Direct / Cash"}
+                                                        </p>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <p className="text-sm font-bold text-gray-900">
+                                                            {itemCount > 1
+                                                                ? `Multiple Products (${itemCount})`
+                                                                : firstProductName}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500 mt-0.5">
+                                                            To:{" "}
+                                                            {delivery.Store
+                                                                ?.name ||
+                                                                "Unknown Branch"}
+                                                        </p>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {delivery.creator ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 ring-1 ring-gray-200 bg-gray-100">
+                                                                    <Image
+                                                                        src={
+                                                                            delivery
+                                                                                .creator
+                                                                                .imageUrl
+                                                                        }
+                                                                        alt="Profile"
+                                                                        width={
+                                                                            32
+                                                                        }
+                                                                        height={
+                                                                            32
+                                                                        }
+                                                                        className="w-full h-full object-cover"
+                                                                    />
+                                                                </div>
+                                                                <div className="flex flex-col overflow-hidden">
+                                                                    <p className="text-sm font-semibold text-gray-900 truncate">
+                                                                        {
+                                                                            delivery
+                                                                                .creator
+                                                                                .firstName
+                                                                        }{" "}
+                                                                        {
+                                                                            delivery
+                                                                                .creator
+                                                                                .lastName
+                                                                        }
+                                                                    </p>
+                                                                    <p className="text-xs text-gray-500 truncate capitalize">
+                                                                        {delivery
+                                                                            .creator
+                                                                            .role ||
+                                                                            "User"}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-gray-400 text-sm italic">
+                                                                Unknown
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                        <p className="text-sm font-black text-gray-900">
+                                                            {totalQuantity}
+                                                        </p>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                        <span className="text-sm font-bold text-gray-900">
+                                                            KSh{" "}
+                                                            {(
+                                                                delivery.totalCost ||
+                                                                0
+                                                            ).toLocaleString()}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        },
+                                    )
                                 )}
                             </tbody>
                         </table>
                     </div>
 
-                    {paginatedReceipts.length > 0 && (
+                    {paginatedDeliveries.length > 0 && (
                         <div className="flex flex-wrap justify-center items-center pt-4 my-4 gap-2 sm:gap-4">
                             <button
                                 className="btn btn-xs btn-ghost flex items-center bg-green-400 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
@@ -302,12 +374,12 @@ export default function PurchaseHistoryPage() {
                             <div className="flex space-x-1 sm:space-x-2">
                                 {getPageNumbers().map((page) => (
                                     <button
-                                        key={page}
+                                        key={`hist-page-${page}`}
                                         onClick={() => handlePageClick(page)}
-                                        className={`btn btn-xs border-0 ${
+                                        className={`btn btn-xs border-0 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                                             currentPage === page
-                                                ? "bg-green-400 text-white hover:bg-green-600"
-                                                : "btn-ghost text-black hover:bg-green-100"
+                                                ? "bg-green-400 text-white hover:bg-green-600 shadow-sm"
+                                                : "bg-transparent text-gray-700 hover:bg-green-50"
                                         }`}
                                     >
                                         {page}

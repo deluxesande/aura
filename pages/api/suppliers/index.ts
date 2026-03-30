@@ -12,35 +12,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     if (!user || !user.businessId) return res.status(403).json({ error: "Business profile not found" });
-    const { businessId } = user;
+    const { businessId, id: userId } = user;
 
     switch (req.method) {
         case "GET":
             try {
                 const suppliers = await prisma.supplier.findMany({
                     where: { businessId, isDeleted: false },
+                    include: {
+                        CreatedBy: { 
+                            select: { 
+                                clerkId: true,
+                                firstName: true, 
+                                lastName: true, 
+                                role: true 
+                            } 
+                        }
+                    },
                     orderBy: { createdAt: "desc" },
                 });
 
-                // Fetch creator details from Clerk
-                const creatorIds = Array.from(new Set(suppliers.map(s => s.createdBy).filter(Boolean))) as string[];
+                // Fetch image from Clerk
                 const clerk = await clerkClient();
-                const clerkUsersResults = await Promise.allSettled(creatorIds.map(id => clerk.users.getUser(id)));
+                const clerkIds = Array.from(new Set(suppliers.map(s => s.CreatedBy.clerkId)));
+                const clerkUsersResults = await Promise.allSettled(clerkIds.map(id => clerk.users.getUser(id)));
                 
-                const usersMap = new Map();
-                clerkUsersResults.forEach((res) => {
-                    if (res.status === "fulfilled") {
-                        usersMap.set(res.value.id, {
-                            firstName: res.value.firstName,
-                            lastName: res.value.lastName,
-                            imageUrl: res.value.imageUrl,
-                        });
-                    }
+                const clerkMap = new Map();
+                clerkUsersResults.forEach(res => {
+                    if (res.status === "fulfilled") clerkMap.set(res.value.id, res.value.imageUrl);
                 });
 
                 const result = suppliers.map(s => ({
                     ...s,
-                    creator: s.createdBy ? usersMap.get(s.createdBy) : null
+                    CreatedBy: {
+                        firstName: s.CreatedBy.firstName,
+                        lastName: s.CreatedBy.lastName,
+                        role: s.CreatedBy.role,
+                        imageUrl: clerkMap.get(s.CreatedBy.clerkId) || null
+                    }
                 }));
 
                 return res.status(200).json(result);
@@ -55,7 +64,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 if (!name) return res.status(400).json({ error: "Name is required" });
 
                 const supplier = await prisma.supplier.create({
-                    data: { name, email, phoneNumber, address, businessId, createdBy: clerkId },
+                    data: { name, email, phoneNumber, address, businessId, createdById: userId },
                 });
                 return res.status(201).json(supplier);
             } catch (error) {

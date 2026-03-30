@@ -8,11 +8,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const user = await prisma.user.findUnique({
         where: { clerkId },
-        select: { id: true, businessId: true, role: true },
+        select: { id: true, businessId: true },
     });
 
     if (!user || !user.businessId) return res.status(403).json({ error: "Forbidden" });
-    const { businessId } = user;
+    const { businessId, id: userId } = user;
 
     switch (req.method) {
         case "GET":
@@ -22,28 +22,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     include: {
                         Supplier: { select: { name: true } },
                         items: { include: { Product: { select: { name: true, sku: true } } } },
+                        CreatedBy: { 
+                            select: { 
+                                clerkId: true,
+                                firstName: true, 
+                                lastName: true, 
+                                role: true 
+                            } 
+                        }
                     },
                     orderBy: { createdAt: "desc" },
                 });
 
-                const creatorIds = Array.from(new Set(pos.map(po => po.createdBy).filter(Boolean))) as string[];
                 const clerk = await clerkClient();
-                const clerkUsersResults = await Promise.allSettled(creatorIds.map(id => clerk.users.getUser(id)));
+                const clerkIds = Array.from(new Set(pos.map(p => p.CreatedBy.clerkId)));
+                const clerkUsersResults = await Promise.allSettled(clerkIds.map(id => clerk.users.getUser(id)));
                 
-                const usersMap = new Map();
-                clerkUsersResults.forEach((res) => {
-                    if (res.status === "fulfilled") {
-                        usersMap.set(res.value.id, {
-                            firstName: res.value.firstName,
-                            lastName: res.value.lastName,
-                            imageUrl: res.value.imageUrl,
-                        });
-                    }
+                const clerkMap = new Map();
+                clerkUsersResults.forEach(res => {
+                    if (res.status === "fulfilled") clerkMap.set(res.value.id, res.value.imageUrl);
                 });
 
-                const result = pos.map(po => ({
-                    ...po,
-                    creator: po.createdBy ? usersMap.get(po.createdBy) : null
+                const result = pos.map(p => ({
+                    ...p,
+                    CreatedBy: {
+                        firstName: p.CreatedBy.firstName,
+                        lastName: p.CreatedBy.lastName,
+                        role: p.CreatedBy.role,
+                        imageUrl: clerkMap.get(p.CreatedBy.clerkId) || null
+                    }
                 }));
 
                 return res.status(200).json(result);
@@ -64,7 +71,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                         totalAmount: parseFloat(totalAmount),
                         status: status || "PENDING",
                         businessId,
-                        createdBy: clerkId,
+                        createdById: userId,
                         items: {
                             create: items.map((i: any) => ({
                                 productId: i.productId,

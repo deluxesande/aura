@@ -36,7 +36,9 @@ export default function OrderTrackingPage() {
         return (
             <Navbar>
                 <div className="h-[80vh] flex items-center justify-center">
-                    <Loader2 className="animate-spin text-green-500 w-8 h-8" />
+                    <div className="flex flex-col items-center justify-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                    </div>
                 </div>
             </Navbar>
         );
@@ -128,7 +130,7 @@ export default function OrderTrackingPage() {
                                     <p
                                         className={`absolute top-10 text-xs font-bold uppercase tracking-wider ${stageIndex >= 2 ? "text-green-500" : "text-gray-400"}`}
                                     >
-                                        In Transit
+                                        Transit
                                     </p>
                                 </div>
 
@@ -185,10 +187,10 @@ export default function OrderTrackingPage() {
                                         <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-widest">
                                             Quantity
                                         </th>
-                                        <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-widest">
+                                        <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-widest">
                                             Unit Cost
                                         </th>
-                                        <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-widest">
+                                        <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-widest">
                                             Subtotal
                                         </th>
                                     </tr>
@@ -204,13 +206,13 @@ export default function OrderTrackingPage() {
                                                 <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-gray-700">
                                                     {item.quantity}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-600">
+                                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">
                                                     KSh{" "}
                                                     {(
                                                         item.unitCost || 0
                                                     ).toLocaleString()}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-gray-900">
+                                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-gray-900">
                                                     KSh{" "}
                                                     {(
                                                         (item.quantity || 0) *

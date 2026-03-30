@@ -178,8 +178,8 @@ export default function PurchaseOrdersPage() {
             <Navbar>
                 <div className="p-4 md:p-8 mx-auto min-h-screen font-sans flex items-center justify-center">
                     <div className="bg-white shadow-lg rounded-xl p-10 border border-gray-100 max-w-md text-center">
-                        <div className="w-16 h-16 bg-gray-50 border border-gray-100 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
-                            <Lock className="w-8 h-8 text-gray-400" />
+                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
+                            <Lock className="w-8 h-8 stroke-green-500" />
                         </div>
                         <h2 className="text-xl font-bold text-gray-900 mb-2">
                             Premium Feature
