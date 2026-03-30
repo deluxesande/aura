@@ -286,7 +286,110 @@ export default function PricingPage() {
                 </div>
             </motion.section>
 
+            {/* Comparison Table */}
+            <motion.section
+                className="py-20 bg-white"
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={containerVariants}
+            >
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <motion.div className="text-center mb-16" variants={itemVariants}>
+                        <h2 className="text-3xl font-bold text-gray-900 mb-4">Compare Plans</h2>
+                        <p className="text-gray-600">Choose the perfect fit for your business needs</p>
+                    </motion.div>
+
+                    <motion.div 
+                        className="overflow-x-auto border border-gray-100 rounded-xl shadow-sm"
+                        variants={itemVariants}
+                    >
+                        <table className="w-full text-left border-collapse bg-white">
+                            <thead>
+                                <tr className="border-b border-gray-100">
+                                    <th className="py-8 px-6 text-sm font-semibold text-gray-900 bg-gray-50/50">Features</th>
+                                    <th className="py-8 px-6 text-center text-sm font-bold text-gray-900 bg-green-50/10 border-t-4 border-green-500">Starter</th>
+                                    <th className="py-8 px-6 text-center text-sm font-bold text-green-500 bg-green-50/30 border-t-4 border-green-500">Standard</th>
+                                    <th className="py-8 px-6 text-center text-sm font-bold text-gray-900 bg-green-50/10 border-t-4 border-green-500">Premium</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {/* Core Features */}
+                                <tr>
+                                    <td className="py-5 px-6 text-sm font-bold text-green-700 bg-green-50/50 border-l-4 border-green-500 uppercase tracking-wider" colSpan={4}>Core Features</td>
+                                </tr>
+                                <tr>
+                                    <td className="py-4 px-6 text-sm text-gray-700">M-Pesa Paybill Integration</td>
+                                    <td className="py-4 px-6 text-center"><Check className="mx-auto text-green-500" size={18} /></td>
+                                    <td className="py-4 px-6 text-center"><Check className="mx-auto text-green-500" size={18} /></td>
+                                    <td className="py-4 px-6 text-center"><Check className="mx-auto text-green-500" size={18} /></td>
+                                </tr>
+                                <tr>
+                                    <td className="py-4 px-6 text-sm text-gray-700">Transactions per month</td>
+                                    <td className="py-4 px-6 text-center text-sm text-gray-600">Up to 100</td>
+                                    <td className="py-4 px-6 text-center text-sm text-gray-900 font-medium">Unlimited</td>
+                                    <td className="py-4 px-6 text-center text-sm text-gray-900 font-medium">Unlimited</td>
+                                </tr>
+                                <tr>
+                                    <td className="py-4 px-6 text-sm text-gray-700">Staff Accounts</td>
+                                    <td className="py-4 px-6 text-center text-sm text-gray-600">1 Account</td>
+                                    <td className="py-4 px-6 text-center text-sm text-gray-900 font-medium">5 Accounts</td>
+                                    <td className="py-4 px-6 text-center text-sm text-gray-900 font-medium">Unlimited</td>
+                                </tr>
+                                
+                                {/* Automation */}
+                                <tr>
+                                    <td className="py-5 px-6 text-sm font-bold text-green-700 bg-green-50/50 border-l-4 border-green-500 uppercase tracking-wider" colSpan={4}>Automation & Tax</td>
+                                </tr>
+                                <tr>
+                                    <td className="py-4 px-6 text-sm text-gray-700">Auto-Filing (Monthly Sales)</td>
+                                    <td className="py-4 px-6 text-center"><Check className="mx-auto text-green-500" size={18} /></td>
+                                    <td className="py-4 px-6 text-center"><Check className="mx-auto text-green-500" size={18} /></td>
+                                    <td className="py-4 px-6 text-center"><Check className="mx-auto text-green-500" size={18} /></td>
+                                </tr>
+                                <tr>
+                                    <td className="py-4 px-6 text-sm text-gray-700">Advanced Filing Review</td>
+                                    <td className="py-4 px-6 text-center"><X className="mx-auto text-gray-300" size={18} /></td>
+                                    <td className="py-4 px-6 text-center"><X className="mx-auto text-gray-300" size={18} /></td>
+                                    <td className="py-4 px-6 text-center"><Check className="mx-auto text-green-500" size={18} /></td>
+                                </tr>
+                                <tr>
+                                    <td className="py-4 px-6 text-sm text-gray-700">Inventory Management</td>
+                                    <td className="py-4 px-6 text-center"><Check className="mx-auto text-green-500" size={18} /></td>
+                                    <td className="py-4 px-6 text-center"><Check className="mx-auto text-green-500" size={18} /></td>
+                                    <td className="py-4 px-6 text-center"><Check className="mx-auto text-green-500" size={18} /></td>
+                                </tr>
+
+                                {/* Branding & Support */}
+                                <tr>
+                                    <td className="py-5 px-6 text-sm font-bold text-green-700 bg-green-50/50 border-l-4 border-green-500 uppercase tracking-wider" colSpan={4}>Branding & Data</td>
+                                </tr>
+                                <tr>
+                                    <td className="py-4 px-6 text-sm text-gray-700">Data Export (Excel/CSV)</td>
+                                    <td className="py-4 px-6 text-center"><X className="mx-auto text-gray-300" size={18} /></td>
+                                    <td className="py-4 px-6 text-center"><X className="mx-auto text-gray-300" size={18} /></td>
+                                    <td className="py-4 px-6 text-center"><Check className="mx-auto text-green-500" size={18} /></td>
+                                </tr>
+                                <tr>
+                                    <td className="py-4 px-6 text-sm text-gray-700">Custom Receipt Branding</td>
+                                    <td className="py-4 px-6 text-center"><X className="mx-auto text-gray-300" size={18} /></td>
+                                    <td className="py-4 px-6 text-center"><X className="mx-auto text-gray-300" size={18} /></td>
+                                    <td className="py-4 px-6 text-center"><Check className="mx-auto text-green-500" size={18} /></td>
+                                </tr>
+                                <tr>
+                                    <td className="py-4 px-6 text-sm text-gray-700">Priority Support</td>
+                                    <td className="py-4 px-6 text-center">Email</td>
+                                    <td className="py-4 px-6 text-center">Email + Chat</td>
+                                    <td className="py-4 px-6 text-center font-medium">Priority Phone</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </motion.div>
+                </div>
+            </motion.section>
+
             <Footer />
+
         </div>
     );
 }

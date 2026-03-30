@@ -20,54 +20,70 @@ const steps: TourStep[] = [
         target: '[data-tour="sidebar"]',
         title: "Navigation",
         badge: "Getting Started",
-        description: "Everything you need to run your business is right here.",
+        description: "Everything you need to run your business is organized right here.",
         side: "right",
     },
     {
         target: '[data-tour="nav-overview"]',
         title: "Overview",
-        badge: "Overview",
+        badge: "Snapshot",
         description:
-            "Your daily snapshot — revenue, orders and key metrics at a glance.",
+            "Your daily performance — revenue, orders and key metrics at a glance.",
         side: "right",
     },
     {
-        target: '[data-tour="nav-products"]',
-        title: "Products & Inventory",
-        badge: "Products",
+        target: '[data-tour="nav-sales & crm"]',
+        title: "Sales & CRM",
+        badge: "Sales",
         description:
-            "Manage your catalogue, pricing and track stock levels in real time.",
+            "Generate invoices, track payments, and manage your customer relationships.",
+        side: "right",
+    },
+    {
+        target: '[data-tour="nav-inventory"]',
+        title: "Inventory Control",
+        badge: "Stock",
+        description:
+            "Manage your product catalog and track live stock levels across branches.",
+        side: "right",
+    },
+    {
+        target: '[data-tour="nav-supply chain"]',
+        title: "Supply Chain",
+        badge: "Procurement",
+        description:
+            "Manage suppliers, place purchase orders, and track incoming stock.",
         side: "right",
     },
     {
         target: '[data-tour="nav-finance"]',
-        title: "Finance & CRM",
-        badge: "Finance & CRM",
+        title: "Financials",
+        badge: "Finance",
         description:
-            "Handle invoices, track payments and manage your customer relationships.",
+            "Track business expenses and monitor your overall profitability.",
         side: "right",
     },
     {
         target: '[data-tour="nav-system"]',
-        title: "Settings",
-        badge: "System",
+        title: "System Settings",
+        badge: "Control Panel",
         description:
-            "Configure your business profile, team members and preferences.",
+            "Configure your business profile, manage team roles, and app preferences.",
         side: "right",
     },
     {
         target: '[data-tour="search-bar"]',
-        title: "Smart Search",
+        title: "Universal Search",
         badge: "Pro Tip",
         description:
-            "Search across products, customers and invoices instantly.",
+            "Instantly find products, customers, or invoices from anywhere.",
         side: "bottom",
     },
     {
         target: '[data-tour="create-order"]',
-        title: "Create Order",
-        badge: "Sales Tip",
-        description: "Create new orders in seconds — M-Pesa or cash.",
+        title: "Quick Sale",
+        badge: "Action",
+        description: "Ready to sell? Create new orders in seconds.",
         side: "left",
     },
 ];

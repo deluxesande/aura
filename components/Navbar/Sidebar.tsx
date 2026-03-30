@@ -42,7 +42,24 @@ const linkGroups = [
         ],
     },
     {
-        label: "Products",
+        label: "Sales & CRM",
+        items: [
+            {
+                href: "/invoices",
+                label: "Invoices",
+                icon: HandCoins,
+                allowedRoles: ["admin", "manager", "user"],
+            },
+            {
+                href: "/customers",
+                label: "Customers",
+                icon: Users,
+                allowedRoles: ["admin", "manager", "user"],
+            },
+        ],
+    },
+    {
+        label: "Inventory",
         items: [
             {
                 href: "/products",
@@ -52,7 +69,7 @@ const linkGroups = [
             },
             {
                 href: "/products/list",
-                label: "Inventory",
+                label: "Stocks",
                 icon: PackageSearch,
                 allowedRoles: ["admin", "manager", "user"],
             },
@@ -62,7 +79,7 @@ const linkGroups = [
         label: "Supply Chain",
         items: [
             {
-                label: "Supplies",
+                label: "Procurement",
                 icon: Truck,
                 allowedRoles: ["admin", "manager"],
                 subItems: [
@@ -82,18 +99,6 @@ const linkGroups = [
     {
         label: "Finance",
         items: [
-            {
-                href: "/customers",
-                label: "Customers",
-                icon: Users,
-                allowedRoles: ["admin", "manager", "user"],
-            },
-            {
-                href: "/invoices",
-                label: "Invoices",
-                icon: HandCoins,
-                allowedRoles: ["admin", "manager", "user"],
-            },
             {
                 href: "/expenses",
                 label: "Expenses",
@@ -122,7 +127,9 @@ type storeUser = {
     role: string;
     businessId: string;
     status: string;
-    Business: {};
+    Business: {
+        name?: string;
+    };
 };
 
 const Sidebar = () => {
@@ -141,7 +148,7 @@ const Sidebar = () => {
     // State to track which accordions are open
     const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>(
         {
-            Supplies: pathname?.startsWith("/suppliers") || false,
+            Procurement: pathname?.startsWith("/suppliers") || false,
         },
     );
 
@@ -227,222 +234,214 @@ const Sidebar = () => {
                 </svg>
             </div>
 
-            <div className="relative z-10 flex flex-col h-full w-full justify-between p-4 overflow-hidden">
-                <div className="flex flex-col w-full h-full">
-                    <div className="flex items-center justify-center mb-8 mt-2 h-10 flex-shrink-0">
-                        <Link href="/">
-                            {toggleSideBar ? (
-                                <Image
-                                    src="/logos/salesense-horizontal.png"
-                                    alt="Logo"
-                                    width={120}
-                                    height={40}
-                                    className="object-contain cursor-pointer"
-                                    priority
-                                />
-                            ) : (
-                                <Image
-                                    src="/logos/salesense-vertical.png"
-                                    alt="Logo"
-                                    width={32}
-                                    height={32}
-                                    className="object-contain cursor-pointer"
-                                    priority
-                                />
-                            )}
-                        </Link>
-                    </div>
+            <div className="relative z-10 flex flex-col h-full w-full p-4 overflow-hidden">
+                <div className="flex items-center justify-center mb-8 mt-2 h-10 flex-shrink-0">
+                    <Link href="/">
+                        {toggleSideBar ? (
+                            <Image
+                                src="/logos/salesense-horizontal.png"
+                                alt="Logo"
+                                width={120}
+                                height={40}
+                                className="object-contain cursor-pointer"
+                                priority
+                            />
+                        ) : (
+                            <Image
+                                src="/logos/salesense-vertical.png"
+                                alt="Logo"
+                                width={32}
+                                height={32}
+                                className="object-contain cursor-pointer"
+                                priority
+                            />
+                        )}
+                    </Link>
+                </div>
 
-                    <div className="flex flex-col gap-6 overflow-y-auto no-scrollbar flex-1 pb-4">
-                        {linkGroups.map((group, groupIdx) => {
-                            const visibleLinks = group.items.filter((link) =>
-                                link.allowedRoles.some(
-                                    (role) =>
-                                        role?.toLowerCase() ===
-                                        user?.role?.toLowerCase(),
-                                ),
-                            );
+                <div className="flex flex-col gap-6 overflow-y-auto no-scrollbar flex-1 pb-4">
+                    {linkGroups.map((group, groupIdx) => {
+                        const visibleLinks = group.items.filter((link) =>
+                            link.allowedRoles.some(
+                                (role) =>
+                                    role?.toLowerCase() ===
+                                    user?.role?.toLowerCase(),
+                            ),
+                        );
 
-                            if (visibleLinks.length === 0) return null;
+                        if (visibleLinks.length === 0) return null;
 
-                            return (
-                                <div
-                                    key={groupIdx}
-                                    data-tour={`nav-${group.label.toLowerCase()}`}
-                                    className="w-full "
-                                >
-                                    {toggleSideBar && (
-                                        <h3 className="px-3 mb-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                                            {group.label}
-                                        </h3>
-                                    )}
-                                    <ul className="flex flex-col gap-2">
-                                        {visibleLinks.map((link: any) => {
-                                            // Handle Dropdown Accordion Item
-                                            if (link.subItems) {
-                                                const isOpen =
-                                                    openDropdowns[link.label];
-                                                const isChildActive =
-                                                    link.subItems.some(
-                                                        (sub: any) =>
-                                                            pathname ===
-                                                                sub.href ||
-                                                            (sub.href !==
-                                                                "/suppliers" &&
-                                                                pathname?.startsWith(
-                                                                    sub.href,
-                                                                )),
-                                                    );
-                                                const Icon = link.icon;
-
-                                                return (
-                                                    <li
-                                                        key={link.label}
-                                                        className="flex flex-col gap-1"
-                                                    >
-                                                        <button
-                                                            onClick={() =>
-                                                                toggleDropdown(
-                                                                    link.label,
-                                                                )
-                                                            }
-                                                            className={`flex items-center justify-between px-2 py-2 rounded-lg transition-all duration-200 group ${isChildActive && !isOpen ? "bg-green-50 text-green-600" : "hover:bg-green-50 text-gray-600"} ${!toggleSideBar ? "justify-center" : ""}`}
-                                                            title={
-                                                                !toggleSideBar
-                                                                    ? link.label
-                                                                    : ""
-                                                            }
-                                                        >
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="flex-shrink-0">
-                                                                    <Icon
-                                                                        size={
-                                                                            20
-                                                                        }
-                                                                        className={
-                                                                            isChildActive
-                                                                                ? "stroke-green-500"
-                                                                                : "stroke-green-500 group-hover:stroke-green-500"
-                                                                        }
-                                                                    />
-                                                                </div>
-                                                                {toggleSideBar && (
-                                                                    <span
-                                                                        className={`text-sm font-medium whitespace-nowrap overflow-hidden ${isChildActive ? "text-green-500 font-bold" : "text-gray-600 group-hover:text-green-500"}`}
-                                                                    >
-                                                                        {
-                                                                            link.label
-                                                                        }
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            {toggleSideBar && (
-                                                                <ChevronDown
-                                                                    size={14}
-                                                                    className={`text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
-                                                                />
-                                                            )}
-                                                        </button>
-
-                                                        {/* Sub Items */}
-                                                        {isOpen &&
-                                                            toggleSideBar && (
-                                                                <ul className="flex flex-col gap-1 pl-4 pr-2 mt-1">
-                                                                    {link.subItems.map(
-                                                                        (
-                                                                            sub: any,
-                                                                        ) => {
-                                                                            const isSubActive =
-                                                                                pathname ===
-                                                                                    sub.href ||
-                                                                                (sub.href !==
-                                                                                    "/suppliers" &&
-                                                                                    pathname?.startsWith(
-                                                                                        sub.href,
-                                                                                    ));
-                                                                            return (
-                                                                                <li
-                                                                                    key={
-                                                                                        sub.href
-                                                                                    }
-                                                                                >
-                                                                                    <Link
-                                                                                        href={
-                                                                                            sub.href
-                                                                                        }
-                                                                                        className={`flex items-center gap-3 px-2 py-1.5 rounded-md transition-all duration-200 group ${isSubActive ? "bg-[#22c55e] text-white shadow-sm" : "hover:bg-green-50 text-gray-500"}`}
-                                                                                    >
-                                                                                        <span
-                                                                                            className={`text-xs font-medium ${isSubActive ? "text-white font-bold" : "group-hover:text-green-600"}`}
-                                                                                        >
-                                                                                            {
-                                                                                                sub.label
-                                                                                            }
-                                                                                        </span>
-                                                                                    </Link>
-                                                                                </li>
-                                                                            );
-                                                                        },
-                                                                    )}
-                                                                </ul>
-                                                            )}
-                                                    </li>
+                        return (
+                            <div
+                                key={groupIdx}
+                                data-tour={`nav-${group.label.toLowerCase()}`}
+                                className="w-full "
+                            >
+                                {toggleSideBar && (
+                                    <h3 className="px-3 mb-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                        {group.label}
+                                    </h3>
+                                )}
+                                <ul className="flex flex-col gap-2">
+                                    {visibleLinks.map((link: any) => {
+                                        // Handle Dropdown Accordion Item
+                                        if (link.subItems) {
+                                            const isOpen =
+                                                openDropdowns[link.label];
+                                            const isChildActive =
+                                                link.subItems.some(
+                                                    (sub: any) =>
+                                                        pathname === sub.href ||
+                                                        (sub.href !==
+                                                            "/suppliers" &&
+                                                            pathname?.startsWith(
+                                                                sub.href,
+                                                            )),
                                                 );
-                                            }
-
-                                            // Standard Link Rendering
-                                            const isActive =
-                                                pathname === link.href;
                                             const Icon = link.icon;
 
                                             return (
-                                                <li key={link.href}>
-                                                    <Link
-                                                        href={link.href}
-                                                        className={`flex items-center gap-3 px-2 py-2 rounded-lg transition-all duration-200 group ${
-                                                            isActive
-                                                                ? "bg-[#22c55e] text-white shadow-sm"
-                                                                : "hover:bg-green-50 text-gray-600"
-                                                        } ${!toggleSideBar ? "justify-center" : ""}`}
+                                                <li
+                                                    key={link.label}
+                                                    className="flex flex-col gap-1"
+                                                >
+                                                    <button
+                                                        onClick={() =>
+                                                            toggleDropdown(
+                                                                link.label,
+                                                            )
+                                                        }
+                                                        className={`flex items-center justify-between px-2 py-2 rounded-lg transition-all duration-200 group ${isChildActive && !isOpen ? "bg-green-50 text-green-500" : "hover:bg-green-50 text-gray-600"} ${!toggleSideBar ? "justify-center" : ""}`}
                                                         title={
                                                             !toggleSideBar
                                                                 ? link.label
                                                                 : ""
                                                         }
                                                     >
-                                                        <div className="flex-shrink-0">
-                                                            <Icon
-                                                                size={20}
-                                                                className={
-                                                                    isActive
-                                                                        ? "stroke-white"
-                                                                        : "stroke-green-500 group-hover:stroke-green-600"
-                                                                }
-                                                            />
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="flex-shrink-0">
+                                                                <Icon
+                                                                    size={20}
+                                                                    className={
+                                                                        isChildActive
+                                                                            ? "stroke-green-500"
+                                                                            : "stroke-green-500 group-hover:stroke-green-500"
+                                                                    }
+                                                                />
+                                                            </div>
+                                                            {toggleSideBar && (
+                                                                <span
+                                                                    className={`text-sm font-medium whitespace-nowrap overflow-hidden ${isChildActive ? "text-green-500 font-bold" : "text-gray-600 group-hover:text-green-500"}`}
+                                                                >
+                                                                    {link.label}
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         {toggleSideBar && (
-                                                            <span
-                                                                className={`text-sm font-medium whitespace-nowrap overflow-hidden ${
-                                                                    isActive
-                                                                        ? "text-white font-bold"
-                                                                        : "text-gray-600 group-hover:text-green-500"
-                                                                }`}
-                                                            >
-                                                                {link.label}
-                                                            </span>
+                                                            <ChevronDown
+                                                                size={14}
+                                                                className={`text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                                                            />
                                                         )}
-                                                    </Link>
+                                                    </button>
+
+                                                    {/* Sub Items */}
+                                                    {isOpen &&
+                                                        toggleSideBar && (
+                                                            <ul className="flex flex-col gap-1 pl-4 pr-2 mt-1">
+                                                                {link.subItems.map(
+                                                                    (
+                                                                        sub: any,
+                                                                    ) => {
+                                                                        const isSubActive =
+                                                                            pathname ===
+                                                                                sub.href ||
+                                                                            (sub.href !==
+                                                                                "/suppliers" &&
+                                                                                pathname?.startsWith(
+                                                                                    sub.href,
+                                                                                ));
+                                                                        return (
+                                                                            <li
+                                                                                key={
+                                                                                    sub.href
+                                                                                }
+                                                                            >
+                                                                                <Link
+                                                                                    href={
+                                                                                        sub.href
+                                                                                    }
+                                                                                    className={`flex items-center gap-3 px-2 py-1.5 rounded-md transition-all duration-200 group ${isSubActive ? "bg-[#22c55e] text-white shadow-sm" : "hover:bg-green-50 text-gray-500"}`}
+                                                                                >
+                                                                                    <span
+                                                                                        className={`text-xs font-medium ${isSubActive ? "text-white font-bold" : "group-hover:text-green-500"}`}
+                                                                                    >
+                                                                                        {
+                                                                                            sub.label
+                                                                                        }
+                                                                                    </span>
+                                                                                </Link>
+                                                                            </li>
+                                                                        );
+                                                                    },
+                                                                )}
+                                                            </ul>
+                                                        )}
                                                 </li>
                                             );
-                                        })}
-                                    </ul>
-                                </div>
-                            );
-                        })}
-                    </div>
+                                        }
+
+                                        // Standard Link Rendering
+                                        const isActive = pathname === link.href;
+                                        const Icon = link.icon;
+
+                                        return (
+                                            <li key={link.href}>
+                                                <Link
+                                                    href={link.href}
+                                                    className={`flex items-center gap-3 px-2 py-2 rounded-lg transition-all duration-200 group ${
+                                                        isActive
+                                                            ? "bg-[#22c55e] text-white shadow-sm"
+                                                            : "hover:bg-green-50 text-gray-600"
+                                                    } ${!toggleSideBar ? "justify-center" : ""}`}
+                                                    title={
+                                                        !toggleSideBar
+                                                            ? link.label
+                                                            : ""
+                                                    }
+                                                >
+                                                    <div className="flex-shrink-0">
+                                                        <Icon
+                                                            size={20}
+                                                            className={
+                                                                isActive
+                                                                    ? "stroke-white"
+                                                                    : "stroke-green-500 group-hover:stroke-green-500"
+                                                            }
+                                                        />
+                                                    </div>
+                                                    {toggleSideBar && (
+                                                        <span
+                                                            className={`text-sm font-medium whitespace-nowrap overflow-hidden ${
+                                                                isActive
+                                                                    ? "text-white font-bold"
+                                                                    : "text-gray-600 group-hover:text-green-500"
+                                                            }`}
+                                                        >
+                                                            {link.label}
+                                                        </span>
+                                                    )}
+                                                </Link>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </div>
+                        );
+                    })}
                 </div>
 
-                <div className="w-full space-y-2 mt-auto pt-4 border-t border-gray-100 bg-white/80 backdrop-blur-sm flex-shrink-0">
+                <div className="w-full space-y-2 mt-auto pt-4 border-t border-gray-100 bg-white flex-shrink-0">
                     {sideBarState ? (
                         <Link
                             href="/help-center"
@@ -540,7 +539,7 @@ const Sidebar = () => {
 
             <button
                 onClick={toggleSidebarFunc}
-                className="absolute top-28 -right-3 z-50 bg-white border border-gray-200 rounded-full p-1 shadow-sm hover:shadow-md hover:bg-gray-50 transition-all text-gray-400 hover:text-green-600 flex items-center justify-center w-6 h-6"
+                className="absolute top-28 -right-3 z-50 bg-white border border-gray-200 rounded-full p-1 shadow-sm hover:shadow-md hover:bg-gray-50 transition-all text-gray-400 hover:text-green-500 flex items-center justify-center w-6 h-6"
             >
                 {toggleSideBar ? (
                     <ChevronLeft size={14} strokeWidth={2.5} />
