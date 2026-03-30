@@ -102,7 +102,7 @@ export default async function handler(
         try {
             await prisma.$transaction(async (tx) => {
                 const delivery = await tx.delivery.findUnique({
-                    where: { id: deliveryId, businessId: user.businessId! },
+                    where: { id: deliveryId, businessId: user.businessId as string },
                     include: { receipts: true },
                 });
 
@@ -160,7 +160,7 @@ export default async function handler(
 
             await prisma.$transaction(async (tx) => {
                 const oldDelivery = await tx.delivery.findUnique({
-                    where: { id: deliveryId, businessId: user.businessId! },
+                    where: { id: deliveryId, businessId: user.businessId as string },
                     include: { receipts: true },
                 });
 

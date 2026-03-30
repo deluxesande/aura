@@ -42,8 +42,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     orderBy: { date: "desc" },
                 });
 
-                // Get creator IDs (internal User IDs)
-                const creatorIds = Array.from(new Set(expenses.map(e => e.createdById)));
+                // Get creator IDs (internal User IDs), filtering out nulls
+                const creatorIds = Array.from(new Set(expenses.map(e => e.createdById).filter(id => id !== null))) as string[];
 
                 // Fetch internal users to get their clerkIds
                 const dbUsers = await prisma.user.findMany({
