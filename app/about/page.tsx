@@ -76,10 +76,6 @@ export default function AboutPage() {
                             animate={isHeroInView ? "visible" : "hidden"}
                             variants={fadeInRight}
                         >
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 text-green-500 text-xs font-bold uppercase tracking-wider mb-6">
-                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                Operational Excellence
-                            </div>
                             <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 leading-[1.1] mb-8">
                                 Built for Business. <br />
                                 <span className="text-green-500">

@@ -65,13 +65,6 @@ export default function FeaturesPage() {
                 variants={containerVariants}
             >
                 <div className="text-center max-w-5xl mx-auto">
-                    <motion.div
-                        variants={fadeInUp}
-                        className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 text-green-500 text-xs font-bold uppercase tracking-wider mb-6"
-                    >
-                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                        All-in-One Platform
-                    </motion.div>
                     <motion.h1
                         className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6 leading-tight"
                         variants={fadeInUp}

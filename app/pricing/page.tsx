@@ -47,9 +47,6 @@ export default function PricingPage() {
             >
                 <div className="max-w-7xl mx-auto pt-16 px-4 sm:px-6 lg:px-8">
                     <motion.div className="text-center" variants={itemVariants}>
-                        <div className="inline-block px-4 py-2 rounded-full bg-green-100 text-green-700 text-sm font-medium mb-6">
-                            Zero Transaction Fees on All Plans
-                        </div>
                         <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
                             Fair Pricing for Every Stage <br />
                         </h1>
