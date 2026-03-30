@@ -3,6 +3,7 @@
 import Navbar from "@/components/Navbar";
 import { apiClient } from "@/utils/apiClient";
 import { Loader2, ArrowLeft } from "lucide-react";
+import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
@@ -75,6 +76,12 @@ export default function DeliveryDetailsPage() {
                                     {delivery.reference || "N/A"}
                                 </span>
                             </p>
+                            {delivery.PurchaseOrder && (
+                                <p className="text-xs text-gray-500 mt-1 italic">
+                                    Linked PO:{" "}
+                                    {delivery.PurchaseOrder.reference}
+                                </p>
+                            )}
                         </div>
                         <div className="text-left md:text-right flex flex-col justify-center">
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
@@ -104,7 +111,7 @@ export default function DeliveryDetailsPage() {
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">
                                 Destination Store
                             </p>
-                            <p className="text-sm font-bold text-gray-900">
+                            <p className="text-sm font-Semibold text-gray-900">
                                 {delivery.Store?.name || "Unknown Branch"}
                             </p>
                             <p className="text-xs text-gray-500 mt-0.5">
@@ -118,10 +125,12 @@ export default function DeliveryDetailsPage() {
                             {delivery.creator ? (
                                 <div className="flex items-center gap-2 mt-1">
                                     <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0 bg-gray-200">
-                                        <img
+                                        <Image
                                             src={delivery.creator.imageUrl}
                                             alt="User"
                                             className="w-full h-full object-cover"
+                                            width={24}
+                                            height={24}
                                         />
                                     </div>
                                     <p className="text-sm font-bold text-gray-900">
@@ -142,7 +151,7 @@ export default function DeliveryDetailsPage() {
                             <h3 className="text-lg font-bold text-gray-900">
                                 Received Items
                             </h3>
-                            <p className="text-xs font-bold text-gray-500 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-lg">
+                            <p className="text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-lg">
                                 Total Qty: {totalItems}
                             </p>
                         </div>

@@ -26,6 +26,7 @@ export default async function handler(
                 include: {
                     Store: { select: { name: true } },
                     Supplier: { select: { name: true } },
+                    PurchaseOrder: { select: { reference: true, id: true } },
                     CreatedBy: {
                         select: {
                             firstName: true,
@@ -97,6 +98,7 @@ export default async function handler(
             const {
                 storeId,
                 supplierId,
+                purchaseOrderId,
                 reference,
                 items,
                 productId,
@@ -152,10 +154,23 @@ export default async function handler(
                             supplierId !== ""
                                 ? supplierId
                                 : null,
+                        purchaseOrderId:
+                            purchaseOrderId &&
+                            purchaseOrderId !== "null" &&
+                            purchaseOrderId !== ""
+                                ? purchaseOrderId
+                                : null,
                         createdById: user.id,
                         businessId: user.businessId!,
                     },
                 });
+
+                if (purchaseOrderId) {
+                    await tx.purchaseOrder.update({
+                        where: { id: purchaseOrderId },
+                        data: { status: "DELIVERED" },
+                    });
+                }
 
                 const newReceipts = [];
 

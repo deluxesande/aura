@@ -267,6 +267,16 @@ export default function PurchaseHistoryPage() {
                                                             {delivery.reference ||
                                                                 "NO-REF"}
                                                         </p>
+                                                        {delivery.PurchaseOrder && (
+                                                            <p className="text-[10px] text-gray-500 mt-0.5">
+                                                                Linked PO:{" "}
+                                                                {
+                                                                    delivery
+                                                                        .PurchaseOrder
+                                                                        .reference
+                                                                }
+                                                            </p>
+                                                        )}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <p className="text-sm font-bold text-gray-900">
@@ -276,7 +286,7 @@ export default function PurchaseHistoryPage() {
                                                         </p>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        <p className="text-sm font-bold text-gray-900">
+                                                        <p className="text-sm font-semibold text-gray-900">
                                                             {itemCount > 1
                                                                 ? `Multiple Products (${itemCount})`
                                                                 : firstProductName}
@@ -336,12 +346,12 @@ export default function PurchaseHistoryPage() {
                                                         )}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                        <p className="text-sm font-black text-gray-900">
+                                                        <p className="text-sm font-semibold text-gray-900">
                                                             {totalQuantity}
                                                         </p>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                        <span className="text-sm font-bold text-gray-900">
+                                                        <span className="text-sm font-semibold text-gray-900">
                                                             KSh{" "}
                                                             {(
                                                                 delivery.totalCost ||
@@ -374,12 +384,12 @@ export default function PurchaseHistoryPage() {
                             <div className="flex space-x-1 sm:space-x-2">
                                 {getPageNumbers().map((page) => (
                                     <button
-                                        key={`hist-page-${page}`}
+                                        key={page}
                                         onClick={() => handlePageClick(page)}
-                                        className={`btn btn-xs border-0 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                                        className={`btn btn-xs border-0 ${
                                             currentPage === page
-                                                ? "bg-green-400 text-white hover:bg-green-600 shadow-sm"
-                                                : "bg-transparent text-gray-700 hover:bg-green-50"
+                                                ? "bg-green-400 text-white hover:bg-green-600"
+                                                : "btn-ghost text-black hover:bg-green-100"
                                         }`}
                                     >
                                         {page}

@@ -29,6 +29,7 @@ export default function ReceiveStockModal({
 
     const [products, setProducts] = useState<any[]>([]);
     const [stores, setStores] = useState<any[]>([]);
+    const [purchaseOrders, setPurchaseOrders] = useState<any[]>([]);
     const [loadingData, setLoadingData] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -36,6 +37,7 @@ export default function ReceiveStockModal({
     const [deliveryDetails, setDeliveryDetails] = useState({
         storeId: "",
         supplierId: "",
+        purchaseOrderId: "",
         reference: "",
     });
 
@@ -49,8 +51,9 @@ export default function ReceiveStockModal({
             Promise.all([
                 apiClient.get("/product"),
                 apiClient.get(`/business/${businessDetails.id}/stores`),
+                apiClient.get("/purchase-orders"),
             ])
-                .then(([prodRes, storeRes]) => {
+                .then(([prodRes, storeRes, poRes]) => {
                     setProducts(
                         Array.isArray(prodRes.data)
                             ? prodRes.data.filter(
@@ -63,6 +66,13 @@ export default function ReceiveStockModal({
                             (s: any) => s.isActive !== false,
                         ) || [],
                     );
+                    setPurchaseOrders(
+                        Array.isArray(poRes.data)
+                            ? poRes.data.filter(
+                                  (po: any) => po.status === "DELIVERED",
+                              )
+                            : [],
+                    );
                     setLoadingData(false);
                 })
                 .catch(() => {
@@ -71,6 +81,34 @@ export default function ReceiveStockModal({
                 });
         }
     }, [isOpen, businessDetails?.id]);
+
+    const handlePOSelection = (poId: string) => {
+        const selectedPO = purchaseOrders.find((po) => po.id === poId);
+        if (selectedPO) {
+            setDeliveryDetails({
+                ...deliveryDetails,
+                purchaseOrderId: poId,
+                supplierId: selectedPO.supplierId || "",
+                reference: selectedPO.reference || deliveryDetails.reference,
+            });
+
+            // Map PO items into receiving rows
+            const poItems = selectedPO.items.map((item: any) => ({
+                productId: item.productId,
+                quantity: item.quantity.toString(),
+                unitCost: item.unitCost.toString(),
+            }));
+
+            if (poItems.length > 0) {
+                setItems(poItems);
+            }
+        } else {
+            setDeliveryDetails({
+                ...deliveryDetails,
+                purchaseOrderId: "",
+            });
+        }
+    };
 
     // Barcode Scanner Integration
     useBarcodeScanner((barcode) => {
@@ -172,6 +210,7 @@ export default function ReceiveStockModal({
             await apiClient.post("/inventory/receipt", {
                 storeId: deliveryDetails.storeId,
                 supplierId: deliveryDetails.supplierId || null,
+                purchaseOrderId: deliveryDetails.purchaseOrderId || null,
                 reference: deliveryDetails.reference,
                 items: items.map((item) => ({
                     productId: item.productId,
@@ -204,7 +243,7 @@ export default function ReceiveStockModal({
                     initial={{ opacity: 0, scale: 0.95, y: 10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                    className="bg-white rounded-lg w-full max-w-3xl shadow-2xl border border-gray-100 overflow-hidden relative flex flex-col max-h-[90vh]"
+                    className="bg-white rounded-lg w-full max-w-4xl shadow-2xl border border-gray-100 overflow-hidden relative flex flex-col max-h-[90vh]"
                 >
                     <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-white/50 backdrop-blur-sm flex-shrink-0">
                         <div>
@@ -237,7 +276,7 @@ export default function ReceiveStockModal({
                         >
                             <div className="p-6 overflow-y-auto flex-1 space-y-8 bg-gray-50/30">
                                 {/* 1. Delivery Details (Applies to all items) */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                                             Destination Branch
@@ -271,7 +310,41 @@ export default function ReceiveStockModal({
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-                                            Supplier (Optional)
+                                            Purchase Order
+                                        </label>
+                                        <div className="relative">
+                                            <select
+                                                value={
+                                                    deliveryDetails.purchaseOrderId
+                                                }
+                                                onChange={(e) =>
+                                                    handlePOSelection(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="w-full pl-4 pr-10 py-2.5 bg-slate-50 outline-none border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 text-sm appearance-none cursor-pointer"
+                                            >
+                                                <option value="">
+                                                    Manual / No PO
+                                                </option>
+                                                {purchaseOrders.map(
+                                                    (po, idx) => (
+                                                        <option
+                                                            key={`rec-po-${po.id || idx}`}
+                                                            value={po.id}
+                                                        >
+                                                            {po.reference} (
+                                                            {po.Supplier?.name})
+                                                        </option>
+                                                    ),
+                                                )}
+                                            </select>
+                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                            Supplier
                                         </label>
                                         <div className="relative">
                                             <select

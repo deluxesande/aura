@@ -36,6 +36,7 @@ export default async function handler(
             include: {
                 Store: { select: { name: true } },
                 Supplier: { select: { name: true, email: true, phoneNumber: true } },
+                PurchaseOrder: { select: { reference: true, id: true } },
                 CreatedBy: {
                     select: {
                         firstName: true,

@@ -338,6 +338,8 @@ model PurchaseOrder {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  deliveries Delivery[]
+
   @@index([businessId])
   @@index([supplierId])
 }
@@ -602,6 +604,9 @@ model Delivery {
   CreatedBy   User   @relation(fields: [createdById], references: [id])
 
   receipts StockReceipt[]
+
+  purchaseOrderId String?        @db.Uuid
+  PurchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
 
   createdAt DateTime @default(now())
 }
