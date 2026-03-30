@@ -2,34 +2,12 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
 import * as XLSX from "xlsx";
-import formidable from "formidable";
-import fs from "fs";
-import { randomUUID } from "crypto";
-
-export const config = {
-    api: {
-        bodyParser: false,
-    },
-};
-
-const normalize = (val: any) => {
-    if (val === null || val === undefined) return "";
-    return String(val).trim().toLowerCase();
-};
-
-const cleanString = (val: any) => (val ? String(val).trim() : "");
-
-const parseAmount = (val: any) => {
-    if (!val) return 0;
-    const str = String(val).replace(/,/g, "").trim();
-    return parseFloat(str) || 0;
-};
 
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse
 ) {
-    if (req.method !== "POST") {
+    if (req.method !== "GET") {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
@@ -40,385 +18,167 @@ export default async function handler(
 
         const currentUser = await prisma.user.findUnique({
             where: { clerkId: clerkUserId },
-            select: { id: true, businessId: true },
+            select: { id: true, businessId: true, storeId: true, role: true },
         });
 
         if (!currentUser || !currentUser.businessId) {
             return res.status(404).json({ error: "Business/User not found" });
         }
 
-        const internalUserId = currentUser.id;
         const businessId = currentUser.businessId;
+        const storeId = currentUser.storeId;
+        const isAdmin = currentUser.role.toLowerCase() === "admin";
 
-        const form = formidable({});
-        const [fields, files] = await form.parse(req);
-        const uploadedFile = files.file?.[0];
+        // Filter based on role: Admins get all business data, others get store-specific data
+        const filter = isAdmin ? { businessId } : { businessId, storeId };
+        const businessFilter = { businessId };
 
-        if (!uploadedFile) {
-            return res.status(400).json({ error: "No file uploaded" });
-        }
+        // Fetch data in parallel
+        const [
+            categories,
+            customers,
+            products,
+            invoices,
+            expenses,
+            mpesaPayments,
+        ] = await Promise.all([
+            prisma.category.findMany({ where: businessFilter }),
+            prisma.customer.findMany({ where: filter }),
+            prisma.product.findMany({ 
+                where: { businessId },
+                include: { Category: true, storeInventories: true }
+            }),
+            prisma.invoice.findMany({ 
+                where: filter,
+                include: { Customer: true, invoiceItems: { include: { Product: true } } }
+            }),
+            prisma.expense.findMany({ where: filter }),
+            prisma.mpesaPayment.findMany({ where: businessFilter }),
+        ]);
 
-        const fileBuffer = fs.readFileSync(uploadedFile.filepath);
-        const workbook = XLSX.read(fileBuffer, { type: "buffer" });
+        const workbook = XLSX.utils.book_new();
 
-        const getSheetData = (sheetName: string) => {
-            const sheet = workbook.Sheets[sheetName];
-            return sheet ? XLSX.utils.sheet_to_json<any>(sheet) : [];
-        };
+        // 1. Categories
+        const categoriesSheet = XLSX.utils.json_to_sheet(
+            categories.map((c) => ({
+                "Category ID": c.id,
+                "Name": c.name,
+                "Description": c.description,
+            }))
+        );
+        XLSX.utils.book_append_sheet(workbook, categoriesSheet, "Categories");
 
-        const categoriesData = getSheetData("Categories");
-        const customersData = getSheetData("Customers");
-        const productsData = getSheetData("Products");
-        const invoicesData = getSheetData("Invoices");
-        const invoiceItemsData = getSheetData("Invoice Items");
-        const mpesaPaymentsData = getSheetData("Mpesa Payments");
-        const successCallbacksData = getSheetData("Success Callbacks");
-        const failedCallbacksData = getSheetData("Failed Callbacks");
+        // 2. Customers
+        const customersSheet = XLSX.utils.json_to_sheet(
+            customers.map((c) => ({
+                "Customer ID": c.id,
+                "First Name": c.firstName,
+                "Last Name": c.lastName,
+                "Email": c.email,
+                "Phone Number": c.phoneNumber,
+                "Created At": c.createdAt,
+            }))
+        );
+        XLSX.utils.book_append_sheet(workbook, customersSheet, "Customers");
 
-        await prisma.$transaction(
-            async (tx) => {
-                // --- A. CATEGORIES ---
-                const categoryNames = new Set<string>();
-                categoryNames.add("Uncategorized");
+        // 3. Products & Stock
+        const productsSheet = XLSX.utils.json_to_sheet(
+            products.map((p) => {
+                // For stock, if it's store specific, show that store's stock, otherwise total
+                const stock = storeId 
+                    ? p.storeInventories.find(si => si.storeId === storeId)?.quantity || 0
+                    : p.storeInventories.reduce((acc, curr) => acc + curr.quantity, 0);
 
-                categoriesData.forEach((c: any) => {
-                    const n = c["Category Name"] || c["Name"];
-                    if (n) categoryNames.add(cleanString(n));
-                });
+                return {
+                    "Product ID": p.id,
+                    "Name": p.name,
+                    "SKU": p.sku,
+                    "Price": p.price,
+                    "Category": p.Category?.name,
+                    "Quantity": stock,
+                    "Description": p.description,
+                    "In Stock": p.inStock ? "Yes" : "No",
+                };
+            })
+        );
+        XLSX.utils.book_append_sheet(workbook, productsSheet, "Products");
 
-                productsData.forEach((p: any) => {
-                    const n = p["Category"] || p["Category Name"];
-                    if (n) categoryNames.add(cleanString(n));
-                });
+        // 4. Invoices
+        const invoicesSheet = XLSX.utils.json_to_sheet(
+            invoices.map((inv) => ({
+                "Invoice ID": inv.id,
+                "Invoice Name": inv.invoiceName,
+                "Customer": inv.Customer ? `${inv.Customer.firstName} ${inv.Customer.lastName}` : "Guest",
+                "Customer Phone": inv.Customer?.phoneNumber,
+                "Total Amount": inv.totalAmount,
+                "Status": inv.status,
+                "Payment Type": inv.paymentType,
+                "Date Issued": inv.createdAt,
+            }))
+        );
+        XLSX.utils.book_append_sheet(workbook, invoicesSheet, "Invoices");
 
-                if (categoryNames.size > 0) {
-                    await tx.category.createMany({
-                        data: Array.from(categoryNames).map((name) => ({
-                            name,
-                            description: "Imported",
-                            createdBy: clerkUserId,
-                        })),
-                        skipDuplicates: true,
-                    });
-                }
+        // 5. Invoice Items
+        const invoiceItemsFlat = invoices.flatMap((inv) => 
+            inv.invoiceItems.map((item) => ({
+                "Invoice ID": inv.id,
+                "Invoice Name": inv.invoiceName,
+                "Product Name": item.Product.name,
+                "SKU": item.Product.sku,
+                "Quantity": item.quantity,
+                "Unit Price": item.price,
+                "Subtotal": item.quantity * item.price,
+            }))
+        );
+        const invoiceItemsSheet = XLSX.utils.json_to_sheet(invoiceItemsFlat);
+        XLSX.utils.book_append_sheet(workbook, invoiceItemsSheet, "Invoice Items");
 
-                const allCategories = await tx.category.findMany({
-                    where: { createdBy: clerkUserId },
-                    select: { id: true, name: true },
-                });
-                const categoryMap = new Map<string, string>();
-                allCategories.forEach((c) =>
-                    categoryMap.set(normalize(c.name), c.id)
-                );
-                const defaultCatId = categoryMap.get("uncategorized")!;
+        // 6. Expenses
+        const expensesSheet = XLSX.utils.json_to_sheet(
+            expenses.map((e) => ({
+                "Expense ID": e.id,
+                "Title": e.title,
+                "Category": e.category,
+                "Amount": e.amount,
+                "Date": e.date,
+                "Status": e.status,
+                "Notes": e.notes,
+            }))
+        );
+        XLSX.utils.book_append_sheet(workbook, expensesSheet, "Expenses");
 
-                // --- B. CUSTOMERS ---
-                const customersToInsert = customersData.map((c: any) => {
-                    let firstName = cleanString(c["First Name"]);
-                    let lastName = cleanString(c["Last Name"]);
+        // 7. Mpesa Payments
+        const mpesaSheet = XLSX.utils.json_to_sheet(
+            mpesaPayments.map((p) => ({
+                "Payment ID": p.id,
+                "Amount": p.amount,
+                "Phone": p.phoneNumber,
+                "Reference": p.accountReference,
+                "Status": p.status,
+                "Merchant Request ID": p.merchantRequestId,
+                "Checkout Request ID": p.checkoutRequestId,
+                "Date": p.createdAt,
+            }))
+        );
+        XLSX.utils.book_append_sheet(workbook, mpesaSheet, "Mpesa Payments");
 
-                    if (!firstName && c["Name"]) {
-                        const parts = cleanString(c["Name"]).split(" ");
-                        firstName = parts[0];
-                        lastName = parts.slice(1).join(" ");
-                    }
+        const excelBuffer = XLSX.write(workbook, {
+            bookType: "xlsx",
+            type: "buffer",
+        });
 
-                    // Fix for Unique Constraint on PhoneNumber:
-                    // If phone is missing, generate a unique placeholder to allow insertion
-                    let phone = cleanString(c["Phone Number"] || c["Phone"]);
-                    if (!phone) {
-                        phone = `no-phone-${randomUUID()}`;
-                    }
-
-                    return {
-                        firstName,
-                        lastName,
-                        email: cleanString(c["Email"]) || null,
-                        phoneNumber: phone,
-                        businessId,
-                        createdById: internalUserId,
-                    };
-                });
-
-                if (customersToInsert.length > 0) {
-                    await tx.customer.createMany({
-                        data: customersToInsert,
-                        skipDuplicates: true,
-                    });
-                }
-
-                const contactKeys = customersToInsert
-                    .map((c) => c.email)
-                    .filter(Boolean) as string[];
-                const phoneKeys = customersToInsert
-                    .map((c) => c.phoneNumber)
-                    .filter(Boolean) as string[];
-
-                const allCustomers = await tx.customer.findMany({
-                    where: {
-                        businessId,
-                        OR: [
-                            { email: { in: contactKeys } },
-                            { phoneNumber: { in: phoneKeys } },
-                        ],
-                    },
-                    select: { id: true, email: true, phoneNumber: true },
-                });
-                const customerMap = new Map<string, string>();
-                allCustomers.forEach((c) => {
-                    if (c.email) customerMap.set(normalize(c.email), c.id);
-                    if (c.phoneNumber)
-                        customerMap.set(normalize(c.phoneNumber), c.id);
-                });
-
-                // --- C. PRODUCTS ---
-                const productsToInsert = productsData
-                    .filter((p: any) => p["SKU"])
-                    .map((p: any) => {
-                        const catName = p["Category"] || p["Category Name"];
-                        const catId =
-                            categoryMap.get(normalize(catName)) || defaultCatId;
-
-                        return {
-                            name: cleanString(
-                                p["Product Name"] || p["Name"] || "Unknown"
-                            ),
-                            description: cleanString(
-                                p["Description"] || p["Desc"]
-                            ),
-                            price: parseAmount(p["Price"]),
-                            sku: cleanString(p["SKU"]),
-                            quantity: parseInt(p["Quantity"] || p["Qty"]) || 0,
-                            inStock:
-                                p["In Stock"] === "Yes" ||
-                                p["In Stock"] === true,
-                            categoryId: catId,
-                            createdBy: clerkUserId,
-                        };
-                    });
-
-                if (productsToInsert.length > 0) {
-                    await tx.product.createMany({
-                        data: productsToInsert,
-                        skipDuplicates: true,
-                    });
-                }
-
-                const skuList = productsToInsert.map((p) => p.sku);
-                const allProducts = await tx.product.findMany({
-                    where: { sku: { in: skuList } },
-                    select: { id: true, sku: true },
-                });
-                const productMap = new Map<string, string>();
-                allProducts.forEach((p) =>
-                    productMap.set(normalize(p.sku), p.id)
-                );
-
-                // --- D. INVOICES ---
-                const invoiceIdMap = new Map<string, string>(); // Excel ID -> UUID
-                const invoiceNameMap = new Map<string, string>(); // Name -> UUID
-                const invoicesToCreate: any[] = [];
-
-                invoicesData.forEach((row: any) => {
-                    const newId = randomUUID();
-                    const oldId = cleanString(row["Invoice ID"]);
-                    const name = cleanString(row["Invoice Name"]);
-
-                    if (oldId) invoiceIdMap.set(normalize(oldId), newId);
-                    if (name) invoiceNameMap.set(normalize(name), newId);
-
-                    const email = cleanString(
-                        row["Customer Email"] || row["Email"]
-                    );
-                    const customerId = customerMap.get(normalize(email));
-
-                    invoicesToCreate.push({
-                        id: newId,
-                        invoiceName: name || "Imported Invoice",
-                        totalAmount: parseAmount(
-                            row["Total Amount"] || row["Amount"]
-                        ),
-                        status: row["Status"] || "PENDING",
-                        paymentType:
-                            row["Payment Type"] || row["Type"] || "CASH",
-                        stockRestored: row["Stock Restored"] === "Yes",
-                        customerId: customerId || null,
-                        createdBy: clerkUserId,
-                        createdAt: row["Date Issued"]
-                            ? new Date(row["Date Issued"])
-                            : new Date(),
-                        updatedAt: new Date(),
-                    });
-                });
-
-                if (invoicesToCreate.length > 0) {
-                    await tx.invoice.createMany({
-                        data: invoicesToCreate,
-                        skipDuplicates: true,
-                    });
-                }
-
-                // --- E. INVOICE ITEMS ---
-                const itemsToCreate = invoiceItemsData
-                    .map((row: any) => {
-                        const invKeyId = cleanString(row["Invoice ID"]);
-                        const invKeyName = cleanString(
-                            row["Invoice Name"] || row["Invoice"]
-                        );
-
-                        // Robust Lookup: Try ID map first, then Name map
-                        const invoiceId =
-                            invoiceIdMap.get(normalize(invKeyId)) ||
-                            invoiceNameMap.get(normalize(invKeyName));
-
-                        const skuKey = cleanString(
-                            row["Product SKU"] || row["SKU"]
-                        );
-                        const productId = productMap.get(normalize(skuKey));
-
-                        if (!invoiceId || !productId) return null;
-
-                        return {
-                            invoiceId,
-                            productId,
-                            quantity:
-                                parseInt(row["Quantity"] || row["Qty"]) || 1,
-                            price: parseAmount(
-                                row["Unit Price"] || row["Price"]
-                            ),
-                            createdBy: clerkUserId,
-                        };
-                    })
-                    .filter((i): i is NonNullable<typeof i> => i !== null);
-
-                if (itemsToCreate.length > 0) {
-                    await tx.invoiceItem.createMany({ data: itemsToCreate });
-                }
-
-                // --- F. MPESA PAYMENTS ---
-                const paymentsToCreate = mpesaPaymentsData
-                    .map((row: any) => {
-                        const invKey = cleanString(
-                            row["Invoice Name"] || row["Invoice"]
-                        );
-                        const invoiceId = invoiceNameMap.get(normalize(invKey));
-
-                        if (!invoiceId) return null;
-
-                        return {
-                            amount: parseAmount(row["Amount"]),
-                            phoneNumber: cleanString(
-                                row["Phone Number"] || row["Phone"]
-                            ),
-                            accountReference: row["Reference"] || "Salesense",
-                            transactionDesc: cleanString(
-                                row["Transaction Desc"] || row["Code"]
-                            ),
-                            merchantRequestId:
-                                row["Merchant Request ID"] || randomUUID(),
-                            checkoutRequestId:
-                                row["Checkout Request ID"] || randomUUID(),
-                            status: row["Status"] || "PENDING",
-                            invoiceId,
-                            businessId,
-                            userId: internalUserId,
-                            createdAt: row["Date Initiated"]
-                                ? new Date(row["Date Initiated"])
-                                : new Date(),
-                        };
-                    })
-                    .filter((p): p is NonNullable<typeof p> => p !== null);
-
-                if (paymentsToCreate.length > 0) {
-                    await tx.mpesaPayment.createMany({
-                        data: paymentsToCreate,
-                        skipDuplicates: true,
-                    });
-                }
-
-                // --- G. CALLBACKS ---
-                const successCallbacksToCreate = successCallbacksData
-                    .map((row: any) => {
-                        const invKey = cleanString(
-                            row["Invoice Name"] || row["Invoice"]
-                        );
-                        const invoiceId = invoiceNameMap.get(normalize(invKey));
-                        if (!invoiceId) return null;
-
-                        return {
-                            merchantRequestId: row["Merchant Request ID"] || "",
-                            checkoutRequestId: row["Checkout Request ID"] || "",
-                            resultCode: parseInt(row["Result Code"]) || 0,
-                            resultDesc: row["Result Desc"] || "",
-                            amount: parseAmount(row["Amount"]),
-                            mpesaReceiptNumber: cleanString(
-                                row["Receipt Number"] || row["Receipt"]
-                            ),
-                            transactionDate: BigInt(
-                                row["Transaction Date"]?.toString() || "0"
-                            ),
-                            phoneNumber: BigInt(
-                                row["Phone Number"]?.toString() ||
-                                    row["Phone"]?.toString() ||
-                                    "0"
-                            ),
-                            invoiceId,
-                            createdAt: row["Callback Received At"]
-                                ? new Date(row["Callback Received At"])
-                                : new Date(),
-                        };
-                    })
-                    .filter((c): c is NonNullable<typeof c> => c !== null);
-
-                if (successCallbacksToCreate.length > 0) {
-                    await tx.successfulCallback.createMany({
-                        data: successCallbacksToCreate,
-                    });
-                }
-
-                const failedCallbacksToCreate = failedCallbacksData
-                    .map((row: any) => {
-                        const invKey = cleanString(
-                            row["Invoice Name"] || row["Invoice"]
-                        );
-                        const invoiceId = invoiceNameMap.get(normalize(invKey));
-                        if (!invoiceId) return null;
-
-                        return {
-                            merchantRequestId: row["Merchant Request ID"] || "",
-                            checkoutRequestId: row["Checkout Request ID"] || "",
-                            resultCode:
-                                parseInt(row["Result Code"] || row["Code"]) ||
-                                1,
-                            resultDesc: cleanString(
-                                row["Result Desc"] || row["Reason"] || "Failed"
-                            ),
-                            invoiceId,
-                            createdAt: row["Callback Received At"]
-                                ? new Date(row["Callback Received At"])
-                                : new Date(),
-                        };
-                    })
-                    .filter((c): c is NonNullable<typeof c> => c !== null);
-
-                if (failedCallbacksToCreate.length > 0) {
-                    await tx.failedCallback.createMany({
-                        data: failedCallbacksToCreate,
-                    });
-                }
-            },
-            {
-                maxWait: 10000,
-                timeout: 20000,
-            }
+        res.setHeader(
+            "Content-Type",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename=salesense_data_${new Date().toISOString().split('T')[0]}.xlsx`
         );
 
-        return res.status(200).json({ message: "Data imported successfully" });
+        return res.status(200).send(excelBuffer);
     } catch (error) {
-        console.error("Import error:", error);
-        return res.status(500).json({
-            error: "Failed to import data",
-            details: error instanceof Error ? error.message : "Unknown error",
-        });
+        console.error("Export error:", error);
+        return res.status(500).json({ error: "Failed to export data" });
     }
 }
