@@ -7,6 +7,7 @@ import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useParams, useRouter } from "next/navigation";
+import DownloadDeliveryButton from "@/components/pdf/DownloadDeliveryButton";
 
 export default function DeliveryDetailsPage() {
     const params = useParams();
@@ -83,13 +84,16 @@ export default function DeliveryDetailsPage() {
                                 </p>
                             )}
                         </div>
-                        <div className="text-left md:text-right flex flex-col justify-center">
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                Status
-                            </p>
-                            <p className="text-lg font-bold text-green-600 mt-0.5 uppercase tracking-wider">
-                                {delivery.status}
-                            </p>
+                        <div className="flex flex-col md:flex-row items-center gap-3">
+                            <DownloadDeliveryButton delivery={delivery} />
+                            <div className="text-left md:text-right flex flex-col justify-center">
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                                    Status
+                                </p>
+                                <p className="text-lg font-bold text-green-500 mt-0.5 uppercase tracking-wider">
+                                    {delivery.status}
+                                </p>
+                            </div>
                         </div>
                     </div>
 
@@ -111,7 +115,7 @@ export default function DeliveryDetailsPage() {
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">
                                 Destination Store
                             </p>
-                            <p className="text-sm font-Semibold text-gray-900">
+                            <p className="text-sm font-semibold text-gray-900">
                                 {delivery.Store?.name || "Unknown Branch"}
                             </p>
                             <p className="text-xs text-gray-500 mt-0.5">

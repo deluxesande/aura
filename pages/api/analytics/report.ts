@@ -88,16 +88,44 @@ export default async function handler(
             orderBy: { createdAt: "desc" },
         });
 
+        // Fetch Deliveries
+        const deliveries = await prisma.delivery.findMany({
+            where: {
+                businessId: businessId,
+                storeId: targetStoreId,
+                createdAt: { gte: startDate },
+                status: "RECEIVED",
+            },
+            include: {
+                Supplier: { select: { name: true } },
+                Store: { select: { name: true } },
+            },
+            orderBy: { createdAt: "desc" },
+        });
+
+        // Fetch Expenses
+        const expenses = await prisma.expense.findMany({
+            where: {
+                businessId: businessId,
+                storeId: targetStoreId,
+                createdAt: { gte: startDate },
+                status: "ACTIVE",
+            },
+        });
+
         // 4. Aggregation Engine
         let totalRevenue = 0;
         let mpesaTotal = 0;
         let cashTotal = 0;
+        let totalStockValue = 0;
+        let totalExpenses = 0;
 
         const productSales: Record<
             string,
             { name: string; sku: string; qty: number; revenue: number }
         > = {};
         const ledger: any[] = [];
+        const deliveryLedger: any[] = [];
 
         invoices.forEach((inv) => {
             totalRevenue += inv.totalAmount;
@@ -139,6 +167,21 @@ export default async function handler(
             });
         });
 
+        deliveries.forEach((d) => {
+            totalStockValue += d.totalCost;
+            deliveryLedger.push({
+                date: d.createdAt.toISOString(),
+                reference: d.reference || "N/A",
+                supplier: d.Supplier?.name || "Direct/Cash",
+                store: d.Store?.name || "Main",
+                cost: d.totalCost,
+            });
+        });
+
+        expenses.forEach((e) => {
+            totalExpenses += e.amount;
+        });
+
         const topProducts = Object.values(productSales).sort(
             (a, b) => b.revenue - a.revenue,
         );
@@ -149,9 +192,13 @@ export default async function handler(
                 totalInvoices: invoices.length,
                 mpesaTotal,
                 cashTotal,
+                totalStockValue,
+                totalDeliveries: deliveries.length,
+                totalExpenses,
             },
             ledger,
             topProducts,
+            deliveries: deliveryLedger,
         });
     } catch (error) {
         console.error("Report Generation Error:", error);

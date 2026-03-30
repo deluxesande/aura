@@ -15,6 +15,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!user || !user.businessId) return res.status(403).json({ error: "Forbidden" });
 
     switch (req.method) {
+        case "GET":
+            try {
+                const supplier = await prisma.supplier.findUnique({
+                    where: { id: id as string, businessId: user.businessId },
+                    include: {
+                        deliveries: {
+                            where: { status: "RECEIVED" },
+                            include: {
+                                Store: { select: { name: true } },
+                                receipts: {
+                                    include: {
+                                        Product: { select: { name: true, sku: true } }
+                                    }
+                                }
+                            },
+                            orderBy: { createdAt: "desc" }
+                        }
+                    }
+                });
+                if (!supplier) return res.status(404).json({ error: "Supplier not found" });
+                return res.status(200).json(supplier);
+            } catch (error) {
+                console.error("GET_SUPPLIER_DETAILS_ERROR", error);
+                return res.status(500).json({ error: "Fetch failed" });
+            }
         case "PATCH":
             try {
                 const updated = await prisma.supplier.update({

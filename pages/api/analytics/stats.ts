@@ -79,45 +79,72 @@ export default async function handler(
             if (endDate) dateFilter.lt = endDate;
 
             const whereClause: any = {
-                createdBy: { in: userIds },
+                businessId,
                 storeId: targetStoreId,
+            };
+
+            const invoiceWhere: any = {
+                ...whereClause,
+                createdBy: { in: userIds },
                 isDeleted: false,
             };
 
             // Only add createdAt to query if dates are provided
             if (startDate || endDate) {
+                invoiceWhere.createdAt = dateFilter;
                 whereClause.createdAt = dateFilter;
             }
 
-            // Aggregate Totals
-            const data = await prisma.invoice.aggregate({
-                where: whereClause,
+            // Aggregate Totals (Invoices)
+            const invoiceData = await prisma.invoice.aggregate({
+                where: invoiceWhere,
                 _count: { id: true }, // Total Invoices
             });
 
             // Aggregate Revenue (Paid Only)
             const paidData = await prisma.invoice.aggregate({
                 where: {
-                    ...whereClause,
+                    ...invoiceWhere,
                     status: { in: ["PAID", "paid", "COMPLETED", "completed"] },
                 },
                 _count: { id: true }, // Paid Invoices count
                 _sum: { totalAmount: true }, // Total Revenue
             });
 
+            // Aggregate Procurement (Deliveries)
+            const deliveryData = await prisma.delivery.aggregate({
+                where: {
+                    ...whereClause,
+                    status: "RECEIVED",
+                },
+                _sum: { totalCost: true },
+                _count: { id: true },
+            });
+
+            // Aggregate Expenses
+            const expenseData = await prisma.expense.aggregate({
+                where: {
+                    ...whereClause,
+                    status: "ACTIVE",
+                },
+                _sum: { amount: true },
+            });
+
             const totalRevenue = paidData._sum.totalAmount || 0;
+            const totalProcurement = deliveryData._sum.totalCost || 0;
+            const totalExpenses = expenseData._sum.amount || 0;
 
             return {
-                totalInvoices: data._count.id,
+                totalInvoices: invoiceData._count.id,
                 paidInvoices: paidData._count.id,
                 totalRevenue: totalRevenue,
-                profit: totalRevenue * 0.3, // 30% Profit
+                totalProcurement: totalProcurement,
+                totalExpenses: totalExpenses,
+                profit: totalRevenue - totalProcurement - totalExpenses,
             };
         };
 
         // 4. Execute Queries in Parallel
-        // - allTimeStats: No date filters (Returns historical totals)
-        // - todayStats & yesterdayStats: Used ONLY for calculating the "Trend" percentage
         const [allTimeStats, todayStats, yesterdayStats, mpesaData] =
             await Promise.all([
                 getStats(), // All Time

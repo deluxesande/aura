@@ -30,6 +30,9 @@ interface ReportData {
         totalInvoices: number;
         mpesaTotal: number;
         cashTotal: number;
+        totalStockValue?: number;
+        totalDeliveries?: number;
+        totalExpenses?: number;
     };
     topProducts: { name: string; sku: string; qty: number; revenue: number }[];
     ledger: {
@@ -38,6 +41,13 @@ interface ReportData {
         customer: string;
         method: string;
         amount: number;
+    }[];
+    deliveries?: {
+        date: string;
+        reference: string;
+        supplier: string;
+        store: string;
+        cost: number;
     }[];
 }
 
@@ -51,83 +61,88 @@ const styles = StyleSheet.create({
     page: {
         fontFamily: "Helvetica",
         fontSize: 10,
-        paddingTop: 30,
-        paddingLeft: 30,
-        paddingRight: 30,
-        paddingBottom: 90,
+        paddingTop: 40,
+        paddingLeft: 40,
+        paddingRight: 40,
+        paddingBottom: 80,
         color: "#333",
         flexDirection: "column",
         backgroundColor: "#ffffff",
     },
     header: {
         flexDirection: "row",
-        alignItems: "flex-end",
+        alignItems: "center",
         justifyContent: "space-between",
-        marginBottom: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: "#eee",
+        marginBottom: 30,
+        borderBottomWidth: 2,
+        borderBottomColor: "#22c55e",
         paddingBottom: 15,
     },
     title: {
-        fontSize: 20,
+        fontSize: 22,
         fontWeight: "bold",
         color: "#22c55e",
         textTransform: "uppercase",
-        marginBottom: 5,
+        letterSpacing: 1,
     },
     sectionTitle: {
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: "bold",
         color: "#22c55e",
         textTransform: "uppercase",
         marginTop: 25,
-        marginBottom: 10,
+        marginBottom: 12,
+        backgroundColor: "#f0fdf4",
+        padding: "4 8",
+        borderRadius: 2,
     },
     metaGrid: {
         flexDirection: "row",
         flexWrap: "wrap",
         justifyContent: "space-between",
         marginBottom: 10,
-        gap: 15,
     },
     col: {
-        width: "48%",
-        marginBottom: 10,
+        width: "31%",
+        marginBottom: 15,
+        backgroundColor: "#f9fafb",
+        padding: 10,
+        borderRadius: 4,
+        borderLeftWidth: 3,
+        borderLeftColor: "#22c55e",
     },
     label: {
-        fontSize: 8,
-        color: "#888",
-        marginBottom: 2,
+        fontSize: 7,
+        color: "#6b7280",
+        marginBottom: 4,
         textTransform: "uppercase",
+        fontWeight: "bold",
     },
     value: {
-        fontSize: 10,
-        marginBottom: 4,
+        fontSize: 9,
+        color: "#374151",
     },
     boldValue: {
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: "bold",
-        marginBottom: 4,
         color: "#111827",
     },
     table: {
         width: "100%",
-        marginTop: 10,
+        marginTop: 5,
     },
     tableHeader: {
         flexDirection: "row",
         backgroundColor: "#f9fafb",
         borderBottomWidth: 1,
-        borderBottomColor: "#eee",
-        borderTopWidth: 1,
-        borderTopColor: "#eee",
-        padding: 8,
+        borderBottomColor: "#e5e7eb",
+        padding: "8 10",
     },
     tableRow: {
         flexDirection: "row",
         borderBottomWidth: 1,
-        borderBottomColor: "#eee",
-        padding: 8,
+        borderBottomColor: "#f3f4f6",
+        padding: "8 10",
         alignItems: "center",
     },
 
@@ -144,6 +159,13 @@ const styles = StyleSheet.create({
     colLMethod: { width: "15%" },
     colLAmt: { width: "20%", textAlign: "right" },
 
+    // Delivery Columns
+    colDDate: { width: "15%" },
+    colDRef: { width: "20%" },
+    colDSupp: { width: "25%" },
+    colDStore: { width: "20%" },
+    colDCost: { width: "20%", textAlign: "right" },
+
     footer: {
         position: "absolute",
         bottom: 30,
@@ -153,6 +175,9 @@ const styles = StyleSheet.create({
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
+        borderTopWidth: 1,
+        borderTopColor: "#eee",
+        paddingTop: 15,
     },
     footerText: {
         fontSize: 8,
@@ -161,8 +186,8 @@ const styles = StyleSheet.create({
     },
     footerLogo: {
         width: 100,
+        height: 25,
         objectFit: "contain",
-        opacity: 1,
     },
 });
 
@@ -171,9 +196,10 @@ export const FinancialReportPDF: React.FC<FinancialReportPDFProps> = ({
     periodLabel,
     businessName = "Business",
 }) => {
-    const formatMoney = (amount: number) => {
-        if (isNaN(amount)) return "Ksh 0.00";
-        return `Ksh ${amount.toLocaleString(undefined, {
+    const formatMoney = (amount: any) => {
+        const num = Number(amount);
+        if (isNaN(num)) return "Ksh 0.00";
+        return `Ksh ${num.toLocaleString(undefined, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         })}`;
@@ -188,15 +214,26 @@ export const FinancialReportPDF: React.FC<FinancialReportPDFProps> = ({
                 {/* --- HEADER --- */}
                 <View style={styles.header}>
                     <View>
-                        <Text style={styles.title}>Financial Report</Text>
-                        <Text style={styles.value}>{businessName}</Text>
+                        <Text style={styles.title}>
+                            Financial Performance Report
+                        </Text>
+                        <Text
+                            style={[
+                                styles.boldValue,
+                                { fontSize: 12, color: "#4b5563" },
+                            ]}
+                        >
+                            {businessName}
+                        </Text>
                     </View>
                     <View style={{ alignItems: "flex-end" }}>
-                        <Text style={styles.label}>Reporting Period</Text>
+                        <Text style={styles.label}>Period</Text>
                         <Text style={styles.boldValue}>{periodLabel}</Text>
-                        <Text style={styles.label}>Generated On</Text>
+                        <Text style={[styles.label, { marginTop: 4 }]}>
+                            Generated
+                        </Text>
                         <Text style={styles.value}>
-                            {new Date().toLocaleDateString()}
+                            {new Date().toLocaleDateString("en-GB")}
                         </Text>
                     </View>
                 </View>
@@ -205,34 +242,58 @@ export const FinancialReportPDF: React.FC<FinancialReportPDFProps> = ({
                 <Text style={styles.sectionTitle}>1. Executive Summary</Text>
                 <View style={styles.metaGrid}>
                     <View style={styles.col}>
-                        <Text style={styles.label}>Gross Revenue</Text>
-                        <Text style={styles.boldValue}>
+                        <Text style={styles.label}>Total Revenue</Text>
+                        <Text style={[styles.boldValue, { color: "#166534" }]}>
                             {formatMoney(data.summary.totalRevenue)}
                         </Text>
-                    </View>
-                    <View style={styles.col}>
-                        <Text style={styles.label}>Total Transactions</Text>
-                        <Text style={styles.boldValue}>
-                            {data.summary.totalInvoices}
+                        <Text style={styles.value}>
+                            {data.summary.totalInvoices} Sales
                         </Text>
                     </View>
                     <View style={styles.col}>
-                        <Text style={styles.label}>M-Pesa Settlements</Text>
+                        <Text style={styles.label}>M-Pesa Collections</Text>
                         <Text style={styles.boldValue}>
                             {formatMoney(data.summary.mpesaTotal)}
                         </Text>
+                        <Text style={styles.value}>Digital Settlement</Text>
                     </View>
                     <View style={styles.col}>
-                        <Text style={styles.label}>
-                            Cash / Other Collections
-                        </Text>
+                        <Text style={styles.label}>Cash Collections</Text>
                         <Text style={styles.boldValue}>
                             {formatMoney(data.summary.cashTotal)}
                         </Text>
+                        <Text style={styles.value}>Direct Payment</Text>
+                    </View>
+                    <View style={styles.col}>
+                        <Text style={styles.label}>Stock Procurement</Text>
+                        <Text style={[styles.boldValue, { color: "#991b1b" }]}>
+                            {formatMoney(data.summary.totalStockValue || 0)}
+                        </Text>
+                        <Text style={styles.value}>
+                            {data.summary.totalDeliveries || 0} Deliveries
+                        </Text>
+                    </View>
+                    <View style={styles.col}>
+                        <Text style={styles.label}>Total Expenses</Text>
+                        <Text style={[styles.boldValue, { color: "#991b1b" }]}>
+                            {formatMoney(data.summary.totalExpenses || 0)}
+                        </Text>
+                        <Text style={styles.value}>Operational Costs</Text>
+                    </View>
+                    <View style={styles.col}>
+                        <Text style={styles.label}>Net Cash Flow</Text>
+                        <Text style={[styles.boldValue, { fontSize: 12 }]}>
+                            {formatMoney(
+                                data.summary.totalRevenue -
+                                    (data.summary.totalStockValue || 0) -
+                                    (data.summary.totalExpenses || 0),
+                            )}
+                        </Text>
+                        <Text style={styles.value}>Approx. Margin</Text>
                     </View>
                 </View>
 
-                {/* --- 2. TOP PRODUCTS --- */}
+                {/* --- 2. PRODUCT PERFORMANCE --- */}
                 <Text style={styles.sectionTitle}>
                     2. Product Performance (Top 10)
                 </Text>
@@ -257,7 +318,8 @@ export const FinancialReportPDF: React.FC<FinancialReportPDFProps> = ({
                             <Text
                                 style={[
                                     styles.value,
-                                    { color: "#888", ...styles.colPSku },
+                                    { color: "#6b7280" },
+                                    styles.colPSku,
                                 ]}
                             >
                                 {item.sku}
@@ -268,7 +330,8 @@ export const FinancialReportPDF: React.FC<FinancialReportPDFProps> = ({
                             <Text
                                 style={[
                                     styles.boldValue,
-                                    { fontSize: 10, ...styles.colPRev },
+                                    { fontSize: 9 },
+                                    styles.colPRev,
                                 ]}
                             >
                                 {formatMoney(item.revenue)}
@@ -277,59 +340,76 @@ export const FinancialReportPDF: React.FC<FinancialReportPDFProps> = ({
                     ))}
                 </View>
 
-                {/* --- 3. TRANSACTION LEDGER --- */}
-                <Text style={styles.sectionTitle}>3. Transaction Ledger</Text>
-                <View style={styles.table}>
-                    <View style={styles.tableHeader}>
-                        <Text style={[styles.label, styles.colLDate]}>
-                            Date
+                {/* --- 3. SUPPLY CHAIN ACTIVITY --- */}
+                {data.deliveries && data.deliveries.length > 0 && (
+                    <>
+                        <Text style={styles.sectionTitle}>
+                            3. Recent Supply Chain Activity
                         </Text>
-                        <Text style={[styles.label, styles.colLId]}>
-                            Receipt ID
-                        </Text>
-                        <Text style={[styles.label, styles.colLCust]}>
-                            Customer
-                        </Text>
-                        <Text style={[styles.label, styles.colLMethod]}>
-                            Method
-                        </Text>
-                        <Text style={[styles.label, styles.colLAmt]}>
-                            Amount
-                        </Text>
-                    </View>
-                    {data.ledger.map((tx, index) => (
-                        <View key={index} style={styles.tableRow} wrap={false}>
-                            <Text style={[styles.value, styles.colLDate]}>
-                                {new Date(tx.date).toLocaleDateString()}
-                            </Text>
-                            <Text
-                                style={[
-                                    styles.value,
-                                    { color: "#888", ...styles.colLId },
-                                ]}
-                            >
-                                {tx.invoiceId.split("-")[0].toUpperCase()}
-                            </Text>
-                            <Text style={[styles.value, styles.colLCust]}>
-                                {tx.customer}
-                            </Text>
-                            <Text style={[styles.value, styles.colLMethod]}>
-                                {tx.method}
-                            </Text>
-                            <Text
-                                style={[
-                                    styles.boldValue,
-                                    { fontSize: 10, ...styles.colLAmt },
-                                ]}
-                            >
-                                {formatMoney(tx.amount)}
-                            </Text>
+                        <View style={styles.table}>
+                            <View style={styles.tableHeader}>
+                                <Text style={[styles.label, styles.colDDate]}>
+                                    Date
+                                </Text>
+                                <Text style={[styles.label, styles.colDRef]}>
+                                    Reference
+                                </Text>
+                                <Text style={[styles.label, styles.colDSupp]}>
+                                    Supplier
+                                </Text>
+                                <Text style={[styles.label, styles.colDStore]}>
+                                    Branch
+                                </Text>
+                                <Text style={[styles.label, styles.colDCost]}>
+                                    Cost
+                                </Text>
+                            </View>
+                            {data.deliveries.slice(0, 15).map((d, index) => (
+                                <View
+                                    key={index}
+                                    style={styles.tableRow}
+                                    wrap={false}
+                                >
+                                    <Text
+                                        style={[styles.value, styles.colDDate]}
+                                    >
+                                        {new Date(d.date).toLocaleDateString()}
+                                    </Text>
+                                    <Text
+                                        style={[styles.value, styles.colDRef]}
+                                    >
+                                        {d.reference}
+                                    </Text>
+                                    <Text
+                                        style={[styles.value, styles.colDSupp]}
+                                    >
+                                        {d.supplier}
+                                    </Text>
+                                    <Text
+                                        style={[styles.value, styles.colDStore]}
+                                    >
+                                        {d.store}
+                                    </Text>
+                                    <Text
+                                        style={[
+                                            styles.boldValue,
+                                            { fontSize: 9 },
+                                            styles.colDCost,
+                                        ]}
+                                    >
+                                        {formatMoney(d.cost)}
+                                    </Text>
+                                </View>
+                            ))}
                         </View>
-                    ))}
-                </View>
+                    </>
+                )}
 
                 {/* --- FOOTER --- */}
                 <View style={styles.footer} fixed>
+                    <Text style={styles.footerText}>
+                        Professional Business Reporting & Analytics
+                    </Text>
                     <Text style={styles.footerText}>Powered by</Text>
                     <Image
                         src={`${origin}${footerLogo}`}

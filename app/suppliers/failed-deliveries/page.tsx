@@ -1,17 +1,21 @@
 "use client";
 
-import ReceiveStockModal from "@/components/modals/ReceiveStockModal";
 import Navbar from "@/components/Navbar";
 import { AppState } from "@/store";
 import { apiClient } from "@/utils/apiClient";
-import { AlertCircle, ChevronLeft, ChevronRight, Edit, Lock, Plus, Search, Trash2 } from "lucide-react";
-import Image from "next/image";
+import {
+    ArrowLeft,
+    ChevronLeft,
+    ChevronRight,
+    Lock,
+    Search,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 
-export default function PurchaseHistoryPage() {
+export default function FailedDeliveriesPage() {
     const router = useRouter();
     const businessDetails = useSelector(
         (state: AppState) => state.businessData?.businessDetails,
@@ -28,54 +32,24 @@ export default function PurchaseHistoryPage() {
           : null;
     const isPaidPlan = activeSub && activeSub.plan !== "STARTER";
 
-    const [allDeliveries, setAllDeliveries] = useState<any[]>([]);
-    const [suppliers, setSuppliers] = useState<any[]>([]);
+    const [failedDeliveries, setFailedDeliveries] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [showReceiveModal, setShowReceiveModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-    const [selectedDelivery, setSelectedDelivery] = useState<any>(null);
 
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
     const fetchData = async () => {
         try {
-            const [supRes, deliveryRes] = await Promise.all([
-                apiClient.get("/suppliers"),
-                apiClient.get("/inventory/receipt"),
-            ]);
-
-            setSuppliers(supRes.data || []);
-            setAllDeliveries(deliveryRes.data || []);
+            const res = await apiClient.get("/suppliers/failed-deliveries");
+            setFailedDeliveries(res.data || []);
         } catch (error: any) {
             if (error.response?.status !== 404) {
-                toast.error("Failed to load delivery history");
+                toast.error("Failed to load discrepancies");
             }
-            setAllDeliveries([]);
+            setFailedDeliveries([]);
         } finally {
             setLoading(false);
-        }
-    };
-
-    const handleEdit = (delivery: any) => {
-        setSelectedDelivery(delivery);
-        setShowReceiveModal(true);
-    };
-
-    const handleDelete = async (deliveryId: string, reference: string) => {
-        if (
-            !window.confirm(
-                `Are you sure you want to delete delivery ${reference || deliveryId}? This will revert inventory levels.`,
-            )
-        )
-            return;
-
-        try {
-            await apiClient.delete(`/inventory/deliveries/${deliveryId}`);
-            toast.success("Delivery deleted and inventory reverted.");
-            fetchData();
-        } catch (error: any) {
-            toast.error(error.response?.data?.error || "Failed to delete.");
         }
     };
 
@@ -93,18 +67,13 @@ export default function PurchaseHistoryPage() {
         setCurrentPage(1);
     }, [searchQuery]);
 
-    const filteredDeliveries = allDeliveries.filter((d) => {
+    const filteredDeliveries = failedDeliveries.filter((d) => {
         const searchLower = searchQuery.toLowerCase();
-
-        const productMatch = d.receipts?.some((r: any) =>
-            r.Product?.name?.toLowerCase().includes(searchLower),
-        );
-
         return (
             d.reference?.toLowerCase().includes(searchLower) ||
-            productMatch ||
-            d.Supplier?.name?.toLowerCase().includes(searchLower) ||
-            d.Store?.name?.toLowerCase().includes(searchLower)
+            d.poReference?.toLowerCase().includes(searchLower) ||
+            d.supplierName?.toLowerCase().includes(searchLower) ||
+            d.storeName?.toLowerCase().includes(searchLower)
         );
     });
 
@@ -158,8 +127,8 @@ export default function PurchaseHistoryPage() {
                             Premium Feature
                         </h2>
                         <p className="text-sm text-gray-500 mb-8 leading-relaxed">
-                            Logging wholesale deliveries and tracking history
-                            are exclusively available on our paid plans. Upgrade
+                            Supplier Management and discrepancy tracking are
+                            exclusively available on our paid plans. Upgrade
                             your business to unlock these tools.
                         </p>
                         <button
@@ -177,33 +146,24 @@ export default function PurchaseHistoryPage() {
     return (
         <Navbar>
             <div className="p-4 md:p-8 mx-auto min-h-screen font-sans">
+                <button
+                    onClick={() => router.back()}
+                    className="w-10 h-10 items-center justify-center flex bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors mb-6"
+                >
+                    <ArrowLeft className="w-5 h-5 text-gray-600" />
+                </button>
                 <div className="bg-white shadow-lg rounded-lg p-4 border border-gray-100">
                     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-900">
-                                Delivery History
-                            </h1>
+                            <div className="flex items-center gap-3 mb-2">
+                                <h1 className="text-2xl font-bold text-gray-900">
+                                    Delivery Discrepancies
+                                </h1>
+                            </div>
                             <p className="text-sm text-gray-500 mt-1">
-                                A complete log of all received stock and
-                                supplies.
+                                Highlighting orders where the received stock
+                                doesn&apos;t match the purchase order.
                             </p>
-                        </div>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() =>
-                                    router.push("/suppliers/failed-deliveries")
-                                }
-                                className="flex items-center justify-center gap-2 bg-orange-50 text-orange-600 px-4 py-2.5 rounded-lg hover:bg-orange-100 transition-colors font-bold text-sm border border-orange-200 shadow-sm"
-                            >
-                                Discrepancies
-                            </button>
-                            <button
-                                onClick={() => setShowReceiveModal(true)}
-                                className="flex items-center justify-center gap-2 bg-green-500 text-white px-4 py-2.5 rounded-lg hover:bg-green-600 transition-colors font-bold text-sm shadow-sm shadow-green-100"
-                            >
-                                <Plus className="w-4 h-4 stroke-white" />
-                                Log Delivery
-                            </button>
                         </div>
                     </div>
 
@@ -214,11 +174,19 @@ export default function PurchaseHistoryPage() {
                             </div>
                             <input
                                 type="text"
-                                placeholder="Search by reference, product, or supplier..."
+                                placeholder="Search by reference, PO, or supplier..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all text-sm"
                             />
+                        </div>
+                        <div className="bg-orange-50 px-4 py-2.5 rounded-lg border border-orange-100 flex items-center gap-3 w-full md:w-auto justify-between shadow-sm">
+                            <span className="text-sm text-orange-700 font-bold uppercase tracking-wider">
+                                Total Discrepancies:
+                            </span>
+                            <span className="text-lg font-black text-orange-700">
+                                {filteredDeliveries.length}
+                            </span>
                         </div>
                     </div>
 
@@ -227,22 +195,19 @@ export default function PurchaseHistoryPage() {
                             <thead className="bg-gray-50/50">
                                 <tr>
                                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                        Date / Ref
+                                        Date / Reference
                                     </th>
                                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                        Supplier
+                                        Linked Order
                                     </th>
                                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                        Product & Dest.
+                                        Supplier & Store
                                     </th>
                                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                        Logged By
+                                        Major Discrepancies
                                     </th>
                                     <th className="px-6 py-4 text-right text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                        Total Qty
-                                    </th>
-                                    <th className="px-6 py-4 text-right text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                        Total Value
+                                        Details
                                     </th>
                                 </tr>
                             </thead>
@@ -250,33 +215,22 @@ export default function PurchaseHistoryPage() {
                                 {paginatedDeliveries.length === 0 ? (
                                     <tr>
                                         <td
-                                            colSpan={6}
+                                            colSpan={5}
                                             className="px-6 py-12 text-center text-sm text-gray-500"
                                         >
-                                            No deliveries found.
+                                            No failed deliveries found.
                                         </td>
                                     </tr>
                                 ) : (
                                     paginatedDeliveries.map(
                                         (delivery, index) => {
-                                            const itemCount =
-                                                delivery.receipts?.length || 0;
-                                            const firstProductName =
-                                                itemCount > 0
-                                                    ? delivery.receipts[0]
-                                                          .Product?.name
-                                                    : "Unknown Product";
-                                            const totalQuantity =
-                                                delivery.receipts?.reduce(
-                                                    (sum: number, r: any) =>
-                                                        sum + (r.quantity || 0),
-                                                    0,
-                                                ) || 0;
+                                            const discrepancyCount =
+                                                delivery.discrepancies.length;
 
                                             return (
                                                 <tr
-                                                    key={`history-row-${delivery?.id || index}`}
-                                                    className="hover:bg-gray-50 transition-colors cursor-pointer"
+                                                    key={`failed-row-${delivery.id || index}`}
+                                                    className="hover:bg-gray-50 transition-colors group cursor-pointer"
                                                     onClick={() =>
                                                         router.push(
                                                             `/suppliers/history/${delivery.id}`,
@@ -293,97 +247,77 @@ export default function PurchaseHistoryPage() {
                                                             {delivery.reference ||
                                                                 "NO-REF"}
                                                         </p>
-                                                        {delivery.PurchaseOrder && (
-                                                            <p className="text-[10px] text-gray-500 mt-0.5">
-                                                                Linked PO:{" "}
-                                                                {
-                                                                    delivery
-                                                                        .PurchaseOrder
-                                                                        .reference
-                                                                }
-                                                            </p>
-                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-100">
+                                                            {
+                                                                delivery.poReference
+                                                            }
+                                                        </div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <p className="text-sm font-bold text-gray-900">
-                                                            {delivery.Supplier
-                                                                ?.name ||
-                                                                "Direct / Cash"}
-                                                        </p>
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <p className="text-sm font-semibold text-gray-900">
-                                                            {itemCount > 1
-                                                                ? `Multiple Products (${itemCount})`
-                                                                : firstProductName}
+                                                            {
+                                                                delivery.supplierName
+                                                            }
                                                         </p>
                                                         <p className="text-xs text-gray-500 mt-0.5">
                                                             To:{" "}
-                                                            {delivery.Store
-                                                                ?.name ||
-                                                                "Unknown Branch"}
+                                                            {delivery.storeName}
                                                         </p>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        {delivery.creator ? (
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 ring-1 ring-gray-200 bg-gray-100">
-                                                                    <Image
-                                                                        src={
-                                                                            delivery
-                                                                                .creator
-                                                                                .imageUrl
-                                                                        }
-                                                                        alt="Profile"
-                                                                        width={
-                                                                            32
-                                                                        }
-                                                                        height={
-                                                                            32
-                                                                        }
-                                                                        className="w-full h-full object-cover"
-                                                                    />
-                                                                </div>
-                                                                <div className="flex flex-col overflow-hidden">
-                                                                    <p className="text-sm font-semibold text-gray-900 truncate">
-                                                                        {
-                                                                            delivery
-                                                                                .creator
-                                                                                .firstName
-                                                                        }{" "}
-                                                                        {
-                                                                            delivery
-                                                                                .creator
-                                                                                .lastName
-                                                                        }
-                                                                    </p>
-                                                                    <p className="text-xs text-gray-500 truncate capitalize">
-                                                                        {delivery
-                                                                            .creator
-                                                                            .role ||
-                                                                            "User"}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-gray-400 text-sm italic">
-                                                                Unknown
-                                                            </span>
-                                                        )}
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-col gap-1.5">
+                                                            {delivery.discrepancies
+                                                                .slice(0, 2)
+                                                                .map(
+                                                                    (
+                                                                        disc: any,
+                                                                        i: number,
+                                                                    ) => (
+                                                                        <div
+                                                                            key={
+                                                                                i
+                                                                            }
+                                                                            className="flex items-center gap-2"
+                                                                        >
+                                                                            <span
+                                                                                className={`w-1.5 h-1.5 rounded-full ${disc.type === "MISSING" ? "bg-red-500" : "bg-orange-500"}`}
+                                                                            />
+                                                                            <p className="text-xs text-gray-600 line-clamp-1">
+                                                                                <span className="font-bold">
+                                                                                    {
+                                                                                        disc.productName
+                                                                                    }
+                                                                                </span>
+
+                                                                                :
+                                                                                Exp:{" "}
+                                                                                {
+                                                                                    disc.expected
+                                                                                }{" "}
+                                                                                |
+                                                                                Rec:{" "}
+                                                                                {
+                                                                                    disc.received
+                                                                                }
+                                                                            </p>
+                                                                        </div>
+                                                                    ),
+                                                                )}
+                                                            {discrepancyCount >
+                                                                2 && (
+                                                                <p className="text-[10px] font-bold text-gray-400 uppercase ml-3 tracking-widest">
+                                                                    +{" "}
+                                                                    {discrepancyCount -
+                                                                        2}{" "}
+                                                                    more issues
+                                                                </p>
+                                                            )}
+                                                        </div>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                        <p className="text-sm font-semibold text-gray-900">
-                                                            {totalQuantity}
-                                                        </p>
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                        <span className="text-sm font-semibold text-gray-900">
-                                                            KSh{" "}
-                                                            {(
-                                                                delivery.totalCost ||
-                                                                0
-                                                            ).toLocaleString()}
-                                                        </span>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-bold text-green-600">
+                                                        View Receipt
                                                     </td>
                                                 </tr>
                                             );
@@ -437,15 +371,6 @@ export default function PurchaseHistoryPage() {
                     )}
                 </div>
             </div>
-
-            {showReceiveModal && (
-                <ReceiveStockModal
-                    isOpen={showReceiveModal}
-                    onClose={() => setShowReceiveModal(false)}
-                    onSuccess={fetchData}
-                    suppliers={suppliers}
-                />
-            )}
         </Navbar>
     );
 }

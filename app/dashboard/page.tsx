@@ -14,15 +14,14 @@ import {
     startFetching,
 } from "@/store/slices/analyticsSlice";
 import { setInvoices } from "@/store/slices/invoiceSlice";
-import { pdf } from "@react-pdf/renderer";
 import { apiClient } from "@/utils/apiClient";
+import { pdf } from "@react-pdf/renderer";
 import {
     AlertCircle,
     BadgeDollarSign,
     CheckCircle2,
     Download,
     FileText,
-    HandCoins,
     Smartphone,
     X,
 } from "lucide-react";
@@ -182,22 +181,22 @@ export default function Page() {
 
     const infoCards = [
         {
-            title: "Total Invoices",
-            number: stats?.totalInvoices || 0,
-            icon: FileText,
-            percentageChange: percentageChanges?.totalInvoices || 0,
-        },
-        {
             title: "Total Revenue",
             number: `Ksh ${(stats?.totalRevenue || 0).toLocaleString()}`,
             icon: BadgeDollarSign,
             percentageChange: percentageChanges?.totalRevenue || 0,
         },
         {
-            title: "Paid Invoices",
-            number: stats?.paidInvoices || 0,
-            icon: HandCoins,
-            percentageChange: percentageChanges?.paidInvoices || 0,
+            title: "Net Profit",
+            number: `Ksh ${(stats?.profit || 0).toLocaleString()}`,
+            icon: CheckCircle2,
+            percentageChange: percentageChanges?.profit || 0,
+        },
+        {
+            title: "Total Invoices",
+            number: stats?.totalInvoices || 0,
+            icon: FileText,
+            percentageChange: percentageChanges?.totalInvoices || 0,
         },
     ];
 

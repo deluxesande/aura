@@ -15,6 +15,7 @@ interface ReceiveStockModalProps {
     onClose: () => void;
     onSuccess: () => void;
     suppliers: any[];
+    delivery?: any; // If provided, we are in EDIT mode
 }
 
 export default function ReceiveStockModal({
@@ -22,6 +23,7 @@ export default function ReceiveStockModal({
     onClose,
     onSuccess,
     suppliers,
+    delivery,
 }: ReceiveStockModalProps) {
     const businessDetails = useSelector(
         (state: AppState) => state.businessData?.businessDetails,
@@ -33,7 +35,7 @@ export default function ReceiveStockModal({
     const [loadingData, setLoadingData] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
-    // Group-level details (applies to the whole invoice)
+    // Group-level details
     const [deliveryDetails, setDeliveryDetails] = useState({
         storeId: "",
         supplierId: "",
@@ -69,10 +71,38 @@ export default function ReceiveStockModal({
                     setPurchaseOrders(
                         Array.isArray(poRes.data)
                             ? poRes.data.filter(
-                                  (po: any) => po.status === "DELIVERED",
+                                  (po: any) => po.status === "DELIVERED" || po.status === "PENDING" || po.status === "IN_TRANSIT",
                               )
                             : [],
                     );
+
+                    if (delivery) {
+                        setDeliveryDetails({
+                            storeId: delivery.storeId || "",
+                            supplierId: delivery.supplierId || "",
+                            purchaseOrderId: delivery.purchaseOrderId || "",
+                            reference: delivery.reference || "",
+                        });
+                        if (delivery.receipts && delivery.receipts.length > 0) {
+                            setItems(
+                                delivery.receipts.map((r: any) => ({
+                                    productId: r.productId,
+                                    quantity: r.quantity.toString(),
+                                    unitCost: r.unitCost.toString(),
+                                })),
+                            );
+                        }
+                    } else {
+                        // Reset if not editing
+                        setDeliveryDetails({
+                            storeId: "",
+                            supplierId: "",
+                            purchaseOrderId: "",
+                            reference: "",
+                        });
+                        setItems([{ productId: "", quantity: "", unitCost: "" }]);
+                    }
+
                     setLoadingData(false);
                 })
                 .catch(() => {
@@ -80,7 +110,7 @@ export default function ReceiveStockModal({
                     setLoadingData(false);
                 });
         }
-    }, [isOpen, businessDetails?.id]);
+    }, [isOpen, businessDetails?.id, delivery]);
 
     const handlePOSelection = (poId: string) => {
         const selectedPO = purchaseOrders.find((po) => po.id === poId);
@@ -92,7 +122,6 @@ export default function ReceiveStockModal({
                 reference: selectedPO.reference || deliveryDetails.reference,
             });
 
-            // Map PO items into receiving rows
             const poItems = selectedPO.items.map((item: any) => ({
                 productId: item.productId,
                 quantity: item.quantity.toString(),
@@ -110,7 +139,6 @@ export default function ReceiveStockModal({
         }
     };
 
-    // Barcode Scanner Integration
     useBarcodeScanner((barcode) => {
         const foundProduct = products.find(
             (p) => p.sku === barcode || p.barcode === barcode,
@@ -124,7 +152,6 @@ export default function ReceiveStockModal({
                 );
 
                 if (existingIndex >= 0) {
-                    // Item already in list, increment quantity
                     const currentQty =
                         parseInt(newItems[existingIndex].quantity) || 0;
                     newItems[existingIndex].quantity = (
@@ -132,7 +159,6 @@ export default function ReceiveStockModal({
                     ).toString();
                     toast.success(`Increased qty: ${foundProduct.name}`);
                 } else {
-                    // Check if the very first row is completely empty, overwrite it if so
                     if (
                         newItems.length === 1 &&
                         !newItems[0].productId &&
@@ -145,7 +171,6 @@ export default function ReceiveStockModal({
                             unitCost: foundProduct.costPrice?.toString() || "",
                         };
                     } else {
-                        // Otherwise, add a new row
                         newItems.push({
                             productId: foundProduct.id,
                             quantity: "1",
@@ -156,8 +181,6 @@ export default function ReceiveStockModal({
                 }
                 return newItems;
             });
-        } else {
-            toast.error(`Product not found for barcode: ${barcode}`);
         }
     });
 
@@ -190,7 +213,6 @@ export default function ReceiveStockModal({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validation
         const invalidItems = items.some(
             (item) =>
                 !item.productId ||
@@ -206,8 +228,7 @@ export default function ReceiveStockModal({
 
         setIsSaving(true);
         try {
-            // Send the grouped payload to the backend
-            await apiClient.post("/inventory/receipt", {
+            const payload = {
                 storeId: deliveryDetails.storeId,
                 supplierId: deliveryDetails.supplierId || null,
                 purchaseOrderId: deliveryDetails.purchaseOrderId || null,
@@ -217,14 +238,21 @@ export default function ReceiveStockModal({
                     quantity: Number(item.quantity),
                     unitCost: Number(item.unitCost),
                 })),
-            });
+            };
 
-            toast.success("Stock received and inventory updated.");
+            if (delivery) {
+                await apiClient.patch(`/inventory/deliveries/${delivery.id}`, payload);
+                toast.success("Delivery updated and inventory reconciled.");
+            } else {
+                await apiClient.post("/inventory/receipt", payload);
+                toast.success("Stock received and inventory updated.");
+            }
+
             onSuccess();
             onClose();
         } catch (error: any) {
             toast.error(
-                error.response?.data?.error || "Failed to log delivery",
+                error.response?.data?.error || "Failed to save delivery",
             );
         } finally {
             setIsSaving(false);
@@ -243,16 +271,15 @@ export default function ReceiveStockModal({
                     initial={{ opacity: 0, scale: 0.95, y: 10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                    className="bg-white rounded-lg w-full max-w-4xl shadow-2xl border border-gray-100 overflow-hidden relative flex flex-col max-h-[90vh]"
+                    className="bg-white rounded-lg w-full max-w-3xl shadow-2xl border border-gray-100 overflow-hidden relative flex flex-col max-h-[90vh]"
                 >
                     <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-white/50 backdrop-blur-sm flex-shrink-0">
                         <div>
                             <h3 className="font-bold text-lg text-gray-900">
-                                Log Incoming Delivery
+                                {delivery ? "Edit Delivery" : "Log Incoming Delivery"}
                             </h3>
                             <p className="text-xs text-gray-500 mt-0.5">
-                                Receive multiple products under a single
-                                invoice. (Barcode scanning active)
+                                {delivery ? "Modify items and update inventory." : "Receive multiple products under a single invoice. (Barcode scanning active)"}
                             </p>
                         </div>
                         <button
@@ -275,7 +302,6 @@ export default function ReceiveStockModal({
                             className="flex flex-col flex-1 overflow-hidden"
                         >
                             <div className="p-6 overflow-y-auto flex-1 space-y-8 bg-gray-50/30">
-                                {/* 1. Delivery Details (Applies to all items) */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
@@ -310,7 +336,7 @@ export default function ReceiveStockModal({
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-                                            Purchase Order
+                                            Link to Purchase Order (Optional)
                                         </label>
                                         <div className="relative">
                                             <select
@@ -344,7 +370,7 @@ export default function ReceiveStockModal({
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-                                            Supplier
+                                            Supplier (Optional)
                                         </label>
                                         <div className="relative">
                                             <select
@@ -394,7 +420,6 @@ export default function ReceiveStockModal({
                                     </div>
                                 </div>
 
-                                {/* 2. Line Items */}
                                 <div>
                                     <div className="flex items-center justify-between mb-4">
                                         <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
@@ -510,7 +535,6 @@ export default function ReceiveStockModal({
                                 </div>
                             </div>
 
-                            {/* 3. Footer & Submission */}
                             <div className="p-5 border-t border-gray-100 bg-white flex flex-col sm:flex-row items-center justify-between gap-4 flex-shrink-0">
                                 <div className="text-left w-full sm:w-auto bg-gray-50 px-4 py-2 rounded-lg border border-gray-200">
                                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
@@ -537,7 +561,7 @@ export default function ReceiveStockModal({
                                         {isSaving ? (
                                             <Loader2 className="animate-spin w-4 h-4 stroke-white" />
                                         ) : (
-                                            "Save Delivery"
+                                            delivery ? "Update Delivery" : "Save Delivery"
                                         )}
                                     </button>
                                 </div>

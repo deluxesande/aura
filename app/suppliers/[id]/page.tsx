@@ -51,16 +51,11 @@ export default function SingleSupplierPage() {
 
     const fetchSupplierDetails = async () => {
         try {
-            const res = await apiClient.get("/suppliers");
-            const found = res.data.find((s: any) => s.id === supplierId);
-            if (found) {
-                setSupplier(found);
-            } else {
-                toast.error("Supplier not found");
-                router.push("/suppliers");
-            }
+            const res = await apiClient.get(`/suppliers/${supplierId}`);
+            setSupplier(res.data);
         } catch (error) {
             toast.error("Failed to load supplier details");
+            router.push("/suppliers");
         } finally {
             setLoading(false);
         }
@@ -142,22 +137,27 @@ export default function SingleSupplierPage() {
     if (!supplier) return null;
 
     // Stats calculations
-    const receipts = supplier?.stockReceipts || [];
-    const totalSpent = receipts.reduce(
-        (sum: number, r: any) => sum + (r.totalCost || 0),
+    const deliveries = supplier?.deliveries || [];
+    const totalSpent = deliveries.reduce(
+        (sum: number, d: any) => sum + (d.totalCost || 0),
         0,
     );
-    const totalUnits = receipts.reduce(
-        (sum: number, r: any) => sum + (r.quantity || 0),
+    const totalUnits = deliveries.reduce(
+        (sum: number, d: any) =>
+            sum +
+            (d.receipts?.reduce(
+                (acc: number, r: any) => acc + (r.quantity || 0),
+                0,
+            ) || 0),
         0,
     );
-    const totalDeliveries = receipts.length;
+    const totalDeliveries = deliveries.length;
 
     // Pagination calculations
-    const totalPages = Math.ceil(receipts.length / itemsPerPage) || 1;
+    const totalPages = Math.ceil(deliveries.length / itemsPerPage) || 1;
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const paginatedReceipts = receipts.slice(startIndex, endIndex);
+    const paginatedDeliveries = deliveries.slice(startIndex, endIndex);
 
     const getPageNumbers = () => {
         const pages = [];
@@ -350,13 +350,13 @@ export default function SingleSupplierPage() {
                                         Reference
                                     </th>
                                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                        Product
+                                        Product(s)
                                     </th>
                                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">
                                         Branch
                                     </th>
                                     <th className="px-6 py-4 text-right text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                        Qty
+                                        Total Qty
                                     </th>
                                     <th className="px-6 py-4 text-right text-xs font-bold text-gray-400 uppercase tracking-widest">
                                         Total Cost
@@ -364,7 +364,7 @@ export default function SingleSupplierPage() {
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-100">
-                                {paginatedReceipts.length === 0 ? (
+                                {paginatedDeliveries.length === 0 ? (
                                     <tr>
                                         <td
                                             colSpan={6}
@@ -375,34 +375,36 @@ export default function SingleSupplierPage() {
                                         </td>
                                     </tr>
                                 ) : (
-                                    paginatedReceipts.map(
-                                        (receipt: any, idx: number) => (
+                                    paginatedDeliveries.map(
+                                        (delivery: any, idx: number) => (
                                             <tr
-                                                key={`sup-rec-${receipt?.id || idx}`}
-                                                className="hover:bg-gray-50 transition-colors"
+                                                key={`sup-del-${delivery?.id || idx}`}
+                                                className="hover:bg-gray-50 transition-colors cursor-pointer"
+                                                onClick={() => router.push(`/suppliers/history/${delivery.id}`)}
                                             >
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">
                                                     {new Date(
-                                                        receipt.createdAt,
+                                                        delivery.createdAt,
                                                     ).toLocaleDateString()}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">
-                                                    {receipt.reference || "N/A"}
+                                                    {delivery.reference || "N/A"}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                                    {receipt.Product?.name ||
-                                                        "Unknown Product"}
+                                                    {delivery.receipts?.length > 1 
+                                                        ? `${delivery.receipts[0].Product?.name} (+${delivery.receipts.length - 1} more)`
+                                                        : delivery.receipts?.[0]?.Product?.name || "Unknown Product"}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                                    {receipt.Store?.name ||
+                                                    {delivery.Store?.name ||
                                                         "Unknown Branch"}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-gray-900">
-                                                    {receipt.quantity}
+                                                    {delivery.receipts?.reduce((acc: number, r: any) => acc + (r.quantity || 0), 0)}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-black text-gray-900">
                                                     {formatCurrency(
-                                                        receipt.totalCost,
+                                                        delivery.totalCost,
                                                     )}
                                                 </td>
                                             </tr>
@@ -414,7 +416,7 @@ export default function SingleSupplierPage() {
                     </div>
 
                     {/* Pagination Controls */}
-                    {paginatedReceipts.length > 0 && totalPages > 1 && (
+                    {paginatedDeliveries.length > 0 && totalPages > 1 && (
                         <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
                             <p className="text-sm text-gray-500">
                                 Showing{" "}
@@ -423,11 +425,11 @@ export default function SingleSupplierPage() {
                                 </span>{" "}
                                 to{" "}
                                 <span className="font-medium">
-                                    {Math.min(endIndex, receipts.length)}
+                                    {Math.min(endIndex, deliveries.length)}
                                 </span>{" "}
                                 of{" "}
                                 <span className="font-medium">
-                                    {receipts.length}
+                                    {deliveries.length}
                                 </span>{" "}
                                 results
                             </p>
