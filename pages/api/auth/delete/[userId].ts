@@ -3,15 +3,13 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/utils/lib/client";
 import { utapi, extractFileKey } from "@/utils/server/uploadthingServer";
 
-// Optional safety net: Tells Vercel to allow up to 30s just in case of a cold start.
-// This code will normally run in < 1 second.
 export const maxDuration = 30;
 
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse,
 ) {
-    const { userId } = req.query;
+    const { userId } = req.query; // Clerk ID
 
     if (req.method !== "DELETE") {
         return res.status(405).json({ error: "Method not allowed" });
@@ -24,25 +22,23 @@ export default async function handler(
     try {
         const user = await prisma.user.findUnique({
             where: { clerkId: userId },
+            include: { Business: true }
         });
 
         if (!user) {
-            // Clean up Clerk if DB record is already missing to prevent ghost accounts
             const client = await clerkClient();
             await client.users.deleteUser(userId).catch(() => {});
-            return res
-                .status(200)
-                .json({ message: "User not found in DB, cleaned up Clerk." });
+            return res.status(200).json({ message: "User not found in DB, cleaned up Clerk." });
         }
 
-        const isAdmin = user.role === "admin";
-        const hasBusiness = !!user.businessId;
+        const isAdmin = user.role.toLowerCase() === "admin";
+        const businessId = user.businessId;
 
-        // 1. Validation (Fast check)
-        if (isAdmin && hasBusiness) {
+        // 1. Validation: If Admin, only allow deletion if they are the ONLY user in the business
+        if (isAdmin && businessId) {
             const otherUsersCount = await prisma.user.count({
                 where: {
-                    businessId: user.businessId!,
+                    businessId: businessId,
                     clerkId: { not: userId },
                 },
             });
@@ -50,207 +46,93 @@ export default async function handler(
             if (otherUsersCount > 0) {
                 return res.status(403).json({
                     error: "Forbidden",
-                    details:
-                        "You cannot delete your account while other team members are still in the business.",
+                    details: "Transfer ownership or delete other team members before deleting your admin account.",
                 });
             }
         }
 
-        // 2. Pre-fetch required data outside the transaction concurrently
-        // FIX: Added explicit Promise types to resolve TypeScript 'never[]' error
-        let productsWithImagesPromise: Promise<{ image: string | null }[]> =
-            Promise.resolve([]);
-        let userInvoicesPromise: Promise<{ id: string }[]> = Promise.resolve(
-            [],
-        );
-        let invitationPromise: Promise<any> = Promise.resolve(null);
-
-        if (isAdmin) {
-            productsWithImagesPromise = prisma.product.findMany({
-                where: { createdBy: userId, image: { contains: "utfs.io" } },
-                select: { image: true },
-            });
-            userInvoicesPromise = prisma.invoice.findMany({
-                where: { createdBy: userId },
-                select: { id: true },
-            });
-        } else if (hasBusiness && user.email) {
-            invitationPromise = prisma.userInvitation.findFirst({
-                where: { email: user.email, businessId: user.businessId! },
-            });
-        }
-
-        const [productsWithImages, userInvoices, invitation] =
-            await Promise.all([
-                productsWithImagesPromise,
-                userInvoicesPromise,
-                invitationPromise,
-            ]);
-
-        const invoiceIds = userInvoices.map((inv) => inv.id);
-        const fileKeys = productsWithImages
-            .map((p) => extractFileKey(p.image!))
-            .filter(Boolean) as string[];
-
-        // Handle re-assignment logic for non-admins
-        let assigneeClerkId: string | null = null;
+        // 2. Find a fallback user for re-assignment if this is NOT an admin-sole-user deletion
         let assigneeUuid: string | null = null;
+        let assigneeClerkId: string | null = null;
 
-        if (!isAdmin && hasBusiness) {
-            let assignee: any = null;
-            if (invitation?.invitedBy) {
-                assignee = await prisma.user.findUnique({
-                    where: { id: invitation.invitedBy },
-                });
-            }
-            if (!assignee) {
-                assignee = await prisma.user.findFirst({
-                    where: { businessId: user.businessId!, role: "admin" },
-                });
-            }
-            if (assignee) {
-                assigneeClerkId = assignee.clerkId;
-                assigneeUuid = assignee.id;
+        if (!isAdmin && businessId) {
+            const adminUser = await prisma.user.findFirst({
+                where: { businessId: businessId, role: "admin" },
+            });
+            if (adminUser) {
+                assigneeUuid = adminUser.id;
+                assigneeClerkId = adminUser.clerkId;
             }
         }
 
-        // 3. BACKGROUND TASKS
-        // Fire-and-forget UploadThing deletion so we don't waste 2-3 seconds waiting for it.
-        if (fileKeys.length > 0) {
-            utapi
-                .deleteFiles(fileKeys)
-                .catch((e) => console.warn("UT Error:", e));
-        }
+        // 3. Database Operations
+        await prisma.$transaction(async (tx) => {
+            if (isAdmin && businessId) {
+                // COMPLETE BUSINESS PURGE
+                // Delete everything linked to this businessId
+                const bId = businessId;
 
-        // 4. DATABASE DELETION TRANSACTION
-        await prisma.$transaction(async (tx: any) => {
-            if (isAdmin) {
-                const tier1Deletes = [];
-
-                // Short-circuit: Only run invoice-related queries if they actually have invoices
-                if (invoiceIds.length > 0) {
-                    tier1Deletes.push(
-                        tx.invoiceItem.deleteMany({
-                            where: { createdBy: userId },
-                        }),
-                        tx.successfulCallback.deleteMany({
-                            where: { invoiceId: { in: invoiceIds } },
-                        }),
-                        tx.failedCallback.deleteMany({
-                            where: { invoiceId: { in: invoiceIds } },
-                        }),
-                        tx.mpesaPayment.deleteMany({
-                            where: {
-                                OR: [
-                                    { invoiceId: { in: invoiceIds } },
-                                    { userId: user.id },
-                                    ...(hasBusiness
-                                        ? [{ businessId: user.businessId }]
-                                        : []),
-                                ],
-                            },
-                        }),
-                    );
-                } else {
-                    // Lighter fallback if no invoices exist
-                    tier1Deletes.push(
-                        tx.mpesaPayment.deleteMany({
-                            where: {
-                                OR: [
-                                    { userId: user.id },
-                                    ...(hasBusiness
-                                        ? [{ businessId: user.businessId }]
-                                        : []),
-                                ],
-                            },
-                        }),
-                    );
-                }
-
-                if (hasBusiness) {
-                    tier1Deletes.push(
-                        tx.customer.deleteMany({
-                            where: { createdById: user.id },
-                        }),
-                        tx.subscriptionPayment.deleteMany({
-                            where: { userId: userId },
-                        }),
-                        tx.userInvitation.deleteMany({
-                            where: { businessId: user.businessId },
-                        }),
-                    );
-                }
-
-                if (tier1Deletes.length > 0) await Promise.all(tier1Deletes);
-
-                const tier2Deletes = [
-                    tx.product.deleteMany({ where: { createdBy: userId } }),
-                    tx.category.deleteMany({ where: { createdBy: userId } }),
-                ];
-
-                if (invoiceIds.length > 0) {
-                    tier2Deletes.push(
-                        tx.invoice.deleteMany({ where: { createdBy: userId } }),
-                    );
-                }
-
-                if (hasBusiness) {
-                    tier2Deletes.push(
-                        tx.subscription.deleteMany({
-                            where: { businessId: user.businessId },
-                        }),
-                    );
-                }
-
-                await Promise.all(tier2Deletes);
-
-                if (hasBusiness) {
-                    await tx.business.delete({
-                        where: { id: user.businessId },
-                    });
-                }
+                // Tier 1: Leaf nodes/Dependencies
+                await tx.invoiceItem.deleteMany({ where: { Invoice: { businessId: bId } } });
+                await tx.successfulCallback.deleteMany({ where: { Invoice: { businessId: bId } } });
+                await tx.failedCallback.deleteMany({ where: { Invoice: { businessId: bId } } });
+                await tx.mpesaPayment.deleteMany({ where: { businessId: bId } });
+                await tx.storeInventory.deleteMany({ where: { Store: { businessId: bId } } });
+                await tx.stockTransfer.deleteMany({ where: { OriginStore: { businessId: bId } } });
+                await tx.purchaseOrderItem.deleteMany({ where: { PurchaseOrder: { businessId: bId } } });
+                
+                // Tier 2: Parent entities
+                await tx.stockReceipt.deleteMany({ where: { businessId: bId } });
+                await tx.purchaseOrder.deleteMany({ where: { businessId: bId } });
+                await tx.delivery.deleteMany({ where: { businessId: bId } });
+                await tx.invoice.deleteMany({ where: { businessId: bId } });
+                await tx.expense.deleteMany({ where: { businessId: bId } });
+                await tx.customer.deleteMany({ where: { businessId: bId } });
+                await tx.product.deleteMany({ where: { businessId: bId } });
+                await tx.category.deleteMany({ where: { businessId: bId } });
+                await tx.supplier.deleteMany({ where: { businessId: bId } });
+                await tx.userInvitation.deleteMany({ where: { businessId: bId } });
+                await tx.subscriptionPayment.deleteMany({ where: { userId: userId } });
+                await tx.subscription.deleteMany({ where: { businessId: bId } });
+                await tx.kraTotReturn.deleteMany({ where: { businessId: bId } });
+                await tx.kraDetails.deleteMany({ where: { businessId: bId } });
+                
+                // Tier 3: Stores and Business
+                await tx.store.deleteMany({ where: { businessId: bId } });
+                await tx.user.deleteMany({ where: { businessId: bId, clerkId: { not: userId } } });
+                
+                // Finally the user and business
+                await tx.user.delete({ where: { id: user.id } });
+                await tx.business.delete({ where: { id: bId } });
             } else {
-                if (assigneeClerkId && assigneeUuid) {
-                    await Promise.all([
-                        tx.invoice.updateMany({
-                            where: { createdBy: userId },
-                            data: { createdBy: assigneeClerkId },
-                        }),
-                        tx.invoiceItem.updateMany({
-                            where: { createdBy: userId },
-                            data: { createdBy: assigneeClerkId },
-                        }),
-                        tx.product.updateMany({
-                            where: { createdBy: userId },
-                            data: { createdBy: assigneeClerkId },
-                        }),
-                        tx.category.updateMany({
-                            where: { createdBy: userId },
-                            data: { createdBy: assigneeClerkId },
-                        }),
-                        tx.customer.updateMany({
-                            where: { createdById: user.id },
-                            data: { createdById: assigneeUuid },
-                        }),
-                        tx.mpesaPayment.updateMany({
-                            where: { userId: user.id },
-                            data: { userId: assigneeUuid },
-                        }),
-                    ]);
+                // STAFF MEMBER DELETION: Re-assign data to Admin
+                if (assigneeUuid && assigneeClerkId) {
+                    const staffId = user.id;
+                    const staffClerkId = user.clerkId;
+
+                    await tx.invoice.updateMany({ where: { createdBy: staffClerkId }, data: { createdBy: assigneeClerkId } });
+                    await tx.invoiceItem.updateMany({ where: { createdBy: staffClerkId }, data: { createdBy: assigneeClerkId } });
+                    await tx.product.updateMany({ where: { createdBy: staffClerkId }, data: { createdBy: assigneeClerkId } });
+                    await tx.category.updateMany({ where: { createdBy: staffClerkId }, data: { createdBy: assigneeClerkId } });
+                    await tx.customer.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid } });
+                    await tx.supplier.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid } });
+                    await tx.expense.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid } });
+                    await tx.purchaseOrder.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid } });
+                    await tx.stockReceipt.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid } });
+                    await tx.stockTransfer.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid } });
+                    await tx.delivery.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid } });
+                    await tx.mpesaPayment.updateMany({ where: { userId: staffId }, data: { userId: assigneeUuid } });
                 }
 
+                // Cleanup invitations and delete user
                 if (user.email) {
-                    await tx.userInvitation.deleteMany({
-                        where: { email: user.email },
-                    });
+                    await tx.userInvitation.deleteMany({ where: { email: user.email } });
                 }
+                await tx.user.delete({ where: { id: user.id } });
             }
+        }, { timeout: 30000 });
 
-            // Finally, delete the user itself
-            await tx.user.delete({ where: { id: user.id } });
-        });
-
-        // 5. Delete Clerk User (AFTER Database succeeds)
+        // 4. Cleanup Clerk User
         const client = await clerkClient();
         await client.users.deleteUser(userId).catch((err) => {
             console.warn("Clerk user already deleted or not found");

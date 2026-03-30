@@ -24,9 +24,6 @@ export default function BlogPage() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.6 }}
                     >
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 text-green-500 text-xs font-bold uppercase tracking-wider mb-6">
-                            Resources & Guides
-                        </div>
                         <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 mb-6 leading-tight">
                             Master Your Business Growth
                         </h1>

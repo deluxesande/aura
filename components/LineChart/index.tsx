@@ -9,6 +9,7 @@ import {
     Tooltip,
     Filler,
 } from "chart.js";
+import { apiClient } from "@/utils/apiClient";
 
 ChartJS.register(
     CategoryScale,
@@ -25,7 +26,7 @@ interface AnalyticsData {
 }
 
 interface LineChartProps {
-    timePeriod?: number; // 7, 30, or 90 days
+    timePeriod?: number; // 7, 30, 90, or 365 days
 }
 
 const LineChart: React.FC<LineChartProps> = ({ timePeriod = 7 }) => {
@@ -39,16 +40,11 @@ const LineChart: React.FC<LineChartProps> = ({ timePeriod = 7 }) => {
         setLoading(true);
         const fetchAnalytics = async () => {
             try {
-                const response = await fetch(
-                    `/api/invoice/analytics?timePeriod=${timePeriod}`
+                const response = await apiClient.get(
+                    `/invoice/analytics?timePeriod=${timePeriod}`
                 );
 
-                // if (!response.ok) {
-                //     throw new Error("Failed to fetch analytics");
-                // }
-
-                const data: AnalyticsData = await response.json();
-                setChartData(data);
+                setChartData(response.data);
                 setLoading(false);
             } catch (error) {
                 console.error("Error fetching analytics:", error);
@@ -134,7 +130,7 @@ const LineChart: React.FC<LineChartProps> = ({ timePeriod = 7 }) => {
                 displayColors: false,
                 callbacks: {
                     label: function (context: any) {
-                        return `${context.dataset.label}: $${context.parsed.y}k`;
+                        return `${context.dataset.label}: Ksh ${context.parsed.y}k`;
                     },
                 },
             },
@@ -177,7 +173,7 @@ const LineChart: React.FC<LineChartProps> = ({ timePeriod = 7 }) => {
                     },
                     padding: 10,
                     callback: function (value: any) {
-                        return "$" + value + "k";
+                        return "Ksh " + value + "k";
                     },
                 },
                 border: {

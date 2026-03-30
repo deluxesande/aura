@@ -47,7 +47,22 @@ export default async function handler(
         const businessId = user.businessId;
 
         // 2. Define Time Ranges
+        const { timePeriod } = req.query;
         const now = new Date();
+        
+        let statsStartDate: Date | undefined;
+        if (timePeriod && timePeriod !== "all") {
+            const days = parseInt(timePeriod as string);
+            if (!isNaN(days)) {
+                statsStartDate = new Date(
+                    now.getFullYear(),
+                    now.getMonth(),
+                    now.getDate() - days,
+                    0, 0, 0, 0
+                );
+            }
+        }
+
         const startOfToday = new Date(
             now.getFullYear(),
             now.getMonth(),
@@ -145,9 +160,9 @@ export default async function handler(
         };
 
         // 4. Execute Queries in Parallel
-        const [allTimeStats, todayStats, yesterdayStats, mpesaData] =
+        const [periodStats, todayStats, yesterdayStats, mpesaData] =
             await Promise.all([
-                getStats(), // All Time
+                getStats(statsStartDate), // Period Stats (Filtered by timePeriod if provided)
                 getStats(startOfToday), // Today
                 getStats(startOfYesterday, endOfYesterday), // Yesterday
                 prisma.mpesaPayment.aggregate({
@@ -170,7 +185,7 @@ export default async function handler(
         };
 
         res.status(200).json({
-            stats: allTimeStats, // Returns ALL TIME numbers for the main cards
+            stats: periodStats, // Returns filtered numbers for the main cards
             percentageChanges: {
                 totalInvoices: calcChange(
                     todayStats.totalInvoices,
