@@ -71,7 +71,10 @@ export default function ReceiveStockModal({
                     setPurchaseOrders(
                         Array.isArray(poRes.data)
                             ? poRes.data.filter(
-                                  (po: any) => po.status === "DELIVERED" || po.status === "PENDING" || po.status === "IN_TRANSIT",
+                                  (po: any) =>
+                                      po.status === "DELIVERED" ||
+                                      po.status === "PENDING" ||
+                                      po.status === "IN_TRANSIT",
                               )
                             : [],
                     );
@@ -100,7 +103,9 @@ export default function ReceiveStockModal({
                             purchaseOrderId: "",
                             reference: "",
                         });
-                        setItems([{ productId: "", quantity: "", unitCost: "" }]);
+                        setItems([
+                            { productId: "", quantity: "", unitCost: "" },
+                        ]);
                     }
 
                     setLoadingData(false);
@@ -241,7 +246,10 @@ export default function ReceiveStockModal({
             };
 
             if (delivery) {
-                await apiClient.patch(`/inventory/deliveries/${delivery.id}`, payload);
+                await apiClient.patch(
+                    `/inventory/deliveries/${delivery.id}`,
+                    payload,
+                );
                 toast.success("Delivery updated and inventory reconciled.");
             } else {
                 await apiClient.post("/inventory/receipt", payload);
@@ -276,10 +284,14 @@ export default function ReceiveStockModal({
                     <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-white/50 backdrop-blur-sm flex-shrink-0">
                         <div>
                             <h3 className="font-bold text-lg text-gray-900">
-                                {delivery ? "Edit Delivery" : "Log Incoming Delivery"}
+                                {delivery
+                                    ? "Edit Delivery"
+                                    : "Log Incoming Delivery"}
                             </h3>
                             <p className="text-xs text-gray-500 mt-0.5">
-                                {delivery ? "Modify items and update inventory." : "Receive multiple products under a single invoice. (Barcode scanning active)"}
+                                {delivery
+                                    ? "Modify items and update inventory."
+                                    : "Receive multiple products under a single invoice. (Barcode scanning active)"}
                             </p>
                         </div>
                         <button
@@ -336,7 +348,7 @@ export default function ReceiveStockModal({
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-                                            Link to Purchase Order (Optional)
+                                            Purchase Order
                                         </label>
                                         <div className="relative">
                                             <select
@@ -370,7 +382,7 @@ export default function ReceiveStockModal({
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-                                            Supplier (Optional)
+                                            Supplier
                                         </label>
                                         <div className="relative">
                                             <select
@@ -560,8 +572,10 @@ export default function ReceiveStockModal({
                                     >
                                         {isSaving ? (
                                             <Loader2 className="animate-spin w-4 h-4 stroke-white" />
+                                        ) : delivery ? (
+                                            "Update Delivery"
                                         ) : (
-                                            delivery ? "Update Delivery" : "Save Delivery"
+                                            "Save Delivery"
                                         )}
                                     </button>
                                 </div>
