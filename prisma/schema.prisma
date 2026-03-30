@@ -229,6 +229,7 @@ model User {
   createdPurchaseOrders PurchaseOrder[] @relation("POCreator")
   createdStockReceipts  StockReceipt[]  @relation("ReceiptCreator")
   createdDeliveries     Delivery[]
+  createdExpenses       Expense[]
 }
 
 model Business {
@@ -481,7 +482,8 @@ model Expense {
   storeId String? @db.Uuid
   Store   Store?  @relation(fields: [storeId], references: [id])
 
-  createdBy String? // Clerk ID
+  createdById String @db.Uuid
+  CreatedBy   User   @relation(fields: [createdById], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

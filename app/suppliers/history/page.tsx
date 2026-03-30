@@ -244,13 +244,16 @@ export default function PurchaseHistoryPage() {
                                     <th className="px-6 py-4 text-right text-xs font-bold text-gray-400 uppercase tracking-widest">
                                         Total Value
                                     </th>
+                                    <th className="px-6 py-4 text-right text-xs font-bold text-gray-400 uppercase tracking-widest">
+                                        Actions
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-100">
                                 {paginatedDeliveries.length === 0 ? (
                                     <tr>
                                         <td
-                                            colSpan={6}
+                                            colSpan={7}
                                             className="px-6 py-12 text-center text-sm text-gray-500"
                                         >
                                             No deliveries found.
@@ -385,6 +388,30 @@ export default function PurchaseHistoryPage() {
                                                             ).toLocaleString()}
                                                         </span>
                                                     </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleEdit(delivery);
+                                                                }}
+                                                                className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                                                title="Edit Delivery"
+                                                            >
+                                                                <Edit size={16} />
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleDelete(delivery.id, delivery.reference);
+                                                                }}
+                                                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                title="Delete Delivery"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
+                                                    </td>
                                                 </tr>
                                             );
                                         },
@@ -441,9 +468,13 @@ export default function PurchaseHistoryPage() {
             {showReceiveModal && (
                 <ReceiveStockModal
                     isOpen={showReceiveModal}
-                    onClose={() => setShowReceiveModal(false)}
+                    onClose={() => {
+                        setShowReceiveModal(false);
+                        setSelectedDelivery(null);
+                    }}
                     onSuccess={fetchData}
                     suppliers={suppliers}
+                    delivery={selectedDelivery}
                 />
             )}
         </Navbar>

@@ -102,7 +102,7 @@ export default async function handler(
         try {
             await prisma.$transaction(async (tx) => {
                 const delivery = await tx.delivery.findUnique({
-                    where: { id: deliveryId, businessId: user.businessId },
+                    where: { id: deliveryId, businessId: user.businessId! },
                     include: { receipts: true },
                 });
 
@@ -155,17 +155,12 @@ export default async function handler(
         }
 
         try {
-            const {
-                storeId,
-                supplierId,
-                purchaseOrderId,
-                reference,
-                items,
-            } = req.body;
+            const { storeId, supplierId, purchaseOrderId, reference, items } =
+                req.body;
 
             await prisma.$transaction(async (tx) => {
                 const oldDelivery = await tx.delivery.findUnique({
-                    where: { id: deliveryId, businessId: user.businessId },
+                    where: { id: deliveryId, businessId: user.businessId! },
                     include: { receipts: true },
                 });
 
@@ -187,7 +182,10 @@ export default async function handler(
                 }
 
                 // 2. If PO changed, revert old PO
-                if (oldDelivery.purchaseOrderId && oldDelivery.purchaseOrderId !== purchaseOrderId) {
+                if (
+                    oldDelivery.purchaseOrderId &&
+                    oldDelivery.purchaseOrderId !== purchaseOrderId
+                ) {
                     await tx.purchaseOrder.update({
                         where: { id: oldDelivery.purchaseOrderId },
                         data: { status: "PENDING" },
@@ -202,7 +200,8 @@ export default async function handler(
                 // 4. Update Delivery metadata
                 let totalDeliveryCost = 0;
                 for (const item of items) {
-                    totalDeliveryCost += (Number(item.quantity) * Number(item.unitCost));
+                    totalDeliveryCost +=
+                        Number(item.quantity) * Number(item.unitCost);
                 }
 
                 await tx.delivery.update({
@@ -211,9 +210,19 @@ export default async function handler(
                         reference: reference || null,
                         totalCost: totalDeliveryCost,
                         storeId,
-                        supplierId: (supplierId && supplierId !== "null" && supplierId !== "") ? supplierId : null,
-                        purchaseOrderId: (purchaseOrderId && purchaseOrderId !== "null" && purchaseOrderId !== "") ? purchaseOrderId : null,
-                    }
+                        supplierId:
+                            supplierId &&
+                            supplierId !== "null" &&
+                            supplierId !== ""
+                                ? supplierId
+                                : null,
+                        purchaseOrderId:
+                            purchaseOrderId &&
+                            purchaseOrderId !== "null" &&
+                            purchaseOrderId !== ""
+                                ? purchaseOrderId
+                                : null,
+                    },
                 });
 
                 // 5. Create NEW receipts and APPLY new inventory
@@ -231,7 +240,12 @@ export default async function handler(
                             reference: reference || null,
                             productId: item.productId,
                             storeId,
-                            supplierId: (supplierId && supplierId !== "null" && supplierId !== "") ? supplierId : null,
+                            supplierId:
+                                supplierId &&
+                                supplierId !== "null" &&
+                                supplierId !== ""
+                                    ? supplierId
+                                    : null,
                             createdById: user.id,
                             businessId: user.businessId!,
                         },
