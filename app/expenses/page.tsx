@@ -11,18 +11,21 @@ import {
     Trash2,
     Edit,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { AppState } from "@/store";
+import { setExpenses as setExpensesInStore } from "@/store/slices/expenseSlice";
 import ExpenseModal from "@/components/modals/ExpenseModal";
 import EditExpenseModal from "@/components/modals/EditExpenseModal";
 import Image from "next/image";
 
 export default function ExpensesPage() {
+    const dispatch = useDispatch();
     const user = useSelector((state: AppState) => state.auth.user);
-    const [expenses, setExpenses] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const expenses = useSelector((state: AppState) => state.expense.expenses);
+
+    const [loading, setLoading] = useState(expenses.length === 0);
     const [showExpenseModal, setShowExpenseModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedExpense, setSelectedExpense] = useState<any>(null);
@@ -35,20 +38,20 @@ export default function ExpensesPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
-    const fetchExpenses = async () => {
+    const fetchExpenses = useCallback(async () => {
         try {
             const res = await apiClient.get("/expenses");
-            setExpenses(res.data || []);
+            dispatch(setExpensesInStore(res.data || []));
         } catch (error) {
             toast.error("Failed to load expenses");
         } finally {
             setLoading(false);
         }
-    };
+    }, [dispatch]);
 
     useEffect(() => {
         fetchExpenses();
-    }, []);
+    }, [fetchExpenses]);
 
     // Reset pagination when filters change
     useEffect(() => {

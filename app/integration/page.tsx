@@ -2,6 +2,7 @@
 import Footer from "@/components/LandingPage/Footer";
 import Navbar from "@/components/LandingPage/Navbar";
 import { CheckCircle2, HandCoins, Receipt, Shield } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 
 export default function IntegrationPage() {
@@ -86,10 +87,12 @@ export default function IntegrationPage() {
                             </div>
                         </div>
                         <div className="bg-white rounded-lg border border-gray-100 hover:border-green-200 transition-colors p-6 shadow-sm flex items-center justify-center">
-                            <img
+                            <Image
                                 src="/images/M-PESA-logo-2.png"
                                 alt="M-Pesa Integration"
-                                className="max-w-[240px] lg:max-w-xl p-6 lg:p-32 rounded-lg"
+                                width={576}
+                                height={300}
+                                className="max-w-[240px] lg:max-w-xl p-6 lg:p-32 rounded-lg object-contain"
                             />
                         </div>
                     </div>
@@ -101,10 +104,12 @@ export default function IntegrationPage() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid md:grid-cols-2 gap-12 items-center">
                         <div className="order-2 md:order-1 bg-white rounded-lg border border-gray-100 hover:border-green-200 transition-colors p-6 shadow-sm flex items-center justify-center">
-                            <img
+                            <Image
                                 src="/images/kra-seeklogo.png"
                                 alt="KRA Integration"
-                                className="max-w-[240px] lg:max-w-xl p-6 lg:p-32 rounded-lg"
+                                width={576}
+                                height={300}
+                                className="max-w-[240px] lg:max-w-xl p-6 lg:p-32 rounded-lg object-contain"
                             />
                         </div>
                         <div className="order-1 md:order-2">

@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 
@@ -49,7 +49,7 @@ export default function SingleSupplierPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
-    const fetchSupplierDetails = async () => {
+    const fetchSupplierDetails = useCallback(async () => {
         try {
             const res = await apiClient.get(`/suppliers/${supplierId}`);
             setSupplier(res.data);
@@ -59,7 +59,7 @@ export default function SingleSupplierPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [supplierId, router]);
 
     useEffect(() => {
         if (businessDetails) {
@@ -69,7 +69,7 @@ export default function SingleSupplierPage() {
                 setLoading(false);
             }
         }
-    }, [isPaidPlan, businessDetails, supplierId]);
+    }, [isPaidPlan, businessDetails, supplierId, fetchSupplierDetails]);
 
     const handleDelete = async () => {
         if (

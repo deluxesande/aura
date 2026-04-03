@@ -12,20 +12,23 @@ import {
     Trash2,
     Edit,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { AppState } from "@/store";
+import { setSuppliers as setSuppliersInStore } from "@/store/slices/supplierSlice";
 import SupplierModal from "@/components/modals/SupplierModal";
 import Image from "next/image";
 
 export default function SuppliersOverviewPage() {
     const router = useRouter();
+    const dispatch = useDispatch();
     const businessDetails = useSelector(
         (state: AppState) => state.businessData?.businessDetails,
     );
     const user = useSelector((state: AppState) => state.auth.user);
+    const suppliers = useSelector((state: AppState) => state.supplier.suppliers);
 
     // Determine if the user is on a paid plan (Standard or Premium)
     const activeSub = Array.isArray(businessDetails?.subscription)
@@ -36,8 +39,7 @@ export default function SuppliersOverviewPage() {
         : businessDetails?.subscription;
     const isPaidPlan = activeSub && activeSub.plan !== "STARTER";
 
-    const [suppliers, setSuppliers] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(suppliers.length === 0);
     const [showModal, setShowModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedSupplier, setSelectedSupplier] = useState<any>(null);
@@ -47,20 +49,20 @@ export default function SuppliersOverviewPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
-    const fetchSuppliers = async () => {
+    const fetchSuppliers = useCallback(async () => {
         try {
             const res = await apiClient.get("/suppliers");
-            setSuppliers(res.data || []);
+            dispatch(setSuppliersInStore(res.data || []));
         } catch (error: any) {
             if (error.response?.status === 404) {
-                setSuppliers([]);
+                dispatch(setSuppliersInStore([]));
             } else {
                 toast.error("Failed to load suppliers");
             }
         } finally {
             setLoading(false);
         }
-    };
+    }, [dispatch]);
 
     useEffect(() => {
         if (businessDetails) {
@@ -70,7 +72,7 @@ export default function SuppliersOverviewPage() {
                 setLoading(false);
             }
         }
-    }, [isPaidPlan, businessDetails]);
+    }, [isPaidPlan, businessDetails, fetchSuppliers]);
 
     // Reset pagination on search
     useEffect(() => {
@@ -273,7 +275,7 @@ export default function SuppliersOverviewPage() {
                                                     <p className="text-xs text-gray-500 font-medium mt-0.5">
                                                         Added{" "}
                                                         {new Date(
-                                                            supplier.createdAt,
+                                                            supplier.createdAt || new Date(),
                                                         ).toLocaleDateString()}
                                                     </p>
                                                 </td>

@@ -13,20 +13,23 @@ import {
     Edit,
     ChevronDown,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { AppState } from "@/store";
+import { setOrders as setOrdersInStore } from "@/store/slices/orderSlice";
 import PurchaseOrderModal from "@/components/modals/PurchaseOrderModal";
 import Image from "next/image";
 
 export default function PurchaseOrdersPage() {
     const router = useRouter();
+    const dispatch = useDispatch();
     const businessDetails = useSelector(
         (state: AppState) => state.businessData?.businessDetails,
     );
     const user = useSelector((state: AppState) => state.auth.user);
+    const orders = useSelector((state: AppState) => state.order.orders);
 
     const activeSub = Array.isArray(businessDetails?.subscription)
         ? businessDetails.subscription.find(
@@ -39,8 +42,7 @@ export default function PurchaseOrdersPage() {
           : null;
     const isPaidPlan = activeSub && activeSub.plan !== "STARTER";
 
-    const [orders, setOrders] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(orders.length === 0);
     const [showModal, setShowModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<any>(null);
@@ -49,20 +51,20 @@ export default function PurchaseOrdersPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
-    const fetchOrders = async () => {
+    const fetchOrders = useCallback(async () => {
         try {
             const res = await apiClient.get("/purchase-orders");
-            setOrders(res.data || []);
+            dispatch(setOrdersInStore(res.data || []));
         } catch (error: any) {
             if (error.response?.status === 404) {
-                setOrders([]);
+                dispatch(setOrdersInStore([]));
             } else {
                 toast.error("Failed to load purchase orders");
             }
         } finally {
             setLoading(false);
         }
-    };
+    }, [dispatch]);
 
     useEffect(() => {
         if (businessDetails) {
@@ -72,7 +74,7 @@ export default function PurchaseOrdersPage() {
                 setLoading(false);
             }
         }
-    }, [isPaidPlan, businessDetails]);
+    }, [isPaidPlan, businessDetails, fetchOrders]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -302,7 +304,7 @@ export default function PurchaseOrdersPage() {
                                                 <p className="text-xs text-gray-500 font-medium mt-0.5">
                                                     Date:{" "}
                                                     {new Date(
-                                                        order.createdAt,
+                                                        order.createdAt || new Date(),
                                                     ).toLocaleDateString()}
                                                 </p>
                                             </td>

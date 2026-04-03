@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { apiClient } from "@/utils/apiClient";
 import { toast } from "sonner";
 import { useSelector } from "react-redux";
@@ -30,7 +30,7 @@ const BranchManagement: React.FC = () => {
         address: "",
     });
 
-    const fetchStores = async () => {
+    const fetchStores = useCallback(async () => {
         if (!user?.businessId) return;
         try {
             const res = await apiClient.get(
@@ -42,14 +42,15 @@ const BranchManagement: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user?.businessId]);
 
     useEffect(() => {
         fetchStores();
         if (typeof window !== "undefined") {
             setActiveStoreId(localStorage.getItem("activeStoreId"));
         }
-    }, [user?.businessId]);
+    }, [fetchStores]);
+
 
     const handleCreateStore = async (e: React.FormEvent) => {
         e.preventDefault();

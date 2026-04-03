@@ -90,4 +90,88 @@ export interface Customer {
     email?: string;
     phoneNumber: string;
     invoices: Invoice[];
+    createdAt?: Date | string;
+}
+
+export interface Supplier {
+    id: string;
+    name: string;
+    email?: string;
+    phoneNumber?: string;
+    address?: string;
+    isDeleted: boolean;
+    createdById?: string;
+    CreatedBy?: Creator;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+}
+
+export interface PurchaseOrder {
+    id: string;
+    reference: string;
+    totalAmount: number;
+    status: string;
+    isDeleted: boolean;
+    supplierId: string;
+    Supplier?: Supplier;
+    createdById?: string;
+    CreatedBy?: Creator;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+}
+
+export interface StockReceipt {
+    id?: string;
+    quantity: number;
+    unitCost: number;
+    totalCost: number;
+    productId: string;
+    Product: Product;
+    deliveryId?: string;
+    Delivery?: Delivery;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+}
+
+export interface Delivery {
+    id: string;
+    reference?: string;
+    totalCost: number;
+    status: string;
+    supplierId?: string;
+    Supplier?: Supplier;
+    storeId: string;
+    Store?: Store;
+    purchaseOrderId?: string;
+    PurchaseOrder?: PurchaseOrder;
+    receipts: StockReceipt[];
+    createdById?: string;
+    creator?: Creator;
+    createdAt: Date | string;
+}
+
+export interface Expense {
+    id: string;
+    title: string;
+    category: string;
+    amount: number;
+    date: Date | string;
+    notes?: string;
+    status: string;
+    storeId?: string;
+    Store?: Store;
+    createdById?: string;
+    CreatedBy?: Creator;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+}
+
+export interface Store {
+    id: string;
+    name: string;
+    address?: string;
+    isActive: boolean;
+    businessId: string;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
 }

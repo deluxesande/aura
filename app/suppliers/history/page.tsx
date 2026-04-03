@@ -7,15 +7,20 @@ import { apiClient } from "@/utils/apiClient";
 import { AlertCircle, ChevronLeft, ChevronRight, Edit, Lock, Plus, Search, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useEffect, useState, useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { setDeliveries as setDeliveriesInStore } from "@/store/slices/deliverySlice";
+import { setSuppliers as setSuppliersInStore } from "@/store/slices/supplierSlice";
 import { toast } from "sonner";
 
 export default function PurchaseHistoryPage() {
     const router = useRouter();
+    const dispatch = useDispatch();
     const businessDetails = useSelector(
         (state: AppState) => state.businessData?.businessDetails,
     );
+    const allDeliveries = useSelector((state: AppState) => state.delivery.deliveries);
+    const suppliers = useSelector((state: AppState) => state.supplier.suppliers);
 
     const activeSub = Array.isArray(businessDetails?.subscription)
         ? businessDetails.subscription.find(
@@ -28,9 +33,7 @@ export default function PurchaseHistoryPage() {
           : null;
     const isPaidPlan = activeSub && activeSub.plan !== "STARTER";
 
-    const [allDeliveries, setAllDeliveries] = useState<any[]>([]);
-    const [suppliers, setSuppliers] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(allDeliveries.length === 0);
     const [showReceiveModal, setShowReceiveModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedDelivery, setSelectedDelivery] = useState<any>(null);
@@ -38,31 +41,31 @@ export default function PurchaseHistoryPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const [supRes, deliveryRes] = await Promise.all([
                 apiClient.get("/suppliers"),
                 apiClient.get("/inventory/receipt"),
             ]);
 
-            setSuppliers(supRes.data || []);
-            setAllDeliveries(deliveryRes.data || []);
+            dispatch(setSuppliersInStore(supRes.data || []));
+            dispatch(setDeliveriesInStore(deliveryRes.data || []));
         } catch (error: any) {
             if (error.response?.status !== 404) {
                 toast.error("Failed to load delivery history");
             }
-            setAllDeliveries([]);
+            dispatch(setDeliveriesInStore([]));
         } finally {
             setLoading(false);
         }
-    };
+    }, [dispatch]);
 
     const handleEdit = (delivery: any) => {
         setSelectedDelivery(delivery);
         setShowReceiveModal(true);
     };
 
-    const handleDelete = async (deliveryId: string, reference: string) => {
+    const handleDelete = async (deliveryId: string, reference?: string) => {
         if (
             !window.confirm(
                 `Are you sure you want to delete delivery ${reference || deliveryId}? This will revert inventory levels.`,
@@ -87,7 +90,7 @@ export default function PurchaseHistoryPage() {
                 setLoading(false);
             }
         }
-    }, [isPaidPlan, businessDetails]);
+    }, [isPaidPlan, businessDetails, fetchData]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -335,7 +338,8 @@ export default function PurchaseHistoryPage() {
                                                                         src={
                                                                             delivery
                                                                                 .creator
-                                                                                .imageUrl
+                                                                                .imageUrl ||
+                                                                            "/images/user.png"
                                                                         }
                                                                         alt="Profile"
                                                                         width={

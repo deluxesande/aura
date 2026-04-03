@@ -13,9 +13,11 @@ import SelectCustomerModal from "@/components/SelectCustomerModal";
 import { AppState } from "@/store";
 import { addItem, clearCart } from "@/store/slices/cartSlice";
 import { setProducts } from "@/store/slices/productSlice";
+import { setCustomers, addCustomer as addCustomerToStore } from "@/store/slices/customerSlice";
+import { setCategories as setCategoriesInStore } from "@/store/slices/categorySlice";
 import { hide, show } from "@/store/slices/visibilitySlice";
 import { formatPhoneNumber } from "@/utils/formatPhoneNumber";
-import { Product } from "@/utils/typesDefinitions";
+import { Product, Customer, Category } from "@/utils/typesDefinitions";
 import { SignedIn, useUser } from "@clerk/nextjs";
 import { apiClient } from "@/utils/apiClient";
 import {
@@ -37,20 +39,6 @@ import React, {
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 
-interface Category {
-    id: string;
-    name: string;
-    description?: string;
-}
-
-interface Customer {
-    id: string;
-    firstName: string;
-    lastName: string;
-    phoneNumber: string;
-    email?: string;
-}
-
 export default function Page() {
     const dispatch = useDispatch();
     const { user, isLoaded } = useUser();
@@ -59,18 +47,23 @@ export default function Page() {
     const productsData = useSelector(
         (state: AppState) => state.product.products,
     );
+    const customers = useSelector((state: AppState) => state.customer.customers);
+    const reduxCategories = useSelector((state: AppState) => state.category.categories);
+
     const [loading, setLoading] = useState(productsData.length === 0);
 
-    const [categories, setCategories] = useState<Category[]>([
-        { name: "All", description: "All products", id: "ALL" },
-    ]);
+    const categories = useMemo(() => {
+        const base = [{ name: "All", description: "All products", id: "ALL" } as Category];
+        return [...base, ...reduxCategories];
+    }, [reduxCategories]);
+
     const [selectedCategoryId, setSelectedCategoryId] = useState("ALL");
     const [isInputVisible, setIsInputVisible] = useState(false);
     const [buttonText, setButtonText] = useState("Mpesa");
     const [mpesaNumber, setMpesaNumber] = useState("");
     const [isProcessingOrder, setIsProcessingOrder] = useState(false);
     const [paymentType, setPaymentType] = useState("CASH");
-    const [customers, setCustomers] = useState<Customer[]>([]);
+    
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
         null,
     );
@@ -131,24 +124,11 @@ export default function Page() {
                 }
 
                 if (customersRes.status === "fulfilled") {
-                    setCustomers(customersRes.value.data);
+                    dispatch(setCustomers(customersRes.value.data));
                 }
 
                 if (categoriesRes.status === "fulfilled") {
-                    const mappedCategories = categoriesRes.value.data.map(
-                        (c: any) => ({
-                            id: c.id,
-                            name: c.name,
-                            description: c.description || "",
-                        }),
-                    );
-                    setCategories((prev) => {
-                        const existingIds = new Set(prev.map((p) => p.id));
-                        const newCats = mappedCategories.filter(
-                            (c: Category) => !existingIds.has(c.id),
-                        );
-                        return [...prev, ...newCats];
-                    });
+                    dispatch(setCategoriesInStore(categoriesRes.value.data));
                 }
             } catch (error) {
                 console.error("Data load error", error);
@@ -372,7 +352,7 @@ export default function Page() {
                 });
 
                 if (res.status === 201 || res.status === 200) {
-                    setCustomers((prev) => [...prev, res.data]);
+                    dispatch(addCustomerToStore(res.data));
                     handleSelectCustomer(res.data);
                     setShowAddCustomerModal(false);
                     setShowSelectCustomerModal(false);

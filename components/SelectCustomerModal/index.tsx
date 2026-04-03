@@ -2,6 +2,7 @@ import { FloatingPortal } from "@floating-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Search, UserIcon, X, Plus } from "lucide-react";
 import React from "react";
+import { Customer } from "@/utils/typesDefinitions";
 
 function SelectCustomerModal({
     setShowSelectCustomerModal,
@@ -16,38 +17,12 @@ function SelectCustomerModal({
     setShowAddCustomerModal,
 }: {
     setShowSelectCustomerModal: React.Dispatch<React.SetStateAction<boolean>>;
-    customers: {
-        id: string;
-        firstName: string;
-        lastName: string;
-        phoneNumber: string;
-        email?: string;
-    }[];
+    customers: Customer[];
     customerSearchQuery: string;
     setCustomerSearchQuery: React.Dispatch<React.SetStateAction<string>>;
-    selectedCustomer: {
-        id: string;
-        firstName: string;
-        lastName: string;
-        phoneNumber: string;
-        email?: string;
-    } | null;
-    setSelectedCustomer: React.Dispatch<
-        React.SetStateAction<{
-            id: string;
-            firstName: string;
-            lastName: string;
-            phoneNumber: string;
-            email?: string;
-        } | null>
-    >;
-    handleSelectCustomer: (customer: {
-        id: string;
-        firstName: string;
-        lastName: string;
-        phoneNumber: string;
-        email?: string;
-    }) => void;
+    selectedCustomer: Customer | null;
+    setSelectedCustomer: React.Dispatch<React.SetStateAction<Customer | null>>;
+    handleSelectCustomer: (customer: Customer) => void;
     handleGuestCheckout: () => void;
     showAddCustomerModal: boolean;
     setShowAddCustomerModal: React.Dispatch<React.SetStateAction<boolean>>;
@@ -151,12 +126,12 @@ function SelectCustomerModal({
                                 {customers
                                     .filter(
                                         (c) =>
-                                            c.firstName
+                                            (c.firstName || "")
                                                 .toLowerCase()
                                                 .includes(
                                                     customerSearchQuery.toLowerCase(),
                                                 ) ||
-                                            c.lastName
+                                            (c.lastName || "")
                                                 .toLowerCase()
                                                 .includes(
                                                     customerSearchQuery.toLowerCase(),
@@ -186,8 +161,8 @@ function SelectCustomerModal({
                                                         : "bg-green-50 text-green-600 group-hover:bg-white group-hover:shadow-sm"
                                                 }`}
                                             >
-                                                {customer.firstName.charAt(0)}
-                                                {customer.lastName.charAt(0)}
+                                                {(customer.firstName || "U").charAt(0)}
+                                                {(customer.lastName || "U").charAt(0)}
                                             </div>
                                             <div>
                                                 <p className="font-bold text-sm text-gray-900">
