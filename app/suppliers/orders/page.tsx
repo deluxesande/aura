@@ -403,12 +403,12 @@ export default function PurchaseOrdersPage() {
                                                         >
                                                             IN TRANSIT
                                                         </option>
-                                                        <option
+                                                        {/* <option
                                                             value="DELIVERED"
                                                             className="bg-white text-gray-900"
                                                         >
                                                             DELIVERED
-                                                        </option>
+                                                        </option> */}
                                                         <option
                                                             value="CANCELLED"
                                                             className="bg-white text-gray-900"
