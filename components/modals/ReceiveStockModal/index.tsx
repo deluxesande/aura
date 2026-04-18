@@ -72,7 +72,6 @@ export default function ReceiveStockModal({
                         Array.isArray(poRes.data)
                             ? poRes.data.filter(
                                   (po: any) =>
-                                      po.status === "DELIVERED" ||
                                       po.status === "PENDING" ||
                                       po.status === "IN_TRANSIT",
                               )
