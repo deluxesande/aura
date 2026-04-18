@@ -122,7 +122,7 @@ export default function ReconciliationDetailsSidebar({
                                     Internal Notes
                                 </span>
                                 <p className="text-sm text-gray-600 leading-relaxed italic">
-                                    "{reconciliation.notes}"
+                                    &quot;{reconciliation.notes}&quot;
                                 </p>
                             </div>
                         )}

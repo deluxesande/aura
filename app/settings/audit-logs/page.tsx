@@ -142,16 +142,13 @@ export default function AuditLogsPage() {
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
                                         Date & Time
                                     </th>
-                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                        Metadata
-                                    </th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
                                 {paginatedLogs.length === 0 ? (
                                     <tr>
                                         <td
-                                            colSpan={5}
+                                            colSpan={4}
                                             className="px-6 py-12 text-center text-gray-500 text-sm"
                                         >
                                             No audit logs found.
@@ -167,65 +164,41 @@ export default function AuditLogsPage() {
                                             className="hover:bg-gray-50/50 transition-colors"
                                         >
                                             <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2">
-                                                    <div
-                                                        className={`p-1.5 rounded-md ${
-                                                            log.action.includes(
-                                                                "DELETE",
-                                                            )
-                                                                ? "bg-red-50 text-red-600"
-                                                                : log.action.includes(
-                                                                        "CREATE",
-                                                                    )
-                                                                  ? "bg-green-50 text-green-500"
-                                                                  : "bg-blue-50 text-blue-600"
-                                                        }`}
-                                                    >
-                                                        <Activity size={14} />
-                                                    </div>
-                                                    <span className="text-sm font-bold text-gray-900 tracking-tight">
-                                                        {log.action.replace(
-                                                            /_/g,
-                                                            " ",
-                                                        )}
-                                                    </span>
-                                                </div>
+                                                <span className="text-sm font-bold text-gray-900 tracking-tight uppercase">
+                                                    {log.action.replace(
+                                                        /_/g,
+                                                        " ",
+                                                    )}
+                                                </span>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 uppercase tracking-wider">
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black bg-gray-100 text-gray-500 uppercase tracking-widest">
                                                     {log.entityType}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-col">
-                                                    <span className="text-sm font-semibold text-gray-900">
+                                                    <span className="text-sm font-bold text-gray-700">
                                                         {log.User?.firstName}{" "}
                                                         {log.User?.lastName}
                                                     </span>
-                                                    <span className="text-xs text-gray-500">
+                                                    <span className="text-[10px] font-medium text-gray-400 uppercase tracking-tight">
                                                         {log.User?.email}
                                                     </span>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-col">
-                                                    <span className="text-sm text-gray-900">
+                                                    <span className="text-sm font-bold text-gray-700">
                                                         {new Date(
                                                             log.createdAt,
                                                         ).toLocaleDateString()}
                                                     </span>
-                                                    <span className="text-xs text-gray-500">
+                                                    <span className="text-[10px] font-medium text-gray-400 uppercase tracking-tight">
                                                         {new Date(
                                                             log.createdAt,
                                                         ).toLocaleTimeString()}
                                                     </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="max-w-xs">
-                                                    <p className="text-xs text-gray-500 font-mono truncate hover:whitespace-normal hover:break-all cursor-default transition-all">
-                                                        {log.details || "N/A"}
-                                                    </p>
                                                 </div>
                                             </td>
                                         </motion.tr>
