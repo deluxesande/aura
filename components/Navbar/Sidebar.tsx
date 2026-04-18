@@ -73,6 +73,12 @@ const linkGroups = [
                 icon: PackageSearch,
                 allowedRoles: ["admin", "manager", "user"],
             },
+            {
+                href: "/inventory/reconciliation",
+                label: "Stocktaking",
+                icon: ClipboardList,
+                allowedRoles: ["admin", "manager"],
+            },
         ],
     },
     {

@@ -16,6 +16,8 @@ import deliveryReducer from "./slices/deliverySlice";
 import orderReducer from "./slices/orderSlice";
 import expenseReducer from "./slices/expenseSlice";
 import categoryReducer from "./slices/categorySlice";
+import auditLogReducer from "./slices/auditLogSlice";
+import reconciliationReducer from "./slices/reconciliationSlice";
 
 const rootReducer = combineReducers({
     product: productReducer,
@@ -35,6 +37,8 @@ const rootReducer = combineReducers({
     order: orderReducer,
     expense: expenseReducer,
     category: categoryReducer,
+    auditLog: auditLogReducer,
+    reconciliation: reconciliationReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

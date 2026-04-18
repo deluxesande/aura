@@ -6,11 +6,14 @@ import {
     FileSpreadsheet,
     AlertTriangle,
     Info,
+    History,
 } from "lucide-react";
 import React, { useState, useRef } from "react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const DataManagement: React.FC = () => {
+    const router = useRouter();
     // State for Export
     const [isDownloading, setIsDownloading] = useState(false);
     const [showExportModal, setShowExportModal] = useState(false);
@@ -95,11 +98,12 @@ const DataManagement: React.FC = () => {
                 </p>
             </header>
 
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <button
                     onClick={() => setShowExportModal(true)}
                     className="btn btn-md btn-ghost flex items-center justify-center bg-green-500 text-white hover:bg-green-600 w-full"
                 >
+                    <Download className="w-4 h-4 mr-2" />
                     Export Data
                 </button>
 
@@ -107,7 +111,16 @@ const DataManagement: React.FC = () => {
                     onClick={() => setShowImportModal(true)}
                     className="btn btn-md btn-ghost flex items-center justify-center border border-gray-300 text-gray-700 hover:bg-gray-50 w-full"
                 >
+                    <Upload className="w-4 h-4 mr-2" />
                     Import Data
+                </button>
+
+                <button
+                    onClick={() => router.push("/settings/audit-logs")}
+                    className="btn btn-md btn-ghost flex items-center justify-center border border-gray-300 text-gray-700 hover:bg-gray-50 w-full"
+                >
+                    <History className="w-4 h-4 mr-2" />
+                    Audit Logs
                 </button>
             </div>
 

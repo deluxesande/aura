@@ -78,106 +78,126 @@ export const BLOG_POSTS: BlogPost[] = [
         ],
     },
     {
-        slug: "why-compliance-matters",
-        title: "Why KRA Compliance is Crucial for Kenyan SMEs",
+        slug: "mastering-inventory-reconciliation",
+        title: "Why Stocktaking is the Secret to Higher Profits",
         excerpt:
-            "Understanding the risks of non-compliance and how SaleSense automated tools can save you from hefty fines and business closures.",
-        category: "Compliance",
-        readTime: "4 min read",
-        date: "March 20, 2026",
-        image: "/images/kra-seeklogo.png",
+            "Learn how regular inventory reconciliation catches hidden losses and ensures your business is running at peak efficiency.",
+        category: "Inventory",
+        readTime: "7 min read",
+        date: "April 18, 2026",
+        image: "/public/ProductsPage.jpg",
         content: [
             {
                 type: "paragraph",
-                text: "For many small business owners in Kenya, tax compliance feels like a burden. Between managing stock, employees, and customers, filing returns often takes a backseat. However, ignoring KRA compliance is a risk that can sink an otherwise profitable business.",
+                text: "Inventory leakage—whether through theft, damage, or simple counting errors—is one of the leading causes of business failure in retail. If your system says you have 10 items but your shelf only has 8, you are losing money without even knowing it.",
             },
             {
                 type: "heading",
-                text: "The Cost of Non-Compliance",
+                text: "The Goal of Reconciliation",
             },
             {
                 type: "paragraph",
-                text: "The Kenya Revenue Authority (KRA) has digitized its systems via iTax and is actively using data to identify non-compliant businesses. The penalties are steep:",
+                text: "Reconciliation is the process of aligning your 'digital' stock with your 'physical' stock. By using the new Stocktaking feature in SaleSense, you can perform these checks in minutes instead of hours.",
+            },
+            {
+                type: "heading",
+                text: "How to Run a Perfect Stocktake",
             },
             {
                 type: "list",
                 items: [
-                    "Failure to file returns: KSh 2,000 or 5% of tax due (whichever is higher) for monthly returns.",
-                    "Late payment interest: 1% per month on the unpaid tax.",
-                    "Loss of TCC: Without a Tax Compliance Certificate, you cannot apply for government tenders or bank loans.",
+                    "Schedule regular counts: Don't wait for the end of the year. Count high-value items weekly.",
+                    "Use a Barcode Scanner: Scanning is faster and removes human error compared to manual entry.",
+                    "Investigate Discrepancies: If the system shows a large negative discrepancy, check your audit logs to see if a sale was deleted or a delivery was missed.",
                 ],
             },
             {
-                type: "heading",
-                text: "It’s About Growth, Not Just Taxes",
-            },
-            {
-                type: "paragraph",
-                text: "Compliance isn't just about avoiding fines; it's about positioning your business for growth. Corporate clients and suppliers often require proof of compliance before doing business. If you want to scale, your books need to be clean.",
-            },
-            {
                 type: "alert",
-                text: "Did you know? SaleSense automatically tracks your sales and calculates potential tax liabilities, ensuring you are always audit-ready.",
+                text: "Pro Tip: Perform your stocktakes during off-peak hours or when the shop is closed to ensure that active sales don't interfere with your counts.",
             },
             {
                 type: "paragraph",
-                text: "By automating your sales tracking, you remove the guesswork. You know exactly what you sold, what is taxable, and what isn't, ensuring you never overpay or underpay your taxes.",
+                text: "A reconciled inventory means you never disappoint a customer by promising stock you don't actually have, and you can spot internal issues before they become major crises.",
             },
         ],
     },
     {
-        slug: "inventory-management-tips",
-        title: "5 Tips to Optimize Your Inventory with SaleSense",
+        slug: "procurement-lifecycle-guide",
+        title: "The Strategic Power of Purchase Orders",
         excerpt:
-            "Stop losing money to dead stock. Learn how to track your best sellers and manage reorder levels effectively.",
-        category: "Growth",
-        readTime: "6 min read",
-        date: "March 15, 2026",
+            "Stop ordering stock over the phone. Professionalize your procurement and track your spending with Purchase Orders.",
+        category: "Supply Chain",
+        readTime: "5 min read",
+        date: "April 18, 2026",
         image: "/images/default-product.png",
         content: [
             {
                 type: "paragraph",
-                text: "Inventory is simply cash sitting on your shelves. If it moves too slowly, your cash flow dies. If you run out of it, you lose customers to competitors. Balancing this is the art of inventory management.",
+                text: "Many SMEs manage their suppliers informally—a quick phone call or a WhatsApp message. While fast, this method lacks a paper trail and makes it impossible to track partial deliveries or price fluctuations over time.",
             },
             {
                 type: "heading",
-                text: "1. The First-In-First-Out (FIFO) Rule",
+                text: "Why use Purchase Orders (POs)?",
             },
             {
                 type: "paragraph",
-                text: "This is crucial for perishable goods (like cafes) but applies to hardware too. Ensure older stock is sold before newer shipments. This prevents expiration and obsolescence.",
+                text: "A Purchase Order is a formal agreement between you and your supplier. It states exactly what you are buying, in what quantity, and at what price.",
+            },
+            {
+                type: "list",
+                items: [
+                    "Financial Control: You know exactly how much money you have committed to future stock.",
+                    "Delivery Accuracy: When the truck arrives, your staff can check the delivery against the PO to ensure nothing is missing.",
+                    "Automated Inventory: In SaleSense, receiving a PO automatically updates your stock levels across all branches—no manual entry required.",
+                ],
             },
             {
                 type: "heading",
-                text: "2. Identify Your Best Sellers (The 80/20 Rule)",
+                text: "The Procurement Workflow",
             },
             {
                 type: "paragraph",
-                text: "Typically, 80% of your revenue comes from 20% of your products. Do you know which ones they are? Focus your capital on keeping these items in stock.",
-            },
-            {
-                type: "step",
-                text: "Check your SaleSense 'Top Products' chart on the dashboard to instantly see what is moving fast this month.",
-            },
-            {
-                type: "heading",
-                text: "3. Set Reorder Points",
-            },
-            {
-                type: "paragraph",
-                text: "Don't wait until the shelf is empty to order more. Determine a minimum quantity for each item. When stock hits that level, place an order immediately.",
-            },
-            {
-                type: "heading",
-                text: "4. Regular Audits",
-            },
-            {
-                type: "paragraph",
-                text: "Even with software, physical counts are necessary to catch theft or damage. Schedule a 'stock-take' at the end of every week or month to reconcile your physical stock with your system numbers.",
+                text: "Start by creating a PO in the 'Suppliers' section. Once the goods are in transit, mark the status. When they arrive, use the 'Receive Stock' tool in your Delivery History to link the arrival to the PO. This closes the loop and ensures your records are 100% accurate.",
             },
             {
                 type: "alert",
-                text: "Pro Tip: Use the SaleSense Inventory list to export your current stock levels, making physical stock-taking much faster.",
+                text: "New Restriction: To maintain integrity, once a PO is marked as DELIVERED, it cannot be changed. This ensures your financial history remains untampered.",
+            },
+        ],
+    },
+    {
+        slug: "audit-logs-accountability",
+        title: "Maintaining Integrity with Audit Logs",
+        excerpt:
+            "Transparency is the key to trust. Learn how to use Audit Logs to oversee your staff and protect your business data.",
+        category: "Security",
+        readTime: "4 min read",
+        date: "April 18, 2026",
+        image: "/images/kra-seeklogo.png",
+        content: [
+            {
+                type: "paragraph",
+                text: "As your business grows and you hire more staff, you cannot be everywhere at once. You need a system that watches the business for you. That is the role of the Audit Log.",
+            },
+            {
+                type: "heading",
+                text: "The Digital Paper Trail",
+            },
+            {
+                type: "paragraph",
+                text: "Every sensitive action—deleting an invoice, adjusting stock, or changing a product's price—is now recorded in SaleSense. This isn't about 'spying' on employees; it's about creating a culture of accountability.",
+            },
+            {
+                type: "list",
+                items: [
+                    "Spot Suspicious Patterns: See if invoices are being deleted unusually often during certain shifts.",
+                    "Track Pricing Changes: Ensure that unauthorized discounts aren't being given to friends or family.",
+                    "Verify Stock Adjustments: If stock was adjusted outside of a formal stocktake, you'll know exactly who did it and when.",
+                ],
+            },
+            {
+                type: "paragraph",
+                text: "Access your logs via **Settings > Audit Logs**. You can filter by action or user to quickly find the information you need. In an audit-ready business, every number has a story, and the Audit Log is the book that tells it.",
             },
         ],
     },

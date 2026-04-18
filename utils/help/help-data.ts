@@ -6,6 +6,7 @@ import {
     Smartphone,
     Search,
     List,
+    Truck,
 } from "lucide-react";
 
 export const HELP_CATEGORIES = [
@@ -21,35 +22,35 @@ export const HELP_CATEGORIES = [
         title: "Inventory & Products",
         icon: List,
         description:
-            "Managing products, categories, variants, and stock levels.",
+            "Managing products, variants, stocktaking, and barcodes.",
     },
     {
-        slug: "billing-and-mpesa",
-        title: "Billing & M-Pesa",
-        icon: CreditCard,
+        slug: "sales-and-invoicing",
+        title: "Sales & Invoicing",
+        icon: Smartphone,
         description:
-            "Connecting Paybills, transaction tracking, and subscription plans.",
+            "Creating invoices, M-Pesa payments, and KRA tax compliance.",
     },
     {
-        slug: "finding-products",
-        title: "Finding Products",
-        icon: Search,
+        slug: "supply-chain",
+        title: "Supply Chain",
+        icon: Truck,
         description:
-            "Using search and filters to quickly find products in your inventory.",
+            "Managing suppliers, purchase orders, and receiving stock.",
     },
     {
-        slug: "kra-compliance",
-        title: "KRA Compliance",
+        slug: "audit-and-security",
+        title: "Audit & Security",
         icon: ShieldCheck,
         description:
-            "Understanding tax tracking and maintaining accurate records for iTax.",
+            "User roles, audit logs, and system accountability.",
     },
     {
         slug: "account-settings",
         title: "Account Settings",
         icon: Settings,
         description:
-            "Password reset, user roles, and profile preferences.",
+            "Branch management, subscription plans, and profile preferences.",
     },
 ];
 
@@ -59,161 +60,249 @@ export const HELP_ARTICLES = [
         slug: "setting-up-shop-profile",
         categorySlug: "getting-started",
         title: "Setting Up Your Business Profile",
-        updatedAt: "1 day ago",
+        updatedAt: "Updated today",
         content: [
             {
                 type: "paragraph",
-                text: "Your business profile contains the basic information about your shop that appears on invoices.",
+                text: "Your business profile is the identity of your shop on SaleSense. The information provided here is used to generate professional invoices and receipts.",
             },
             {
                 type: "step",
-                text: "Navigate to **Settings** in the sidebar menu.",
+                text: "Navigate to **Settings** from the sidebar.",
             },
             {
                 type: "step",
-                text: "Under **Profile Info**, ensure your Name and Role are correct.",
+                text: "In the **Business Settings** section, enter your legal business name, contact information, and address.",
             },
             {
                 type: "step",
-                text: "Check **Business Settings** to ensure your business name is correctly displayed.",
+                text: "Upload your business logo. This will appear on all digital and PDF invoices sent to your customers.",
             },
             {
                 type: "alert",
-                text: "Note: Your business name is what your staff and customers will see. If you need to change it, visit the Business Settings tab.",
+                text: "Professionalism Tip: Ensure your address and phone number are accurate, as these are critical for KRA compliance and customer trust.",
             },
         ],
     },
 
     // --- INVENTORY & PRODUCTS ---
     {
-        slug: "adding-first-product",
+        slug: "managing-products-variants",
         categorySlug: "inventory-and-products",
-        title: "Adding Products and Variants",
-        updatedAt: "March 24, 2026",
+        title: "Managing Products and Variants",
+        updatedAt: "Updated today",
         content: [
             {
                 type: "paragraph",
-                text: "SaleSense allows you to add both simple products and products with multiple variants (like sizes or colors).",
+                text: "SaleSense supports complex inventory needs, including products that come in different sizes, colors, or materials.",
             },
             {
                 type: "step",
-                text: "Go to **Inventory > Create Product**.",
+                text: "To add a new product, go to **Inventory > Products** and click 'Add Product'.",
             },
             {
                 type: "step",
-                text: "For a simple product, fill in the Name, Price, and Quantity.",
+                text: "If a product has variations, toggle the 'This product has variants' switch. You can then define attributes like 'Size' (S, M, L) or 'Color' (Red, Blue).",
             },
             {
                 type: "step",
-                text: "For variants, select the **Variant** type. You can add multiple attributes and values at once.",
+                text: "Each variant can have its own SKU, price, and initial stock level.",
+            },
+            {
+                type: "paragraph",
+                text: "Using SKUs (Stock Keeping Units) is highly recommended. You can let the system auto-generate them or input your own barcode numbers for easy scanning during sales.",
+            },
+        ],
+    },
+    {
+        slug: "inventory-reconciliation",
+        categorySlug: "inventory-and-products",
+        title: "Performing a Stocktake (Reconciliation)",
+        updatedAt: "New Feature",
+        content: [
+            {
+                type: "paragraph",
+                text: "Stocktaking is the process of physically counting your stock and comparing it to the system's records. This helps identify theft, damage, or data entry errors.",
+            },
+            {
+                type: "step",
+                text: "Navigate to **Inventory > Stocktaking**.",
+            },
+            {
+                type: "step",
+                text: "Select the branch you are currently counting.",
+            },
+            {
+                type: "step",
+                text: "Search for products and enter the **Physical Quantity** you have on hand.",
+            },
+            {
+                type: "step",
+                text: "The system will show a **Discrepancy** (e.g., -2 if you have two fewer items than the system expected).",
+            },
+            {
+                type: "step",
+                text: "Click **Complete Stocktake** to adjust the system's records to match your physical count.",
             },
             {
                 type: "alert",
-                text: "NEW: Our batch creation logic now processes multiple variants instantly in one go!",
+                text: "Security Note: Every stocktake is recorded in the Audit Logs, including who performed it and what the discrepancies were.",
             },
         ],
     },
 
-    // --- BILLING & M-PESA ---
+    // --- SALES & INVOICING ---
     {
-        slug: "how-to-connect-paybill",
-        categorySlug: "billing-and-mpesa",
-        title: "Configuring M-Pesa Integration",
-        updatedAt: "March 24, 2026",
+        slug: "mpesa-payments-pos",
+        categorySlug: "sales-and-invoicing",
+        title: "Processing M-Pesa Payments",
+        updatedAt: "Updated today",
         content: [
             {
                 type: "paragraph",
-                text: "Configuring your M-Pesa credentials allows the system to process payments more effectively.",
+                text: "Our direct M-Pesa integration allows you to receive payments and automatically mark invoices as paid.",
             },
             {
                 type: "step",
-                text: "Navigate to **Settings > Integrations**.",
+                text: "On the Checkout screen, select **M-Pesa** as the payment method.",
             },
             {
                 type: "step",
-                text: "Enter your M-Pesa Short Code, Consumer Key, and Consumer Secret.",
+                text: "Enter the customer's phone number and click 'Initiate STK Push'.",
+            },
+            {
+                type: "step",
+                text: "The customer will receive a popup on their phone to enter their PIN.",
+            },
+            {
+                type: "step",
+                text: "Once confirmed, SaleSense receives a notification and automatically generates the receipt.",
             },
             {
                 type: "alert",
-                text: "Ensure you use your Daraja API credentials. Check the Blog for a full step-by-step guide.",
+                text: "Configuration Required: You must enter your Daraja API credentials in Settings > Integrations for this feature to work.",
+            },
+        ],
+    },
+    {
+        slug: "kra-tax-compliance",
+        categorySlug: "sales-and-invoicing",
+        title: "Understanding KRA & Tax Settings",
+        updatedAt: "Important",
+        content: [
+            {
+                type: "paragraph",
+                text: "Stay audit-ready with our built-in tax tracking. SaleSense helps you maintain the records required by the Kenya Revenue Authority.",
+            },
+            {
+                type: "step",
+                text: "In **Settings > KRA Settings**, configure your VAT rate (standard is 16%).",
+            },
+            {
+                type: "step",
+                text: "When creating an invoice, the system automatically calculates the tax amount.",
+            },
+            {
+                type: "step",
+                text: "Use the **Invoices** page to export monthly sales reports, which include a breakdown of taxable and non-taxable revenue.",
+            },
+            {
+                type: "paragraph",
+                text: "By keeping your inventory and sales data in one place, you can generate reports that make filing your monthly VAT returns on iTax significantly faster.",
             },
         ],
     },
 
-    // --- FINDING PRODUCTS ---
+    // --- SUPPLY CHAIN ---
     {
-        slug: "using-search-and-filters",
-        categorySlug: "finding-products",
-        title: "How to Use Search and Filters",
-        updatedAt: "March 24, 2026",
+        slug: "managing-suppliers-pos",
+        categorySlug: "supply-chain",
+        title: "Managing Suppliers and Procurement",
+        updatedAt: "New Feature",
         content: [
             {
                 type: "paragraph",
-                text: "We've added advanced search and filtering to help you find products quickly, even in large inventories.",
+                text: "Efficiently manage your relationships with wholesalers and track your spending on new stock.",
             },
             {
                 type: "step",
-                text: "Use the **Search Bar** at the top of the Products or Inventory page to search by name, SKU, or description.",
+                text: "Add your suppliers in the **Suppliers** section, including their contact person and M-Pesa payment details.",
             },
             {
                 type: "step",
-                text: "Click the **Filter Icon** (sliders) next to the search bar to open advanced filters.",
+                text: "Create a **Purchase Order (PO)** when you need to restock. Add the items and quantities you want to buy.",
             },
             {
                 type: "step",
-                text: "Filter by **Price Range**, **Category**, or use the **'In Stock Only'** toggle.",
+                text: "When the supplier delivers the goods, go to **Delivery History** and click 'Receive Stock'.",
+            },
+            {
+                type: "step",
+                text: "Link the delivery to your Purchase Order. The system will automatically update your inventory levels across the selected branches.",
+            },
+            {
+                type: "alert",
+                text: "Rule: Once a Purchase Order is marked as 'Delivered', it becomes a permanent record and can no longer be edited or deleted.",
             },
         ],
     },
 
-    // --- KRA COMPLIANCE ---
+    // --- AUDIT & SECURITY ---
     {
-        slug: "generating-tax-reports",
-        categorySlug: "kra-compliance",
-        title: "Tracking Sales for KRA Compliance",
-        updatedAt: "1 week ago",
+        slug: "using-audit-logs",
+        categorySlug: "audit-and-security",
+        title: "Accountability with Audit Logs",
+        updatedAt: "Security Feature",
         content: [
             {
                 type: "paragraph",
-                text: "SaleSense automatically tracks your sales data, making it easier to prepare for tax returns.",
+                text: "Audit logs provide a transparent history of every sensitive action taken within your business account.",
             },
             {
                 type: "step",
-                text: "Process sales normally through the POS screen.",
-            },
-            {
-                type: "step",
-                text: "All transactions are recorded in the **Invoices** section.",
+                text: "Admins can access these logs via **Settings > Audit Logs**.",
             },
             {
                 type: "paragraph",
-                text: "The system provides clear visibility into your total revenue and transaction counts, helping you stay within your plan's limits and prepare for filing.",
+                text: "The logs track actions such as: Deleting an Invoice, Changing a Product Price, Adjusting Stock Levels, and Updating Team Roles.",
+            },
+            {
+                type: "step",
+                text: "Each log entry includes the **User** who performed the action, the **Timestamp**, and the specific **Details** of the change.",
+            },
+            {
+                type: "alert",
+                text: "Use this feature to investigate discrepancies or ensure that staff are following standard operating procedures.",
             },
         ],
     },
 
     // --- ACCOUNT SETTINGS ---
     {
-        slug: "resetting-password",
+        slug: "branch-management",
         categorySlug: "account-settings",
-        title: "Managing Your Account",
-        updatedAt: "1 month ago",
+        title: "Multi-Branch & Team Management",
+        updatedAt: "Updated today",
         content: [
             {
                 type: "paragraph",
-                text: "You can manage your personal details and security settings from the Profile and Settings pages.",
+                text: "Grow your business by managing multiple physical locations from a single SaleSense account.",
             },
             {
                 type: "step",
-                text: "Go to **Profile** to update your name or view your current role.",
+                text: "Create new branches in **Settings > Branch Management**.",
             },
             {
                 type: "step",
-                text: "Use the **Update Password** form in Settings to keep your account secure.",
+                text: "Invite staff members and assign them a specific **Role** (Admin, Manager, or User).",
             },
             {
                 type: "step",
-                text: "Admins can manage other users under the **User Management** tab.",
+                text: "Assign staff to a specific **Store**. This restricts their access to only see sales and stock for that location.",
+            },
+            {
+                type: "paragraph",
+                text: "Admins have 'God Mode' and can see data for all branches, while Managers can oversee their assigned store's operations and perform sensitive tasks like stocktaking.",
             },
         ],
     },

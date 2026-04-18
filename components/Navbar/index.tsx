@@ -26,12 +26,22 @@ import {
 import {
     AlertTriangle,
     ChevronDown,
+    ChevronRight,
     LogOut,
     Menu,
     Search as SearchIcon,
     ShoppingCart,
     SlidersHorizontal,
     X,
+    LayoutDashboard,
+    HandCoins,
+    Users,
+    ShoppingBasket,
+    PackageSearch,
+    ClipboardList,
+    Truck,
+    WalletMinimal,
+    Settings as SettingsIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -39,11 +49,103 @@ import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 import BusinessOnboardingModal from "../BusinessOnboardingModal";
 import CustomUserButton from "../CustomUserButton";
 import FilterOverlay from "../FilterOverlay";
 import SubscriptionWarningModal from "../SubscriptionWarningModal";
 import Sidebar from "./Sidebar";
+
+const linkGroups = [
+    {
+        label: "Overview",
+        items: [
+            {
+                href: "/dashboard",
+                label: "Dashboard",
+                icon: LayoutDashboard,
+                allowedRoles: ["admin", "manager"],
+            },
+        ],
+    },
+    {
+        label: "Sales & CRM",
+        items: [
+            {
+                href: "/invoices",
+                label: "Invoices",
+                icon: HandCoins,
+                allowedRoles: ["admin", "manager", "user"],
+            },
+            {
+                href: "/customers",
+                label: "Customers",
+                icon: Users,
+                allowedRoles: ["admin", "manager", "user"],
+            },
+        ],
+    },
+    {
+        label: "Inventory",
+        items: [
+            {
+                href: "/products",
+                label: "Products",
+                icon: ShoppingBasket,
+                allowedRoles: ["admin", "manager", "user"],
+            },
+            {
+                href: "/products/list",
+                label: "Stocks",
+                icon: PackageSearch,
+                allowedRoles: ["admin", "manager", "user"],
+            },
+            {
+                href: "/inventory/reconciliation",
+                label: "Stocktaking",
+                icon: ClipboardList,
+                allowedRoles: ["admin", "manager"],
+            },
+        ],
+    },
+    {
+        label: "Supply Chain",
+        items: [
+            {
+                label: "Procurement",
+                icon: Truck,
+                allowedRoles: ["admin", "manager"],
+                subItems: [
+                    { href: "/suppliers", label: "Suppliers" },
+                    { href: "/suppliers/orders", label: "Orders" },
+                    { href: "/suppliers/history", label: "History" },
+                ],
+            },
+        ],
+    },
+    {
+        label: "Finance",
+        items: [
+            {
+                href: "/expenses",
+                label: "Expenses",
+                icon: WalletMinimal,
+                allowedRoles: ["admin", "manager"],
+            },
+        ],
+    },
+    {
+        label: "System",
+        items: [
+            {
+                href: "/settings",
+                label: "Settings",
+                icon: SettingsIcon,
+                allowedRoles: ["admin", "manager"],
+            },
+        ],
+    },
+];
 
 const allLinks = [
     {
@@ -110,6 +212,10 @@ export default function Navbar({
     const [mounted, setMounted] = useState(false);
     const [inputValue, setInputValue] = useState<string>("");
     const { signOut } = useClerk();
+
+    const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>(
+        {},
+    );
 
     const originalProducts = useSelector(
         (state: AppState) => state.product.products,
@@ -780,16 +886,199 @@ export default function Navbar({
                                     </div>
                                 )}
 
-                                <div className="flex flex-col space-y-4 mt-6">
-                                    {links.map((link) => (
-                                        <a
-                                            key={link.href}
-                                            href={link.href}
-                                            className="flex items-center p-2 hover:bg-slate-100 text-black rounded-lg cursor-pointer"
-                                        >
-                                            {link.text}
-                                        </a>
-                                    ))}
+                                <div className="flex flex-col gap-6 mt-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+                                    {linkGroups.map((group, groupIdx) => {
+                                        const visibleLinks = group.items.filter(
+                                            (link) =>
+                                                link.allowedRoles.some(
+                                                    (role) =>
+                                                        role?.toLowerCase() ===
+                                                        user?.role?.toLowerCase(),
+                                                ),
+                                        );
+
+                                        if (visibleLinks.length === 0)
+                                            return null;
+
+                                        return (
+                                            <div
+                                                key={groupIdx}
+                                                className="w-full"
+                                            >
+                                                <h3 className="px-2 mb-3 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                                                    {group.label}
+                                                </h3>
+                                                <ul className="flex flex-col gap-1.5">
+                                                    {visibleLinks.map(
+                                                        (link: any) => {
+                                                            if (link.subItems) {
+                                                                const isOpen =
+                                                                    openDropdowns[
+                                                                        link.label
+                                                                    ];
+                                                                const isGroupActive =
+                                                                    link.subItems.some(
+                                                                        (
+                                                                            sub: any,
+                                                                        ) =>
+                                                                            pathname ===
+                                                                            sub.href,
+                                                                    );
+                                                                const Icon =
+                                                                    link.icon;
+                                                                return (
+                                                                    <li
+                                                                        key={
+                                                                            link.label
+                                                                        }
+                                                                        className="flex flex-col gap-1"
+                                                                    >
+                                                                        <button
+                                                                            onClick={() =>
+                                                                                setOpenDropdowns(
+                                                                                    (
+                                                                                        prev,
+                                                                                    ) => ({
+                                                                                        ...prev,
+                                                                                        [link.label]:
+                                                                                            !prev[
+                                                                                                link.label
+                                                                                            ],
+                                                                                    }),
+                                                                                )
+                                                                            }
+                                                                            className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl transition-all duration-200 ${isGroupActive ? "bg-green-50/50" : "hover:bg-green-50"}`}
+                                                                        >
+                                                                            <div className="flex items-center gap-3">
+                                                                                <Icon
+                                                                                    size={20}
+                                                                                    className="stroke-green-500"
+                                                                                />
+                                                                                <span
+                                                                                    className={`text-sm font-medium ${isGroupActive ? "text-green-600 font-bold" : "text-gray-600"}`}
+                                                                                >
+                                                                                    {
+                                                                                        link.label
+                                                                                    }
+                                                                                </span>
+                                                                            </div>
+                                                                            <ChevronDown
+                                                                                size={14}
+                                                                                className={`text-gray-400 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
+                                                                            />
+                                                                        </button>
+                                                                        <AnimatePresence>
+                                                                            {isOpen && (
+                                                                                <motion.ul
+                                                                                    initial={{
+                                                                                        height: 0,
+                                                                                        opacity: 0,
+                                                                                    }}
+                                                                                    animate={{
+                                                                                        height: "auto",
+                                                                                        opacity: 1,
+                                                                                    }}
+                                                                                    exit={{
+                                                                                        height: 0,
+                                                                                        opacity: 0,
+                                                                                    }}
+                                                                                    className="flex flex-col gap-1 pl-11 pr-2 overflow-hidden"
+                                                                                >
+                                                                                    {link.subItems.map(
+                                                                                        (
+                                                                                            sub: any,
+                                                                                        ) => {
+                                                                                            const isSubActive =
+                                                                                                pathname ===
+                                                                                                sub.href;
+                                                                                            return (
+                                                                                                <li
+                                                                                                    key={
+                                                                                                        sub.href
+                                                                                                    }
+                                                                                                >
+                                                                                                    <Link
+                                                                                                        href={
+                                                                                                            sub.href
+                                                                                                        }
+                                                                                                        onClick={() =>
+                                                                                                            setShowMobileMenu(
+                                                                                                                false,
+                                                                                                            )
+                                                                                                        }
+                                                                                                        className={`block py-1.5 text-xs transition-colors duration-200 ${isSubActive ? "text-green-600 font-bold" : "text-gray-500 hover:text-green-500 font-medium"}`}
+                                                                                                    >
+                                                                                                        {
+                                                                                                            sub.label
+                                                                                                        }
+                                                                                                    </Link>
+                                                                                                </li>
+                                                                                            );
+                                                                                        },
+                                                                                    )}
+                                                                                </motion.ul>
+                                                                            )}
+                                                                        </AnimatePresence>
+                                                                    </li>
+                                                                );
+                                                            }
+
+                                                            const isActive =
+                                                                pathname ===
+                                                                link.href;
+                                                            const Icon =
+                                                                link.icon;
+                                                            return (
+                                                                <li
+                                                                    key={
+                                                                        link.href
+                                                                    }
+                                                                >
+                                                                    <Link
+                                                                        href={
+                                                                            link.href
+                                                                        }
+                                                                        onClick={() =>
+                                                                            setShowMobileMenu(
+                                                                                false,
+                                                                            )
+                                                                        }
+                                                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
+                                                                            isActive
+                                                                                ? "bg-[#22c55e] text-white shadow-sm"
+                                                                                : "hover:bg-green-50 text-gray-600"
+                                                                        }`}
+                                                                    >
+                                                                        <div className="flex-shrink-0">
+                                                                            <Icon
+                                                                                size={20}
+                                                                                className={
+                                                                                    isActive
+                                                                                        ? "stroke-white"
+                                                                                        : "stroke-green-500 group-hover:stroke-green-500"
+                                                                                }
+                                                                            />
+                                                                        </div>
+                                                                        <span
+                                                                            className={`text-sm font-medium ${
+                                                                                isActive
+                                                                                    ? "text-white font-bold"
+                                                                                    : "group-hover:text-green-500"
+                                                                            }`}
+                                                                        >
+                                                                            {
+                                                                                link.label
+                                                                            }
+                                                                        </span>
+                                                                    </Link>
+                                                                </li>
+                                                            );
+                                                        },
+                                                    )}
+                                                </ul>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                                 <div className="flex justify-between p-2 mt-6">
                                     {businessDetails?.subscription && (

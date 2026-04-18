@@ -79,6 +79,7 @@ model Product {
   stockTransfers     StockTransfer[]
   stockReceipts      StockReceipt[]
   purchaseOrderItems PurchaseOrderItem[]
+  reconciliationItems ReconciliationItem[]
 
   @@index([businessId])
   @@index([businessId, sku])
@@ -230,6 +231,8 @@ model User {
   createdStockReceipts  StockReceipt[]  @relation("ReceiptCreator")
   createdDeliveries     Delivery[]
   createdExpenses       Expense[]
+  auditLogs             AuditLog[]
+  reconciliations       InventoryReconciliation[]
 }
 
 model Business {
@@ -266,6 +269,8 @@ model Business {
   stockReceipts  StockReceipt[]
   purchaseOrders PurchaseOrder[]
   Delivery       Delivery[]
+  auditLogs      AuditLog[]
+  reconciliations InventoryReconciliation[]
 }
 
 model Store {
@@ -290,7 +295,8 @@ model Store {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  deliveries Delivery[]
+  deliveries      Delivery[]
+  reconciliations InventoryReconciliation[]
 
   @@unique([name, businessId])
   @@index([businessId])
@@ -611,4 +617,62 @@ model Delivery {
   PurchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
 
   createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @map("_id") @db.Uuid
+  action     String // e.g., "CREATE_PRODUCT", "DELETE_INVOICE", "ADJUST_STOCK"
+  entityType String // e.g., "PRODUCT", "INVOICE", "PURCHASE_ORDER"
+  entityId   String?
+  details    String? // JSON string for metadata
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  userId     String   @db.Uuid
+  User       User     @relation(fields: [userId], references: [id])
+  businessId String   @db.Uuid
+  Business   Business @relation(fields: [businessId], references: [id])
+
+  @@index([businessId])
+  @@index([userId])
+  @@index([entityType, entityId])
+}
+
+model InventoryReconciliation {
+  id        String   @id @default(uuid()) @map("_id") @db.Uuid
+  reference String?
+  status    String   @default("COMPLETED") // COMPLETED, VOIDED
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  businessId String   @db.Uuid
+  Business   Business @relation(fields: [businessId], references: [id])
+
+  storeId String @db.Uuid
+  Store   Store  @relation(fields: [storeId], references: [id])
+
+  userId String @db.Uuid
+  User   User   @relation(fields: [userId], references: [id])
+
+  items ReconciliationItem[]
+
+  @@index([businessId])
+  @@index([storeId])
+}
+
+model ReconciliationItem {
+  id               String @id @default(uuid()) @map("_id") @db.Uuid
+  reconciliationId String @db.Uuid
+  productId        String @db.Uuid
+  systemQuantity   Int // Qty in system at time of reconciliation
+  physicalQuantity Int // Qty manually counted
+  discrepancy      Int // physicalQuantity - systemQuantity
+
+  Reconciliation InventoryReconciliation @relation(fields: [reconciliationId], references: [id], onDelete: Cascade)
+  Product        Product                 @relation(fields: [productId], references: [id])
+
+  @@index([reconciliationId])
+  @@index([productId])
 }
