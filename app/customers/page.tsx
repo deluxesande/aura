@@ -232,7 +232,7 @@ export default function Page() {
                                 <h2 className="text-xl font-bold text-gray-800">
                                     Business Customers
                                 </h2>
-                                <span className="hidden md:inline-block px-3 py-1 bg-green-50 text-green-600 rounded-full text-xs font-semibold">
+                                <span className="hidden md:inline-block px-3 py-1 bg-green-50 text-green-500 rounded-full text-xs font-semibold">
                                     {customers.length} Total
                                 </span>
                             </div>

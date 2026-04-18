@@ -112,7 +112,7 @@ function SelectCustomerModal({
                                     {selectedCustomer === null && (
                                         <div className="ml-auto bg-green-100 p-1 rounded-full">
                                             <Check
-                                                className="text-green-600"
+                                                className="text-green-500"
                                                 size={14}
                                                 strokeWidth={3}
                                             />
@@ -157,12 +157,16 @@ function SelectCustomerModal({
                                                 className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${
                                                     selectedCustomer?.id ===
                                                     customer.id
-                                                        ? "bg-green-200 text-green-700"
-                                                        : "bg-green-50 text-green-600 group-hover:bg-white group-hover:shadow-sm"
+                                                        ? "bg-green-200 text-green-500"
+                                                        : "bg-green-50 text-green-500 group-hover:bg-white group-hover:shadow-sm"
                                                 }`}
                                             >
-                                                {(customer.firstName || "U").charAt(0)}
-                                                {(customer.lastName || "U").charAt(0)}
+                                                {(
+                                                    customer.firstName || "U"
+                                                ).charAt(0)}
+                                                {(
+                                                    customer.lastName || "U"
+                                                ).charAt(0)}
                                             </div>
                                             <div>
                                                 <p className="font-bold text-sm text-gray-900">

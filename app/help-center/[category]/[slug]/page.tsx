@@ -71,7 +71,7 @@ export default function HelpArticlePage({
                         </Link>
 
                         <div className="mb-8 pb-8 border-b border-gray-100">
-                            <div className="flex gap-2 text-sm text-green-600 font-medium mb-3">
+                            <div className="flex gap-2 text-sm text-green-500 font-medium mb-3">
                                 <span>Help Center</span>
                                 <span>/</span>
                                 <span>{categoryData.title}</span>

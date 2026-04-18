@@ -20,7 +20,7 @@ const ProfileInfo: React.FC = () => {
             setFirstName(user.firstName || "John");
             setLastName(user.lastName || "Doe");
             setEmail(
-                user.emailAddresses[0]?.emailAddress || "johndoe@gmail.com"
+                user.emailAddresses[0]?.emailAddress || "johndoe@gmail.com",
             );
         }
     }, [user]);
@@ -57,7 +57,7 @@ const ProfileInfo: React.FC = () => {
 
     // 1. Intercept File Selection -> Open Cropper
     const handleImageFileSelect = (
-        event: React.ChangeEvent<HTMLInputElement>
+        event: React.ChangeEvent<HTMLInputElement>,
     ) => {
         const file = event.target.files?.[0];
         if (!user || !file) return;
@@ -210,7 +210,7 @@ const ProfileInfo: React.FC = () => {
                                     </button>
                                 </p>
                                 {status === "verification-link-sent" && (
-                                    <p className="mt-2 font-medium text-sm text-green-600">
+                                    <p className="mt-2 font-medium text-sm text-green-500">
                                         A new verification link has been sent to
                                         your email address.
                                     </p>

@@ -69,7 +69,7 @@ export default function VariantSelectionDrawer({
                             />
                         </div>
                         <div className="flex flex-col justify-center">
-                            <span className="bg-green-100 text-green-600 text-[10px] font-bold px-2 py-0.5 rounded-full w-fit mb-1">
+                            <span className="bg-green-100 text-green-500 text-[10px] font-bold px-2 py-0.5 rounded-full w-fit mb-1">
                                 TEMPLATE
                             </span>
                             <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
@@ -121,7 +121,7 @@ export default function VariantSelectionDrawer({
                                             <p
                                                 className={`text-sm font-bold transition-colors ${
                                                     isSelected
-                                                        ? "text-green-700"
+                                                        ? "text-green-500"
                                                         : "text-gray-900"
                                                 }`}
                                             >

@@ -128,7 +128,7 @@ function AcceptInvitationContent() {
                 subtitle={`Welcome to ${invitation?.businessName}`}
             >
                 <div className="text-center">
-                    <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
+                    <div className="bg-green-100 border border-green-400 text-green-500 px-4 py-3 rounded mb-6">
                         <p className="font-medium">
                             Your account has been created!
                         </p>
@@ -320,7 +320,7 @@ function AcceptInvitationContent() {
                     Already have an account?{" "}
                     <Link
                         href="/sign-in"
-                        className="font-medium text-green-600 hover:text-green-500"
+                        className="font-medium text-green-500 hover:text-green-500"
                     >
                         Sign in
                     </Link>

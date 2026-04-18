@@ -19,6 +19,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
+import DeliveryDetailsSidebar from "@/components/DeliveryDetailsSidebar";
 
 export default function SingleSupplierPage() {
     const params = useParams();
@@ -44,6 +45,8 @@ export default function SingleSupplierPage() {
     const [supplier, setSupplier] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showDetailsSidebar, setShowDetailsSidebar] = useState(false);
+    const [selectedDeliveryId, setSelectedDeliveryId] = useState<string | null>(null);
 
     // Pagination for delivery history
     const [currentPage, setCurrentPage] = useState(1);
@@ -380,7 +383,10 @@ export default function SingleSupplierPage() {
                                             <tr
                                                 key={`sup-del-${delivery?.id || idx}`}
                                                 className="hover:bg-gray-50 transition-colors cursor-pointer"
-                                                onClick={() => router.push(`/suppliers/history/${delivery.id}`)}
+                                                onClick={() => {
+                                                    setSelectedDeliveryId(delivery.id);
+                                                    setShowDetailsSidebar(true);
+                                                }}
                                             >
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">
                                                     {new Date(
@@ -388,19 +394,28 @@ export default function SingleSupplierPage() {
                                                     ).toLocaleDateString()}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">
-                                                    {delivery.reference || "N/A"}
+                                                    {delivery.reference ||
+                                                        "N/A"}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                                    {delivery.receipts?.length > 1 
+                                                    {delivery.receipts?.length >
+                                                    1
                                                         ? `${delivery.receipts[0].Product?.name} (+${delivery.receipts.length - 1} more)`
-                                                        : delivery.receipts?.[0]?.Product?.name || "Unknown Product"}
+                                                        : delivery.receipts?.[0]
+                                                              ?.Product?.name ||
+                                                          "Unknown Product"}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                                     {delivery.Store?.name ||
                                                         "Unknown Branch"}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-gray-900">
-                                                    {delivery.receipts?.reduce((acc: number, r: any) => acc + (r.quantity || 0), 0)}
+                                                    {delivery.receipts?.reduce(
+                                                        (acc: number, r: any) =>
+                                                            acc +
+                                                            (r.quantity || 0),
+                                                        0,
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-black text-gray-900">
                                                     {formatCurrency(
@@ -470,6 +485,15 @@ export default function SingleSupplierPage() {
                     supplier={supplier}
                 />
             )}
+
+            <DeliveryDetailsSidebar
+                isOpen={showDetailsSidebar}
+                onClose={() => {
+                    setShowDetailsSidebar(false);
+                    setSelectedDeliveryId(null);
+                }}
+                deliveryId={selectedDeliveryId}
+            />
         </Navbar>
     );
 }

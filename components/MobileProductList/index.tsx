@@ -161,7 +161,7 @@ export default function MobileProductList({
                             </p>
                             <button
                                 onClick={() => setSearchQuery("")}
-                                className="text-sm text-green-600 hover:underline"
+                                className="text-sm text-green-500 hover:underline"
                             >
                                 Clear search
                             </button>
@@ -205,7 +205,7 @@ export default function MobileProductList({
                                             className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
                                                 product.quantity <= 5
                                                     ? "bg-red-100 text-red-600"
-                                                    : "bg-green-100 text-green-600"
+                                                    : "bg-green-100 text-green-500"
                                             }`}
                                         >
                                             Qty: {product.quantity}
@@ -245,7 +245,7 @@ export default function MobileProductList({
                             </div>
 
                             <div className="flex justify-between items-center mt-1 bg-white p-2 rounded border border-gray-100">
-                                <p className="text-green-600 font-bold text-lg">
+                                <p className="text-green-500 font-bold text-lg">
                                     Ksh {product.price}
                                 </p>
                                 <div className="flex space-x-1">
@@ -262,7 +262,7 @@ export default function MobileProductList({
                                     )}
                                     <div className="border-l border-gray-300 h-5 mx-1 self-center"></div>
                                     <button
-                                        className="btn btn-sm btn-ghost text-gray-600 hover:text-green-600"
+                                        className="btn btn-sm btn-ghost text-gray-600 hover:text-green-500"
                                         onClick={() =>
                                             handleEditClick(product.id)
                                         }

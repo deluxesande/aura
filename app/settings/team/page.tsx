@@ -413,7 +413,7 @@ export default function TeamPage() {
                                                                         member.clerkId,
                                                                     )
                                                                 }
-                                                                className="text-green-500 hover:text-green-600 text-xs border border-green-200 hover:bg-green-50 px-3 py-1 rounded-md transition-colors font-semibold"
+                                                                className="text-green-500 hover:text-green-500 text-xs border border-green-200 hover:bg-green-50 px-3 py-1 rounded-md transition-colors font-semibold"
                                                             >
                                                                 Reactivate
                                                             </button>
@@ -425,14 +425,14 @@ export default function TeamPage() {
                                                                         member,
                                                                     )
                                                                 }
-                                                                className="text-gray-600 hover:text-green-600 text-xs border border-gray-200 hover:border-green-200 hover:bg-green-50 px-3 py-1 rounded-md transition-colors flex items-center gap-1"
+                                                                className="text-gray-600 hover:text-green-500 text-xs border border-gray-200 hover:border-green-200 hover:bg-green-50 px-3 py-1 rounded-md transition-colors flex items-center gap-1"
                                                             >
                                                                 Edit
                                                             </button>
                                                         ) : null}
                                                         <Link
                                                             href={`/settings/team/${member.clerkId}`}
-                                                            className="text-green-600 hover:text-green-900 text-xs border border-green-200 hover:bg-green-50 px-3 py-1 rounded-md transition-colors"
+                                                            className="text-green-500 hover:text-green-900 text-xs border border-green-200 hover:bg-green-50 px-3 py-1 rounded-md transition-colors"
                                                         >
                                                             View
                                                         </Link>
@@ -547,7 +547,7 @@ export default function TeamPage() {
                                                             member.clerkId,
                                                         );
                                                     }}
-                                                    className="text-green-600 hover:bg-green-50 font-medium px-3 py-1 rounded border border-green-200 transition-colors text-xs"
+                                                    className="text-green-500 hover:bg-green-50 font-medium px-3 py-1 rounded border border-green-200 transition-colors text-xs"
                                                 >
                                                     Reactivate
                                                 </button>
@@ -558,7 +558,7 @@ export default function TeamPage() {
                                                         e.preventDefault();
                                                         openEditModal(member);
                                                     }}
-                                                    className="text-gray-600 hover:text-green-600 font-medium flex items-center px-2 py-1 bg-gray-50 rounded border border-gray-200 transition-colors text-xs"
+                                                    className="text-gray-600 hover:text-green-500 font-medium flex items-center px-2 py-1 bg-gray-50 rounded border border-gray-200 transition-colors text-xs"
                                                 >
                                                     Edit
                                                 </button>

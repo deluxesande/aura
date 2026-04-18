@@ -13,7 +13,10 @@ import SelectCustomerModal from "@/components/SelectCustomerModal";
 import { AppState } from "@/store";
 import { addItem, clearCart } from "@/store/slices/cartSlice";
 import { setProducts } from "@/store/slices/productSlice";
-import { setCustomers, addCustomer as addCustomerToStore } from "@/store/slices/customerSlice";
+import {
+    setCustomers,
+    addCustomer as addCustomerToStore,
+} from "@/store/slices/customerSlice";
 import { setCategories as setCategoriesInStore } from "@/store/slices/categorySlice";
 import { hide, show } from "@/store/slices/visibilitySlice";
 import { formatPhoneNumber } from "@/utils/formatPhoneNumber";
@@ -47,13 +50,19 @@ export default function Page() {
     const productsData = useSelector(
         (state: AppState) => state.product.products,
     );
-    const customers = useSelector((state: AppState) => state.customer.customers);
-    const reduxCategories = useSelector((state: AppState) => state.category.categories);
+    const customers = useSelector(
+        (state: AppState) => state.customer.customers,
+    );
+    const reduxCategories = useSelector(
+        (state: AppState) => state.category.categories,
+    );
 
     const [loading, setLoading] = useState(productsData.length === 0);
 
     const categories = useMemo(() => {
-        const base = [{ name: "All", description: "All products", id: "ALL" } as Category];
+        const base = [
+            { name: "All", description: "All products", id: "ALL" } as Category,
+        ];
         return [...base, ...reduxCategories];
     }, [reduxCategories]);
 
@@ -63,7 +72,7 @@ export default function Page() {
     const [mpesaNumber, setMpesaNumber] = useState("");
     const [isProcessingOrder, setIsProcessingOrder] = useState(false);
     const [paymentType, setPaymentType] = useState("CASH");
-    
+
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
         null,
     );
@@ -692,7 +701,7 @@ export default function Page() {
                                                 e.stopPropagation();
                                                 handleAddToCart(product);
                                             }}
-                                            className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-sm hover:bg-green-100 hover:text-green-600 text-gray-400 transition-all border border-gray-100 z-10"
+                                            className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-sm hover:bg-green-100 hover:text-green-500 text-gray-400 transition-all border border-gray-100 z-10"
                                             title={
                                                 product.type === "TEMPLATE"
                                                     ? "View Options"
@@ -772,7 +781,7 @@ export default function Page() {
                                 <div
                                     className={`p-2 rounded-full ${
                                         selectedCustomer
-                                            ? "bg-green-100 text-green-600"
+                                            ? "bg-green-100 text-green-500"
                                             : "bg-gray-100 text-gray-500"
                                     }`}
                                 >
@@ -829,7 +838,7 @@ export default function Page() {
                                                     )
                                                         handleClose();
                                                 }}
-                                                className="mt-2 text-xs text-green-500 font-medium flex items-center gap-1 hover:underline hover:text-green-600"
+                                                className="mt-2 text-xs text-green-500 font-medium flex items-center gap-1 hover:underline hover:text-green-500"
                                             >
                                                 Add this number as new customer?
                                             </button>

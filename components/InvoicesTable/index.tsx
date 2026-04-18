@@ -106,7 +106,7 @@ export default function InvoicesTable({
         const maxPagesToShow = 5;
         let startPage = Math.max(
             1,
-            currentPage - Math.floor(maxPagesToShow / 2)
+            currentPage - Math.floor(maxPagesToShow / 2),
         );
         let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
         if (endPage - startPage + 1 < maxPagesToShow) {
@@ -119,7 +119,7 @@ export default function InvoicesTable({
     const getStatusBadgeColor = (status: string | undefined) => {
         switch (status?.toLowerCase()) {
             case "paid":
-                return "bg-green-100 text-green-700";
+                return "bg-green-100 text-green-500";
             case "pending":
                 return "bg-yellow-100 text-yellow-700";
             case "cancelled":
@@ -333,7 +333,7 @@ export default function InvoicesTable({
                                             className="hover:bg-gray-50 cursor-pointer transition-colors"
                                             onClick={() =>
                                                 handleRowClick(
-                                                    String(invoice.id)
+                                                    String(invoice.id),
                                                 )
                                             }
                                         >
@@ -343,7 +343,7 @@ export default function InvoicesTable({
                                                 </p>
                                                 <span className="text-[10px] text-gray-400">
                                                     {new Date(
-                                                        invoice.createdAt
+                                                        invoice.createdAt,
                                                     ).toLocaleDateString()}
                                                 </span>
                                             </td>
@@ -409,11 +409,11 @@ export default function InvoicesTable({
                                             <td className="py-3 px-4 border-b text-black text-xs border-gray-100">
                                                 <span
                                                     className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(
-                                                        invoice.status
+                                                        invoice.status,
                                                     )}`}
                                                 >
                                                     {getStatusIcon(
-                                                        invoice.status
+                                                        invoice.status,
                                                     )}
                                                     {invoice.status ||
                                                         "Unknown"}
@@ -425,7 +425,7 @@ export default function InvoicesTable({
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleDelete(
-                                                            String(invoice.id)
+                                                            String(invoice.id),
                                                         );
                                                     }}
                                                 >
@@ -477,13 +477,13 @@ export default function InvoicesTable({
                                         <span className="text-xs text-gray-500 mt-1">
                                             {invoice.totalQuantity} Items •{" "}
                                             {new Date(
-                                                invoice.createdAt
+                                                invoice.createdAt,
                                             ).toLocaleDateString()}
                                         </span>
                                     </div>
                                     <span
                                         className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium shrink-0 ${getStatusBadgeColor(
-                                            invoice.status
+                                            invoice.status,
                                         )}`}
                                     >
                                         {getStatusIcon(invoice.status)}
@@ -521,7 +521,7 @@ export default function InvoicesTable({
                                 </div>
                                 <div className="flex justify-between items-center mt-1 bg-white p-2 rounded border border-gray-100">
                                     <div className="flex flex-col">
-                                        <p className="text-green-600 font-bold text-lg">
+                                        <p className="text-green-500 font-bold text-lg">
                                             Ksh {invoice.totalAmount}
                                         </p>
                                         <span className="text-[10px] text-gray-400 uppercase">

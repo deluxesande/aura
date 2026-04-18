@@ -153,7 +153,7 @@ export default function CustomerDetailsPage() {
                     <div className="p-6 md:p-8">
                         <div className="flex flex-col lg:flex-row justify-between gap-8">
                             <div className="flex flex-col sm:flex-row gap-6 items-start">
-                                <div className="h-20 w-20 rounded-full bg-green-100 text-green-600 flex shrink-0 items-center justify-center text-3xl font-bold border border-green-200">
+                                <div className="h-20 w-20 rounded-full bg-green-100 text-green-500 flex shrink-0 items-center justify-center text-3xl font-bold border border-green-200">
                                     {customer.firstName.charAt(0)}
                                     {customer.lastName.charAt(0)}
                                 </div>

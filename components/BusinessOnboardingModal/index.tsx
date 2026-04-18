@@ -217,7 +217,7 @@ const BusinessOnboardingModal = () => {
                                                     className="flex items-center justify-between bg-white p-3 rounded-md border border-gray-100 shadow-sm"
                                                 >
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-[10px] font-bold text-green-700">
+                                                        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-[10px] font-bold text-green-500">
                                                             MP
                                                         </div>
                                                         <div className="text-left">
@@ -225,7 +225,7 @@ const BusinessOnboardingModal = () => {
                                                             <div className="h-1.5 w-10 bg-gray-100 rounded"></div>
                                                         </div>
                                                     </div>
-                                                    <span className="text-xs font-bold text-green-600">
+                                                    <span className="text-xs font-bold text-green-500">
                                                         + KES 1,250
                                                     </span>
                                                 </div>

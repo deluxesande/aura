@@ -99,7 +99,7 @@ export default function FAQ() {
                                 </span>
                                 {openIndex === idx ? (
                                     <ChevronUp
-                                        className="text-green-600 shrink-0 ml-4"
+                                        className="text-green-500 shrink-0 ml-4"
                                         size={20}
                                     />
                                 ) : (

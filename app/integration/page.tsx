@@ -31,7 +31,7 @@ export default function IntegrationPage() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid md:grid-cols-2 gap-12 items-center">
                         <div>
-                            <div className="inline-flex items-center px-4 py-2 bg-green-100 rounded-full text-green-600 mb-6">
+                            <div className="inline-flex items-center px-4 py-2 bg-green-100 rounded-full text-green-500 mb-6">
                                 <HandCoins
                                     size={20}
                                     color="#16a34a"
@@ -45,7 +45,7 @@ export default function IntegrationPage() {
                             <div className="space-y-4">
                                 <div className="flex items-start">
                                     <CheckCircle2
-                                        className="text-green-600 mt-1 mr-3"
+                                        className="text-green-500 mt-1 mr-3"
                                         color="#16a34a"
                                         size={20}
                                     />
@@ -56,7 +56,7 @@ export default function IntegrationPage() {
                                 </div>
                                 <div className="flex items-start">
                                     <CheckCircle2
-                                        className="text-green-600 mt-1 mr-3"
+                                        className="text-green-500 mt-1 mr-3"
                                         color="#16a34a"
                                         size={20}
                                     />
@@ -66,7 +66,7 @@ export default function IntegrationPage() {
                                 </div>
                                 <div className="flex items-start">
                                     <CheckCircle2
-                                        className="text-green-600 mt-1 mr-3"
+                                        className="text-green-500 mt-1 mr-3"
                                         color="#16a34a"
                                         size={20}
                                     />
@@ -76,7 +76,7 @@ export default function IntegrationPage() {
                                 </div>
                                 <div className="flex items-start">
                                     <CheckCircle2
-                                        className="text-green-600 mt-1 mr-3"
+                                        className="text-green-500 mt-1 mr-3"
                                         color="#16a34a"
                                         size={20}
                                     />
@@ -113,7 +113,7 @@ export default function IntegrationPage() {
                             />
                         </div>
                         <div className="order-1 md:order-2">
-                            <div className="inline-flex items-center px-4 py-2 bg-green-100 rounded-full text-green-600 mb-6">
+                            <div className="inline-flex items-center px-4 py-2 bg-green-100 rounded-full text-green-500 mb-6">
                                 <Shield
                                     size={20}
                                     color="#16a34a"
@@ -127,7 +127,7 @@ export default function IntegrationPage() {
                             <div className="space-y-4">
                                 <div className="flex items-start">
                                     <CheckCircle2
-                                        className="text-green-600 mt-1 mr-3"
+                                        className="text-green-500 mt-1 mr-3"
                                         color="#16a34a"
                                         size={20}
                                     />
@@ -137,7 +137,7 @@ export default function IntegrationPage() {
                                 </div>
                                 <div className="flex items-start">
                                     <CheckCircle2
-                                        className="text-green-600 mt-1 mr-3"
+                                        className="text-green-500 mt-1 mr-3"
                                         color="#16a34a"
                                         size={20}
                                     />
@@ -147,7 +147,7 @@ export default function IntegrationPage() {
                                 </div>
                                 <div className="flex items-start">
                                     <CheckCircle2
-                                        className="text-green-600 mt-1 mr-3"
+                                        className="text-green-500 mt-1 mr-3"
                                         color="#16a34a"
                                         size={20}
                                     />
@@ -157,7 +157,7 @@ export default function IntegrationPage() {
                                 </div>
                                 <div className="flex items-start">
                                     <CheckCircle2
-                                        className="text-green-600 mt-1 mr-3"
+                                        className="text-green-500 mt-1 mr-3"
                                         color="#16a34a"
                                         size={20}
                                     />

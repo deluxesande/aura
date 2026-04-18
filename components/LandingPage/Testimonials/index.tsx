@@ -120,7 +120,7 @@ export default function Testimonials() {
                                         {t.name}
                                     </h4>
                                     <p
-                                        className={`text-sm ${t.highlight ? "text-green-200" : "text-green-600 font-medium"}`}
+                                        className={`text-sm ${t.highlight ? "text-green-200" : "text-green-500 font-medium"}`}
                                     >
                                         {t.role}
                                     </p>

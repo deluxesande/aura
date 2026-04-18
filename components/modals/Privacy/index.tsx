@@ -148,7 +148,7 @@ export default function PrivacyPolicyModal({
                         <strong>
                             <a
                                 href="mailto:support@trysalesense.online"
-                                className="text-green-600"
+                                className="text-green-500"
                             >
                                 support@trysalesense.online
                             </a>
@@ -231,7 +231,7 @@ export default function PrivacyPolicyModal({
                         <strong>Email:</strong>{" "}
                         <a
                             href="mailto:support@trysalesense.online"
-                            className="text-green-600"
+                            className="text-green-500"
                         >
                             support@trysalesense.online
                         </a>{" "}
@@ -239,7 +239,7 @@ export default function PrivacyPolicyModal({
                         <strong>Website:</strong>{" "}
                         <a
                             href="https://www.trysalesense.online"
-                            className="text-green-600"
+                            className="text-green-500"
                         >
                             www.trysalesense.online
                         </a>

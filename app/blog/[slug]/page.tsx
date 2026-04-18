@@ -79,7 +79,7 @@ export default function BlogPostPage({
                         </div>
                         <button
                             onClick={handleShare}
-                            className="text-gray-400 hover:text-green-600 transition-colors p-2 hover:bg-gray-50 rounded-full"
+                            className="text-gray-400 hover:text-green-500 transition-colors p-2 hover:bg-gray-50 rounded-full"
                             title="Copy Link"
                         >
                             <Share2 size={20} className="stroke-green-500" />
@@ -128,7 +128,7 @@ export default function BlogPostPage({
                                             key={i}
                                             className="flex gap-4 mb-6"
                                         >
-                                            <div className="shrink-0 w-8 h-8 bg-green-50 text-green-600 rounded-full flex items-center justify-center font-bold text-sm border border-green-100">
+                                            <div className="shrink-0 w-8 h-8 bg-green-50 text-green-500 rounded-full flex items-center justify-center font-bold text-sm border border-green-100">
                                                 ✓
                                             </div>
                                             <p className="text-gray-700 mt-1">

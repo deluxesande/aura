@@ -355,7 +355,7 @@ export default function PurchaseOrderModal({
                                         <button
                                             type="button"
                                             onClick={handleAddItem}
-                                            className="flex items-center gap-1.5 text-xs font-bold text-green-600 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg transition-colors"
+                                            className="flex items-center gap-1.5 text-xs font-bold text-green-500 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg transition-colors"
                                         >
                                             <Plus
                                                 size={14}

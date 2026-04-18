@@ -21,7 +21,8 @@ import React, { Key, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import useSWR from "swr";
-const fetcher = (url: string) => apiClient.get(url.replace("/api", "")).then((res) => res.data);
+const fetcher = (url: string) =>
+    apiClient.get(url.replace("/api", "")).then((res) => res.data);
 
 type BillingHistoryItem = {
     id: string;
@@ -63,7 +64,9 @@ const SubscriptionManagement: React.FC = () => {
     useEffect(() => {
         if (error) {
             console.error("Failed to fetch billing history:", error);
-            toast.error("We couldn't load your billing history. Please try refreshing the page.");
+            toast.error(
+                "We couldn't load your billing history. Please try refreshing the page.",
+            );
         }
     }, [error]);
 
@@ -109,14 +112,17 @@ const SubscriptionManagement: React.FC = () => {
             });
 
             if (res.data.data.CheckoutRequestID) {
-                toast.success("We've sent a payment request to your phone! Redirecting you now...");
+                toast.success(
+                    "We've sent a payment request to your phone! Redirecting you now...",
+                );
                 router.push(
                     `/payment/checking?id=${res.data.data.CheckoutRequestID}`,
                 );
             }
         } catch (error: any) {
             toast.error(
-                error.response?.data?.error || "We couldn't start the renewal. Please try again.",
+                error.response?.data?.error ||
+                    "We couldn't start the renewal. Please try again.",
             );
         } finally {
             setLoading(false);
@@ -411,7 +417,7 @@ const SubscriptionManagement: React.FC = () => {
                                                 <span
                                                     className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                                                         item.status === "ACTIVE"
-                                                            ? "bg-green-100 text-green-700"
+                                                            ? "bg-green-100 text-green-500"
                                                             : "bg-gray-100 text-gray-500"
                                                     }`}
                                                 >
@@ -461,7 +467,7 @@ const SubscriptionManagement: React.FC = () => {
                                             <span
                                                 className={`px-2 py-1 rounded-full text-xs font-bold ${
                                                     item.status === "ACTIVE"
-                                                        ? "bg-green-100 text-green-700"
+                                                        ? "bg-green-100 text-green-500"
                                                         : "bg-gray-200 text-gray-500"
                                                 }`}
                                             >

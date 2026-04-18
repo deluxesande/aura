@@ -28,7 +28,9 @@ export default function SuppliersOverviewPage() {
         (state: AppState) => state.businessData?.businessDetails,
     );
     const user = useSelector((state: AppState) => state.auth.user);
-    const suppliers = useSelector((state: AppState) => state.supplier.suppliers);
+    const suppliers = useSelector(
+        (state: AppState) => state.supplier.suppliers,
+    );
 
     // Determine if the user is on a paid plan (Standard or Premium)
     const activeSub = Array.isArray(businessDetails?.subscription)
@@ -151,7 +153,7 @@ export default function SuppliersOverviewPage() {
     if (!isPaidPlan) {
         return (
             <Navbar>
-                <div className="p-4 md:p-8 mx-auto min-h-screen font-sans flex items-center justify-center">
+                <div className="p-4 md:p-8 mx-auto h-screen font-sans flex items-center justify-center">
                     <div className="bg-white shadow-lg rounded-xl p-10 border border-gray-100 max-w-md text-center">
                         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
                             <Lock className="w-8 h-8 stroke-green-500" />
@@ -275,7 +277,8 @@ export default function SuppliersOverviewPage() {
                                                     <p className="text-xs text-gray-500 font-medium mt-0.5">
                                                         Added{" "}
                                                         {new Date(
-                                                            supplier.createdAt || new Date(),
+                                                            supplier.createdAt ||
+                                                                new Date(),
                                                         ).toLocaleDateString()}
                                                     </p>
                                                 </td>
@@ -354,7 +357,7 @@ export default function SuppliersOverviewPage() {
                                                                         true,
                                                                     );
                                                                 }}
-                                                                className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                                                                className="p-2 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-all"
                                                                 title="Edit Supplier"
                                                             >
                                                                 <Edit

@@ -94,7 +94,7 @@ export default function WhySalesense() {
                                         className="flex items-center justify-between bg-white p-2 rounded-lg border border-gray-100 shadow-sm"
                                     >
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-[10px] font-bold text-green-600">
+                                            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-[10px] font-bold text-green-500">
                                                 MP
                                             </div>
                                             <div className="flex flex-col">
@@ -102,7 +102,7 @@ export default function WhySalesense() {
                                                 <div className="h-1.5 w-10 bg-gray-100 rounded-full"></div>
                                             </div>
                                         </div>
-                                        <span className="text-xs font-bold text-green-600">
+                                        <span className="text-xs font-bold text-green-500">
                                             + KES 500
                                         </span>
                                     </div>

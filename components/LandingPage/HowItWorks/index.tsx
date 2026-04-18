@@ -60,7 +60,7 @@ export default function HowItWorks() {
                             className="flex-1"
                         >
                             <div className="flex items-center gap-4 mb-6">
-                                <span className="flex items-center justify-center w-12 h-12 rounded-lg bg-green-100 text-green-700 font-bold text-xl">
+                                <span className="flex items-center justify-center w-12 h-12 rounded-lg bg-green-100 text-green-500 font-bold text-xl">
                                     01
                                 </span>
                                 <h3 className="text-2xl md:text-3xl font-bold text-gray-900">
@@ -122,7 +122,7 @@ export default function HowItWorks() {
                                 </div>
                                 {/* Floating Badge */}
                                 <div className="absolute -right-4 top-1/2 -translate-y-1/2 bg-white p-4 rounded-lg shadow-xl border border-green-100 flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-500">
                                         <CheckCircle2
                                             size={16}
                                             className="stroke-green-500"
@@ -151,7 +151,7 @@ export default function HowItWorks() {
                             className="flex-1"
                         >
                             <div className="flex items-center gap-4 mb-6">
-                                <span className="flex items-center justify-center w-12 h-12 rounded-lg bg-green-100 text-green-700 font-bold text-xl">
+                                <span className="flex items-center justify-center w-12 h-12 rounded-lg bg-green-100 text-green-500 font-bold text-xl">
                                     02
                                 </span>
                                 <h3 className="text-2xl md:text-3xl font-bold text-gray-900">
@@ -206,7 +206,7 @@ export default function HowItWorks() {
                                     </div>
                                     <div className="bg-white rounded-lg p-4 flex items-center justify-between">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600 font-bold text-xs">
+                                            <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-500 font-bold text-xs">
                                                 MP
                                             </div>
                                             <div>
@@ -214,7 +214,7 @@ export default function HowItWorks() {
                                                 <div className="h-2 w-12 bg-gray-100 rounded-full" />
                                             </div>
                                         </div>
-                                        <span className="text-green-600 text-sm font-bold">
+                                        <span className="text-green-500 text-sm font-bold">
                                             Connected
                                         </span>
                                     </div>
@@ -235,7 +235,7 @@ export default function HowItWorks() {
                             className="flex-1"
                         >
                             <div className="flex items-center gap-4 mb-6">
-                                <span className="flex items-center justify-center w-12 h-12 rounded-lg bg-green-100 text-green-700 font-bold text-xl">
+                                <span className="flex items-center justify-center w-12 h-12 rounded-lg bg-green-100 text-green-500 font-bold text-xl">
                                     03
                                 </span>
                                 <h3 className="text-2xl md:text-3xl font-bold text-gray-900">

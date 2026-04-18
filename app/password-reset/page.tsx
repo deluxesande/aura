@@ -36,7 +36,7 @@ export default function ForgotPasswordPage() {
             toast.success("Reset code sent to your email");
         } catch (err: any) {
             toast.error(
-                err.errors?.[0]?.longMessage || "Failed to send reset code"
+                err.errors?.[0]?.longMessage || "Failed to send reset code",
             );
         } finally {
             setIsLoading(false);
@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
             }
         } catch (err: any) {
             toast.error(
-                err.errors?.[0]?.longMessage || "Failed to reset password"
+                err.errors?.[0]?.longMessage || "Failed to reset password",
             );
         } finally {
             setIsLoading(false);
@@ -206,7 +206,7 @@ export default function ForgotPasswordPage() {
                 Remember your password?{" "}
                 <Link
                     href="/sign-in"
-                    className="font-medium text-green-600 hover:text-green-500"
+                    className="font-medium text-green-500 hover:text-green-500"
                 >
                     Sign in
                 </Link>

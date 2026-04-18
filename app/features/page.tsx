@@ -130,7 +130,7 @@ export default function FeaturesPage() {
                                             className="flex items-center justify-between bg-white p-2 rounded-lg border border-gray-100 shadow-sm"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-[10px] font-bold text-green-600">
+                                                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-[10px] font-bold text-green-500">
                                                     MP
                                                 </div>
                                                 <div className="flex flex-col">
@@ -138,7 +138,7 @@ export default function FeaturesPage() {
                                                     <div className="h-1.5 w-10 bg-gray-100 rounded-full"></div>
                                                 </div>
                                             </div>
-                                            <span className="text-xs font-bold text-green-600">
+                                            <span className="text-xs font-bold text-green-500">
                                                 + KES 500
                                             </span>
                                         </div>
@@ -249,7 +249,7 @@ export default function FeaturesPage() {
                                 invoices, and check inventory levels from
                                 anywhere using our mobile app.
                             </p>
-                            <div className="flex gap-4 justify-center md:justify-start text-sm font-semibold text-green-600 cursor-pointer hover:text-green-600">
+                            <div className="flex gap-4 justify-center md:justify-start text-sm font-semibold text-green-500 cursor-pointer hover:text-green-500">
                                 <span>Download for Android</span>{" "}
                                 <ArrowUpRight size={18} />
                             </div>

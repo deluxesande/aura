@@ -20,9 +20,10 @@ export default function MobileProductCard({
             ? Math.min(...variants.map((v) => v.price))
             : price;
 
-    const displayQuantity = isTemplate && variants 
-        ? variants.reduce((sum, v) => sum + v.quantity, 0)
-        : quantity;
+    const displayQuantity =
+        isTemplate && variants
+            ? variants.reduce((sum, v) => sum + v.quantity, 0)
+            : quantity;
 
     return (
         <div className="w-screen pr-12 cursor-pointer" onClick={onAddToCart}>
@@ -44,21 +45,27 @@ export default function MobileProductCard({
                         <p className="font-bold text-lg text-black max-w-36 whitespace-nowrap truncate">
                             {name}
                         </p>
-                        <span className={`text-sm ${displayQuantity <= 5 ? "text-red-500" : "text-gray-400"}`}>
+                        <span
+                            className={`text-sm ${displayQuantity <= 5 ? "text-red-500" : "text-gray-400"}`}
+                        >
                             {displayQuantity}
                         </span>
                     </div>
 
                     <div className="flex justify-between items-center">
-                        <p className="text-green-600 font-light text-md">
+                        <p className="text-green-500 font-light text-md">
                             {isTemplate ? `From $${minPrice}` : `$${price}`}
                         </p>
                         <p
                             className={`text-sm font-light ${
-                                inStock || (isTemplate && displayQuantity > 0) ? "text-green-600" : "text-red-500"
+                                inStock || (isTemplate && displayQuantity > 0)
+                                    ? "text-green-500"
+                                    : "text-red-500"
                             }`}
                         >
-                            {inStock || (isTemplate && displayQuantity > 0) ? "In stock" : "Out of stock"}
+                            {inStock || (isTemplate && displayQuantity > 0)
+                                ? "In stock"
+                                : "Out of stock"}
                         </p>
                     </div>
                 </div>

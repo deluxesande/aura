@@ -188,7 +188,7 @@ export default function PaymentCheckingPage() {
         <Suspense
             fallback={
                 <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                    <Loader2 className="h-10 w-10 animate-spin text-green-600" />
+                    <Loader2 className="h-10 w-10 animate-spin text-green-500" />
                 </div>
             }
         >

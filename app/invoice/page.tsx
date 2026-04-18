@@ -48,7 +48,7 @@ function InvoicePageContent() {
                 return "bg-yellow-100 text-yellow-700 border-yellow-200";
             case "active":
             case "paid":
-                return "bg-green-100 text-green-700 border-green-200";
+                return "bg-green-100 text-green-500 border-green-200";
             case "completed":
                 return "bg-blue-100 text-blue-700 border-blue-200";
             case "cancelled":
@@ -306,7 +306,7 @@ function InvoicePageContent() {
                                                                     .attributeValues
                                                                     .length >
                                                                     0 && (
-                                                                    <span className="text-[10px] font-semibold text-green-600 mt-0.5 uppercase tracking-wide">
+                                                                    <span className="text-[10px] font-semibold text-green-500 mt-0.5 uppercase tracking-wide">
                                                                         {item.Product.attributeValues
                                                                             .map(
                                                                                 (
@@ -387,7 +387,7 @@ function InvoicePageContent() {
                                             onClick={() =>
                                                 copyToClipboard(invoice.id)
                                             }
-                                            className="text-gray-400 hover:text-green-600 transition-colors"
+                                            className="text-gray-400 hover:text-green-500 transition-colors"
                                         >
                                             <Copy size={14} />
                                         </button>
@@ -433,7 +433,7 @@ function InvoicePageContent() {
                                     className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50/50 hover:bg-green-50 hover:border-green-100 transition-all cursor-pointer group"
                                 >
                                     <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center border border-green-200 group-hover:bg-green-200 transition-colors">
-                                        <span className="font-bold text-green-700 text-sm">
+                                        <span className="font-bold text-green-500 text-sm">
                                             {invoice.Customer.firstName?.charAt(
                                                 0,
                                             )}

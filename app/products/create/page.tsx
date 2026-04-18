@@ -129,7 +129,9 @@ export default function CreateProductPage() {
 
     const addAttribute = () => {
         if (attributes.length >= 1) {
-            toast.info("Batch adding variants is currently disabled to ensure reliable saving. Please add them one by one.");
+            toast.info(
+                "Batch adding variants is currently disabled to ensure reliable saving. Please add them one by one.",
+            );
             return;
         }
         setAttributes([
@@ -232,7 +234,9 @@ export default function CreateProductPage() {
                 if (productImage) {
                     const uploadRes = await startUpload([productImage]);
                     if (!uploadRes || !uploadRes[0]?.url) {
-                        throw new Error("Image upload failed. Please try again.");
+                        throw new Error(
+                            "Image upload failed. Please try again.",
+                        );
                     }
                     imageUrl = uploadRes[0].url;
                 }
@@ -284,7 +288,9 @@ export default function CreateProductPage() {
                 }
             } catch (error: any) {
                 console.error(error);
-                const errorMessage = error.response?.data?.error || "Something went wrong while saving. Please try again.";
+                const errorMessage =
+                    error.response?.data?.error ||
+                    "Something went wrong while saving. Please try again.";
                 throw new Error(errorMessage);
             } finally {
                 setIsLoading(false);
@@ -293,14 +299,13 @@ export default function CreateProductPage() {
 
         toast.promise(createProductOperation(), {
             loading:
-                type === "VARIANT"
-                    ? "Saving variant..."
-                    : "Saving product...",
+                type === "VARIANT" ? "Saving variant..." : "Saving product...",
             success:
                 type === "VARIANT"
                     ? "Variant saved successfully"
                     : "Product saved successfully",
-            error: (err) => err?.message || "Could not save. Please check your connection.",
+            error: (err) =>
+                err?.message || "Could not save. Please check your connection.",
         });
     };
 
@@ -369,7 +374,7 @@ export default function CreateProductPage() {
                                     }`}
                                 >
                                     <p
-                                        className={`text-sm font-bold ${type === "SIMPLE" ? "text-green-600" : "text-gray-700"}`}
+                                        className={`text-sm font-bold ${type === "SIMPLE" ? "text-green-500" : "text-gray-700"}`}
                                     >
                                         Simple Product
                                     </p>
@@ -384,7 +389,7 @@ export default function CreateProductPage() {
                                     }`}
                                 >
                                     <p
-                                        className={`text-sm font-bold ${type === "TEMPLATE" ? "text-green-600" : "text-gray-700"}`}
+                                        className={`text-sm font-bold ${type === "TEMPLATE" ? "text-green-500" : "text-gray-700"}`}
                                     >
                                         Template
                                     </p>
@@ -399,7 +404,7 @@ export default function CreateProductPage() {
                                     }`}
                                 >
                                     <p
-                                        className={`text-sm font-bold ${type === "VARIANT" ? "text-green-600" : "text-gray-700"}`}
+                                        className={`text-sm font-bold ${type === "VARIANT" ? "text-green-500" : "text-gray-700"}`}
                                     >
                                         Variants
                                     </p>
@@ -527,7 +532,7 @@ export default function CreateProductPage() {
                                     <button
                                         type="button"
                                         onClick={addAttribute}
-                                        className="text-xs font-bold text-green-500 flex items-center gap-1 hover:text-green-600 transition-colors"
+                                        className="text-xs font-bold text-green-500 flex items-center gap-1 hover:text-green-500 transition-colors"
                                     >
                                         <Plus className="w-3 h-3" /> Add Variant
                                     </button>

@@ -762,7 +762,7 @@ export default function Navbar({
                                                     >
                                                         <div>
                                                             <p
-                                                                className={`text-sm font-bold ${activeStore?.id === store.id ? "text-green-600" : "text-gray-700"}`}
+                                                                className={`text-sm font-bold ${activeStore?.id === store.id ? "text-green-500" : "text-gray-700"}`}
                                                             >
                                                                 {store.name}
                                                             </p>

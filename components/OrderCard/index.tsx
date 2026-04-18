@@ -12,7 +12,7 @@ import { toast } from "sonner";
 export default function OrderCard({ product }: { product: Product }) {
     const dispatch = useDispatch();
     const cartItem = useSelector((state: AppState) =>
-        state.cart.items.find((item) => item.id === product.id)
+        state.cart.items.find((item) => item.id === product.id),
     );
 
     const handleIncrement = () => {
@@ -22,7 +22,9 @@ export default function OrderCard({ product }: { product: Product }) {
         ) {
             dispatch(addItem(product));
         } else {
-            toast.warning("We're sorry, but there isn't enough stock to add more of this item.");
+            toast.warning(
+                "We're sorry, but there isn't enough stock to add more of this item.",
+            );
         }
     };
 
@@ -39,9 +41,12 @@ export default function OrderCard({ product }: { product: Product }) {
     };
 
     const isVariant = product.type === "VARIANT";
-    const variantAttributes = isVariant && product.attributeValues
-        ? product.attributeValues.map(av => av.attributeOption.value).join(" / ")
-        : null;
+    const variantAttributes =
+        isVariant && product.attributeValues
+            ? product.attributeValues
+                  .map((av) => av.attributeOption.value)
+                  .join(" / ")
+            : null;
 
     return (
         <div className="w-full h-auto min-h-[5rem] p-2 bg-slate-50 shadow-sm rounded-md flex items-center justify-between">
@@ -60,11 +65,15 @@ export default function OrderCard({ product }: { product: Product }) {
                         {product.name}
                     </p>
                     {variantAttributes && (
-                        <p className="text-[10px] font-semibold text-green-600 mt-0.5 uppercase tracking-wide">
+                        <p className="text-[10px] font-semibold text-green-500 mt-0.5 uppercase tracking-wide">
                             {variantAttributes}
                         </p>
                     )}
-                    <p className={`text-xs ${variantAttributes ? "mt-0.5" : "mt-2"}`}>Ksh {product.price}</p>
+                    <p
+                        className={`text-xs ${variantAttributes ? "mt-0.5" : "mt-2"}`}
+                    >
+                        Ksh {product.price}
+                    </p>
                 </div>
             </div>
             <div className="relative flex items-center h-full shrink-0">
@@ -87,7 +96,7 @@ export default function OrderCard({ product }: { product: Product }) {
                         </span>
                         <button
                             onClick={handleIncrement}
-                            className="bg-green-200 text-xs text-green-600 hover:bg-green-300 hover:text-green-800 px-1.5 py-0.5 rounded transition-colors"
+                            className="bg-green-200 text-xs text-green-500 hover:bg-green-300 hover:text-green-800 px-1.5 py-0.5 rounded transition-colors"
                         >
                             +
                         </button>

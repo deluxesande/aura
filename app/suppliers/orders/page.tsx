@@ -21,6 +21,7 @@ import { AppState } from "@/store";
 import { setOrders as setOrdersInStore } from "@/store/slices/orderSlice";
 import PurchaseOrderModal from "@/components/modals/PurchaseOrderModal";
 import Image from "next/image";
+import OrderDetailsSidebar from "@/components/OrderDetailsSidebar";
 
 export default function PurchaseOrdersPage() {
     const router = useRouter();
@@ -45,6 +46,8 @@ export default function PurchaseOrdersPage() {
     const [loading, setLoading] = useState(orders.length === 0);
     const [showModal, setShowModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showDetailsSidebar, setShowDetailsSidebar] = useState(false);
+    const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
     const [selectedOrder, setSelectedOrder] = useState<any>(null);
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -178,7 +181,7 @@ export default function PurchaseOrdersPage() {
     if (!isPaidPlan) {
         return (
             <Navbar>
-                <div className="p-4 md:p-8 mx-auto min-h-screen font-sans flex items-center justify-center">
+                <div className="p-4 md:p-8 mx-auto h-screen font-sans flex items-center justify-center">
                     <div className="bg-white shadow-lg rounded-xl p-10 border border-gray-100 max-w-md text-center">
                         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
                             <Lock className="w-8 h-8 stroke-green-500" />
@@ -291,11 +294,10 @@ export default function PurchaseOrdersPage() {
                                         <tr
                                             key={`po-row-${order?.id || index}`}
                                             className="hover:bg-gray-50 transition-colors group cursor-pointer"
-                                            onClick={() =>
-                                                router.push(
-                                                    `/suppliers/orders/${order.id}`,
-                                                )
-                                            }
+                                            onClick={() => {
+                                                setSelectedOrderId(order.id);
+                                                setShowDetailsSidebar(true);
+                                            }}
                                         >
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <p className="text-sm font-bold text-gray-900">
@@ -304,7 +306,8 @@ export default function PurchaseOrdersPage() {
                                                 <p className="text-xs text-gray-500 font-medium mt-0.5">
                                                     Date:{" "}
                                                     {new Date(
-                                                        order.createdAt || new Date(),
+                                                        order.createdAt ||
+                                                            new Date(),
                                                     ).toLocaleDateString()}
                                                 </p>
                                             </td>
@@ -417,7 +420,7 @@ export default function PurchaseOrdersPage() {
                                                         className={`absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none ${
                                                             order.status ===
                                                             "DELIVERED"
-                                                                ? "text-green-600"
+                                                                ? "text-green-500"
                                                                 : order.status ===
                                                                     "CANCELLED"
                                                                   ? "text-red-600"
@@ -547,6 +550,15 @@ export default function PurchaseOrdersPage() {
                     order={selectedOrder}
                 />
             )}
+
+            <OrderDetailsSidebar
+                isOpen={showDetailsSidebar}
+                onClose={() => {
+                    setShowDetailsSidebar(false);
+                    setSelectedOrderId(null);
+                }}
+                orderId={selectedOrderId}
+            />
         </Navbar>
     );
 }

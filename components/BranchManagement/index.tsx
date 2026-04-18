@@ -51,7 +51,6 @@ const BranchManagement: React.FC = () => {
         }
     }, [fetchStores]);
 
-
     const handleCreateStore = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsCreating(true);
@@ -293,7 +292,7 @@ const BranchManagement: React.FC = () => {
                                                                     store.id,
                                                                 )
                                                             }
-                                                            className="text-green-500 hover:text-green-600"
+                                                            className="text-green-500 hover:text-green-500"
                                                         >
                                                             Reactivate
                                                         </button>
@@ -304,7 +303,7 @@ const BranchManagement: React.FC = () => {
                                                                     store,
                                                                 )
                                                             }
-                                                            className="text-green-500 hover:text-green-600"
+                                                            className="text-green-500 hover:text-green-500"
                                                         >
                                                             Edit
                                                         </button>

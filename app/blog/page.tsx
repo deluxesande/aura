@@ -98,7 +98,7 @@ export default function BlogPage() {
                                     </div>
                                 </div>
 
-                                <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-green-600 transition-colors">
+                                <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-green-500 transition-colors">
                                     {post.title}
                                 </h3>
                                 <p className="text-gray-600 text-sm leading-relaxed mb-6 flex-1">

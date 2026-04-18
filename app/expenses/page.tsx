@@ -389,7 +389,7 @@ export default function ExpensesPage() {
                                                                             true,
                                                                         );
                                                                     }}
-                                                                    className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                                                                    className="p-2 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-all"
                                                                     title="Edit Expense"
                                                                 >
                                                                     <Edit

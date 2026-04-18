@@ -415,7 +415,7 @@ const IntegrationsSettings: React.FC = () => {
                                                 onClick={() =>
                                                     setShowSecrets(!showSecrets)
                                                 }
-                                                className="text-[10px] font-bold text-green-500 hover:text-green-600 flex items-center gap-1 uppercase tracking-wider"
+                                                className="text-[10px] font-bold text-green-500 hover:text-green-500 flex items-center gap-1 uppercase tracking-wider"
                                             >
                                                 {showSecrets ? (
                                                     <>

@@ -108,7 +108,7 @@ const ProductRow = React.memo(
                                         {product.name}
                                     </p>
                                     {isTemplate && (
-                                        <span className="bg-green-100 text-green-600 text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                                        <span className="bg-green-100 text-green-500 text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1">
                                             TEMPLATE
                                         </span>
                                     )}
@@ -126,7 +126,7 @@ const ProductRow = React.memo(
                                     className={`text-[10px] px-2 py-0.5 rounded-full mt-1 inline-block font-medium ${
                                         displayQty <= 5
                                             ? "bg-red-100 text-red-600"
-                                            : "bg-green-100 text-green-600"
+                                            : "bg-green-100 text-green-500"
                                     }`}
                                 >
                                     Qty: {displayQty}{" "}
@@ -185,7 +185,7 @@ const ProductRow = React.memo(
                                 </button>
                             )}
                             <button
-                                className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                                className="p-2 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-all"
                                 onClick={() => onEditClick(product.id)}
                             >
                                 <Edit size={16} />

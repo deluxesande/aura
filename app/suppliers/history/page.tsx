@@ -4,7 +4,16 @@ import ReceiveStockModal from "@/components/modals/ReceiveStockModal";
 import Navbar from "@/components/Navbar";
 import { AppState } from "@/store";
 import { apiClient } from "@/utils/apiClient";
-import { AlertCircle, ChevronLeft, ChevronRight, Edit, Lock, Plus, Search, Trash2 } from "lucide-react";
+import {
+    AlertCircle,
+    ChevronLeft,
+    ChevronRight,
+    Edit,
+    Lock,
+    Plus,
+    Search,
+    Trash2,
+} from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
@@ -12,6 +21,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { setDeliveries as setDeliveriesInStore } from "@/store/slices/deliverySlice";
 import { setSuppliers as setSuppliersInStore } from "@/store/slices/supplierSlice";
 import { toast } from "sonner";
+import DeliveryDetailsSidebar from "@/components/DeliveryDetailsSidebar";
 
 export default function PurchaseHistoryPage() {
     const router = useRouter();
@@ -19,8 +29,12 @@ export default function PurchaseHistoryPage() {
     const businessDetails = useSelector(
         (state: AppState) => state.businessData?.businessDetails,
     );
-    const allDeliveries = useSelector((state: AppState) => state.delivery.deliveries);
-    const suppliers = useSelector((state: AppState) => state.supplier.suppliers);
+    const allDeliveries = useSelector(
+        (state: AppState) => state.delivery.deliveries,
+    );
+    const suppliers = useSelector(
+        (state: AppState) => state.supplier.suppliers,
+    );
 
     const activeSub = Array.isArray(businessDetails?.subscription)
         ? businessDetails.subscription.find(
@@ -35,6 +49,10 @@ export default function PurchaseHistoryPage() {
 
     const [loading, setLoading] = useState(allDeliveries.length === 0);
     const [showReceiveModal, setShowReceiveModal] = useState(false);
+    const [showDetailsSidebar, setShowDetailsSidebar] = useState(false);
+    const [selectedDeliveryId, setSelectedDeliveryId] = useState<string | null>(
+        null,
+    );
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedDelivery, setSelectedDelivery] = useState<any>(null);
 
@@ -152,7 +170,7 @@ export default function PurchaseHistoryPage() {
     if (!isPaidPlan) {
         return (
             <Navbar>
-                <div className="p-4 md:p-8 mx-auto min-h-screen font-sans flex items-center justify-center">
+                <div className="p-4 md:p-8 mx-auto h-screen font-sans flex items-center justify-center">
                     <div className="bg-white shadow-lg rounded-xl p-10 border border-gray-100 max-w-md text-center">
                         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
                             <Lock className="w-8 h-8 stroke-green-500" />
@@ -283,11 +301,14 @@ export default function PurchaseHistoryPage() {
                                                 <tr
                                                     key={`history-row-${delivery?.id || index}`}
                                                     className="hover:bg-gray-50 transition-colors cursor-pointer"
-                                                    onClick={() =>
-                                                        router.push(
-                                                            `/suppliers/history/${delivery.id}`,
-                                                        )
-                                                    }
+                                                    onClick={() => {
+                                                        setSelectedDeliveryId(
+                                                            delivery.id,
+                                                        );
+                                                        setShowDetailsSidebar(
+                                                            true,
+                                                        );
+                                                    }}
                                                 >
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <p className="text-sm font-medium text-gray-500">
@@ -395,24 +416,37 @@ export default function PurchaseHistoryPage() {
                                                     <td className="px-6 py-4 whitespace-nowrap text-right">
                                                         <div className="flex items-center justify-end gap-2">
                                                             <button
-                                                                onClick={(e) => {
+                                                                onClick={(
+                                                                    e,
+                                                                ) => {
                                                                     e.stopPropagation();
-                                                                    handleEdit(delivery);
+                                                                    handleEdit(
+                                                                        delivery,
+                                                                    );
                                                                 }}
-                                                                className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                                                className="p-1.5 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors"
                                                                 title="Edit Delivery"
                                                             >
-                                                                <Edit size={16} />
+                                                                <Edit
+                                                                    size={16}
+                                                                />
                                                             </button>
                                                             <button
-                                                                onClick={(e) => {
+                                                                onClick={(
+                                                                    e,
+                                                                ) => {
                                                                     e.stopPropagation();
-                                                                    handleDelete(delivery.id, delivery.reference);
+                                                                    handleDelete(
+                                                                        delivery.id,
+                                                                        delivery.reference,
+                                                                    );
                                                                 }}
                                                                 className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                                 title="Delete Delivery"
                                                             >
-                                                                <Trash2 size={16} />
+                                                                <Trash2
+                                                                    size={16}
+                                                                />
                                                             </button>
                                                         </div>
                                                     </td>
@@ -481,6 +515,15 @@ export default function PurchaseHistoryPage() {
                     delivery={selectedDelivery}
                 />
             )}
+
+            <DeliveryDetailsSidebar
+                isOpen={showDetailsSidebar}
+                onClose={() => {
+                    setShowDetailsSidebar(false);
+                    setSelectedDeliveryId(null);
+                }}
+                deliveryId={selectedDeliveryId}
+            />
         </Navbar>
     );
 }

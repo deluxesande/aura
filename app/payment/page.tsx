@@ -478,7 +478,7 @@ export default function PaymentPage() {
                         Choose the plan that fits your business stage.
                     </p>
                     {currentPlanId && (
-                        <div className="mt-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-100 text-green-700 text-sm font-bold border border-green-200">
+                        <div className="mt-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-100 text-green-500 text-sm font-bold border border-green-200">
                             Active Plan: {currentPlanId}
                         </div>
                     )}
@@ -557,7 +557,7 @@ export default function PaymentPage() {
                                             ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
                                             : plan.popular
                                               ? "bg-green-600 text-white hover:bg-green-700 shadow-md"
-                                              : "bg-white text-green-600 border border-green-600 hover:bg-green-50"
+                                              : "bg-white text-green-500 border border-green-600 hover:bg-green-50"
                                     }`}
                                 >
                                     {isCurrent ? "Active Plan" : plan.cta}

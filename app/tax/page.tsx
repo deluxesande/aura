@@ -37,7 +37,8 @@ interface KraDetails {
     isAutoFilingEnabled: boolean;
 }
 
-const fetcher = (url: string) => apiClient.get(url.replace("/api", "")).then((res) => res.data);
+const fetcher = (url: string) =>
+    apiClient.get(url.replace("/api", "")).then((res) => res.data);
 
 const TaxReturnsPage = () => {
     const [selectedMonth, setSelectedMonth] = useState<Date>(
@@ -246,7 +247,7 @@ const TaxReturnsPage = () => {
                             <div className="flex items-center bg-gray-100 rounded-lg p-1 relative">
                                 {isSavingSettings && (
                                     <div className="absolute inset-0 bg-white/50 z-10 rounded-lg flex items-center justify-center">
-                                        <Loader2 className="w-3 h-3 animate-spin text-green-600" />
+                                        <Loader2 className="w-3 h-3 animate-spin text-green-500" />
                                     </div>
                                 )}
                                 <button
@@ -270,7 +271,7 @@ const TaxReturnsPage = () => {
                                     onClick={() => toggleFilingMode("AUTO")}
                                     className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
                                         filingMode === "AUTO"
-                                            ? "bg-white text-green-600 shadow-sm"
+                                            ? "bg-white text-green-500 shadow-sm"
                                             : "text-gray-500 hover:text-gray-700"
                                     }`}
                                 >
@@ -314,7 +315,7 @@ const TaxReturnsPage = () => {
                                             }
                                             className={`flex-1 border rounded-lg py-2 px-3 flex items-center justify-center gap-2 text-sm transition-all ${
                                                 calculationMode === "INVOICE"
-                                                    ? "border-green-500 bg-green-50 text-green-700 font-medium"
+                                                    ? "border-green-500 bg-green-50 text-green-500 font-medium"
                                                     : "border-gray-200 text-gray-600 hover:bg-gray-50"
                                             }`}
                                         >
@@ -328,7 +329,7 @@ const TaxReturnsPage = () => {
                                             disabled={isStarter}
                                             className={`flex-1 border rounded-lg py-2 px-3 flex items-center justify-center gap-2 text-sm transition-all ${
                                                 calculationMode === "FIXED"
-                                                    ? "border-green-500 bg-green-50 text-green-700 font-medium"
+                                                    ? "border-green-500 bg-green-50 text-green-500 font-medium"
                                                     : "border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:bg-gray-50 disabled:cursor-not-allowed"
                                             }`}
                                         >
@@ -462,7 +463,7 @@ const TaxReturnsPage = () => {
                                                     Ksh{" "}
                                                     {filing.totalSales.toLocaleString()}
                                                 </td>
-                                                <td className="py-3 px-4 border-b border-gray-100 text-sm font-medium text-green-600">
+                                                <td className="py-3 px-4 border-b border-gray-100 text-sm font-medium text-green-500">
                                                     Ksh{" "}
                                                     {filing.taxAmount.toLocaleString()}
                                                 </td>
@@ -476,7 +477,7 @@ const TaxReturnsPage = () => {
                                                     </span>
                                                 </td>
                                                 <td className="py-3 px-4 border-b border-gray-100">
-                                                    <button className="text-gray-400 hover:text-green-600 transition-colors">
+                                                    <button className="text-gray-400 hover:text-green-500 transition-colors">
                                                         <Download className="w-4 h-4" />
                                                     </button>
                                                 </td>

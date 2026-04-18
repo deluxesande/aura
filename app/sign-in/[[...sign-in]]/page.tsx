@@ -198,7 +198,7 @@ export default function LoginPage() {
                             id="remember-me"
                             name="remember-me"
                             type="checkbox"
-                            className="h-4 w-4 text-green-600 bg-slate-50 outline-none focus:ring-green-500 border-gray-300 rounded"
+                            className="h-4 w-4 text-green-500 bg-slate-50 outline-none focus:ring-green-500 border-gray-300 rounded"
                         />
                         <label
                             htmlFor="remember-me"
@@ -210,7 +210,7 @@ export default function LoginPage() {
                     <div className="text-sm">
                         <Link
                             href="/password-reset"
-                            className="font-medium text-green-600 hover:text-green-500"
+                            className="font-medium text-green-500 hover:text-green-500"
                         >
                             Forgot your password?
                         </Link>
@@ -230,7 +230,7 @@ export default function LoginPage() {
                 Don&apos;t have an account?{" "}
                 <Link
                     href="/sign-up"
-                    className="font-medium text-green-600 hover:text-green-500"
+                    className="font-medium text-green-500 hover:text-green-500"
                 >
                     Sign up
                 </Link>

@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
+import DeliveryDetailsSidebar from "@/components/DeliveryDetailsSidebar";
 
 export default function FailedDeliveriesPage() {
     const router = useRouter();
@@ -35,6 +36,10 @@ export default function FailedDeliveriesPage() {
     const [failedDeliveries, setFailedDeliveries] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const [showDetailsSidebar, setShowDetailsSidebar] = useState(false);
+    const [selectedDeliveryId, setSelectedDeliveryId] = useState<string | null>(
+        null,
+    );
 
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
@@ -118,7 +123,7 @@ export default function FailedDeliveriesPage() {
     if (!isPaidPlan) {
         return (
             <Navbar>
-                <div className="p-4 md:p-8 mx-auto min-h-screen font-sans flex items-center justify-center">
+                <div className="p-4 md:p-8 mx-auto h-screen font-sans flex items-center justify-center">
                     <div className="bg-white shadow-lg rounded-xl p-10 border border-gray-100 max-w-md text-center">
                         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
                             <Lock className="w-8 h-8 stroke-green-500" />
@@ -231,11 +236,14 @@ export default function FailedDeliveriesPage() {
                                                 <tr
                                                     key={`failed-row-${delivery.id || index}`}
                                                     className="hover:bg-gray-50 transition-colors group cursor-pointer"
-                                                    onClick={() =>
-                                                        router.push(
-                                                            `/suppliers/history/${delivery.id}`,
-                                                        )
-                                                    }
+                                                    onClick={() => {
+                                                        setSelectedDeliveryId(
+                                                            delivery.id,
+                                                        );
+                                                        setShowDetailsSidebar(
+                                                            true,
+                                                        );
+                                                    }}
                                                 >
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <p className="text-sm font-medium text-gray-500">
@@ -249,7 +257,7 @@ export default function FailedDeliveriesPage() {
                                                         </p>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-100">
+                                                        <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-50 text-green-500 border border-green-100">
                                                             {
                                                                 delivery.poReference
                                                             }
@@ -316,7 +324,7 @@ export default function FailedDeliveriesPage() {
                                                             )}
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-bold text-green-600">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right text-xs font-bold text-green-500">
                                                         View Receipt
                                                     </td>
                                                 </tr>
@@ -371,6 +379,15 @@ export default function FailedDeliveriesPage() {
                     )}
                 </div>
             </div>
+
+            <DeliveryDetailsSidebar
+                isOpen={showDetailsSidebar}
+                onClose={() => {
+                    setShowDetailsSidebar(false);
+                    setSelectedDeliveryId(null);
+                }}
+                deliveryId={selectedDeliveryId}
+            />
         </Navbar>
     );
 }

@@ -105,7 +105,7 @@ export default function VerifyPage() {
                 Back to{" "}
                 <Link
                     href="/sign-in"
-                    className="font-medium text-green-600 hover:text-green-500"
+                    className="font-medium text-green-500 hover:text-green-500"
                 >
                     Sign in
                 </Link>

@@ -45,7 +45,7 @@ export default function PaymentModal({
                         <p className="text-gray-500 mt-1 italic">
                             Subscribe to {plan.name}
                         </p>
-                        <div className="mt-4 text-3xl font-black text-green-600">
+                        <div className="mt-4 text-3xl font-black text-green-500">
                             KSh {plan.price.toLocaleString()}
                         </div>
                     </div>

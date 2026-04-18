@@ -90,7 +90,7 @@ export default function DownloadInvoiceButton({
                             {({ loading }) => (
                                 <button
                                     disabled={loading}
-                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 rounded-lg transition-colors text-left disabled:opacity-50"
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-500 rounded-lg transition-colors text-left disabled:opacity-50"
                                 >
                                     <div className="flex flex-col">
                                         <span className="font-medium">
@@ -118,7 +118,7 @@ export default function DownloadInvoiceButton({
                             {({ loading }) => (
                                 <button
                                     disabled={loading}
-                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 rounded-lg transition-colors text-left disabled:opacity-50"
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-500 rounded-lg transition-colors text-left disabled:opacity-50"
                                 >
                                     <div className="flex flex-col">
                                         <span className="font-medium">

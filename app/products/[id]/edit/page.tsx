@@ -342,7 +342,7 @@ export default function EditProductPage() {
                                     Edit Product
                                 </h1>
                                 {isTemplate && (
-                                    <span className="bg-green-100 text-green-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                                    <span className="bg-green-100 text-green-500 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
                                         TEMPLATE
                                     </span>
                                 )}
@@ -501,7 +501,7 @@ export default function EditProductPage() {
                                                 onClick={() =>
                                                     setIsRestockModalOpen(true)
                                                 }
-                                                className="text-xs flex items-center gap-1 text-green-500 hover:text-green-600 font-medium"
+                                                className="text-xs flex items-center gap-1 text-green-500 hover:text-green-500 font-medium"
                                             >
                                                 <Plus className="w-3 h-3 stroke-green-500" />
                                                 Restock

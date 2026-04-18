@@ -81,14 +81,14 @@ function QuickRestockModal({
                             className="p-6 relative z-10"
                         >
                             <div className="bg-green-50 border border-green-100 rounded-lg p-4 mb-6">
-                                <p className="text-sm text-green-700 font-medium mb-1">
+                                <p className="text-sm text-green-500 font-medium mb-1">
                                     Restocking:
                                 </p>
                                 <p className="text-lg font-bold text-green-500 truncate">
                                     {productToRestock.name}
                                 </p>
                                 <div className="mt-3 pt-3 border-t border-green-200/50 flex justify-between text-sm">
-                                    <span className="text-green-700">
+                                    <span className="text-green-500">
                                         Current Stock:
                                     </span>
                                     <span className="font-bold text-green-500">
