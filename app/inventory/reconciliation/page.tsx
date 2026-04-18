@@ -25,6 +25,7 @@ import {
     addReconciliation,
 } from "@/store/slices/reconciliationSlice";
 import { useRouter } from "next/navigation";
+import ReconciliationDetailsSidebar from "@/components/ReconciliationDetailsSidebar";
 
 export default function ReconciliationPage() {
     const dispatch = useDispatch();
@@ -49,6 +50,9 @@ export default function ReconciliationPage() {
     const [notes, setNotes] = useState("");
     const [items, setItems] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
+
+    const [showDetailsSidebar, setShowDetailsSidebar] = useState(false);
+    const [selectedRecId, setSelectedRecId] = useState<string | null>(null);
 
     const fetchInitialData = useCallback(async () => {
         if (!businessDetails?.id) return;
@@ -664,11 +668,14 @@ export default function ReconciliationPage() {
                                                     </td>
                                                     <td className="px-6 py-4 text-right">
                                                         <button
-                                                            onClick={() =>
-                                                                toast.info(
-                                                                    "Detail view coming soon",
-                                                                )
-                                                            }
+                                                            onClick={() => {
+                                                                setSelectedRecId(
+                                                                    rec.id,
+                                                                );
+                                                                setShowDetailsSidebar(
+                                                                    true,
+                                                                );
+                                                            }}
                                                             className="text-green-500 hover:text-green-500 font-bold text-xs uppercase tracking-wider"
                                                         >
                                                             Details
@@ -683,6 +690,15 @@ export default function ReconciliationPage() {
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                <ReconciliationDetailsSidebar
+                    isOpen={showDetailsSidebar}
+                    onClose={() => {
+                        setShowDetailsSidebar(false);
+                        setSelectedRecId(null);
+                    }}
+                    reconciliationId={selectedRecId}
+                />
             </div>
         </Navbar>
     );
