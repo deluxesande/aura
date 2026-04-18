@@ -68,7 +68,9 @@ export default function ReconciliationDetailsSidebar({
         >
             {loading ? (
                 <div className="h-64 flex items-center justify-center">
-                    <Loader2 className="animate-spin h-10 w-10 text-green-500" />
+                    <div className="flex flex-col items-center justify-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                    </div>
                 </div>
             ) : reconciliation ? (
                 <div className="p-4 md:p-6 space-y-6">
@@ -134,7 +136,6 @@ export default function ReconciliationDetailsSidebar({
                                 </h3>
                                 {totalDiscrepancies > 0 && (
                                     <div className="flex items-center gap-2 text-red-600 bg-red-50 px-3 py-1 rounded-lg border border-red-100">
-                                        <AlertCircle size={14} />
                                         <span className="text-[10px] font-black uppercase tracking-widest">
                                             {totalDiscrepancies} Discrepancies
                                         </span>
@@ -226,10 +227,6 @@ export default function ReconciliationDetailsSidebar({
 
                         <div className="p-6 bg-gray-50/30 border-t border-gray-100">
                             <div className="flex items-center gap-3 text-gray-500 italic">
-                                <ClipboardCheck
-                                    size={18}
-                                    className="text-green-500"
-                                />
                                 <p className="text-[11px] leading-relaxed">
                                     This record serves as a permanent
                                     point-in-time snapshot. Completing this
