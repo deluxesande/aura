@@ -108,6 +108,13 @@ export default function PurchaseOrdersPage() {
             return;
         }
 
+        if (newStatus === "DELIVERED") {
+            toast.error(
+                "Orders can only be marked as delivered through the Delivery History page.",
+            );
+            return;
+        }
+
         try {
             const payload = {
                 supplierId: order.supplierId,
@@ -368,6 +375,10 @@ export default function PurchaseOrdersPage() {
                                                     }
                                                 >
                                                     <select
+                                                        disabled={
+                                                            order.status ===
+                                                            "DELIVERED"
+                                                        }
                                                         value={
                                                             order.status ||
                                                             "PENDING"
@@ -378,17 +389,17 @@ export default function PurchaseOrdersPage() {
                                                                 e.target.value,
                                                             )
                                                         }
-                                                        className={`pl-3 pr-8 py-1.5 rounded-md text-xs font-bold tracking-wider uppercase appearance-none cursor-pointer outline-none transition-colors border ${
+                                                        className={`pl-3 pr-8 py-1.5 rounded-md text-xs font-bold tracking-wider uppercase appearance-none outline-none transition-colors border ${
                                                             order.status ===
                                                             "DELIVERED"
-                                                                ? "bg-green-50 text-green-500 border-green-200 hover:bg-green-100"
+                                                                ? "bg-green-50 text-green-500 border-green-200 cursor-not-allowed"
                                                                 : order.status ===
                                                                     "CANCELLED"
-                                                                  ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                                                                  ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100 cursor-pointer"
                                                                   : order.status ===
                                                                       "IN_TRANSIT"
-                                                                    ? "bg-blue-50 text-blue-500 border-blue-200 hover:bg-blue-100"
-                                                                    : "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100"
+                                                                    ? "bg-blue-50 text-blue-500 border-blue-200 hover:bg-blue-100 cursor-pointer"
+                                                                    : "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 cursor-pointer"
                                                         }`}
                                                     >
                                                         <option
@@ -403,12 +414,15 @@ export default function PurchaseOrdersPage() {
                                                         >
                                                             IN TRANSIT
                                                         </option>
-                                                        {/* <option
-                                                            value="DELIVERED"
-                                                            className="bg-white text-gray-900"
-                                                        >
-                                                            DELIVERED
-                                                        </option> */}
+                                                        {order.status ===
+                                                            "DELIVERED" && (
+                                                            <option
+                                                                value="DELIVERED"
+                                                                className="bg-white text-gray-900"
+                                                            >
+                                                                DELIVERED
+                                                            </option>
+                                                        )}
                                                         <option
                                                             value="CANCELLED"
                                                             className="bg-white text-gray-900"
@@ -444,6 +458,10 @@ export default function PurchaseOrdersPage() {
                                                 <td className="p-4 whitespace-nowrap text-right text-sm font-medium">
                                                     <div className="flex items-center justify-end gap-1">
                                                         <button
+                                                            disabled={
+                                                                order.status ===
+                                                                "DELIVERED"
+                                                            }
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 setSelectedOrder(
@@ -453,15 +471,34 @@ export default function PurchaseOrdersPage() {
                                                                     true,
                                                                 );
                                                             }}
-                                                            className="p-2 text-gray-400 hover:text-green-500 hover:bg-blue-50 rounded-lg transition-all"
-                                                            title="Edit Order"
+                                                            className={`p-2 rounded-lg transition-all ${
+                                                                order.status ===
+                                                                "DELIVERED"
+                                                                    ? "text-gray-300 cursor-not-allowed"
+                                                                    : "text-gray-400 hover:text-green-500 hover:bg-blue-50"
+                                                            }`}
+                                                            title={
+                                                                order.status ===
+                                                                "DELIVERED"
+                                                                    ? "Delivered orders cannot be edited"
+                                                                    : "Edit Order"
+                                                            }
                                                         >
                                                             <Edit
                                                                 size={18}
-                                                                className="stroke-green-500"
+                                                                className={
+                                                                    order.status ===
+                                                                    "DELIVERED"
+                                                                        ? "stroke-gray-300"
+                                                                        : "stroke-green-500"
+                                                                }
                                                             />
                                                         </button>
                                                         <button
+                                                            disabled={
+                                                                order.status ===
+                                                                "DELIVERED"
+                                                            }
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleDelete(
@@ -469,12 +506,27 @@ export default function PurchaseOrdersPage() {
                                                                     order.reference,
                                                                 );
                                                             }}
-                                                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                            title="Delete Order"
+                                                            className={`p-2 rounded-lg transition-all ${
+                                                                order.status ===
+                                                                "DELIVERED"
+                                                                    ? "text-gray-300 cursor-not-allowed"
+                                                                    : "text-gray-400 hover:text-red-600 hover:bg-red-50"
+                                                            }`}
+                                                            title={
+                                                                order.status ===
+                                                                "DELIVERED"
+                                                                    ? "Delivered orders cannot be deleted"
+                                                                    : "Delete Order"
+                                                            }
                                                         >
                                                             <Trash2
                                                                 size={18}
-                                                                className="stroke-red-500"
+                                                                className={
+                                                                    order.status ===
+                                                                    "DELIVERED"
+                                                                        ? "stroke-gray-300"
+                                                                        : "stroke-red-500"
+                                                                }
                                                             />
                                                         </button>
                                                     </div>
