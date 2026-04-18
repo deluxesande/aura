@@ -608,7 +608,7 @@ export default function ReconciliationPage() {
                                                 </td>
                                             </tr>
                                         ) : (
-                                            history.map((rec) => (
+                                            history.map((rec: any) => (
                                                 <tr
                                                     key={rec.id}
                                                     className="hover:bg-gray-50/50 transition-colors"
