@@ -914,7 +914,8 @@ export default function Navbar({
                                                             if (link.subItems) {
                                                                 const isOpen =
                                                                     openDropdowns[
-                                                                        link.label
+                                                                        link
+                                                                            .label
                                                                     ];
                                                                 const isGroupActive =
                                                                     link.subItems.some(
@@ -942,7 +943,8 @@ export default function Navbar({
                                                                                         ...prev,
                                                                                         [link.label]:
                                                                                             !prev[
-                                                                                                link.label
+                                                                                                link
+                                                                                                    .label
                                                                                             ],
                                                                                     }),
                                                                                 )
@@ -951,11 +953,13 @@ export default function Navbar({
                                                                         >
                                                                             <div className="flex items-center gap-3">
                                                                                 <Icon
-                                                                                    size={20}
+                                                                                    size={
+                                                                                        20
+                                                                                    }
                                                                                     className="stroke-green-500"
                                                                                 />
                                                                                 <span
-                                                                                    className={`text-sm font-medium ${isGroupActive ? "text-green-600 font-bold" : "text-gray-600"}`}
+                                                                                    className={`text-sm font-medium ${isGroupActive ? "text-green-500 font-bold" : "text-gray-600"}`}
                                                                                 >
                                                                                     {
                                                                                         link.label
@@ -963,7 +967,9 @@ export default function Navbar({
                                                                                 </span>
                                                                             </div>
                                                                             <ChevronDown
-                                                                                size={14}
+                                                                                size={
+                                                                                    14
+                                                                                }
                                                                                 className={`text-gray-400 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
                                                                             />
                                                                         </button>
@@ -1006,7 +1012,7 @@ export default function Navbar({
                                                                                                                 false,
                                                                                                             )
                                                                                                         }
-                                                                                                        className={`block py-1.5 text-xs transition-colors duration-200 ${isSubActive ? "text-green-600 font-bold" : "text-gray-500 hover:text-green-500 font-medium"}`}
+                                                                                                        className={`block py-1.5 text-xs transition-colors duration-200 ${isSubActive ? "text-green-500 font-bold" : "text-gray-500 hover:text-green-500 font-medium"}`}
                                                                                                     >
                                                                                                         {
                                                                                                             sub.label
@@ -1051,7 +1057,9 @@ export default function Navbar({
                                                                     >
                                                                         <div className="flex-shrink-0">
                                                                             <Icon
-                                                                                size={20}
+                                                                                size={
+                                                                                    20
+                                                                                }
                                                                                 className={
                                                                                     isActive
                                                                                         ? "stroke-white"

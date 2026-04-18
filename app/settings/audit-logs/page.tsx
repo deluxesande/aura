@@ -18,14 +18,19 @@ import { useRouter } from "next/navigation";
 
 import { useDispatch, useSelector } from "react-redux";
 import { AppState } from "@/store";
-import { setAuditLogs, setLoading as setAuditLoading } from "@/store/slices/auditLogSlice";
+import {
+    setAuditLogs,
+    setLoading as setAuditLoading,
+} from "@/store/slices/auditLogSlice";
 
 export default function AuditLogsPage() {
     const dispatch = useDispatch();
     const router = useRouter();
-    const { logs, lastFetched, loading: reduxLoading } = useSelector(
-        (state: AppState) => state.auditLog,
-    );
+    const {
+        logs,
+        lastFetched,
+        loading: reduxLoading,
+    } = useSelector((state: AppState) => state.auditLog);
     const [loading, setLoading] = useState(!lastFetched);
     const [searchQuery, setSearchQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
@@ -172,7 +177,7 @@ export default function AuditLogsPage() {
                                                                 : log.action.includes(
                                                                         "CREATE",
                                                                     )
-                                                                  ? "bg-green-50 text-green-600"
+                                                                  ? "bg-green-50 text-green-500"
                                                                   : "bg-blue-50 text-blue-600"
                                                         }`}
                                                     >

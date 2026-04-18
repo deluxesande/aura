@@ -19,10 +19,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useSelector, useDispatch } from "react-redux";
 import { AppState } from "@/store";
-import { 
-    setReconciliationHistory, 
+import {
+    setReconciliationHistory,
     setLoading as setHistoryLoading,
-    addReconciliation 
+    addReconciliation,
 } from "@/store/slices/reconciliationSlice";
 import { useRouter } from "next/navigation";
 
@@ -157,7 +157,7 @@ export default function ReconciliationPage() {
             setItems([]);
             setReference("");
             setNotes("");
-            
+
             // Refresh history in background and update Redux
             const historyRes = await apiClient.get("/inventory/reconciliation");
             dispatch(setReconciliationHistory(historyRes.data || []));
@@ -380,7 +380,7 @@ export default function ReconciliationPage() {
                                                                     className={`text-sm font-bold ${
                                                                         item.discrepancy >
                                                                         0
-                                                                            ? "text-green-600"
+                                                                            ? "text-green-500"
                                                                             : item.discrepancy <
                                                                                 0
                                                                               ? "text-red-600"
@@ -533,12 +533,12 @@ export default function ReconciliationPage() {
                                             size={20}
                                         />
                                         <p className="text-xs text-blue-700 leading-relaxed">
-                                            <strong>Pro Tip:</strong> Use a barcode
-                                            scanner in this page to quickly find
-                                            products. Completing the reconciliation
-                                            will immediately update the system
-                                            quantities to match your physical
-                                            counts.
+                                            <strong>Pro Tip:</strong> Use a
+                                            barcode scanner in this page to
+                                            quickly find products. Completing
+                                            the reconciliation will immediately
+                                            update the system quantities to
+                                            match your physical counts.
                                         </p>
                                     </div>
 
@@ -547,19 +547,33 @@ export default function ReconciliationPage() {
                                             Cross-Reference
                                         </p>
                                         <div className="flex flex-col gap-2">
-                                            <button 
-                                                onClick={() => router.push("/suppliers/orders")}
+                                            <button
+                                                onClick={() =>
+                                                    router.push(
+                                                        "/suppliers/orders",
+                                                    )
+                                                }
                                                 className="w-full text-left px-3 py-2 bg-white/50 hover:bg-white border border-blue-100 rounded-lg text-xs text-blue-600 font-bold transition-all flex items-center justify-between group"
                                             >
                                                 View Open Orders
-                                                <ArrowRight size={12} className="transition-transform group-hover:translate-x-1" />
+                                                <ArrowRight
+                                                    size={12}
+                                                    className="transition-transform group-hover:translate-x-1"
+                                                />
                                             </button>
-                                            <button 
-                                                onClick={() => router.push("/suppliers/failed-deliveries")}
+                                            <button
+                                                onClick={() =>
+                                                    router.push(
+                                                        "/suppliers/failed-deliveries",
+                                                    )
+                                                }
                                                 className="w-full text-left px-3 py-2 bg-white/50 hover:bg-white border border-blue-100 rounded-lg text-xs text-blue-600 font-bold transition-all flex items-center justify-between group"
                                             >
                                                 Supplier Discrepancies
-                                                <ArrowRight size={12} className="transition-transform group-hover:translate-x-1" />
+                                                <ArrowRight
+                                                    size={12}
+                                                    className="transition-transform group-hover:translate-x-1"
+                                                />
                                             </button>
                                         </div>
                                     </div>
@@ -655,7 +669,7 @@ export default function ReconciliationPage() {
                                                                     "Detail view coming soon",
                                                                 )
                                                             }
-                                                            className="text-green-500 hover:text-green-600 font-bold text-xs uppercase tracking-wider"
+                                                            className="text-green-500 hover:text-green-500 font-bold text-xs uppercase tracking-wider"
                                                         >
                                                             Details
                                                         </button>
