@@ -103,7 +103,7 @@ const DataManagement: React.FC = () => {
                     onClick={() => setShowExportModal(true)}
                     className="btn btn-md btn-ghost flex items-center justify-center bg-green-500 text-white hover:bg-green-600 w-full"
                 >
-                    <Download className="w-4 h-4 mr-2" />
+                    <Download className="w-4 h-4 mr-2 stroke-white" />
                     Export Data
                 </button>
 
