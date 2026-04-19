@@ -3,7 +3,7 @@ import axios from "axios";
 import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/utils/lib/client";
 
-const BASE_URL = "https://sbx.kra.go.ke";
+const BASE_URL = "https://api.kra.go.ke";
 
 export default async function handler(
     req: NextApiRequest,
