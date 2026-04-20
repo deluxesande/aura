@@ -201,4 +201,77 @@ export const BLOG_POSTS: BlogPost[] = [
             },
         ],
     },
+    {
+        slug: "data-security-and-trust",
+        title: "Your Business Data is Your Business: Our Commitment to Security and Privacy",
+        excerpt:
+            "In an era where data is the new oil, trust is paramount. Learn why SaleSense is built on a foundation of absolute privacy, ensuring your sales, customer, and inventory data remains exclusively yours.",
+        category: "Security",
+        readTime: "6 min read",
+        date: "April 20, 2026",
+        image: "/images/security-lock.png",
+        content: [
+            {
+                type: "paragraph",
+                text: "When you adopt a cloud-based ERP like SaleSense, you are entrusting us with the lifeblood of your business: your sales figures, your customer lists, your supplier details, and your profit margins. A common and completely justified fear among business owners is: 'What happens to my data? Is the developer selling my insights to my competitors?'",
+            },
+            {
+                type: "paragraph",
+                text: "The short answer is an unequivocal no. SaleSense was built specifically to empower Kenyan businesses, not to exploit them. We understand that our entire business model relies on your absolute trust. If that trust is broken, our platform fails.",
+            },
+            {
+                type: "heading",
+                text: "Why Choose SaleSense? The Power of Ownership",
+            },
+            {
+                type: "paragraph",
+                text: "SaleSense is designed to give you complete control and visibility over your operations, without sacrificing privacy. Unlike 'free' platforms that monetize your usage patterns, SaleSense is a premium tool where you are the customer, not the product.",
+            },
+            {
+                type: "list",
+                items: [
+                    "Direct M-Pesa Integration: We facilitate the connection between your system and Safaricom, but the funds flow directly to your Paybill or Till. We never touch your money.",
+                    "Automated KRA Compliance: We calculate and prepare your returns based solely on the data you input, ensuring accurate and private tax compliance without third-party interference.",
+                    "Actionable Internal Insights: Your analytics are generated on-the-fly for your eyes only. We do not aggregate your sales data into 'industry benchmarks' or sell market trends to larger competitors.",
+                ],
+            },
+            {
+                type: "heading",
+                text: "How We Guarantee Your Data is Safe",
+            },
+            {
+                type: "paragraph",
+                text: "We don't just ask for your trust; we engineer it into the architecture of the platform. Here is how we ensure your data is secure from external threats and internal compromise:",
+            },
+            {
+                type: "list",
+                items: [
+                    "Enterprise-Grade Encryption: All data transmitted between your device and our servers is secured using TLS 1.3 encryption. At rest, your data is encrypted using AES-256, the same standard used by global financial institutions.",
+                    "Isolated Database Architecture: Your business data is logically isolated. A flaw in one account cannot 'leak' into another. Your inventory and customer data are entirely cordoned off from every other business on the platform.",
+                    "World-Class Authentication: We utilize Clerk for authentication, meaning we don't even store your passwords. Clerk handles identity verification with SOC2, HIPAA, and ISO 27001 compliance, ensuring that only authorized users can access your account.",
+                    "Immutable Audit Logs: Every significant action taken within your account is recorded. You have full visibility into who accessed what, and when. This protects you against internal staff issues and provides a clear record of system integrity.",
+                ],
+            },
+            {
+                type: "heading",
+                text: "The 'Compromised Developer' Question",
+            },
+            {
+                type: "paragraph",
+                text: "What prevents the developers themselves from looking at your data? We have implemented strict internal access controls.",
+            },
+            {
+                type: "paragraph",
+                text: "Our engineering team operates on a principle of 'Zero Standing Privileges.' This means no developer has permanent, unrestricted access to the production database. In the rare event that database access is required to fix a critical bug, it requires temporary, logged, and multi-party approved access. Furthermore, our business model relies on subscription revenue, not data brokering. Selling your data would not only be a violation of our strict privacy policy and Kenyan data protection laws (DPA 2019), but it would destroy the foundation of our company.",
+            },
+            {
+                type: "alert",
+                text: "Our Promise: Your data is your property. We will never sell, rent, or share your individual business metrics, customer lists, or supplier pricing with any third party, including your competitors.",
+            },
+            {
+                type: "paragraph",
+                text: "By choosing SaleSense, you are investing in a tool that respects your privacy as much as it accelerates your growth. Build your business with confidence, knowing your data is locked down, secure, and entirely yours.",
+            },
+        ],
+    },
 ];
