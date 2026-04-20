@@ -206,7 +206,7 @@ export default function AboutPage() {
                                 market.
                             </p>
                             <p>
-                                That's why we built{" "}
+                                That&apos;s why we built{" "}
                                 <strong className="font-semibold">
                                     SaleSense
                                 </strong>
@@ -289,7 +289,7 @@ export default function AboutPage() {
                                 </h3>
                                 <p className="text-gray-400 text-sm leading-relaxed">
                                     We believe you should keep your money.
-                                    That's why you connect your own Paybill, and
+                                    That&apos;s why you connect your own Paybill, and
                                     we charge{" "}
                                     <strong>zero transaction fees</strong>.
                                 </p>

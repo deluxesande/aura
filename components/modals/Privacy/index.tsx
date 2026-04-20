@@ -121,7 +121,7 @@ export default function PrivacyPolicyModal({
                         </li>
                         <li>
                             <strong>Legal reasons:</strong> If required by law
-                            or to protect our rights and users' safety.
+                            or to protect our rights and users&apos; safety.
                         </li>
                         <li>
                             <strong>Business transitions:</strong> In the event
@@ -204,7 +204,7 @@ export default function PrivacyPolicyModal({
                     </p>
 
                     <h3 className="text-lg font-semibold text-gray-900 mt-6">
-                        9. Children's Privacy
+                        9. Children&apos;s Privacy
                     </h3>
                     <p>
                         Salesense is not intended for users under the age of 13.
@@ -218,7 +218,7 @@ export default function PrivacyPolicyModal({
                     </h3>
                     <p>
                         We may occasionally update this Privacy Policy. When we
-                        do, we'll post the latest version here and update the
+                        do, we&apos;ll post the latest version here and update the
                         effective date. Major changes will be communicated
                         directly.
                     </p>

@@ -92,7 +92,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     simpleProductNames.size > 0
                         ? tx.product.findMany({
                               where: { businessId: bId, type: "SIMPLE", name: { in: Array.from(simpleProductNames) } },
-                              select: { id: true, name: true, categoryId: true },
+                              select: { id: true, name: true, categoryId: true, sku: true },
                           })
                         : Promise.resolve([]),
                     parentIds.size > 0
