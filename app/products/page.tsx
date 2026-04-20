@@ -42,6 +42,14 @@ import React, {
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 
+import useSWR from "swr";
+import { Search, Zap } from "lucide-react";
+
+import { addTransaction } from "@/store/slices/activeTransactionsSlice";
+import ActiveTransactionsTracker from "@/components/ActiveTransactionsTracker";
+
+const fetcher = (url: string) => apiClient.get(url).then((res) => res.data);
+
 export default function Page() {
     const dispatch = useDispatch();
     const { user, isLoaded } = useUser();
@@ -57,7 +65,34 @@ export default function Page() {
         (state: AppState) => state.category.categories,
     );
 
-    const [loading, setLoading] = useState(productsData.length === 0);
+    // --- SWR DATA FETCHING ---
+    const { data: swrProducts, mutate: mutateProducts } = useSWR(
+        "/product",
+        fetcher,
+        {
+            revalidateOnFocus: false,
+        },
+    );
+    const { data: swrCustomers } = useSWR("/customer", fetcher);
+    const { data: swrCategories } = useSWR("/category", fetcher);
+
+    useEffect(() => {
+        if (swrProducts) dispatch(setProducts(swrProducts));
+    }, [swrProducts, dispatch]);
+
+    useEffect(() => {
+        if (swrCustomers) dispatch(setCustomers(swrCustomers));
+    }, [swrCustomers, dispatch]);
+
+    useEffect(() => {
+        if (swrCategories) dispatch(setCategoriesInStore(swrCategories));
+    }, [swrCategories, dispatch]);
+
+    const [loading, setLoading] = useState(!productsData.length);
+
+    useEffect(() => {
+        if (productsData.length > 0) setLoading(false);
+    }, [productsData.length]);
 
     const categories = useMemo(() => {
         const base = [
@@ -67,6 +102,7 @@ export default function Page() {
     }, [reduxCategories]);
 
     const [selectedCategoryId, setSelectedCategoryId] = useState("ALL");
+    const [searchQuery, setSearchQuery] = useState(""); // --- PRODUCT SEARCH ---
     const [isInputVisible, setIsInputVisible] = useState(false);
     const [buttonText, setButtonText] = useState("Mpesa");
     const [mpesaNumber, setMpesaNumber] = useState("");
@@ -99,7 +135,6 @@ export default function Page() {
 
     const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
 
-    const hasFetched = useRef(false);
     const productsRef = useRef(productsData);
     productsRef.current = productsData;
 
@@ -107,73 +142,35 @@ export default function Page() {
         (state: AppState) => state.businessData.businessDetails,
     );
 
-    useEffect(() => {
-        if (hasFetched.current) return;
-
-        const loadData = async () => {
-            if (productsData.length === 0) {
-                setLoading(true);
-            }
-
-            try {
-                const [productsRes, customersRes, categoriesRes] =
-                    await Promise.allSettled([
-                        apiClient.get("/product"),
-                        apiClient.get("/customer"),
-                        apiClient.get("/category"),
-                    ]);
-
-                if (
-                    productsRes.status === "fulfilled" &&
-                    productsRes.value.data
-                ) {
-                    if (Array.isArray(productsRes.value.data)) {
-                        dispatch(setProducts(productsRes.value.data));
-                    }
-                }
-
-                if (customersRes.status === "fulfilled") {
-                    dispatch(setCustomers(customersRes.value.data));
-                }
-
-                if (categoriesRes.status === "fulfilled") {
-                    dispatch(setCategoriesInStore(categoriesRes.value.data));
-                }
-            } catch (error) {
-                console.error("Data load error", error);
-            } finally {
-                setLoading(false);
-                hasFetched.current = true;
-            }
-        };
-
-        loadData();
-    }, [dispatch, productsData.length]);
-
     const handleClose = useCallback(() => {
         dispatch(hide());
     }, [dispatch]);
 
-    const toggleActiveCategory = useCallback(
-        (categoryId: string) => {
-            setSelectedCategoryId(categoryId);
-            setActiveFolderTemplate(null); // Reset folder view on category change
+    const toggleActiveCategory = useCallback((categoryId: string) => {
+        setSelectedCategoryId(categoryId);
+        setActiveFolderTemplate(null);
+        setSearchQuery(""); // Clear search when switching categories
+    }, []);
 
-            const baseProducts = productsData.filter(
-                (p) => p.type !== "VARIANT",
+    // Optimized filtering combining Search + Category
+    useEffect(() => {
+        let result = productsData.filter((p) => p.type !== "VARIANT");
+
+        if (selectedCategoryId !== "ALL") {
+            result = result.filter((p) => p.categoryId === selectedCategoryId);
+        }
+
+        if (searchQuery.trim() !== "") {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(
+                (p) =>
+                    p.name.toLowerCase().includes(query) ||
+                    p.sku?.toLowerCase().includes(query),
             );
+        }
 
-            if (categoryId === "ALL") {
-                setFilteredProducts(baseProducts);
-            } else {
-                const filtered = baseProducts.filter(
-                    (product) => product.categoryId === categoryId,
-                );
-                setFilteredProducts(filtered);
-            }
-        },
-        [productsData],
-    );
+        setFilteredProducts(result);
+    }, [productsData, selectedCategoryId, searchQuery]);
 
     const openRestockModal = useCallback((product: Product) => {
         setProductToRestock(product);
@@ -205,14 +202,10 @@ export default function Page() {
                 updatedProduct,
             );
 
-            const updatedProductsList = productsData.map((p) =>
-                p.id === productToRestock.id ? updatedProduct : p,
-            );
-            dispatch(setProducts(updatedProductsList));
+            // Re-fetch via mutate for SWR consistency
+            mutateProducts();
 
-            toast.success(
-                `${productToRestock.name} restocked! New Qty: ${newQuantity}`,
-            );
+            toast.success(`${productToRestock.name} restocked!`);
             setIsRestockModalOpen(false);
         } catch (error) {
             toast.error("Failed to restock product");
@@ -222,9 +215,8 @@ export default function Page() {
     };
 
     const handleAddToCart = useCallback(
-        (product: Product) => {
+        (product: Product, silent = false) => {
             if (product.type === "TEMPLATE") {
-                // Folder Navigation: Enter the template folder
                 setActiveFolderTemplate(product);
                 return;
             }
@@ -235,7 +227,7 @@ export default function Page() {
             if (product.quantity > 0) {
                 if (product.quantity > currentCartQty) {
                     dispatch(addItem(product));
-                    toast.success(`Added ${product.name} to cart`);
+                    if (!silent) toast.success(`Added ${product.name} to cart`);
 
                     if (
                         typeof window !== "undefined" &&
@@ -256,13 +248,15 @@ export default function Page() {
     const handleOrder = async (
         paymentTypeOverride?: string,
         mpesaDetails?: any,
+        isExpress = false,
+        shouldHandleLoading = true,
     ) => {
         if (cartItems.length === 0) {
             toast.warning("Cart is empty.");
             return;
         }
 
-        setIsProcessingOrder(true);
+        if (shouldHandleLoading) setIsProcessingOrder(true);
 
         try {
             const totalAmount = cartItems.reduce(
@@ -280,6 +274,7 @@ export default function Page() {
                 paymentType: paymentTypeOverride || paymentType,
                 mpesaDetails: mpesaDetails,
                 customerId: selectedCustomer?.id || null,
+                createdBy: user?.id,
             };
 
             const response = await apiClient.post(
@@ -293,7 +288,12 @@ export default function Page() {
                 setSelectedCustomer(null);
                 setIsInputVisible(false);
                 setButtonText("Mpesa");
-                toast.success("Order Created Successfully!");
+                toast.success(
+                    isExpress ? "Sale Logged!" : "Order Created Successfully!",
+                );
+
+                // Optimistically update stock in local SWR cache
+                mutateProducts();
 
                 return response.data;
             }
@@ -303,11 +303,7 @@ export default function Page() {
             console.error(e);
             return null;
         } finally {
-            const isMpesaFlow =
-                paymentTypeOverride === "MPESA" && !mpesaDetails;
-            if (!isMpesaFlow) {
-                setIsProcessingOrder(false);
-            }
+            if (shouldHandleLoading) setIsProcessingOrder(false);
         }
     };
 
@@ -323,11 +319,11 @@ export default function Page() {
         (num: string) => {
             const formatted = formatPhoneNumber(num);
             if (!formatted) return undefined;
-            return customers.find(
-                (c) => formatPhoneNumber(c.phoneNumber) === formatted,
+            return (swrCustomers || customers).find(
+                (c: Customer) => formatPhoneNumber(c.phoneNumber) === formatted,
             );
         },
-        [customers],
+        [customers, swrCustomers],
     );
 
     const handleMpesaNumberChange = (
@@ -424,23 +420,47 @@ export default function Page() {
 
         setIsProcessingOrder(true);
         try {
-            const invoice = await handleOrder("MPESA");
+            // "Pay & Next" - Handle order creation first
+            const invoice = await handleOrder("MPESA", null, false, false);
 
             if (invoice?.id) {
-                const res = await apiClient.post(
-                    "/safaricom/c2b/payment/lipa",
-                    {
+                // Add to background tracker
+                dispatch(
+                    addTransaction({
+                        invoiceId: invoice.id,
+                        customerName: selectedCustomer
+                            ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}`
+                            : "Guest Customer",
+                        amount: amount,
+                        status: "PENDING",
+                        phoneNumber: formattedNumber,
+                        createdAt: Date.now(),
+                    }),
+                );
+
+                // Background STK Push
+                apiClient
+                    .post("/safaricom/c2b/payment/lipa", {
                         phoneNumber: formattedNumber,
                         amount: amount,
                         transactionType: "CustomerPayBillOnline",
                         invoiceId: invoice.id,
-                    },
-                );
+                    })
+                    .then(() => {
+                        toast.success(`STK Push sent to ${formattedNumber}`);
+                    })
+                    .catch((err) => {
+                        toast.error(
+                            `STK Push failed for invoice ${invoice.id}`,
+                        );
+                    });
 
-                if (res.status === 200) {
-                    setPaymentType("MPESA");
-                    toast.success("Payment Request Sent!");
-                }
+                // Clear UI immediately to serve next customer
+                dispatch(clearCart());
+                setMpesaNumber("");
+                setSelectedCustomer(null);
+                setIsInputVisible(false);
+                setButtonText("Mpesa");
             }
         } catch (error: any) {
             const message =
@@ -468,9 +488,7 @@ export default function Page() {
                 if (buffer.length > 2) {
                     e.preventDefault();
 
-                    // Always scan against all products (base + variants)
                     const scannedProduct = productsRef.current.find((p) => {
-                        // If it's a template, check its variants
                         if (p.type === "TEMPLATE" && p.variants) {
                             const variantMatch = p.variants.find(
                                 (v) =>
@@ -478,7 +496,7 @@ export default function Page() {
                                     v.sku?.toUpperCase() ===
                                         buffer.toUpperCase(),
                             );
-                            if (variantMatch) return true; // Found in variants
+                            if (variantMatch) return true;
                         }
                         return (
                             p.sku === buffer ||
@@ -488,7 +506,6 @@ export default function Page() {
 
                     let productToAdd = scannedProduct;
 
-                    // If the match was a template, find the actual variant that matched
                     if (
                         scannedProduct?.type === "TEMPLATE" &&
                         scannedProduct.variants
@@ -503,8 +520,11 @@ export default function Page() {
                     }
 
                     if (productToAdd && productToAdd.type !== "TEMPLATE") {
-                        handleAddToCart(productToAdd);
-                        toast.success(`Scanned ${productToAdd.name}`);
+                        // Silent add for scanner speed
+                        handleAddToCart(productToAdd, true);
+                        toast.success(`Scanned: ${productToAdd.name}`, {
+                            duration: 1000,
+                        });
 
                         if (window.innerWidth >= 768) {
                             dispatch(show());
@@ -513,9 +533,7 @@ export default function Page() {
                         productToAdd &&
                         productToAdd.type === "TEMPLATE"
                     ) {
-                        // Should not happen if barcodes are only on variants, but just in case
                         setActiveFolderTemplate(productToAdd);
-                        toast.info(`Opened ${productToAdd.name} options`);
                     } else {
                         toast.error(`Product not found: ${buffer}`);
                     }
@@ -538,24 +556,6 @@ export default function Page() {
                 .toFixed(2),
         [cartItems],
     );
-
-    useEffect(() => {
-        if (productsData && productsData.length > 0) {
-            const baseProducts = productsData.filter(
-                (p) => p.type !== "VARIANT",
-            );
-
-            if (selectedCategoryId === "ALL") {
-                setFilteredProducts(baseProducts);
-            } else {
-                setFilteredProducts(
-                    baseProducts.filter(
-                        (p) => p.categoryId === selectedCategoryId,
-                    ),
-                );
-            }
-        }
-    }, [productsData, selectedCategoryId]);
 
     const reduxUser = useSelector((state: AppState) => state.auth.user);
 
@@ -581,44 +581,52 @@ export default function Page() {
                 className="flex-grow flex flex-col"
                 style={{ width: "calc(100% - 10rem)" }}
             >
-                <Navbar setFilteredProducts={setFilteredProducts}>
-                    {activeFolderTemplate ? (
-                        // Folder View Header
-                        <div className="flex items-center gap-4 mt-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                <Navbar
+                    setFilteredProducts={setFilteredProducts}
+                    onSearchQueryChange={setSearchQuery}
+                >
+                    {/* --- OPTIMIZED DISCOVERY HEADER --- */}
+                    <div className="mt-4 flex flex-col md:flex-row items-center gap-4">
+                        {!activeFolderTemplate && (
+                            <div className="flex overflow-auto gap-3 scrollbar-hide w-full">
+                                {categories.map((category) => (
+                                    <CategoryBox
+                                        key={category.id}
+                                        id={category.id}
+                                        category={category.name}
+                                        active={
+                                            selectedCategoryId === category.id
+                                        }
+                                        onCategoryClick={toggleActiveCategory}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {activeFolderTemplate && (
+                        <div className="flex items-center gap-4 mt-6 bg-green-50 p-4 rounded-lg border border-green-100 animate-in fade-in slide-in-from-top-2">
                             <button
                                 onClick={() => setActiveFolderTemplate(null)}
-                                className="p-2 bg-white rounded-lg shadow-sm border border-gray-200 hover:bg-gray-100 transition-colors"
+                                className="p-2 bg-white rounded-lg shadow-sm border border-green-200 hover:bg-green-100 transition-colors"
                             >
                                 <ArrowLeft
                                     size={20}
-                                    className="text-gray-600"
+                                    className="text-green-500"
                                 />
                             </button>
                             <div>
                                 <h2 className="text-xl font-bold text-gray-900">
-                                    {activeFolderTemplate.name} Options
+                                    {activeFolderTemplate.name}
                                 </h2>
-                                <p className="text-xs text-gray-500">
-                                    Select a specific variation to add to cart
+                                <p className="text-xs text-green-500 font-medium">
+                                    Select options to add to cart
                                 </p>
                             </div>
                         </div>
-                    ) : (
-                        // Normal Category List
-                        <div className="flex overflow-auto gap-6 mt-4 scrollbar-hide">
-                            {categories.map((category) => (
-                                <CategoryBox
-                                    key={category.id}
-                                    id={category.id}
-                                    category={category.name}
-                                    active={selectedCategoryId === category.id}
-                                    onCategoryClick={toggleActiveCategory}
-                                />
-                            ))}
-                        </div>
                     )}
 
-                    <div className="flex flex-wrap gap-4 mt-6">
+                    <div className="flex flex-wrap gap-4 mt-6 content-start overflow-y-auto flex-1">
                         {loading ? (
                             <div className="w-full m-auto mt-20 flex flex-col items-center justify-center">
                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
@@ -627,7 +635,6 @@ export default function Page() {
                             <NoProductsFound />
                         ) : (
                             displayItems.map((product: any) => {
-                                // For variant display, we might want to override the name to show attributes clearly
                                 const displayName =
                                     product.type === "VARIANT" &&
                                     product.attributeValues
@@ -668,14 +675,12 @@ export default function Page() {
                                             />
                                         </div>
 
-                                        {/* Variant Badge */}
                                         {product.type === "TEMPLATE" && (
                                             <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1">
                                                 Variants
                                             </div>
                                         )}
 
-                                        {/* Restock Button */}
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -695,7 +700,6 @@ export default function Page() {
                                             />
                                         </button>
 
-                                        {/* Add/Configure Button */}
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -746,8 +750,12 @@ export default function Page() {
                         </SignedIn>
                     </div>
 
-                    <div className="px-4 mt-6">
-                        <p className="font-bold text-2xl">Create Order</p>
+                    <div className="px-4 mt-6 flex items-center justify-between">
+                        <p className="font-bold text-2xl">Cart</p>
+                        <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-lg font-bold">
+                            {cartItems.reduce((a, b) => a + b.cartQuantity, 0)}{" "}
+                            Items
+                        </span>
                     </div>
 
                     <div className="mt-4 flex-grow overflow-y-auto px-4 pb-4">
@@ -775,26 +783,30 @@ export default function Page() {
                                 )
                                     handleClose();
                             }}
-                            className="w-full mb-3 flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 transition-colors"
+                            className="w-full mb-3 flex items-center justify-between p-3 border border-gray-100 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                         >
                             <div className="flex items-center gap-3">
                                 <div
                                     className={`p-2 rounded-full ${
                                         selectedCustomer
                                             ? "bg-green-100 text-green-500"
-                                            : "bg-gray-100 text-gray-500"
+                                            : "bg-white text-gray-400"
                                     }`}
                                 >
                                     <UserIcon
                                         size={18}
-                                        className="stroke-green-500"
+                                        className={
+                                            selectedCustomer
+                                                ? "stroke-green-500"
+                                                : "stroke-gray-400"
+                                        }
                                     />
                                 </div>
                                 <div className="text-left">
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-xs text-gray-500 font-medium">
                                         Customer
                                     </p>
-                                    <p className="font-medium text-sm">
+                                    <p className="font-bold text-sm text-gray-700">
                                         {selectedCustomer
                                             ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}`
                                             : "Guest Customer"}
@@ -809,7 +821,7 @@ export default function Page() {
                                 <div className="mb-3 animate-in fade-in slide-in-from-bottom-2">
                                     <input
                                         type="number"
-                                        className="w-full px-4 py-2 rounded-lg outline-none bg-slate-50 focus:border-green-200 border-2 no-spinner"
+                                        className="w-full px-4 py-2.5 rounded-lg outline-none bg-gray-50 focus:ring-2 focus:ring-green-500/20 focus:bg-white border border-gray-200 no-spinner transition-all font-medium"
                                         placeholder="Enter M-pesa number"
                                         value={mpesaNumber}
                                         onChange={handleMpesaNumberChange}
@@ -838,30 +850,36 @@ export default function Page() {
                                                     )
                                                         handleClose();
                                                 }}
-                                                className="mt-2 text-xs text-green-500 font-medium flex items-center gap-1 hover:underline hover:text-green-500"
+                                                className="mt-2 text-[10px] text-green-500 font-bold uppercase tracking-tight flex items-center gap-1 hover:underline"
                                             >
-                                                Add this number as new customer?
+                                                Add as new customer?
                                             </button>
                                         )}
                                 </div>
                             )}
                             <button
                                 type="submit"
-                                disabled={isProcessingOrder}
-                                className={`px-4 py-2 border border-green-500 text-green-500 w-full bg-white rounded-md hover:bg-green-50 transition-colors ${isProcessingOrder ? "opacity-50 cursor-not-allowed" : ""}`}
+                                disabled={
+                                    isProcessingOrder || cartItems.length === 0
+                                }
+                                className={`px-4 py-3 border-2 border-green-500 text-green-500 w-full bg-white rounded-lg font-bold hover:bg-green-50 transition-all ${isProcessingOrder ? "opacity-50 cursor-not-allowed" : ""}`}
                             >
                                 {buttonText}
                             </button>
                         </form>
 
                         <button
-                            disabled={isProcessingOrder}
-                            className={`px-4 py-2 mt-3 bg-green-500 w-full text-white rounded-md ${
+                            disabled={
+                                isProcessingOrder || cartItems.length === 0
+                            }
+                            className={`px-4 py-3 mt-3 bg-green-500 w-full text-white rounded-lg font-bold hover:bg-green-600 transition-all ${
                                 isProcessingOrder
                                     ? "opacity-50 cursor-not-allowed"
-                                    : "cursor-pointer hover:bg-green-400 transition-colors"
+                                    : "cursor-pointer"
                             }`}
-                            onClick={() => handleOrder()}
+                            onClick={() =>
+                                handleOrder("CASH", null, !selectedCustomer)
+                            }
                         >
                             Checkout (Cash)
                         </button>
@@ -873,7 +891,7 @@ export default function Page() {
             {showSelectCustomerModal && (
                 <SelectCustomerModal
                     setShowSelectCustomerModal={setShowSelectCustomerModal}
-                    customers={customers}
+                    customers={swrCustomers || customers}
                     customerSearchQuery={customerSearchQuery}
                     setCustomerSearchQuery={setCustomerSearchQuery}
                     selectedCustomer={selectedCustomer}
@@ -911,6 +929,8 @@ export default function Page() {
                     isRestocking={isRestocking}
                 />
             )}
+
+            <ActiveTransactionsTracker />
         </div>
     );
 }

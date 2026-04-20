@@ -20,9 +20,10 @@ export default function ProductCard({
             ? Math.min(...variants.map((v) => v.price))
             : price;
 
-    const displayQuantity = isTemplate && variants 
-        ? variants.reduce((sum, v) => sum + v.quantity, 0)
-        : quantity;
+    const displayQuantity =
+        isTemplate && variants
+            ? variants.reduce((sum, v) => sum + v.quantity, 0)
+            : quantity;
 
     return (
         <div
@@ -49,7 +50,7 @@ export default function ProductCard({
                         {name}
                     </p>
                     <span
-                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md whitespace-nowrap ${
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded-lg whitespace-nowrap ${
                             displayQuantity <= 5
                                 ? "bg-red-50 text-red-500"
                                 : "bg-gray-50 text-gray-500"
@@ -64,10 +65,14 @@ export default function ProductCard({
                     </span>
                     <span
                         className={`text-[10px] font-bold uppercase tracking-wider ${
-                            inStock || (isTemplate && displayQuantity > 0) ? "text-green-500" : "text-red-400"
+                            inStock || (isTemplate && displayQuantity > 0)
+                                ? "text-green-500"
+                                : "text-red-400"
                         }`}
                     >
-                        {inStock || (isTemplate && displayQuantity > 0) ? "In Stock" : "Sold Out"}
+                        {inStock || (isTemplate && displayQuantity > 0)
+                            ? "In Stock"
+                            : "Sold Out"}
                     </span>
                 </div>
             </div>

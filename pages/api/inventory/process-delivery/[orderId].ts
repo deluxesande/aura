@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
+import { logAction } from "@/utils/server/audit";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== "POST") return res.status(405).end();
@@ -69,7 +70,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 });
             }
 
-            return { success: true };
+            return { success: true, reference: reference || po.reference };
+        });
+
+        // Log Audit Action
+        await logAction({
+            action: "PROCESS_DELIVERY",
+            entityType: "STOCK_RECEIPT",
+            entityId: orderId,
+            details: { reference: result.reference, itemsCount: items.length, storeId },
+            userId: user.id,
+            businessId: user.businessId,
+            ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
+            userAgent: req.headers["user-agent"],
         });
 
         return res.status(200).json(result);
@@ -78,3 +91,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(500).json({ error: "Delivery processing failed" });
     }
 }
+

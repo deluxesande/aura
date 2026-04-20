@@ -49,15 +49,15 @@ export default function OrderCard({ product }: { product: Product }) {
             : null;
 
     return (
-        <div className="w-full h-auto min-h-[5rem] p-2 bg-slate-50 shadow-sm rounded-md flex items-center justify-between">
+        <div className="w-full h-auto min-h-[5rem] p-2 bg-slate-50 shadow-sm rounded-lg flex items-center justify-between">
             <div className="flex items-center">
-                <div className="relative h-10 w-10 rounded-md shrink-0">
+                <div className="relative h-10 w-10 rounded-lg shrink-0">
                     <Image
                         src={product.image || "https://via.placeholder.com/150"}
                         alt="Image"
                         layout="fill"
                         objectFit="cover"
-                        className="rounded-md"
+                        className="rounded-lg"
                     />
                 </div>
                 <div className="ml-4">

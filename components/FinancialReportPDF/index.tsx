@@ -61,10 +61,7 @@ const styles = StyleSheet.create({
     page: {
         fontFamily: "Helvetica",
         fontSize: 10,
-        paddingTop: 40,
-        paddingLeft: 40,
-        paddingRight: 40,
-        paddingBottom: 80,
+        padding: 40,
         color: "#333",
         flexDirection: "column",
         backgroundColor: "#ffffff",
@@ -76,14 +73,19 @@ const styles = StyleSheet.create({
         marginBottom: 30,
         borderBottomWidth: 2,
         borderBottomColor: "#22c55e",
-        paddingBottom: 15,
+        paddingBottom: 20,
+    },
+    logo: {
+        width: 80,
+        height: 80,
+        objectFit: "contain",
     },
     title: {
         fontSize: 22,
         fontWeight: "bold",
         color: "#22c55e",
         textTransform: "uppercase",
-        letterSpacing: 1,
+        letterSpacing: 0.5,
     },
     sectionTitle: {
         fontSize: 11,
@@ -93,8 +95,10 @@ const styles = StyleSheet.create({
         marginTop: 25,
         marginBottom: 12,
         backgroundColor: "#f0fdf4",
-        padding: "4 8",
-        borderRadius: 2,
+        padding: "6 10",
+        borderRadius: 4,
+        borderLeftWidth: 3,
+        borderLeftColor: "#22c55e",
     },
     metaGrid: {
         flexDirection: "row",
@@ -106,14 +110,14 @@ const styles = StyleSheet.create({
         width: "31%",
         marginBottom: 15,
         backgroundColor: "#f9fafb",
-        padding: 10,
-        borderRadius: 4,
-        borderLeftWidth: 3,
-        borderLeftColor: "#22c55e",
+        padding: 12,
+        borderRadius: 5,
+        borderBottomWidth: 1,
+        borderBottomColor: "#e5e7eb",
     },
     label: {
         fontSize: 7,
-        color: "#6b7280",
+        color: "#888",
         marginBottom: 4,
         textTransform: "uppercase",
         fontWeight: "bold",
@@ -136,13 +140,13 @@ const styles = StyleSheet.create({
         backgroundColor: "#f9fafb",
         borderBottomWidth: 1,
         borderBottomColor: "#e5e7eb",
-        padding: "8 10",
+        padding: 10,
     },
     tableRow: {
         flexDirection: "row",
         borderBottomWidth: 1,
         borderBottomColor: "#f3f4f6",
-        padding: "8 10",
+        padding: 10,
         alignItems: "center",
     },
 
@@ -167,27 +171,22 @@ const styles = StyleSheet.create({
     colDCost: { width: "20%", textAlign: "right" },
 
     footer: {
-        position: "absolute",
-        bottom: 30,
-        left: 0,
-        right: 0,
-        textAlign: "center",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
+        marginTop: "auto",
         borderTopWidth: 1,
         borderTopColor: "#eee",
-        paddingTop: 15,
+        paddingTop: 20,
+        textAlign: "center",
     },
     footerText: {
         fontSize: 8,
         color: "#9ca3af",
-        marginBottom: 4,
+        marginBottom: 5,
     },
     footerLogo: {
         width: 100,
-        height: 25,
+        height: 30,
         objectFit: "contain",
+        alignSelf: "center",
     },
 });
 
@@ -215,25 +214,29 @@ export const FinancialReportPDF: React.FC<FinancialReportPDFProps> = ({
                 <View style={styles.header}>
                     <View>
                         <Text style={styles.title}>
-                            Financial Performance Report
+                            Performance Report
                         </Text>
                         <Text
                             style={[
                                 styles.boldValue,
-                                { fontSize: 12, color: "#4b5563" },
+                                { fontSize: 13, color: "#4b5563", marginTop: 4 },
                             ]}
                         >
                             {businessName}
                         </Text>
                     </View>
                     <View style={{ alignItems: "flex-end" }}>
-                        <Text style={styles.label}>Period</Text>
+                        <Text style={styles.label}>Reporting Period</Text>
                         <Text style={styles.boldValue}>{periodLabel}</Text>
-                        <Text style={[styles.label, { marginTop: 4 }]}>
-                            Generated
+                        <Text style={[styles.label, { marginTop: 6 }]}>
+                            Report Generated
                         </Text>
                         <Text style={styles.value}>
-                            {new Date().toLocaleDateString("en-GB")}
+                            {new Date().toLocaleDateString("en-GB", {
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                            })}
                         </Text>
                     </View>
                 </View>

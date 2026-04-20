@@ -76,7 +76,7 @@ export default function WhySalesense() {
                             <p className="text-gray-600 mb-6">
                                 Seamless payment processing with automatic
                                 reconciliation. Funds settle directly to your
-                                Paybill—we don&apos;t touch your money.
+                                Paybill - we don&apos;t touch your money.
                             </p>
                         </div>
 

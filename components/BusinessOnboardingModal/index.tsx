@@ -214,7 +214,7 @@ const BusinessOnboardingModal = () => {
                                             {[1, 2].map((i) => (
                                                 <div
                                                     key={i}
-                                                    className="flex items-center justify-between bg-white p-3 rounded-md border border-gray-100 shadow-sm"
+                                                    className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-100 shadow-sm"
                                                 >
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-[10px] font-bold text-green-500">

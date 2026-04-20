@@ -14,7 +14,7 @@ import AuthProvider from "@/components/auth/AuthProvider";
 import PageTransition from "@/components/PageTransitions";
 import WelcomeTour from "@/components/WelcomeTour";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export default function RootLayout({
     children,
@@ -31,7 +31,9 @@ export default function RootLayout({
                     />
                     <link rel="icon" href="/logos/salesense-icon.png" />
                 </head>
-                <body className={`${inter.className} bg-[#f4f4f4]`}>
+                <body
+                    className={`${inter.className} font-sans antialiased bg-[#f4f4f4]`}
+                >
                     <ReduxProvider>
                         <AuthProvider>
                             <RoleGuard>

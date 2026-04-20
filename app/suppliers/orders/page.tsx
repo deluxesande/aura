@@ -189,7 +189,7 @@ export default function PurchaseOrdersPage() {
         return (
             <Navbar>
                 <div className="p-4 md:p-8 mx-auto h-screen font-sans flex items-center justify-center">
-                    <div className="bg-white shadow-lg rounded-xl p-10 border border-gray-100 max-w-md text-center">
+                    <div className="bg-white shadow-lg rounded-lg p-10 border border-gray-100 max-w-md text-center">
                         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
                             <Lock className="w-8 h-8 stroke-green-500" />
                         </div>
@@ -389,7 +389,7 @@ export default function PurchaseOrdersPage() {
                                                                 e.target.value,
                                                             )
                                                         }
-                                                        className={`pl-3 pr-8 py-1.5 rounded-md text-xs font-bold tracking-wider uppercase appearance-none outline-none transition-colors border ${
+                                                        className={`pl-3 pr-8 py-1.5 rounded-lg text-xs font-bold tracking-wider uppercase appearance-none outline-none transition-colors border ${
                                                             order.status ===
                                                             "DELIVERED"
                                                                 ? "bg-green-50 text-green-500 border-green-200 cursor-not-allowed"

@@ -707,7 +707,7 @@ export default function CreateProductPage() {
                                     {type === "SIMPLE" &&
                                         "A standard, standalone item sold as a single unit (e.g., a specific book or a hammer). It tracks its own price, SKU, and stock level."}
                                     {type === "TEMPLATE" &&
-                                        "A parent container used to group items that come in different variations (like a T-Shirt). Templates do not have their own stock or price—they just hold your variants together."}
+                                        "A parent container used to group items that come in different variations (like a T-Shirt). Templates do not have their own stock or price-they just hold your variants together."}
                                     {type === "VARIANT" &&
                                         "A specific version of a Template (e.g., a Red, Large T-Shirt). You must select a Parent Template first. Variants track their own specific price, barcode, and stock quantity."}
                                 </p>

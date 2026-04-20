@@ -28,7 +28,7 @@ const steps: TourStep[] = [
         title: "Overview",
         badge: "Snapshot",
         description:
-            "Your daily performance — revenue, orders and key metrics at a glance.",
+            "Your daily performance - revenue, orders and key metrics at a glance.",
         side: "right",
     },
     {

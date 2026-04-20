@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/utils/lib/client";
 import { getAuth } from "@clerk/nextjs/server";
+import { logAction } from "@/utils/server/audit";
 
 export const updateProduct = async (
     req: NextApiRequest,
@@ -33,7 +34,7 @@ export const updateProduct = async (
         // Fetch User role and fixed storeId
         const userWithRole = await prisma.user.findUnique({
             where: { clerkId: userId },
-            select: { role: true, storeId: true }
+            select: { id: true, role: true, storeId: true, businessId: true }
         });
 
         const targetStoreId = userWithRole?.role === "admin" ? activeStoreHeader : (userWithRole?.storeId as string);
@@ -113,6 +114,20 @@ export const updateProduct = async (
             },
         });
 
+        // Log Audit Action
+        if (userWithRole) {
+            await logAction({
+                action: "UPDATE_PRODUCT",
+                entityType: "PRODUCT",
+                entityId: id,
+                details: { name, sku, price, quantity, storeId: targetStoreId },
+                userId: userWithRole.id,
+                businessId: userWithRole.businessId!,
+                ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
+                userAgent: req.headers["user-agent"],
+            });
+        }
+
         const productWithQty = {
             ...updatedProduct,
             quantity: updatedProduct?.storeInventories[0]?.quantity || 0,
@@ -130,3 +145,4 @@ export const updateProduct = async (
         res.status(500).json({ error: "Failed to update product" });
     }
 };
+

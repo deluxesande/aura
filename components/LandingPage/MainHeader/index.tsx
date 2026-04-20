@@ -125,11 +125,11 @@ export default function MainHeader() {
                             <div className="flex bg-gray-50 h-[300px] md:h-[400px] lg:h-[450px] p-2 md:p-3 gap-2 md:gap-3">
                                 {/* Sidebar (Hidden on mobile, visible on sm+) */}
                                 <div className="hidden sm:flex w-12 lg:w-40 bg-white border border-gray-100 rounded-lg p-2 flex-col gap-2">
-                                    <div className="h-5 lg:h-6 w-8 lg:w-16 bg-green-100 rounded-md mb-2 lg:mb-4 opacity-50"></div>
+                                    <div className="h-5 lg:h-6 w-8 lg:w-16 bg-green-100 rounded-lg mb-2 lg:mb-4 opacity-50"></div>
                                     {[1, 2, 3, 4, 5].map((i) => (
                                         <div
                                             key={i}
-                                            className={`h-8 w-full rounded-md flex items-center justify-center lg:justify-start lg:px-2 ${i === 1 ? "bg-green-50 border border-green-100" : "opacity-40"}`}
+                                            className={`h-8 w-full rounded-lg flex items-center justify-center lg:justify-start lg:px-2 ${i === 1 ? "bg-green-50 border border-green-100" : "opacity-40"}`}
                                         >
                                             <div
                                                 className={`w-3 h-3 lg:w-4 lg:h-4 rounded-sm lg:mr-2 shrink-0 ${i === 1 ? "bg-green-500" : "bg-gray-300"}`}
@@ -152,7 +152,7 @@ export default function MainHeader() {
                                                 className="bg-white p-2 md:p-3 rounded-lg border border-gray-100 shadow-sm flex flex-col justify-between h-16 md:h-24"
                                             >
                                                 <div className="h-1.5 md:h-2 w-8 md:w-12 bg-gray-200 rounded-full mb-1 opacity-60"></div>
-                                                <div className="h-3 md:h-5 w-12 md:w-20 bg-gray-800 rounded-md mb-1 opacity-80"></div>
+                                                <div className="h-3 md:h-5 w-12 md:w-20 bg-gray-800 rounded-lg mb-1 opacity-80"></div>
                                                 <div className="h-1 md:h-2 w-6 md:w-8 bg-green-100 rounded-full self-end"></div>
                                             </motion.div>
                                         ))}
@@ -165,7 +165,7 @@ export default function MainHeader() {
                                     >
                                         <div className="flex justify-between mb-2 md:mb-4">
                                             <div className="h-2 md:h-3 w-16 md:w-24 bg-gray-200 rounded-full opacity-60"></div>
-                                            <div className="h-3 md:h-4 w-8 md:w-10 bg-gray-100 rounded-md opacity-60"></div>
+                                            <div className="h-3 md:h-4 w-8 md:w-10 bg-gray-100 rounded-lg opacity-60"></div>
                                         </div>
                                         {/* SVG Line Chart */}
                                         <div className="flex-1 relative overflow-hidden flex items-end w-full">

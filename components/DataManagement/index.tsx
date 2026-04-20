@@ -170,7 +170,7 @@ const DataManagement: React.FC = () => {
                             <button
                                 onClick={handleDownloadConfirm}
                                 disabled={isDownloading}
-                                className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 disabled:opacity-50"
+                                className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 disabled:opacity-50"
                             >
                                 {isDownloading ? "Processing..." : "Download"}
                             </button>
@@ -235,7 +235,7 @@ const DataManagement: React.FC = () => {
 
                         <div className="p-6 space-y-4">
                             {/* Warning Box */}
-                            <div className="flex items-start space-x-3 p-3 bg-yellow-50 text-yellow-800 rounded-md border border-yellow-200 text-sm">
+                            <div className="flex items-start space-x-3 p-3 bg-yellow-50 text-yellow-800 rounded-lg border border-yellow-200 text-sm">
                                 <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                                 <p>
                                     Please ensure your Excel file matches the
@@ -288,14 +288,14 @@ const DataManagement: React.FC = () => {
                                     setShowImportModal(false);
                                     setImportFile(null);
                                 }}
-                                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-white"
+                                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-white"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleImportConfirm}
                                 disabled={isImporting || !importFile}
-                                className="w-32 flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-32 flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isImporting ? (
                                     <>

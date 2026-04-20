@@ -178,7 +178,7 @@ export default function MobileProductList({
                             className="p-4 border rounded-lg shadow-sm bg-gray-50 flex flex-col gap-3"
                         >
                             <div className="flex gap-4">
-                                <div className="w-20 h-20 relative rounded-md overflow-hidden bg-gray-200 shrink-0 border border-gray-200">
+                                <div className="w-20 h-20 relative rounded-lg overflow-hidden bg-gray-200 shrink-0 border border-gray-200">
                                     {product.image ? (
                                         <Image
                                             src={product.image}

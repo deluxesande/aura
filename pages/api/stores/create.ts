@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
+import { logAction } from "@/utils/server/audit";
 
 export default async function handler(
     req: NextApiRequest,
@@ -16,7 +17,7 @@ export default async function handler(
             // 1. Authoritatively fetch User and Business context
             const user = await tx.user.findUnique({
                 where: { clerkId },
-                select: { businessId: true, role: true },
+                select: { id: true, businessId: true, role: true },
             });
 
             if (!user?.businessId || user.role !== "admin") {
@@ -64,12 +65,26 @@ export default async function handler(
             }
 
             // 6. Create the store using the AUTHORITATIVE businessId
-            return await tx.store.create({
+            const newStore = await tx.store.create({
                 data: {
                     ...req.body,
                     businessId: user.businessId, // Force the secure ID
                 },
             });
+
+            // Log Audit Action
+            await logAction({
+                action: "CREATE_BRANCH",
+                entityType: "STORE",
+                entityId: newStore.id,
+                details: { name: newStore.name, address: newStore.address },
+                userId: user.id,
+                businessId: user.businessId,
+                ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
+                userAgent: req.headers["user-agent"],
+            });
+
+            return newStore;
         });
 
         return res.status(201).json(result);
@@ -80,3 +95,4 @@ export default async function handler(
             .json({ error: error.message || "Failed to create store" });
     }
 }
+

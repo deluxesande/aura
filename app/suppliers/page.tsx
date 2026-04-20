@@ -154,7 +154,7 @@ export default function SuppliersOverviewPage() {
         return (
             <Navbar>
                 <div className="p-4 md:p-8 mx-auto h-screen font-sans flex items-center justify-center">
-                    <div className="bg-white shadow-lg rounded-xl p-10 border border-gray-100 max-w-md text-center">
+                    <div className="bg-white shadow-lg rounded-lg p-10 border border-gray-100 max-w-md text-center">
                         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
                             <Lock className="w-8 h-8 stroke-green-500" />
                         </div>
@@ -295,7 +295,7 @@ export default function SuppliersOverviewPage() {
                                                 <td className="px-6 py-4">
                                                     <p className="text-sm text-gray-600 line-clamp-1 max-w-[200px]">
                                                         {supplier.address ||
-                                                            "—"}
+                                                            "-"}
                                                     </p>
                                                 </td>
                                                 <td className="p-4 whitespace-nowrap">

@@ -206,7 +206,7 @@ export default function AboutPage() {
                                 market.
                             </p>
                             <p>
-                                That’s why we built{" "}
+                                That's why we built{" "}
                                 <strong className="font-semibold">
                                     SaleSense
                                 </strong>
@@ -216,7 +216,7 @@ export default function AboutPage() {
                                 We are more than just a POS system. We are a
                                 digital partner that helps you track every item
                                 sold, accept M-Pesa payments seamlessly,
-                                and—most importantly—handle your KRA tax returns
+                                and-most importantly-handle your KRA tax returns
                                 automatically.
                             </p>
                             <p>
@@ -289,7 +289,7 @@ export default function AboutPage() {
                                 </h3>
                                 <p className="text-gray-400 text-sm leading-relaxed">
                                     We believe you should keep your money.
-                                    That’s why you connect your own Paybill, and
+                                    That's why you connect your own Paybill, and
                                     we charge{" "}
                                     <strong>zero transaction fees</strong>.
                                 </p>

@@ -197,9 +197,11 @@ type User = {
 export default function Navbar({
     children,
     setFilteredProducts,
+    onSearchQueryChange,
 }: {
     children: React.ReactNode;
     setFilteredProducts?: (products: any[]) => void;
+    onSearchQueryChange?: (query: string) => void;
 }) {
     const pathname = usePathname();
     const router = useRouter();
@@ -392,10 +394,14 @@ export default function Navbar({
 
     const handleInputValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
-        if (val.length === 0) {
+        setInputValue(val);
+
+        // Live search support
+        if (onSearchQueryChange) {
+            onSearchQueryChange(val);
+        } else if (val.length === 0) {
             setFilteredProducts?.(originalProducts);
         }
-        setInputValue(val);
     };
 
     const handleSearch = () => {
@@ -470,27 +476,20 @@ export default function Navbar({
                             {isProductsPage && (
                                 <div
                                     data-tour="search-bar"
-                                    className="flex items-center bg-gray-100 rounded-lg shadow-sm w-full"
+                                    className="relative flex-grow max-w-md hidden md:block"
                                 >
+                                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                     <input
                                         type="text"
-                                        placeholder="Search inventory..."
-                                        className="py-2 px-4 bg-transparent outline-none w-full text-sm"
+                                        placeholder="Search inventory or SKU..."
+                                        className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:bg-white outline-none transition-all text-sm shadow-sm"
                                         value={inputValue}
                                         onChange={handleInputValueChange}
                                         onKeyDown={(e) =>
                                             e.key === "Enter" && handleSearch()
                                         }
+                                        autoFocus
                                     />
-                                    <div
-                                        className="pr-4 text-gray-400 cursor-pointer"
-                                        onClick={handleSearch}
-                                    >
-                                        <SearchIcon
-                                            size={18}
-                                            className="stroke-green-500"
-                                        />
-                                    </div>
                                 </div>
                             )}
                         </div>
@@ -796,11 +795,12 @@ export default function Navbar({
                         <>
                             <div className="fixed top-40 inset-0 bg-black/70 blur z-20"></div>
                             <div className="lg:hidden absolute z-30 w-full flex flex-col bg-white shadow-lg p-4">
-                                <div className="flex items-center bg-gray-100 rounded-lg shadow-sm flex-grow mb-4">
+                                <div className="relative flex items-center mb-4">
+                                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                     <input
                                         type="text"
-                                        placeholder="Search..."
-                                        className="py-3 px-4 rounded-l-lg bg-transparent outline-none w-full"
+                                        placeholder="Search inventory..."
+                                        className="w-full pl-11 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:bg-white outline-none transition-all text-sm shadow-sm"
                                         value={inputValue}
                                         onChange={handleInputValueChange}
                                         onKeyDown={(e) => {
@@ -809,35 +809,12 @@ export default function Navbar({
                                             }
                                         }}
                                     />
-                                    <div className="py-2 px-4 text-black">
-                                        <SearchIcon size={25} />
-                                    </div>
-
-                                    <div className="p-2 hover:bg-slate-100 text-black rounded-lg cursor-pointer flex items-center justify-center">
-                                        <div className="relative">
-                                            <button
-                                                className="p-2 hover:bg-slate-100 text-black mx-2 rounded-lg cursor-pointer flex items-center justify-center"
-                                                onClick={toggleFilterPopUp}
-                                            >
-                                                <SlidersHorizontal size={25} />
-                                            </button>
-                                            {filterPopUp && (
-                                                <FilterOverlay
-                                                    filterPopUp={filterPopUp}
-                                                    setFilterPopUp={
-                                                        setFilterPopUp
-                                                    }
-                                                    setFilteredProducts={
-                                                        setFilteredProducts ||
-                                                        (() => {})
-                                                    }
-                                                    toggleFilterPopUp={
-                                                        toggleFilterPopUp
-                                                    }
-                                                />
-                                            )}
-                                        </div>
-                                    </div>
+                                    <button
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-slate-100 text-gray-600 rounded-lg transition-colors"
+                                        onClick={toggleFilterPopUp}
+                                    >
+                                        <SlidersHorizontal size={20} />
+                                    </button>
                                 </div>
 
                                 {/* Mobile Store Switcher */}
@@ -949,7 +926,7 @@ export default function Navbar({
                                                                                     }),
                                                                                 )
                                                                             }
-                                                                            className={`flex items-center justify-between w-full px-3 py-2.5 rounded-xl transition-all duration-200 ${isGroupActive ? "bg-green-50/50" : "hover:bg-green-50"}`}
+                                                                            className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg transition-all duration-200 ${isGroupActive ? "bg-green-50/50" : "hover:bg-green-50"}`}
                                                                         >
                                                                             <div className="flex items-center gap-3">
                                                                                 <Icon
@@ -1049,7 +1026,7 @@ export default function Navbar({
                                                                                 false,
                                                                             )
                                                                         }
-                                                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
+                                                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                                                                             isActive
                                                                                 ? "bg-[#22c55e] text-white shadow-sm"
                                                                                 : "hover:bg-green-50 text-gray-600"

@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
+import { logAction } from "@/utils/server/audit";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     const { userId: clerkId } = getAuth(req);
@@ -66,6 +67,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 const supplier = await prisma.supplier.create({
                     data: { name, email, phoneNumber, address, businessId, createdById: userId },
                 });
+
+                // Log Audit Action
+                await logAction({
+                    action: "CREATE_SUPPLIER",
+                    entityType: "SUPPLIER",
+                    entityId: supplier.id,
+                    details: { name: supplier.name, email: supplier.email },
+                    userId: user.id,
+                    businessId: user.businessId,
+                    ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
+                    userAgent: req.headers["user-agent"],
+                });
+
                 return res.status(201).json(supplier);
             } catch (error) {
                 console.error("POST_SUPPLIER_ERROR", error);
@@ -77,3 +91,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(405).end();
     }
 }
+

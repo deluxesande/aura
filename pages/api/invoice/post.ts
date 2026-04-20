@@ -6,6 +6,7 @@ import { Novu } from "@novu/api";
 import { buffer } from "stream/consumers";
 import { getAuth } from "@clerk/nextjs/server";
 import { checkSubscription } from "@/utils/subscription/checkSubscription";
+import { logAction } from "@/utils/server/audit";
 
 const novu = new Novu({
     secretKey: process.env.NOVU_SECRET_KEY!,
@@ -109,6 +110,18 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             data: invoiceData,
         });
 
+        // Log Audit Action
+        await logAction({
+            action: "CREATE_INVOICE",
+            entityType: "INVOICE",
+            entityId: invoice.id,
+            details: { invoiceName, totalAmount, paymentType, storeId: targetStoreId },
+            userId: dbUser.id,
+            businessId: dbUser.businessId,
+            ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
+            userAgent: req.headers["user-agent"],
+        });
+
         const creator = await prisma.user.findUnique({
             where: { clerkId: req.body.createdBy },
         });
@@ -180,3 +193,4 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 };
 
 export const addInvoice = addCreatedBy(handler);
+

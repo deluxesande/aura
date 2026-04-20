@@ -82,6 +82,113 @@ export default function AuditLogsPage() {
         startIndex + itemsPerPage,
     );
 
+    const renderDetails = (log: any) => {
+        if (!log.details) return <span className="text-gray-400">--</span>;
+
+        try {
+            const details = JSON.parse(log.details);
+
+            switch (log.action) {
+                case "CREATE_PRODUCT":
+                    return (
+                        <div className="flex flex-col text-[11px] leading-tight">
+                            <span className="font-bold text-green-500">
+                                {details.name}
+                            </span>
+                            <span className="text-gray-500">
+                                SKU: {details.sku}
+                            </span>
+                        </div>
+                    );
+                case "CREATE_PRODUCTS_BATCH":
+                    return (
+                        <span className="text-[11px] font-bold text-green-500">
+                            Batch upload: {details.count} items
+                        </span>
+                    );
+                case "ARCHIVE_PRODUCT":
+                    return (
+                        <div className="flex flex-col text-[11px] leading-tight">
+                            <span className="font-bold text-red-600">
+                                {details.name}
+                            </span>
+                            <span className="text-gray-500 font-medium">
+                                Product archived
+                            </span>
+                        </div>
+                    );
+                case "UPDATE_PRODUCT":
+                    return (
+                        <div className="flex flex-col text-[11px] leading-tight">
+                            <span className="font-bold text-gray-700">
+                                {details.name}
+                            </span>
+                            <span className="text-gray-400">
+                                Price/Qty updated
+                            </span>
+                        </div>
+                    );
+                case "CREATE_INVOICE":
+                    return (
+                        <div className="flex flex-col text-[11px] leading-tight">
+                            <span className="font-bold text-gray-700">
+                                {details.invoiceName}
+                            </span>
+                            <span className="text-green-500 font-black">
+                                KSH {details.totalAmount}
+                            </span>
+                        </div>
+                    );
+                case "VOID_INVOICE":
+                    return (
+                        <div className="flex flex-col text-[11px] leading-tight">
+                            <span className="font-bold text-gray-700">
+                                {details.invoiceName}
+                            </span>
+                            <span className="text-red-600 font-bold tracking-tight">
+                                Invoice Voided
+                            </span>
+                        </div>
+                    );
+                case "INVENTORY_RECONCILIATION":
+                    return (
+                        <span className="text-[11px] font-medium text-gray-600">
+                            {details.itemsCount} items reconciled
+                        </span>
+                    );
+                case "UPDATE_BUSINESS_SETTINGS":
+                    return (
+                        <span className="text-[11px] font-medium text-gray-600 italic">
+                            Modified: {details.changedFields?.join(", ")}
+                        </span>
+                    );
+                case "UPDATE_STAFF":
+                    return (
+                        <div className="flex flex-col text-[11px] leading-tight">
+                            <span className="font-bold text-gray-700">
+                                {details.targetEmail}
+                            </span>
+                            <span className="text-gray-500 font-medium tracking-tight uppercase">
+                                New Role: {details.role}
+                            </span>
+                        </div>
+                    );
+                default:
+                    return (
+                        <span className="text-[10px] text-gray-500 font-mono truncate max-w-[200px] block">
+                            {log.details}
+                        </span>
+                    );
+            }
+        } catch (e) {
+            return (
+                <span className="text-[10px] text-gray-400 italic">
+                    Unparseable details
+                </span>
+            );
+        }
+    };
+
     if (loading) {
         return (
             <Navbar>
@@ -125,7 +232,7 @@ export default function AuditLogsPage() {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
@@ -135,6 +242,9 @@ export default function AuditLogsPage() {
                                     </th>
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
                                         Entity
+                                    </th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                        Details
                                     </th>
                                     <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
                                         User
@@ -175,6 +285,9 @@ export default function AuditLogsPage() {
                                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black bg-gray-100 text-gray-500 uppercase tracking-widest">
                                                     {log.entityType}
                                                 </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {renderDetails(log)}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-col">
@@ -226,7 +339,7 @@ export default function AuditLogsPage() {
                                         )
                                     }
                                     disabled={currentPage === 1}
-                                    className="p-1.5 rounded-md hover:bg-white border border-transparent hover:border-gray-200 disabled:opacity-30 transition-all"
+                                    className="p-1.5 rounded-lg hover:bg-white border border-transparent hover:border-gray-200 disabled:opacity-30 transition-all"
                                 >
                                     <ChevronLeft size={16} />
                                 </button>
@@ -237,7 +350,7 @@ export default function AuditLogsPage() {
                                         )
                                     }
                                     disabled={currentPage === totalPages}
-                                    className="p-1.5 rounded-md hover:bg-white border border-transparent hover:border-gray-200 disabled:opacity-30 transition-all"
+                                    className="p-1.5 rounded-lg hover:bg-white border border-transparent hover:border-gray-200 disabled:opacity-30 transition-all"
                                 >
                                     <ChevronRight size={16} />
                                 </button>

@@ -258,7 +258,7 @@ const TaxReturnsPage = () => {
                                             ? "Available on Premium Plans"
                                             : "Manual Filing"
                                     }
-                                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 ${
+                                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all flex items-center gap-1 ${
                                         filingMode === "MANUAL"
                                             ? "bg-white text-gray-900 shadow-sm"
                                             : "text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -269,7 +269,7 @@ const TaxReturnsPage = () => {
                                 </button>
                                 <button
                                     onClick={() => toggleFilingMode("AUTO")}
-                                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
                                         filingMode === "AUTO"
                                             ? "bg-white text-green-500 shadow-sm"
                                             : "text-gray-500 hover:text-gray-700"
@@ -520,7 +520,7 @@ const TaxReturnsPage = () => {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <button
-                                        className="btn btn-xs btn-ghost flex items-center bg-green-400 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600 px-3 py-1.5 rounded-md"
+                                        className="btn btn-xs btn-ghost flex items-center bg-green-400 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600 px-3 py-1.5 rounded-lg"
                                         onClick={handlePreviousPage}
                                         disabled={currentPage === 1}
                                     >
@@ -545,7 +545,7 @@ const TaxReturnsPage = () => {
                                         ))}
                                     </div>
                                     <button
-                                        className="btn btn-xs btn-ghost flex items-center bg-green-400 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600 px-3 py-1.5 rounded-md"
+                                        className="btn btn-xs btn-ghost flex items-center bg-green-400 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600 px-3 py-1.5 rounded-lg"
                                         onClick={handleNextPage}
                                         disabled={currentPage === totalPages}
                                     >

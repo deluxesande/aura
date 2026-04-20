@@ -74,7 +74,7 @@ export default function ReconciliationDetailsSidebar({
                 </div>
             ) : reconciliation ? (
                 <div className="p-4 md:p-6 space-y-6">
-                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
                         <div className="p-6 border-b border-gray-50 flex flex-col md:flex-row justify-between gap-4">
                             <div>
                                 <h1 className="text-xl font-black text-gray-900 uppercase tracking-tight">
@@ -143,7 +143,7 @@ export default function ReconciliationDetailsSidebar({
                                 )}
                             </div>
 
-                            <div className="overflow-x-auto border border-gray-100 rounded-xl">
+                            <div className="overflow-x-auto border border-gray-100 rounded-lg">
                                 <table className="w-full text-left border-collapse">
                                     <thead className="bg-gray-50/80 border-b border-gray-100">
                                         <tr>

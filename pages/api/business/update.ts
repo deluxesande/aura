@@ -2,6 +2,7 @@ import { getAuth } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/utils/lib/client";
 import { encrypt } from "@/utils/crypto";
+import { logAction } from "@/utils/server/audit";
 
 export const updateBusiness = async (
     req: NextApiRequest,
@@ -49,25 +50,63 @@ export const updateBusiness = async (
             });
         }
 
+        const currentUser = await prisma.user.findUnique({
+            where: { clerkId: user.userId },
+            select: { id: true }
+        });
+
+        const updateData: any = {
+            name,
+            logo,
+            email: email || null,
+            address: address || null,
+        };
+
+        const changedFields: string[] = [];
+        if (name) changedFields.push("name");
+        if (email) changedFields.push("email");
+        if (address) changedFields.push("address");
+        if (logo) changedFields.push("logo");
+
+        if (mpesaConsumerKey !== undefined) {
+            updateData.mpesaConsumerKey = mpesaConsumerKey
+                ? encrypt(mpesaConsumerKey)
+                : null;
+            changedFields.push("mpesaConsumerKey");
+        }
+        if (mpesaConsumerSecret !== undefined) {
+            updateData.mpesaConsumerSecret = mpesaConsumerSecret
+                ? encrypt(mpesaConsumerSecret)
+                : null;
+            changedFields.push("mpesaConsumerSecret");
+        }
+        if (mpesaPassKey !== undefined) {
+            updateData.mpesaPassKey = mpesaPassKey ? encrypt(mpesaPassKey) : null;
+            changedFields.push("mpesaPassKey");
+        }
+        if (mpesaShortCode !== undefined) {
+            updateData.mpesaShortCode = mpesaShortCode || null;
+            changedFields.push("mpesaShortCode");
+        }
+
         const updatedBusiness = await prisma.business.update({
             where: { id: id },
-            data: {
-                name,
-                logo,
-
-                email: email || null,
-                address: address || null,
-
-                mpesaConsumerKey: mpesaConsumerKey
-                    ? encrypt(mpesaConsumerKey)
-                    : null,
-                mpesaConsumerSecret: mpesaConsumerSecret
-                    ? encrypt(mpesaConsumerSecret)
-                    : null,
-                mpesaPassKey: mpesaPassKey ? encrypt(mpesaPassKey) : null,
-                mpesaShortCode: mpesaShortCode || null,
-            },
+            data: updateData,
         });
+
+        // Log Audit Action
+        if (currentUser) {
+            await logAction({
+                action: "UPDATE_BUSINESS_SETTINGS",
+                entityType: "BUSINESS",
+                entityId: id,
+                details: { changedFields },
+                userId: currentUser.id,
+                businessId: id,
+                ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
+                userAgent: req.headers["user-agent"],
+            });
+        }
 
         const safeResponse = {
             ...updatedBusiness,
@@ -92,3 +131,4 @@ export const updateBusiness = async (
         res.status(500).json({ error: "Failed to update business" });
     }
 };
+

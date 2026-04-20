@@ -236,7 +236,7 @@ export default function TeamPage() {
                                     <button
                                         key={role}
                                         onClick={() => setFilterRole(role)}
-                                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 whitespace-nowrap ${
+                                        className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
                                             filterRole === role
                                                 ? "bg-green-500 text-white shadow-sm"
                                                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
@@ -413,7 +413,7 @@ export default function TeamPage() {
                                                                         member.clerkId,
                                                                     )
                                                                 }
-                                                                className="text-green-500 hover:text-green-500 text-xs border border-green-200 hover:bg-green-50 px-3 py-1 rounded-md transition-colors font-semibold"
+                                                                className="text-green-500 hover:text-green-500 text-xs border border-green-200 hover:bg-green-50 px-3 py-1 rounded-lg transition-colors font-semibold"
                                                             >
                                                                 Reactivate
                                                             </button>
@@ -425,14 +425,14 @@ export default function TeamPage() {
                                                                         member,
                                                                     )
                                                                 }
-                                                                className="text-gray-600 hover:text-green-500 text-xs border border-gray-200 hover:border-green-200 hover:bg-green-50 px-3 py-1 rounded-md transition-colors flex items-center gap-1"
+                                                                className="text-gray-600 hover:text-green-500 text-xs border border-gray-200 hover:border-green-200 hover:bg-green-50 px-3 py-1 rounded-lg transition-colors flex items-center gap-1"
                                                             >
                                                                 Edit
                                                             </button>
                                                         ) : null}
                                                         <Link
                                                             href={`/settings/team/${member.clerkId}`}
-                                                            className="text-green-500 hover:text-green-900 text-xs border border-green-200 hover:bg-green-50 px-3 py-1 rounded-md transition-colors"
+                                                            className="text-green-500 hover:text-green-900 text-xs border border-green-200 hover:bg-green-50 px-3 py-1 rounded-lg transition-colors"
                                                         >
                                                             View
                                                         </Link>

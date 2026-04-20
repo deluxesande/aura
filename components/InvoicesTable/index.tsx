@@ -215,7 +215,7 @@ export default function InvoicesTable({
                                 key={status}
                                 onClick={() => setFilterStatus(status)}
                                 className={`
-                  px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 whitespace-nowrap uppercase
+                  px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 whitespace-nowrap uppercase
                   ${
                       filterStatus === status
                           ? "bg-green-500 text-white shadow-sm"

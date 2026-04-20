@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/utils/lib/client";
 import { Novu } from "@novu/api";
 import { getAuth } from "@clerk/nextjs/server";
+import { logAction } from "@/utils/server/audit";
 
 const novu = new Novu({
     secretKey: process.env.NOVU_SECRET_KEY!,
@@ -51,6 +52,9 @@ export const deleteInvoice = async (
 ) => {
     const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
 
+    const { userId } = getAuth(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
     if (!id) return res.status(400).json({ error: "Missing invoice ID" });
 
     try {
@@ -61,6 +65,13 @@ export const deleteInvoice = async (
         if (!existingInvoice || existingInvoice.isDeleted) {
             return res.status(404).json({ error: "Invoice not found or already deleted" });
         }
+
+        const currentUser = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true, businessId: true }
+        });
+
+        if (!currentUser) return res.status(404).json({ error: "User not found" });
 
         const invoiceItems = await prisma.invoiceItem.findMany({
             where: { invoiceId: id },
@@ -106,9 +117,20 @@ export const deleteInvoice = async (
             });
         });
 
-        const user = getAuth(req);
+        // Log Audit Action
+        await logAction({
+            action: "VOID_INVOICE",
+            entityType: "INVOICE",
+            entityId: id,
+            details: { invoiceName: existingInvoice.invoiceName, totalAmount: existingInvoice.totalAmount },
+            userId: currentUser.id,
+            businessId: currentUser.businessId!,
+            ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
+            userAgent: req.headers["user-agent"],
+        });
+
         const deleteBy = await prisma.user.findUnique({
-            where: { clerkId: user.userId || "" },
+            where: { clerkId: userId || "" },
             select: { firstName: true, lastName: true },
         });
 
@@ -122,3 +144,4 @@ export const deleteInvoice = async (
         res.status(500).json({ error: "Failed to delete invoice" });
     }
 };
+

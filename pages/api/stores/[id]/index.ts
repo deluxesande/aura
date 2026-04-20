@@ -2,6 +2,7 @@
 import { prisma } from "@/utils/lib/client";
 import { getAuth } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
+import { logAction } from "@/utils/server/audit";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     const { userId } = getAuth(req);
@@ -15,7 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             
             const user = await prisma.user.findUnique({
                 where: { clerkId: userId },
-                select: { role: true, businessId: true }
+                select: { id: true, role: true, businessId: true }
             });
 
             if (user?.role !== "admin") return res.status(403).json({ error: "Forbidden" });
@@ -30,6 +31,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 data: { name, address }
             });
 
+            // Log Audit Action
+            await logAction({
+                action: "UPDATE_BRANCH",
+                entityType: "STORE",
+                entityId: storeId,
+                details: { name: updatedStore.name, address: updatedStore.address },
+                userId: user.id,
+                businessId: user.businessId!,
+                ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
+                userAgent: req.headers["user-agent"],
+            });
+
             return res.status(200).json(updatedStore);
         } catch (error: any) {
             console.error("Edit Store Error:", error);
@@ -40,3 +53,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.setHeader("Allow", ["PUT"]);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
 }
+

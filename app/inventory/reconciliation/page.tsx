@@ -209,13 +209,13 @@ export default function ReconciliationPage() {
                     <div className="flex bg-gray-100 p-1 rounded-lg self-start">
                         <button
                             onClick={() => setActiveTab("new")}
-                            className={`px-6 py-2 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${activeTab === "new" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                            className={`px-6 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${activeTab === "new" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
                         >
                             New Stocktake
                         </button>
                         <button
                             onClick={() => setActiveTab("history")}
-                            className={`px-6 py-2 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${activeTab === "history" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                            className={`px-6 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${activeTab === "history" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
                         >
                             History
                         </button>
@@ -233,7 +233,7 @@ export default function ReconciliationPage() {
                         >
                             {/* Left Panel: Items List */}
                             <div className="lg:col-span-2 space-y-6">
-                                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                                <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
                                     <div className="p-4 border-b border-gray-50 bg-gray-50/30 flex items-center justify-between">
                                         <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
                                             Products to Reconcile
@@ -375,7 +375,7 @@ export default function ReconciliationPage() {
                                                                                     .value,
                                                                             )
                                                                         }
-                                                                        className="w-20 px-2 py-1 text-center bg-gray-50 border border-gray-200 rounded-md text-sm outline-none focus:ring-1 focus:ring-green-500"
+                                                                        className="w-20 px-2 py-1 text-center bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-1 focus:ring-green-500"
                                                                     />
                                                                 </div>
                                                             </td>
@@ -427,7 +427,7 @@ export default function ReconciliationPage() {
 
                             {/* Right Panel: Settings & Summary */}
                             <div className="space-y-6">
-                                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-6">
+                                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 space-y-6">
                                     <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
                                         Settings
                                     </h3>
@@ -530,7 +530,7 @@ export default function ReconciliationPage() {
                                     </div>
                                 </div>
 
-                                <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl space-y-4">
+                                <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg space-y-4">
                                     <div className="flex gap-3">
                                         <AlertCircle
                                             className="text-blue-500 shrink-0"
@@ -590,7 +590,7 @@ export default function ReconciliationPage() {
                             initial={{ opacity: 0, x: 10 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -10 }}
-                            className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+                            className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden"
                         >
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left">

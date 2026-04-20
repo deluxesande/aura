@@ -28,9 +28,13 @@ const DeleteUserForm: React.FC = () => {
                     router.push("/sign-up");
                 } catch (err) {
                     if (err instanceof Error) {
-                        toast.error("Something went wrong while deleting your account. Please try again.");
+                        toast.error(
+                            "Something went wrong while deleting your account. Please try again.",
+                        );
                     } else {
-                        toast.error("We ran into an unexpected issue. Please try again.");
+                        toast.error(
+                            "We ran into an unexpected issue. Please try again.",
+                        );
                     }
                 }
             };
@@ -44,7 +48,9 @@ const DeleteUserForm: React.FC = () => {
                 error: "We couldn't delete your account. Please try again.",
             });
         } else {
-            toast.warning("The name or email you entered doesn't match our records. Please check and try again.");
+            toast.warning(
+                "The name or email you entered doesn't match our records. Please check and try again.",
+            );
         }
     };
 
@@ -63,7 +69,7 @@ const DeleteUserForm: React.FC = () => {
             </header>
 
             <button
-                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
                 onClick={() => setIsModalOpen(true)}
             >
                 Delete Account
@@ -102,14 +108,14 @@ const DeleteUserForm: React.FC = () => {
                             <div className="mt-6 w-full flex justify-end">
                                 <button
                                     type="button"
-                                    className="w-full  bg-slate-50 hover:bg-gray-200 text-black px-4 py-2 rounded-md "
+                                    className="w-full  bg-slate-50 hover:bg-gray-200 text-black px-4 py-2 rounded-lg "
                                     onClick={() => setIsModalOpen(false)}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    className="w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 ml-3"
+                                    className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 ml-3"
                                 >
                                     Delete Account
                                 </button>

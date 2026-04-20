@@ -89,7 +89,7 @@ export const BLOG_POSTS: BlogPost[] = [
         content: [
             {
                 type: "paragraph",
-                text: "Inventory leakage—whether through theft, damage, or simple counting errors—is one of the leading causes of business failure in retail. If your system says you have 10 items but your shelf only has 8, you are losing money without even knowing it.",
+                text: "Inventory leakage - whether through theft, damage, or simple counting errors - is one of the leading causes of business failure in retail. If your system says you have 10 items but your shelf only has 8, you are losing money without even knowing it.",
             },
             {
                 type: "heading",
@@ -133,7 +133,7 @@ export const BLOG_POSTS: BlogPost[] = [
         content: [
             {
                 type: "paragraph",
-                text: "Many SMEs manage their suppliers informally—a quick phone call or a WhatsApp message. While fast, this method lacks a paper trail and makes it impossible to track partial deliveries or price fluctuations over time.",
+                text: "Many SMEs manage their suppliers informally-a quick phone call or a WhatsApp message. While fast, this method lacks a paper trail and makes it impossible to track partial deliveries or price fluctuations over time.",
             },
             {
                 type: "heading",
@@ -148,7 +148,7 @@ export const BLOG_POSTS: BlogPost[] = [
                 items: [
                     "Financial Control: You know exactly how much money you have committed to future stock.",
                     "Delivery Accuracy: When the truck arrives, your staff can check the delivery against the PO to ensure nothing is missing.",
-                    "Automated Inventory: In SaleSense, receiving a PO automatically updates your stock levels across all branches—no manual entry required.",
+                    "Automated Inventory: In SaleSense, receiving a PO automatically updates your stock levels across all branches-no manual entry required.",
                 ],
             },
             {
@@ -185,7 +185,7 @@ export const BLOG_POSTS: BlogPost[] = [
             },
             {
                 type: "paragraph",
-                text: "Every sensitive action—deleting an invoice, adjusting stock, or changing a product's price—is now recorded in SaleSense. This isn't about 'spying' on employees; it's about creating a culture of accountability.",
+                text: "Every sensitive action-deleting an invoice, adjusting stock, or changing a product's price-is now recorded in SaleSense. This isn't about 'spying' on employees; it's about creating a culture of accountability.",
             },
             {
                 type: "list",

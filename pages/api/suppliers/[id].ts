@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
+import { logAction } from "@/utils/server/audit";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     const { userId: clerkId } = getAuth(req);
@@ -9,7 +10,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const user = await prisma.user.findUnique({
         where: { clerkId },
-        select: { businessId: true },
+        select: { id: true, businessId: true },
     });
 
     if (!user || !user.businessId) return res.status(403).json({ error: "Forbidden" });
@@ -46,16 +47,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     where: { id, businessId: user.businessId },
                     data: req.body,
                 });
+
+                // Log Audit Action
+                await logAction({
+                    action: "UPDATE_SUPPLIER",
+                    entityType: "SUPPLIER",
+                    entityId: id,
+                    details: { name: updated.name, email: updated.email },
+                    userId: user.id,
+                    businessId: user.businessId,
+                    ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
+                    userAgent: req.headers["user-agent"],
+                });
+
                 return res.status(200).json(updated);
             } catch (error) {
                 return res.status(500).json({ error: "Update failed" });
             }
         case "DELETE":
             try {
-                await prisma.supplier.update({
+                const deleted = await prisma.supplier.update({
                     where: { id, businessId: user.businessId },
                     data: { isDeleted: true },
                 });
+
+                // Log Audit Action
+                await logAction({
+                    action: "DELETE_SUPPLIER",
+                    entityType: "SUPPLIER",
+                    entityId: id,
+                    details: { name: deleted.name },
+                    userId: user.id,
+                    businessId: user.businessId,
+                    ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
+                    userAgent: req.headers["user-agent"],
+                });
+
                 return res.status(200).json({ message: "Soft deleted" });
             } catch (error) {
                 return res.status(500).json({ error: "Delete failed" });
@@ -65,3 +92,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(405).end();
     }
 }
+

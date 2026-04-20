@@ -27,15 +27,15 @@ export default function MobileProductCard({
 
     return (
         <div className="w-screen pr-12 cursor-pointer" onClick={onAddToCart}>
-            <div className="w-full p-3 rounded-md bg-white shadow-md border border-gray-200 flex items-center gap-4">
+            <div className="w-full p-3 rounded-lg bg-white shadow-md border border-gray-200 flex items-center gap-4">
                 {/* Image */}
-                <div className="relative h-16 w-16 rounded-md">
+                <div className="relative h-16 w-16 rounded-lg">
                     <Image
                         src={image || "https://via.placeholder.com/150"}
                         alt={name}
                         layout="fill"
                         objectFit="cover"
-                        className="rounded-md"
+                        className="rounded-lg"
                     />
                 </div>
 

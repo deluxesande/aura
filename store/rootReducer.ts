@@ -18,6 +18,7 @@ import expenseReducer from "./slices/expenseSlice";
 import categoryReducer from "./slices/categorySlice";
 import auditLogReducer from "./slices/auditLogSlice";
 import reconciliationReducer from "./slices/reconciliationSlice";
+import activeTransactionsReducer from "./slices/activeTransactionsSlice";
 
 const rootReducer = combineReducers({
     product: productReducer,
@@ -39,6 +40,7 @@ const rootReducer = combineReducers({
     category: categoryReducer,
     auditLog: auditLogReducer,
     reconciliation: reconciliationReducer,
+    activeTransactions: activeTransactionsReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

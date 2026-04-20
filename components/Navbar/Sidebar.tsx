@@ -377,7 +377,7 @@ const Sidebar = () => {
                                                                                     href={
                                                                                         sub.href
                                                                                     }
-                                                                                    className={`flex items-center gap-3 px-2 py-1.5 rounded-md transition-all duration-200 group ${isSubActive ? "bg-[#22c55e] text-white shadow-sm" : "hover:bg-green-50 text-gray-500"}`}
+                                                                                    className={`flex items-center gap-3 px-2 py-1.5 rounded-lg transition-all duration-200 group ${isSubActive ? "bg-[#22c55e] text-white shadow-sm" : "hover:bg-green-50 text-gray-500"}`}
                                                                                 >
                                                                                     <span
                                                                                         className={`text-xs font-medium ${isSubActive ? "text-white font-bold" : "group-hover:text-green-500"}`}

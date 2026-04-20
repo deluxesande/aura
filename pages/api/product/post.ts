@@ -4,6 +4,7 @@ import { addCreatedBy } from "../middleware";
 import { prisma } from "@/utils/lib/client";
 import { getAuth } from "@clerk/nextjs/server";
 import { checkSubscription } from "@/utils/subscription/checkSubscription";
+import { logAction } from "@/utils/server/audit";
 
 export const config = {
     api: {
@@ -33,7 +34,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         // Fetch current user and their store access
         const currentUser = await prisma.user.findUnique({
             where: { clerkId: userId },
-            select: { role: true, storeId: true }
+            select: { id: true, role: true, storeId: true }
         });
 
         if (!currentUser) return res.status(404).json({ error: "User not found" });
@@ -261,7 +262,17 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             { timeout: 9500 },
         );
 
-
+        // Log Audit Action
+        await logAction({
+            action: isBatch ? "CREATE_PRODUCTS_BATCH" : "CREATE_PRODUCT",
+            entityType: "PRODUCT",
+            entityId: isBatch ? undefined : results[0].id,
+            details: isBatch ? { count: results.length } : { sku: results[0].sku, name: results[0].name },
+            userId: currentUser.id,
+            businessId: bId,
+            ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
+            userAgent: req.headers["user-agent"],
+        });
 
         return res.status(201).json(isBatch ? results : results[0]);
     } catch (error: any) {
@@ -273,3 +284,4 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 };
 
 export const addProduct = addCreatedBy(handler);
+

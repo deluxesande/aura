@@ -87,7 +87,7 @@ const ProductRow = React.memo(
                                 <div className="w-4 h-px bg-gray-300" />
                             )}
 
-                            <div className="w-12 h-12 relative rounded-md overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
+                            <div className="w-12 h-12 relative rounded-lg overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
                                 {product.image ? (
                                     <Image
                                         src={product.image}
@@ -108,7 +108,7 @@ const ProductRow = React.memo(
                                         {product.name}
                                     </p>
                                     {isTemplate && (
-                                        <span className="bg-green-100 text-green-500 text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                                        <span className="bg-green-100 text-green-500 text-[10px] font-bold px-1.5 py-0.5 rounded-lg flex items-center gap-1">
                                             TEMPLATE
                                         </span>
                                     )}
@@ -170,7 +170,7 @@ const ProductRow = React.memo(
                     </td>
 
                     <td className="py-3 px-4 text-sm font-medium text-gray-900">
-                        {isTemplate ? "—" : `Ksh ${product.price}`}
+                        {isTemplate ? "-" : `Ksh ${product.price}`}
                     </td>
 
                     <td className="py-3 px-4">

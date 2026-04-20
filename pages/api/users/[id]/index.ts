@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { clerkClient, getAuth } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
+import { logAction } from "@/utils/server/audit";
 
 async function getUserById(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== "GET") {
@@ -126,7 +127,7 @@ async function updateUser(req: NextApiRequest, res: NextApiResponse) {
 
         const requestor = await prisma.user.findUnique({
             where: { clerkId: requestorClerkId },
-            select: { businessId: true, role: true },
+            select: { id: true, businessId: true, role: true },
         });
 
         if (!requestor || !requestor.businessId) {
@@ -206,12 +207,25 @@ async function updateUser(req: NextApiRequest, res: NextApiResponse) {
             include: { Store: { select: { id: true, name: true } } },
         });
 
+        // Log Audit Action
+        await logAction({
+            action: "UPDATE_STAFF",
+            entityType: "USER",
+            entityId: updatedUser.id,
+            details: { targetEmail: targetUser.email, role: updatedUser.role, storeId: updatedUser.storeId },
+            userId: requestor.id,
+            businessId: requestor.businessId,
+            ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
+            userAgent: req.headers["user-agent"],
+        });
+
         return res.status(200).json(updatedUser);
     } catch (error) {
         console.log("Error updating user details:", error);
         return res.status(500).json({ error: "Internal server error" });
     }
 }
+
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
     switch (req.method) {

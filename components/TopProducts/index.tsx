@@ -10,15 +10,15 @@ export default function TopProducts({
     quantity: number;
 }) {
     return (
-        <div className="w-full h-16 p-2 bg-slate-50 shadow-sm rounded-md flex items-center justify-between my-4 z-0">
+        <div className="w-full h-16 p-2 bg-slate-50 shadow-sm rounded-lg flex items-center justify-between my-4 z-0">
             <div className="flex items-center">
-                <div className="relative h-10 w-10 rounded-md">
+                <div className="relative h-10 w-10 rounded-lg">
                     <Image
                         src={product.image || "https://via.placeholder.com/150"}
                         alt="Image"
                         layout="fill"
                         objectFit="cover"
-                        className="rounded-md"
+                        className="rounded-lg"
                     />
                 </div>
                 <div className="ml-4">

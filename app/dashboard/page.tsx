@@ -303,7 +303,7 @@ export default function Page() {
                             Monthly Sales
                         </h1>
                         <select
-                            className="select select-sm outline-none bg-green-50 appearance-none rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 disabled:opacity-50 text-green-500"
+                            className="select select-sm outline-none bg-green-50 appearance-none rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 disabled:opacity-50 text-green-500"
                             value={timeRange}
                             onChange={handleTimeRangeChange}
                         >
@@ -322,7 +322,7 @@ export default function Page() {
                             Top Products
                         </h1>
                         <select
-                            className="select select-sm outline-none bg-green-50 appearance-none rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 disabled:opacity-50 text-green-500"
+                            className="select select-sm outline-none bg-green-50 appearance-none rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 disabled:opacity-50 text-green-500"
                             value={topProductsTimePeriod}
                             onChange={(e) =>
                                 setTopProductsTimePeriod(Number(e.target.value))

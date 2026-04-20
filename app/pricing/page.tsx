@@ -308,7 +308,7 @@ export default function PricingPage() {
                     </motion.div>
 
                     <motion.div
-                        className="overflow-x-auto border border-gray-100 rounded-xl shadow-sm"
+                        className="overflow-x-auto border border-gray-100 rounded-lg shadow-sm"
                         variants={itemVariants}
                     >
                         <table className="w-full text-left border-collapse bg-white">

@@ -86,20 +86,20 @@ export default function PrivacyPolicyModal({
                     <ul className="list-disc pl-5">
                         <li>
                             <strong>Creating and managing your account</strong>{" "}
-                            — so you can log in, update settings, and access
+                            - so you can log in, update settings, and access
                             services.
                         </li>
                         <li>
-                            <strong>Improving your experience</strong> — by
+                            <strong>Improving your experience</strong> - by
                             understanding your behavior and preferences to
                             tailor the platform to your needs.
                         </li>
                         <li>
-                            <strong>Customer support</strong> — allowing us to
+                            <strong>Customer support</strong> - allowing us to
                             assist you effectively when you reach out.
                         </li>
                         <li>
-                            <strong>Security & compliance</strong> — helping us
+                            <strong>Security & compliance</strong> - helping us
                             prevent fraud and fulfill legal obligations.
                         </li>
                     </ul>
@@ -116,12 +116,12 @@ export default function PrivacyPolicyModal({
                         <li>
                             <strong>With service providers:</strong> Trusted
                             companies that help us with analytics, hosting, and
-                            customer support — under strict data protection
+                            customer support - under strict data protection
                             agreements.
                         </li>
                         <li>
                             <strong>Legal reasons:</strong> If required by law
-                            or to protect our rights and users’ safety.
+                            or to protect our rights and users' safety.
                         </li>
                         <li>
                             <strong>Business transitions:</strong> In the event
@@ -179,7 +179,7 @@ export default function PrivacyPolicyModal({
                     </h3>
                     <p>
                         We only keep your data for as long as necessary to serve
-                        the purposes mentioned above — or longer if required by
+                        the purposes mentioned above - or longer if required by
                         law. When no longer needed, your data is securely
                         deleted.
                     </p>
@@ -204,7 +204,7 @@ export default function PrivacyPolicyModal({
                     </p>
 
                     <h3 className="text-lg font-semibold text-gray-900 mt-6">
-                        9. Children’s Privacy
+                        9. Children's Privacy
                     </h3>
                     <p>
                         Salesense is not intended for users under the age of 13.
@@ -218,7 +218,7 @@ export default function PrivacyPolicyModal({
                     </h3>
                     <p>
                         We may occasionally update this Privacy Policy. When we
-                        do, we’ll post the latest version here and update the
+                        do, we'll post the latest version here and update the
                         effective date. Major changes will be communicated
                         directly.
                     </p>
@@ -249,7 +249,7 @@ export default function PrivacyPolicyModal({
                 <div className="flex justify-end mt-6">
                     <button
                         onClick={() => setIsPrivacyOpen(false)}
-                        className="px-4 py-2 w-full bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        className="px-4 py-2 w-full bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                     >
                         Close
                     </button>

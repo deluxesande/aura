@@ -103,7 +103,7 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({
         page: {
             fontFamily: "Helvetica",
             fontSize: isSmall ? 9 : 10,
-            padding: isSmall ? 10 : 30,
+            padding: isSmall ? 10 : 40,
             color: "#333",
             flexDirection: "column",
             backgroundColor: "#ffffff",
@@ -117,122 +117,120 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({
         },
         header: {
             flexDirection: isSmall ? "column" : "row",
-            alignItems: isSmall ? "flex-start" : "center",
-            justifyContent: isSmall ? "flex-start" : "space-between",
-            marginBottom: isSmall ? 10 : 20,
-            borderBottomWidth: 1,
-            borderBottomColor: "#eee",
-            paddingBottom: 10,
-            gap: isSmall ? 5 : 0,
+            justifyContent: "space-between",
+            marginBottom: isSmall ? 10 : 30,
+            borderBottomWidth: isSmall ? 1 : 2,
+            borderBottomColor: "#22c55e",
+            paddingBottom: isSmall ? 10 : 20,
         },
         logo: {
-            width: isSmall ? 40 : 60,
-            height: isSmall ? 40 : 60,
+            width: isSmall ? 40 : 80,
+            height: isSmall ? 40 : 80,
             objectFit: "contain",
-            marginBottom: isSmall ? 5 : 0,
         },
         businessDetails: {
             textAlign: isSmall ? "left" : "right",
-            width: isSmall ? "100%" : "auto",
         },
         title: {
-            fontSize: isSmall ? 14 : 20,
+            fontSize: isSmall ? 14 : 24,
             fontWeight: "bold",
             color: "#22c55e",
             textTransform: "uppercase",
             marginBottom: 5,
         },
-        invoiceMeta: {
+        metaSection: {
             flexDirection: isSmall ? "column" : "row",
             justifyContent: "space-between",
-            marginTop: isSmall ? 10 : 20,
-            marginBottom: isSmall ? 10 : 20,
-            gap: isSmall ? 10 : 0,
+            marginBottom: isSmall ? 10 : 30,
+            gap: isSmall ? 10 : 20,
         },
         col: {
-            width: isSmall ? "100%" : "48%",
+            width: isSmall ? "100%" : "33%",
         },
         label: {
             fontSize: 8,
             color: "#888",
-            marginBottom: 2,
+            marginBottom: 4,
             textTransform: "uppercase",
+            fontWeight: "bold",
         },
         value: {
             fontSize: isSmall ? 9 : 10,
-            marginBottom: 4,
+            marginBottom: 2,
+            color: "#374151",
         },
         boldValue: {
-            fontSize: isSmall ? 9 : 10,
+            fontSize: isSmall ? 9 : 11,
             fontWeight: "bold",
             marginBottom: 4,
+            color: "#111827",
         },
         table: {
             width: "100%",
             marginTop: 10,
-            marginBottom: isSmall ? 10 : 20,
+            marginBottom: isSmall ? 10 : 30,
         },
         tableHeader: {
             flexDirection: "row",
             backgroundColor: "#f9fafb",
             borderBottomWidth: 1,
-            borderBottomColor: "#eee",
-            padding: isSmall ? 4 : 8,
+            borderBottomColor: "#e5e7eb",
+            padding: isSmall ? 6 : 10,
         },
         tableRow: {
             flexDirection: "row",
             borderBottomWidth: 1,
-            borderBottomColor: "#eee",
-            padding: isSmall ? 4 : 8,
-            alignItems: "flex-start",
+            borderBottomColor: "#f3f4f6",
+            padding: isSmall ? 6 : 10,
+            alignItems: "center",
         },
-        colDesc: { width: isSmall ? "40%" : "50%" },
-        colQty: { width: isSmall ? "10%" : "15%", textAlign: "center" },
-        colPrice: { width: isSmall ? "25%" : "15%", textAlign: "right" },
-        colTotal: { width: isSmall ? "25%" : "20%", textAlign: "right" },
+        colDesc: { width: "45%" },
+        colQty: { width: "15%", textAlign: "center" },
+        colPrice: { width: "20%", textAlign: "right" },
+        colTotal: { width: "20%", textAlign: "right" },
 
-        totalsSection: {
+        summarySection: {
             flexDirection: "row",
             justifyContent: "flex-end",
             marginTop: 10,
         },
-        totalRowWrapper: {
-            width: isSmall ? "100%" : "auto",
-            minWidth: isSmall ? 0 : 200,
+        summaryBox: {
+            width: isSmall ? "100%" : 220,
+            padding: 15,
+            backgroundColor: "#f9fafb",
+            borderRadius: 5,
         },
-        totalRow: {
+        summaryRow: {
             flexDirection: "row",
             justifyContent: "space-between",
-            marginBottom: 5,
+            marginBottom: 8,
         },
         grandTotal: {
-            fontSize: isSmall ? 12 : 14,
+            fontSize: 14,
             fontWeight: "bold",
+            color: "#111827",
             borderTopWidth: 1,
-            borderTopColor: "#333",
-            paddingTop: 5,
+            borderTopColor: "#e5e7eb",
+            paddingTop: 10,
             marginTop: 5,
         },
         footer: {
-            marginTop: isSmall ? 20 : "auto",
-            position: isSmall ? "relative" : "absolute",
-            bottom: isSmall ? "auto" : 30,
-            left: 0,
-            right: 0,
+            marginTop: "auto",
+            borderTopWidth: 1,
+            borderTopColor: "#eee",
+            paddingTop: 20,
             textAlign: "center",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
         },
         footerText: {
             fontSize: 8,
             color: "#9ca3af",
-            marginBottom: 4,
+            marginBottom: 5,
         },
         footerLogo: {
-            width: isSmall ? 60 : 100,
+            width: 100,
+            height: 30,
             objectFit: "contain",
-            opacity: 1,
+            alignSelf: "center",
         },
     });
 
@@ -263,6 +261,7 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({
 
     const businessLogo = business?.logo || null;
     const footerLogo = "/logos/salesense-horizontal.png";
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
 
     return (
         <Document>
@@ -272,11 +271,7 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({
                     <View style={styles.poweredByTop}>
                         <Text style={styles.footerText}>Powered by</Text>
                         <Image
-                            src={`${
-                                typeof window !== "undefined"
-                                    ? window.location.origin
-                                    : ""
-                            }${footerLogo}`}
+                            src={`${origin}${footerLogo}`}
                             style={{ width: 60, objectFit: "contain" }}
                         />
                     </View>
@@ -290,8 +285,9 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({
                         ) : (
                             <Text
                                 style={{
-                                    fontSize: isSmall ? 14 : 18,
+                                    fontSize: isSmall ? 14 : 20,
                                     fontWeight: "bold",
+                                    color: "#22c55e",
                                 }}
                             >
                                 {business?.name || "Business Name"}
@@ -300,68 +296,87 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({
                     </View>
 
                     <View style={styles.businessDetails}>
-                        <Text style={styles.title}>Receipt</Text>
-                        <Text style={styles.value}>{invoice.invoiceName}</Text>
+                        <Text style={styles.title}>Tax Invoice</Text>
+                        <Text style={styles.boldValue}>
+                            {invoice.invoiceName || "N/A"}
+                        </Text>
                         <Text style={styles.value}>
-                            {new Date(invoice.createdAt).toDateString()}
+                            {new Date(invoice.createdAt).toLocaleDateString(
+                                "en-GB",
+                                {
+                                    day: "numeric",
+                                    month: "long",
+                                    year: "numeric",
+                                },
+                            )}
                         </Text>
                     </View>
                 </View>
 
                 {/* --- Info Section --- */}
-                <View style={styles.invoiceMeta}>
+                <View style={styles.metaSection}>
                     <View style={styles.col}>
                         <Text style={styles.label}>From:</Text>
-                        {business ? (
-                            <>
-                                <Text style={styles.boldValue}>
-                                    {business.name}
-                                </Text>
-                                {business.email && (
-                                    <Text style={styles.value}>
-                                        {business.email}
-                                    </Text>
-                                )}
-                                {business.phoneNumber && (
-                                    <Text style={styles.value}>
-                                        {business.phoneNumber}
-                                    </Text>
-                                )}
-                                {business.address && (
-                                    <Text style={styles.value}>
-                                        {business.address}
-                                    </Text>
-                                )}
-                            </>
-                        ) : (
-                            <Text style={styles.value}>--</Text>
+                        <Text style={styles.boldValue}>
+                            {business?.name || "Business"}
+                        </Text>
+                        {business?.address && (
+                            <Text style={styles.value}>{business.address}</Text>
+                        )}
+                        {business?.email && (
+                            <Text style={styles.value}>{business.email}</Text>
+                        )}
+                        {business?.phoneNumber && (
+                            <Text style={styles.value}>
+                                {business.phoneNumber}
+                            </Text>
                         )}
                     </View>
 
                     <View style={styles.col}>
                         <Text style={styles.label}>Bill To:</Text>
-                        <Text style={styles.boldValue}>
-                            {getCustomerName()}
-                        </Text>
-                        {invoice.Customer && (
-                            <>
-                                <Text style={styles.value}>
-                                    {invoice.Customer.phoneNumber}
-                                </Text>
-                                {invoice.Customer.email && (
-                                    <Text style={styles.value}>
-                                        {invoice.Customer.email}
-                                    </Text>
-                                )}
-                            </>
+                        <Text style={styles.boldValue}>{getCustomerName()}</Text>
+                        {invoice.Customer?.phoneNumber && (
+                            <Text style={styles.value}>
+                                {invoice.Customer.phoneNumber}
+                            </Text>
+                        )}
+                        {invoice.Customer?.email && (
+                            <Text style={styles.value}>
+                                {invoice.Customer.email}
+                            </Text>
                         )}
                     </View>
+
+                    {!isSmall && (
+                        <View style={styles.col}>
+                            <Text style={styles.label}>Payment Info</Text>
+                            <View style={{ marginBottom: 5 }}>
+                                <Text style={styles.label}>Method</Text>
+                                <Text style={styles.value}>
+                                    {invoice.paymentType}
+                                </Text>
+                            </View>
+                            <Text style={styles.label}>Status</Text>
+                            <Text
+                                style={{
+                                    fontSize: 9,
+                                    fontWeight: "bold",
+                                    color: "#166534",
+                                }}
+                            >
+                                COMPLETED
+                            </Text>
+                        </View>
+                    )}
                 </View>
 
                 {/* --- Table --- */}
                 <View style={styles.table}>
                     <View style={styles.tableHeader}>
-                        <Text style={[styles.label, styles.colDesc]}>Item</Text>
+                        <Text style={[styles.label, styles.colDesc]}>
+                            Description
+                        </Text>
                         <Text style={[styles.label, styles.colQty]}>Qty</Text>
                         <Text style={[styles.label, styles.colPrice]}>
                             Price
@@ -375,24 +390,31 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({
                         const qty = Number(item.quantity) || 0;
                         const lineTotal = Number(item.Product.price) * qty;
                         const unitPrice = item.Product.price;
-                        
+
                         const isVariant = item.Product.type === "VARIANT";
-                        const attributes = isVariant && item.Product.attributeValues
-                            ? item.Product.attributeValues.map((av: any) => av.attributeOption.value).join(" / ")
-                            : null;
+                        const attributes =
+                            isVariant && item.Product.attributeValues
+                                ? item.Product.attributeValues
+                                      .map((av: any) => av.attributeOption.value)
+                                      .join(" / ")
+                                : null;
 
                         return (
-                            <View
-                                key={index}
-                                style={styles.tableRow}
-                                wrap={false}
-                            >
+                            <View key={index} style={styles.tableRow} wrap={false}>
                                 <View style={styles.colDesc}>
-                                    <Text style={styles.value}>
+                                    <Text style={styles.boldValue}>
                                         {item.Product?.name || "Item"}
                                     </Text>
                                     {attributes && (
-                                        <Text style={{ fontSize: isSmall ? 7 : 8, color: "#22c55e", marginTop: -2, marginBottom: 2, textTransform: "uppercase" }}>
+                                        <Text
+                                            style={{
+                                                fontSize: isSmall ? 7 : 8,
+                                                color: "#22c55e",
+                                                marginTop: -2,
+                                                marginBottom: 2,
+                                                textTransform: "uppercase",
+                                            }}
+                                        >
                                             {attributes}
                                         </Text>
                                     )}
@@ -406,7 +428,13 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({
                                     {formatNumber(unitPrice)}
                                 </Text>
 
-                                <Text style={[styles.value, styles.colTotal]}>
+                                <Text
+                                    style={[
+                                        styles.boldValue,
+                                        styles.colTotal,
+                                        { fontSize: 10 },
+                                    ]}
+                                >
                                     {formatNumber(lineTotal)}
                                 </Text>
                             </View>
@@ -415,39 +443,49 @@ const InvoicePDF: React.FC<InvoicePDFProps> = ({
                 </View>
 
                 {/* --- Totals --- */}
-                <View style={styles.totalsSection} wrap={false}>
-                    <View style={styles.totalRowWrapper}>
-                        <View style={styles.totalRow}>
+                <View style={styles.summarySection} wrap={false}>
+                    <View style={styles.summaryBox}>
+                        <View style={styles.summaryRow}>
                             <Text style={styles.value}>Subtotal:</Text>
-                            <Text style={styles.value}>
+                            <Text style={styles.boldValue}>
                                 {formatMoney(invoice.totalAmount)}
                             </Text>
                         </View>
-                        <View style={styles.totalRow}>
+                        <View style={styles.summaryRow}>
                             <Text style={styles.value}>Payment Method:</Text>
-                            <Text style={styles.value}>
-                                {invoice.paymentType}
-                            </Text>
+                            <Text style={styles.value}>{invoice.paymentType}</Text>
                         </View>
-                        <View style={[styles.totalRow, styles.grandTotal]}>
-                            <Text style={styles.title}>Total:</Text>
-                            <Text style={styles.title}>
+                        <View style={[styles.summaryRow, styles.grandTotal]}>
+                            <Text
+                                style={[
+                                    styles.label,
+                                    { color: "#111827", marginTop: 4 },
+                                ]}
+                            >
+                                Total Amount:
+                            </Text>
+                            <Text
+                                style={{
+                                    fontSize: 16,
+                                    fontWeight: "bold",
+                                    color: "#22c55e",
+                                }}
+                            >
                                 {formatMoney(invoice.totalAmount)}
                             </Text>
                         </View>
                     </View>
                 </View>
 
-                {/* --- Footer (Only for A4) --- */}
+                {/* --- Footer --- */}
                 {!isPremium && !isSmall && (
-                    <View style={styles.footer} wrap={false}>
+                    <View style={styles.footer} fixed>
+                        <Text style={styles.footerText}>
+                            Thank you for your business!
+                        </Text>
                         <Text style={styles.footerText}>Powered by</Text>
                         <Image
-                            src={`${
-                                typeof window !== "undefined"
-                                    ? window.location.origin
-                                    : ""
-                            }${footerLogo}`}
+                            src={`${origin}${footerLogo}`}
                             style={styles.footerLogo}
                         />
                     </View>

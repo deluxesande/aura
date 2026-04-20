@@ -201,7 +201,7 @@ const IntegrationsSettings: React.FC = () => {
     return (
         <section className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 w-full relative min-h-[200px]">
             {isLoading && (
-                <div className="flex flex-col items-center justify-center my-10">
+                <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-20 rounded-lg">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                 </div>
             )}
@@ -244,7 +244,7 @@ const IntegrationsSettings: React.FC = () => {
                             {integrations[
                                 integration.id as keyof typeof integrations
                             ] && (
-                                <div className="text-xs font-medium flex items-center gap-1.5 bg-green-50 w-fit px-2 py-1 rounded-md border border-green-100">
+                                <div className="text-xs font-medium flex items-center gap-1.5 bg-green-50 w-fit px-2 py-1 rounded-lg border border-green-100">
                                     <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
                                     <span className="text-green-500">
                                         {savedConfig?.shortCode}

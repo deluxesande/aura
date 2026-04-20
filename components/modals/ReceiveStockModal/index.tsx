@@ -313,7 +313,7 @@ export default function ReceiveStockModal({
                             className="flex flex-col flex-1 overflow-hidden"
                         >
                             <div className="p-6 overflow-y-auto flex-1 space-y-8 bg-gray-50/30">
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                                             Destination Branch
@@ -453,7 +453,7 @@ export default function ReceiveStockModal({
                                         {items.map((item, index) => (
                                             <div
                                                 key={`line-item-${index}`}
-                                                className="flex flex-col md:flex-row items-start md:items-center gap-3 bg-white p-3 rounded-xl border border-gray-200 shadow-sm relative group"
+                                                className="flex flex-col md:flex-row items-start md:items-center gap-3 bg-white p-3 rounded-lg border border-gray-200 shadow-sm relative group"
                                             >
                                                 <div className="w-full md:flex-1 relative">
                                                     <select

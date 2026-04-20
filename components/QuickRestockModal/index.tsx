@@ -118,7 +118,7 @@ function QuickRestockModal({
                                 <span className="text-gray-500">
                                     New Total Stock:
                                 </span>
-                                <span className="font-bold text-gray-900 bg-gray-100 px-2 py-1 rounded-md">
+                                <span className="font-bold text-gray-900 bg-gray-100 px-2 py-1 rounded-lg">
                                     {(productToRestock.quantity || 0) +
                                         (parseInt(restockAmount || "0") || 0)}
                                 </span>

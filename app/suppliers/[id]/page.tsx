@@ -46,7 +46,9 @@ export default function SingleSupplierPage() {
     const [loading, setLoading] = useState(true);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDetailsSidebar, setShowDetailsSidebar] = useState(false);
-    const [selectedDeliveryId, setSelectedDeliveryId] = useState<string | null>(null);
+    const [selectedDeliveryId, setSelectedDeliveryId] = useState<string | null>(
+        null,
+    );
 
     // Pagination for delivery history
     const [currentPage, setCurrentPage] = useState(1);
@@ -113,7 +115,7 @@ export default function SingleSupplierPage() {
         return (
             <Navbar>
                 <div className="p-4 md:p-8 mx-auto min-h-screen font-sans flex items-center justify-center">
-                    <div className="bg-white shadow-lg rounded-xl p-10 border border-gray-100 max-w-md text-center">
+                    <div className="bg-white shadow-lg rounded-lg p-10 border border-gray-100 max-w-md text-center">
                         <div className="w-16 h-16 bg-gray-50 border border-gray-100 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
                             <Lock className="w-8 h-8 text-gray-400" />
                         </div>
@@ -384,7 +386,9 @@ export default function SingleSupplierPage() {
                                                 key={`sup-del-${delivery?.id || idx}`}
                                                 className="hover:bg-gray-50 transition-colors cursor-pointer"
                                                 onClick={() => {
-                                                    setSelectedDeliveryId(delivery.id);
+                                                    setSelectedDeliveryId(
+                                                        delivery.id,
+                                                    );
                                                     setShowDetailsSidebar(true);
                                                 }}
                                             >
@@ -456,7 +460,7 @@ export default function SingleSupplierPage() {
                                         )
                                     }
                                     disabled={currentPage === 1}
-                                    className="px-3 py-1.5 border border-gray-200 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Previous
                                 </button>
@@ -467,7 +471,7 @@ export default function SingleSupplierPage() {
                                         )
                                     }
                                     disabled={currentPage === totalPages}
-                                    className="px-3 py-1.5 border border-gray-200 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Next
                                 </button>
