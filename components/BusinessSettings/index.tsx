@@ -194,6 +194,8 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
                                 id: businessData.id,
                                 name: businessData.name,
                                 logo: businessData.logo,
+                                email: businessData.email,
+                                address: businessData.address,
                             }),
                         );
                     }
