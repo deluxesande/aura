@@ -56,10 +56,12 @@ export default function PurchaseOrderModal({
                     const rawProducts = Array.isArray(prodRes.data) ? prodRes.data : [];
                     const flattened = [];
 
-                    for (const p of rawProducts) {
-                        if (p.type === "TEMPLATE") continue;
+                    // Only process top-level products (those that aren't themselves variants)
+                    // to avoid duplicates, as variants are also returned nested under their templates.
+                    const topLevelProducts = rawProducts.filter(p => !p.parentId);
 
-                        if (p.type === "VARIANTS" && p.variants && p.variants.length > 0) {
+                    for (const p of topLevelProducts) {
+                        if (p.type === "TEMPLATE" && p.variants && p.variants.length > 0) {
                             for (const v of p.variants) {
                                 const attributes = v.attributeValues
                                     ?.map((av: any) => `${av.attributeOption?.attribute?.name}: ${av.attributeOption?.value}`)
@@ -70,7 +72,8 @@ export default function PurchaseOrderModal({
                                     displayName: `${p.name} (${attributes || v.sku})`,
                                 });
                             }
-                        } else {
+                        } else if (p.type !== "TEMPLATE") {
+                            // SIMPLE products
                             flattened.push({
                                 ...p,
                                 displayName: p.name,
