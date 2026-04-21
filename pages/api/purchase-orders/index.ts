@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
+import { notifyBusinessStaff } from "@/utils/server/novu";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     const { userId: clerkId } = getAuth(req);
@@ -80,8 +81,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                             })),
                         },
                     },
-                    include: { items: true },
+                    include: { items: true, Supplier: { select: { name: true } } },
                 });
+
+                // NOTIFY
+                await notifyBusinessStaff({
+                    businessId,
+                    workflowId: "supplier-order-created",
+                    payload: {
+                        reference: po.reference,
+                        supplierName: po.Supplier.name,
+                        totalAmount: po.totalAmount,
+                        itemCount: po.items.length,
+                    },
+                    includeCreatorId: clerkId,
+                });
+
                 return res.status(201).json(po);
             } catch (error) {
                 console.error("POST_PO_ERROR", error);

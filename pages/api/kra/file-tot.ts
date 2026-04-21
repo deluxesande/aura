@@ -1,5 +1,7 @@
 import axios from "axios";
 import { NextApiRequest, NextApiResponse } from "next";
+import { getAuth } from "@clerk/nextjs/server";
+import { prisma } from "@/utils/lib/client";
 
 // FIX: Use Sandbox for BOTH Auth and Filing
 const API_DOMAIN = "https://sbx.kra.go.ke";
@@ -19,8 +21,37 @@ export default async function handler(
     }
 
     try {
-        // LOCAL TESTING PIN
-        const kraPin = "P318295670X";
+        const { userId } = getAuth(req);
+        if (!userId) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: {
+                id: true,
+                role: true,
+                businessId: true,
+            },
+        });
+
+        if (!user || !user.businessId) {
+            return res
+                .status(404)
+                .json({ error: "Business profile not found." });
+        }
+
+        const kraDetails = await prisma.kraDetails.findUnique({
+            where: { businessId: user.businessId },
+        });
+
+        if (!kraDetails || !kraDetails.kraPin) {
+            return res.status(400).json({
+                error: "KRA PIN not configured. Please set it in settings.",
+            });
+        }
+
+        const kraPin = kraDetails.kraPin;
 
         // 1. AUTHENTICATE (Sandbox)
         const authUrl = `${API_DOMAIN}/v1/token/generate?grant_type=client_credentials`;
@@ -31,9 +62,6 @@ export default async function handler(
         const tokenResponse = await axios.get(authUrl, {
             headers: { Authorization: `Basic ${credentials}` },
         });
-
-        // DEBUG: Log this if you still get errors to see what KRA returns
-        // console.log("Auth Response:", tokenResponse.data);
 
         const accessToken = tokenResponse.data.access_token;
         if (!accessToken) {
@@ -55,7 +83,6 @@ export default async function handler(
         };
 
         // 3. FILE RETURN (Sandbox)
-        // Note: Using the same domain as Auth ensures the token is valid
         const filingUrl = `${API_DOMAIN}/filing/v1/tot/paymentregistration`;
 
         const filingResponse = await axios.post(filingUrl, totPayload, {
@@ -68,6 +95,18 @@ export default async function handler(
         const kraData = filingResponse.data;
 
         if (kraData.Status === "OK" || kraData.ResponseCode === "87000") {
+            // 4. SAVE TO DATABASE
+            await prisma.kraTotReturn.create({
+                data: {
+                    ackNumber: kraData.AckNumber,
+                    paymentSlip: kraData.PRN,
+                    computedTax: parseFloat(kraData.ComputedTax),
+                    taxPayable: parseFloat(kraData.TaxPayable),
+                    period: period,
+                    businessId: user.businessId,
+                },
+            });
+
             return res.status(200).json({
                 message: "Return Filed Successfully",
                 details: {
@@ -87,11 +126,6 @@ export default async function handler(
     } catch (error: any) {
         console.error("KRA TOT Filing Error:", error);
 
-        // return res.status(500).json({
-        //     error: error,
-        // });
-
-        // Handle Sandbox "Unexpected EOF" (Backend Crash)
         if (
             error.response?.data?.fault?.faultstring ===
             "Unexpected EOF at target"
@@ -99,7 +133,7 @@ export default async function handler(
             return res.status(502).json({
                 error: "KRA Sandbox Error: The backend dropped the connection.",
                 solution:
-                    "This usually happens when using a Real PIN in Sandbox. Ensure 'A000109503Z' is a valid KRA Test PIN.",
+                    "This usually happens when using a Real PIN in Sandbox. Ensure you are using a valid KRA Test PIN.",
             });
         }
 

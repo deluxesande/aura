@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
+import { notifyBusinessStaff } from "@/utils/server/novu";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     const { userId: clerkId } = getAuth(req);
@@ -134,6 +135,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                         storeId: targetStoreId,
                         createdById: userId,
                     },
+                });
+
+                // NOTIFY
+                await notifyBusinessStaff({
+                    businessId,
+                    workflowId: "expense-created",
+                    payload: {
+                        title: expense.title,
+                        amount: expense.amount,
+                        category: expense.category,
+                        loggedBy: clerkId, // Using clerkId as a temporary identifier
+                    },
+                    roles: ["admin"], // Only notify admins for expenses
                 });
 
                 return res.status(201).json(expense);

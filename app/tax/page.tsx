@@ -73,7 +73,7 @@ const TaxReturnsPage = () => {
         fetcher,
     );
 
-    const { data: filingHistory = [], isLoading: isLoadingHistory } = useSWR<
+    const { data: filingHistory = [], isLoading: isLoadingHistory, mutate: mutateHistory } = useSWR<
         TaxFiling[]
     >("/api/kra/returns", fetcher);
 
@@ -171,12 +171,21 @@ const TaxReturnsPage = () => {
         }
         setIsFiling(true);
         try {
-            await new Promise((resolve) => setTimeout(resolve, 2000));
+            const period = format(selectedMonth, "yyyy-MM");
+            const response = await apiClient.post("/kra/file-tot", {
+                totalSales: effectiveTotalSales,
+                period,
+            });
+
             toast.success(
-                `Successfully filed TOT for ${format(selectedMonth, "MMMM yyyy")}`,
+                `Successfully filed TOT for ${format(selectedMonth, "MMMM yyyy")}. Ack: ${response.data.details.ackNumber}`,
             );
-        } catch (error) {
-            toast.error("Failed to submit tax return. Try again.");
+            mutateHistory();
+        } catch (error: any) {
+            const errorMessage =
+                error.response?.data?.error ||
+                "Failed to submit tax return. Try again.";
+            toast.error(errorMessage);
         } finally {
             setIsFiling(false);
         }

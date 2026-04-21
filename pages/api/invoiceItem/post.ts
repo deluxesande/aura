@@ -1,11 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { addCreatedBy } from "../middleware";
 import { prisma } from "@/utils/lib/client";
-import { Novu } from "@novu/api"; // Ensure you have this installed
-
-const novu = new Novu({
-    secretKey: process.env.NOVU_SECRET_KEY!,
-});
+import { notifyBusinessStaff } from "@/utils/server/novu";
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const { invoiceId = null, productId, quantity, price } = req.body;
@@ -83,29 +79,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 });
 
                 if (currentUser?.businessId) {
-                    // Find Admins & Managers for this business
-                    const adminsAndManagers = await prisma.user.findMany({
-                        where: {
-                            businessId: currentUser.businessId,
-                            role: { in: ["admin", "manager"] },
+                    await notifyBusinessStaff({
+                        businessId: currentUser.businessId,
+                        workflowId: "low-stock-alert",
+                        payload: {
+                            name: updatedProduct.name,
+                            quantity: String(updatedInventory.quantity),
                         },
                     });
-
-                    // Trigger notifications in parallel
-                    await Promise.all(
-                        adminsAndManagers.map((admin) => {
-                            return novu.trigger({
-                                to: {
-                                    subscriberId: admin.clerkId,
-                                },
-                                workflowId: "low-stock-alert",
-                                payload: {
-                                    name: updatedProduct.name,
-                                    quantity: String(updatedInventory.quantity),
-                                },
-                            });
-                        })
-                    );
                 }
             }
         } catch (notificationError) {
