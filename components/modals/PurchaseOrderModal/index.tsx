@@ -52,13 +52,33 @@ export default function PurchaseOrderModal({
             ])
                 .then(([suppRes, prodRes]) => {
                     setSuppliers(suppRes.data || []);
-                    setProducts(
-                        Array.isArray(prodRes.data)
-                            ? prodRes.data.filter(
-                                  (p: any) => p.type !== "TEMPLATE",
-                              )
-                            : [],
-                    );
+                    
+                    const rawProducts = Array.isArray(prodRes.data) ? prodRes.data : [];
+                    const flattened = [];
+
+                    for (const p of rawProducts) {
+                        if (p.type === "TEMPLATE") continue;
+
+                        if (p.type === "VARIANTS" && p.variants && p.variants.length > 0) {
+                            for (const v of p.variants) {
+                                const attributes = v.attributeValues
+                                    ?.map((av: any) => `${av.attributeOption?.attribute?.name}: ${av.attributeOption?.value}`)
+                                    .join(", ");
+                                
+                                flattened.push({
+                                    ...v,
+                                    displayName: `${p.name} (${attributes || v.sku})`,
+                                });
+                            }
+                        } else {
+                            flattened.push({
+                                ...p,
+                                displayName: p.name,
+                            });
+                        }
+                    }
+
+                    setProducts(flattened);
                     setLoadingData(false);
                 })
                 .catch(() => {
@@ -396,7 +416,7 @@ export default function PurchaseOrderModal({
                                                                     key={`prod-opt-${p.id || idx}`}
                                                                     value={p.id}
                                                                 >
-                                                                    {p.name}
+                                                                    {p.displayName}
                                                                 </option>
                                                             ),
                                                         )}

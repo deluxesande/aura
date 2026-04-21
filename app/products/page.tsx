@@ -605,21 +605,18 @@ export default function Page() {
                     </div>
 
                     {activeFolderTemplate && (
-                        <div className="flex items-center gap-4 mt-6 bg-green-50 p-4 rounded-lg border border-green-100 animate-in fade-in slide-in-from-top-2">
+                        <div className="flex items-center gap-4 mt-4 bg-white p-4 rounded-lg animate-in fade-in slide-in-from-top-2">
                             <button
                                 onClick={() => setActiveFolderTemplate(null)}
-                                className="p-2 bg-white rounded-lg shadow-sm border border-green-200 hover:bg-green-100 transition-colors"
+                                className="p-2 bg-white rounded-lg shadow-sm hover:bg-green-100 transition-colors"
                             >
-                                <ArrowLeft
-                                    size={20}
-                                    className="text-green-500"
-                                />
+                                <ArrowLeft size={20} />
                             </button>
                             <div>
                                 <h2 className="text-xl font-bold text-gray-900">
                                     {activeFolderTemplate.name}
                                 </h2>
-                                <p className="text-xs text-green-500 font-medium">
+                                <p className="text-xs font-medium">
                                     Select options to add to cart
                                 </p>
                             </div>
