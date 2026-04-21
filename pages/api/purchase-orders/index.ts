@@ -91,8 +91,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     payload: {
                         reference: po.reference,
                         supplierName: po.Supplier.name,
-                        totalAmount: po.totalAmount,
-                        itemCount: po.items.length,
+                        totalAmount: String(po.totalAmount),
+                        itemCount: String(po.items.length),
                     },
                     includeCreatorId: clerkId,
                 });

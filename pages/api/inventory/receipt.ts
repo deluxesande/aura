@@ -172,9 +172,8 @@ export default async function handler(
                     });
                 }
 
-                const newReceipts = [];
-
-                for (const item of normalizedItems) {
+                // Parallelize item processing to reduce transaction time
+                const itemOperations = normalizedItems.map(async (item) => {
                     const qty = parseInt(item.quantity.toString());
                     const uCost = parseFloat(item.unitCost.toString());
                     const tCost = qty * uCost;
@@ -198,7 +197,6 @@ export default async function handler(
                             businessId: user.businessId!,
                         },
                     });
-                    newReceipts.push(receipt);
 
                     await tx.storeInventory.upsert({
                         where: {
@@ -221,9 +219,15 @@ export default async function handler(
                         where: { id: item.productId },
                         data: { inStock: true },
                     });
-                }
+
+                    return receipt;
+                });
+
+                const newReceipts = await Promise.all(itemOperations);
 
                 return { delivery, receipts: newReceipts };
+            }, {
+                timeout: 15000 // Increase timeout to 15 seconds for larger deliveries
             });
 
             return res.status(201).json(result);

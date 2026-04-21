@@ -143,9 +143,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     workflowId: "expense-created",
                     payload: {
                         title: expense.title,
-                        amount: expense.amount,
+                        amount: String(expense.amount),
                         category: expense.category,
-                        loggedBy: clerkId, // Using clerkId as a temporary identifier
+                        loggedBy: clerkId,
                     },
                     roles: ["admin"], // Only notify admins for expenses
                 });
