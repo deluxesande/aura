@@ -39,7 +39,10 @@ export default async function handler(
         const targetStoreId = currentUser.role === "admin" ? activeStoreHeader : (currentUser.storeId as string);
 
         if (!targetStoreId) {
-            return res.status(400).json({ error: "No active store selected." });
+            return res.status(200).json({
+                labels: [],
+                data: [],
+            });
         }
 
         // Get all users in the same business

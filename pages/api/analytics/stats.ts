@@ -41,7 +41,23 @@ export default async function handler(
         const targetStoreId = user.role === "admin" ? activeStoreHeader : (user.storeId as string);
 
         if (!targetStoreId) {
-            return res.status(400).json({ error: "No active store selected." });
+            return res.status(200).json({
+                stats: {
+                    totalInvoices: 0,
+                    totalRevenue: 0,
+                    paidInvoices: 0,
+                    profit: 0,
+                    totalProcurement: 0,
+                    totalExpenses: 0,
+                },
+                percentageChanges: {
+                    totalInvoices: 0,
+                    totalRevenue: 0,
+                    paidInvoices: 0,
+                    profit: 0,
+                },
+                mpesaBalance: 0,
+            });
         }
 
         const businessId = user.businessId;
