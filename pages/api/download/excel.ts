@@ -46,7 +46,19 @@ export default async function handler(
             prisma.customer.findMany({ where: filter }),
             prisma.product.findMany({ 
                 where: { businessId },
-                include: { Category: true, storeInventories: true }
+                include: { 
+                    Category: true, 
+                    storeInventories: true,
+                    purchaseOrderItems: {
+                        where: {
+                            PurchaseOrder: {
+                                status: { in: ["PENDING", "IN_TRANSIT"] },
+                                isDeleted: false,
+                            }
+                        },
+                        include: { PurchaseOrder: { select: { storeId: true } } }
+                    }
+                }
             }),
             prisma.invoice.findMany({ 
                 where: filter,
@@ -85,9 +97,17 @@ export default async function handler(
         const productsSheet = XLSX.utils.json_to_sheet(
             products.map((p) => {
                 // For stock, if it's store specific, show that store's stock, otherwise total
-                const stock = storeId 
+                const inventoryStock = storeId 
                     ? p.storeInventories.find(si => si.storeId === storeId)?.quantity || 0
                     : p.storeInventories.reduce((acc, curr) => acc + curr.quantity, 0);
+
+                const pendingStock = storeId
+                    ? p.purchaseOrderItems
+                        .filter(poi => poi.PurchaseOrder.storeId === storeId)
+                        .reduce((acc, curr) => acc + curr.quantity, 0)
+                    : p.purchaseOrderItems.reduce((acc, curr) => acc + curr.quantity, 0);
+
+                const stock = inventoryStock + pendingStock;
 
                 return {
                     "Product ID": p.id,

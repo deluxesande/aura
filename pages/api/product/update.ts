@@ -111,6 +111,16 @@ export const updateProduct = async (
                 storeInventories: {
                     where: { storeId: targetStoreId },
                 },
+                purchaseOrderItems: {
+                    where: {
+                        PurchaseOrder: {
+                            storeId: targetStoreId,
+                            status: { in: ["PENDING", "IN_TRANSIT"] },
+                            isDeleted: false,
+                        },
+                    },
+                    select: { quantity: true },
+                },
             },
         });
 
@@ -128,9 +138,12 @@ export const updateProduct = async (
             });
         }
 
+        const inventoryQty = updatedProduct?.storeInventories[0]?.quantity || 0;
+        const pendingQty = updatedProduct?.purchaseOrderItems.reduce((sum, po) => sum + po.quantity, 0) || 0;
+
         const productWithQty = {
             ...updatedProduct,
-            quantity: updatedProduct?.storeInventories[0]?.quantity || 0,
+            quantity: inventoryQty + pendingQty,
         };
 
         res.status(200).json(productWithQty);

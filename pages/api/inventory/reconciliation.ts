@@ -67,7 +67,7 @@ export default async function handler(
                 for (const item of items) {
                     const { productId, physicalQuantity } = item;
                     
-                    // Get current system quantity
+                    // Get current system quantity from store inventory
                     const inventory = await tx.storeInventory.findUnique({
                         where: {
                             storeId_productId: {
@@ -77,7 +77,23 @@ export default async function handler(
                         },
                     });
 
-                    const systemQuantity = inventory?.quantity || 0;
+                    // Also account for pending/in-transit purchase orders for this store
+                    const pendingPOItems = await tx.purchaseOrderItem.findMany({
+                        where: {
+                            productId,
+                            PurchaseOrder: {
+                                storeId,
+                                status: { in: ["PENDING", "IN_TRANSIT"] },
+                                isDeleted: false,
+                            },
+                        },
+                        select: { quantity: true },
+                    });
+
+                    const inventoryQty = inventory?.quantity || 0;
+                    const pendingQty = pendingPOItems.reduce((sum, po) => sum + po.quantity, 0);
+                    
+                    const systemQuantity = inventoryQty + pendingQty;
                     const discrepancy = physicalQuantity - systemQuantity;
 
                     await tx.reconciliationItem.create({
@@ -91,6 +107,8 @@ export default async function handler(
                     });
 
                     // Update system quantity to match physical count
+                    // Note: We update the store inventory. If there was a discrepancy 
+                    // due to pending POs, it will still show in the reconciliation report.
                     await tx.storeInventory.upsert({
                         where: {
                             storeId_productId: {

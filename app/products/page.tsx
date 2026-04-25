@@ -859,7 +859,7 @@ export default function Page() {
                                 disabled={
                                     isProcessingOrder || cartItems.length === 0
                                 }
-                                className={`px-4 py-3 border-2 border-green-500 text-green-500 w-full bg-white rounded-lg font-bold hover:bg-green-50 transition-all ${isProcessingOrder ? "opacity-50 cursor-not-allowed" : ""}`}
+                                className={`px-4 py-3 border border-green-500 text-green-500 w-full bg-white rounded-lg hover:bg-green-50 transition-all ${isProcessingOrder ? "opacity-50 cursor-not-allowed" : ""}`}
                             >
                                 {buttonText}
                             </button>
@@ -869,7 +869,7 @@ export default function Page() {
                             disabled={
                                 isProcessingOrder || cartItems.length === 0
                             }
-                            className={`px-4 py-3 mt-3 bg-green-500 w-full text-white rounded-lg font-bold hover:bg-green-600 transition-all ${
+                            className={`px-4 py-3 mt-3 bg-green-500 w-full text-white rounded-lg hover:bg-green-600 transition-all ${
                                 isProcessingOrder
                                     ? "opacity-50 cursor-not-allowed"
                                     : "cursor-pointer"

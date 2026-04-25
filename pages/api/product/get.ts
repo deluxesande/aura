@@ -70,11 +70,31 @@ export const getProducts = async (
                     where: { storeId: targetStoreId },
                     select: { quantity: true },
                 },
+                purchaseOrderItems: {
+                    where: {
+                        PurchaseOrder: {
+                            storeId: targetStoreId,
+                            status: { in: ["PENDING", "IN_TRANSIT"] },
+                            isDeleted: false,
+                        },
+                    },
+                    select: { quantity: true },
+                },
                 variants: {
                     where: { isArchived: false },
                     include: {
                         storeInventories: {
                             where: { storeId: targetStoreId },
+                            select: { quantity: true },
+                        },
+                        purchaseOrderItems: {
+                            where: {
+                                PurchaseOrder: {
+                                    storeId: targetStoreId,
+                                    status: { in: ["PENDING", "IN_TRANSIT"] },
+                                    isDeleted: false,
+                                },
+                            },
                             select: { quantity: true },
                         },
                         attributeValues: {
@@ -103,13 +123,20 @@ export const getProducts = async (
             },
         });
 
-        // Map quantity from storeInventories to the flat quantity field for frontend compatibility
+        // Map quantity from storeInventories AND purchaseOrderItems to the flat quantity field for frontend compatibility
         const productsWithQuantity = products.map((p) => {
-            const quantity = p.storeInventories[0]?.quantity || 0;
-            const variants = p.variants.map((v) => ({
-                ...v,
-                quantity: v.storeInventories[0]?.quantity || 0,
-            }));
+            const inventoryQty = p.storeInventories[0]?.quantity || 0;
+            const pendingPOQty = p.purchaseOrderItems.reduce((sum, item) => sum + item.quantity, 0);
+            const quantity = inventoryQty + pendingPOQty;
+
+            const variants = p.variants.map((v) => {
+                const vInventoryQty = v.storeInventories[0]?.quantity || 0;
+                const vPendingPOQty = v.purchaseOrderItems.reduce((sum, item) => sum + item.quantity, 0);
+                return {
+                    ...v,
+                    quantity: vInventoryQty + vPendingPOQty,
+                };
+            });
             return { ...p, quantity, variants };
         });
 

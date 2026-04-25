@@ -3,7 +3,10 @@ import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
 import { notifyBusinessStaff } from "@/utils/server/novu";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+    req: NextApiRequest,
+    res: NextApiResponse,
+) {
     const { userId: clerkId } = getAuth(req);
 
     if (!clerkId) {
@@ -12,11 +15,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const user = await prisma.user.findUnique({
         where: { clerkId },
-        select: { id: true, businessId: true, role: true, storeId: true },
+        select: {
+            id: true,
+            businessId: true,
+            role: true,
+            storeId: true,
+            firstName: true,
+            lastName: true,
+        },
     });
 
     if (!user || !user.businessId) {
-        return res.status(403).json({ error: "User or Business profile not found" });
+        return res
+            .status(403)
+            .json({ error: "User or Business profile not found" });
     }
 
     const { businessId, role, storeId, id: userId } = user;
@@ -25,17 +37,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     switch (req.method) {
         case "GET":
             try {
-                const isAll = !activeStoreHeader || activeStoreHeader === "All" || activeStoreHeader === "all";
-                const targetStoreId = role === "admin" ? (isAll ? null : activeStoreHeader) : storeId;
+                const isAll =
+                    !activeStoreHeader ||
+                    activeStoreHeader === "All" ||
+                    activeStoreHeader === "all";
+                const targetStoreId =
+                    role === "admin"
+                        ? isAll
+                            ? null
+                            : activeStoreHeader
+                        : storeId;
 
                 const expenses = await prisma.expense.findMany({
                     where: {
                         businessId,
                         status: "ACTIVE",
-                        ...(role === "admin" 
-                            ? (targetStoreId ? { OR: [{ storeId: targetStoreId }, { storeId: null }] } : {})
-                            : { storeId: targetStoreId } 
-                        ),
+                        ...(role === "admin"
+                            ? targetStoreId
+                                ? {
+                                      OR: [
+                                          { storeId: targetStoreId },
+                                          { storeId: null },
+                                      ],
+                                  }
+                                : {}
+                            : { storeId: targetStoreId }),
                     },
                     include: {
                         Store: { select: { name: true } },
@@ -44,7 +70,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 });
 
                 // Get creator IDs (internal User IDs), filtering out nulls
-                const creatorIds = Array.from(new Set(expenses.map(e => e.createdById).filter(id => id !== null))) as string[];
+                const creatorIds = Array.from(
+                    new Set(
+                        expenses
+                            .map((e) => e.createdById)
+                            .filter((id) => id !== null),
+                    ),
+                ) as string[];
 
                 // Fetch internal users to get their clerkIds
                 const dbUsers = await prisma.user.findMany({
@@ -55,21 +87,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                         firstName: true,
                         lastName: true,
                         role: true,
-                    }
+                    },
                 });
 
-                const clerkIds = dbUsers.map(u => u.clerkId);
+                const clerkIds = dbUsers.map((u) => u.clerkId);
 
                 // Fetch Clerk user details
                 const clerk = await clerkClient();
                 const clerkUsersResults = await Promise.allSettled(
-                    clerkIds.map((cid) => clerk.users.getUser(cid))
+                    clerkIds.map((cid) => clerk.users.getUser(cid)),
                 );
 
                 const usersMap = new Map();
                 dbUsers.forEach((dbU) => {
                     const result = clerkUsersResults.find(
-                        (r) => r.status === "fulfilled" && r.value.id === dbU.clerkId
+                        (r) =>
+                            r.status === "fulfilled" &&
+                            r.value.id === dbU.clerkId,
                     );
 
                     if (result && result.status === "fulfilled") {
@@ -90,9 +124,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     }
                 });
 
-                const updatedExpenses = expenses.map(expense => ({
+                const updatedExpenses = expenses.map((expense) => ({
                     ...expense,
-                    CreatedBy: usersMap.get(expense.createdById) || null
+                    CreatedBy: usersMap.get(expense.createdById) || null,
                 }));
 
                 return res.status(200).json(updatedExpenses);
@@ -103,24 +137,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         case "POST":
             try {
-                const { title, category, amount, storeId: payloadStoreId, notes, date } = req.body;
+                const {
+                    title,
+                    category,
+                    amount,
+                    storeId: payloadStoreId,
+                    notes,
+                    date,
+                } = req.body;
 
                 if (!title || !category || amount === undefined) {
-                    return res.status(400).json({ error: "Missing required fields" });
+                    return res
+                        .status(400)
+                        .json({ error: "Missing required fields" });
                 }
 
                 let targetStoreId: string | null = null;
-                
+
                 if (role !== "admin") {
                     targetStoreId = storeId;
                 } else {
                     const explicitStoreId = payloadStoreId || activeStoreHeader;
-                    targetStoreId = (explicitStoreId && explicitStoreId !== "All" && explicitStoreId !== "all") 
-                        ? explicitStoreId 
-                        : null;
+                    targetStoreId =
+                        explicitStoreId &&
+                        explicitStoreId !== "All" &&
+                        explicitStoreId !== "all"
+                            ? explicitStoreId
+                            : null;
                 }
 
-                if (targetStoreId === "" || targetStoreId === "null" || targetStoreId === "undefined") {
+                if (
+                    targetStoreId === "" ||
+                    targetStoreId === "null" ||
+                    targetStoreId === "undefined"
+                ) {
                     targetStoreId = null;
                 }
 
@@ -145,7 +195,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                         title: expense.title,
                         amount: String(expense.amount),
                         category: expense.category,
-                        loggedBy: clerkId,
+                        loggedBy: user.firstName
+                            ? `${user.firstName} ${user.lastName || ""}`.trim()
+                            : "Unknown User",
                     },
                     roles: ["admin"], // Only notify admins for expenses
                 });

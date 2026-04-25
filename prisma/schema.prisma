@@ -286,8 +286,9 @@ model Store {
   invoices      Invoice[]
   customers     Customer[]
   invitations   UserInvitation[]
-  expenses      Expense[]
+  expenses       Expense[]
   stockReceipts StockReceipt[]
+  purchaseOrders PurchaseOrder[]
 
   transfersOut StockTransfer[] @relation("OriginStore")
   transfersIn  StockTransfer[] @relation("DestinationStore")
@@ -339,6 +340,9 @@ model PurchaseOrder {
 
   businessId String   @db.Uuid
   Business   Business @relation(fields: [businessId], references: [id])
+
+  storeId String? @db.Uuid
+  Store   Store?  @relation(fields: [storeId], references: [id])
 
   createdById String   @db.Uuid
   CreatedBy   User     @relation("POCreator", fields: [createdById], references: [id])

@@ -98,11 +98,8 @@ export default function ReconciliationPage() {
             return;
         }
 
-        // Get system quantity for the selected store
-        const storeInventory = product.storeInventories?.find(
-            (si: any) => si.storeId === selectedStoreId,
-        );
-        const systemQuantity = storeInventory?.quantity || 0;
+        // Use the quantity calculated by the backend which now includes PO items
+        const systemQuantity = product.quantity || 0;
 
         setItems([
             ...items,

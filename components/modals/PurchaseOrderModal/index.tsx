@@ -29,12 +29,14 @@ export default function PurchaseOrderModal({
 
     const [suppliers, setSuppliers] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
+    const [stores, setStores] = useState<any[]>([]);
     const [loadingData, setLoadingData] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
     // Group-level details
     const [formData, setFormData] = useState({
         supplierId: "",
+        storeId: "",
         reference: "",
         status: "PENDING",
     });
@@ -49,9 +51,11 @@ export default function PurchaseOrderModal({
             Promise.all([
                 apiClient.get("/suppliers"),
                 apiClient.get("/product"),
+                apiClient.get(`/business/${businessDetails.id}/stores`),
             ])
-                .then(([suppRes, prodRes]) => {
+                .then(([suppRes, prodRes, storeRes]) => {
                     setSuppliers(suppRes.data || []);
+                    setStores(storeRes.data || []);
                     
                     const rawProducts = Array.isArray(prodRes.data) ? prodRes.data : [];
                     const flattened = [];
@@ -92,6 +96,7 @@ export default function PurchaseOrderModal({
             if (order) {
                 setFormData({
                     supplierId: order.supplierId || "",
+                    storeId: order.storeId || "",
                     reference: order.reference || "",
                     status: order.status || "PENDING",
                 });
@@ -110,6 +115,7 @@ export default function PurchaseOrderModal({
             } else {
                 setFormData({
                     supplierId: "",
+                    storeId: "",
                     reference: "",
                     status: "PENDING",
                 });
@@ -287,7 +293,7 @@ export default function PurchaseOrderModal({
                         >
                             <div className="p-6 overflow-y-auto flex-1 space-y-8 bg-gray-50/30">
                                 {/* 1. Order Details */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                                             Supplier
@@ -311,6 +317,38 @@ export default function PurchaseOrderModal({
                                                 {suppliers.map((s, idx) => (
                                                     <option
                                                         key={`po-supp-${s.id || idx}`}
+                                                        value={s.id}
+                                                    >
+                                                        {s.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                            Target Store / Branch
+                                        </label>
+                                        <div className="relative">
+                                            <select
+                                                required
+                                                value={formData.storeId}
+                                                onChange={(e) =>
+                                                    setFormData({
+                                                        ...formData,
+                                                        storeId:
+                                                            e.target.value,
+                                                    })
+                                                }
+                                                className="w-full pl-4 pr-10 py-2.5 bg-slate-50 outline-none border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 text-sm appearance-none cursor-pointer"
+                                            >
+                                                <option value="" disabled>
+                                                    Select Store...
+                                                </option>
+                                                {stores.map((s, idx) => (
+                                                    <option
+                                                        key={`po-store-${s.id || idx}`}
                                                         value={s.id}
                                                     >
                                                         {s.name}

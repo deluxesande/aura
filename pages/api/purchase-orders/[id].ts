@@ -33,7 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         case "PATCH":
             try {
-                const { supplierId, reference, totalAmount, status, items } = req.body;
+                const { supplierId, storeId, reference, totalAmount, status, items } = req.body;
 
                 const result = await prisma.$transaction(async (tx) => {
                     // 1. Delete existing items
@@ -44,6 +44,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                         where: { id, businessId },
                         data: {
                             supplierId,
+                            storeId: storeId || null,
                             reference,
                             totalAmount: parseFloat(totalAmount),
                             status,
