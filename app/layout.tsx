@@ -13,6 +13,7 @@ import RoleGuard from "@/components/auth/RoleGuard";
 import AuthProvider from "@/components/auth/AuthProvider";
 import PageTransition from "@/components/PageTransitions";
 import WelcomeTour from "@/components/WelcomeTour";
+import TauriGuard from "@/components/TauriGuard";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -38,12 +39,14 @@ export default function RootLayout({
                         <AuthProvider>
                             <RoleGuard>
                                 <ToastProvider>
-                                    <PageTransition>
-                                        {children}
-                                        <WelcomeTour />
-                                        <Analytics />
-                                        <SpeedInsights />
-                                    </PageTransition>
+                                    <TauriGuard>
+                                        <PageTransition>
+                                            {children}
+                                            <WelcomeTour />
+                                            <Analytics />
+                                            <SpeedInsights />
+                                        </PageTransition>
+                                    </TauriGuard>
                                 </ToastProvider>
                             </RoleGuard>
                         </AuthProvider>
