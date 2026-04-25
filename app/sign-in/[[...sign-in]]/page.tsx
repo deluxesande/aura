@@ -87,6 +87,34 @@ export default function LoginPage() {
     const handleGoogleSignIn = async () => {
         if (!isLoaded || isLoading) return;
 
+        // Check if running in Tauri
+        if (typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__) {
+            try {
+                setIsLoading(true);
+                // In Tauri, we use authenticateWithRedirect but it might be blocked or 
+                // cause issues if not handled carefully. 
+                // For a true "system browser" experience with Clerk, we can use their
+                // helper or a custom URL.
+                // However, authenticateWithRedirect with redirectUrl matching a deep link
+                // is the standard way.
+                
+                // For now, let's try to use the standard redirect but ensure the URL
+                // is one that Tauri can handle if we have deep links set up.
+                // If not, we can use tauri-plugin-shell to open a specific Clerk URL.
+                
+                await signIn.authenticateWithRedirect({
+                    strategy: "oauth_google",
+                    redirectUrl: "/sign-in",
+                    redirectUrlComplete: "/products",
+                    continueSignUp: false,
+                });
+            } catch (err: any) {
+                toast.error("Failed to sign in with Google. Please try again.");
+                setIsLoading(false);
+            }
+            return;
+        }
+
         setIsLoading(true);
         try {
             await signIn.authenticateWithRedirect({
