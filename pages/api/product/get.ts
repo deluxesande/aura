@@ -32,13 +32,22 @@ export const getProducts = async (
             select: { role: true, storeId: true },
         });
 
-        const targetStoreId =
+        let targetStoreId =
             userWithRole?.role === "admin"
                 ? activeStoreHeader
                 : (userWithRole?.storeId as string);
 
+        // Fallback for admins if no store header is provided
+        if (!targetStoreId && userWithRole?.role === "admin") {
+            const firstStore = await prisma.store.findFirst({
+                where: { businessId: currentUser.businessId, isActive: true },
+                select: { id: true },
+            });
+            if (firstStore) targetStoreId = firstStore.id;
+        }
+
         if (!targetStoreId) {
-            return res.status(400).json({ error: "No active store selected." });
+            return res.status(200).json([]);
         }
 
         const products = await prisma.product.findMany({

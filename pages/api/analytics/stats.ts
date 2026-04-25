@@ -38,7 +38,16 @@ export default async function handler(
         }
 
         const activeStoreHeader = req.headers["x-store-id"] as string;
-        const targetStoreId = user.role === "admin" ? activeStoreHeader : (user.storeId as string);
+        let targetStoreId = user.role === "admin" ? activeStoreHeader : (user.storeId as string);
+
+        // Fallback for admins if no store header is provided
+        if (!targetStoreId && user.role === "admin") {
+            const firstStore = await prisma.store.findFirst({
+                where: { businessId: user.businessId, isActive: true },
+                select: { id: true },
+            });
+            if (firstStore) targetStoreId = firstStore.id;
+        }
 
         if (!targetStoreId) {
             return res.status(200).json({

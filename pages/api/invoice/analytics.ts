@@ -36,7 +36,16 @@ export default async function handler(
                 .json({ error: "User or business not found" });
         }
 
-        const targetStoreId = currentUser.role === "admin" ? activeStoreHeader : (currentUser.storeId as string);
+        let targetStoreId = currentUser.role === "admin" ? activeStoreHeader : (currentUser.storeId as string);
+
+        // Fallback for admins if no store header is provided
+        if (!targetStoreId && currentUser.role === "admin") {
+            const firstStore = await prisma.store.findFirst({
+                where: { businessId: currentUser.businessId, isActive: true },
+                select: { id: true },
+            });
+            if (firstStore) targetStoreId = firstStore.id;
+        }
 
         if (!targetStoreId) {
             return res.status(200).json({
