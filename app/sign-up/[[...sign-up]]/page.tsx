@@ -105,7 +105,7 @@ export default function SignupPage() {
                     redirectUrl: "https://trysalesense.online/payment",
                 });
 
-                const googleAuthUrl = result.verifications.externalAccount?.externalVerificationRedirectUrl;
+                const googleAuthUrl = result.verifications.externalAccount?.externalVerificationRedirectURL;
 
                 if (googleAuthUrl) {
                     await open(googleAuthUrl.toString());

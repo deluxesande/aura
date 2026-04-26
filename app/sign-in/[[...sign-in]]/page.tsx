@@ -98,8 +98,8 @@ export default function LoginPage() {
                 });
 
                 const externalUrl = 
-                    response.firstFactorVerification?.externalVerificationRedirectUrl ||
-                    (response as any).verifications?.externalAccount?.externalVerificationRedirectUrl;
+                    response.firstFactorVerification?.externalVerificationRedirectURL ||
+                    (response as any).verifications?.externalAccount?.externalVerificationRedirectURL;
 
                 if (externalUrl) {
                     await open(externalUrl.toString());

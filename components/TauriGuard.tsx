@@ -27,7 +27,7 @@ export default function TauriGuard({ children }: { children: React.ReactNode }) 
     }, []);
 
     useEffect(() => {
-        if (isTauri) {
+        if (isTauri && pathname) {
             const isLandingPage = FORBIDDEN_LANDING_PAGES.some((page) => {
                 if (page === "/") return pathname === "/";
                 return pathname.startsWith(page);
