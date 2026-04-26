@@ -40,6 +40,13 @@ const fadeInLeft = {
     },
 };
 
+export default function AboutPage() {
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const heroRef = useRef(null);
+    const isHeroInView = useInView(heroRef, { once: true });
+    const storyRef = useRef(null);
+    const isStoryInView = useInView(storyRef, { once: true });
+    const valuesRef = useRef(null);
     const isValuesInView = useInView(valuesRef, {
         once: true,
         margin: "-100px",

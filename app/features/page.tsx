@@ -37,6 +37,13 @@ const fadeInUp = {
     },
 };
 
+export default function FeaturesPage() {
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const heroRef = useRef(null);
+    const isHeroInView = useInView(heroRef, { once: true });
+    const featuresRef = useRef(null);
+    const isFeaturesInView = useInView(featuresRef, { once: true });
+    const ctaRef = useRef(null);
     const isCtaInView = useInView(ctaRef, { once: true });
 
     if (isTauri()) return null;

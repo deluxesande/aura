@@ -10,6 +10,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { isTauri } from "@/utils/tauri";
 
+export default function BlogPage() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     if (isTauri()) return null;
