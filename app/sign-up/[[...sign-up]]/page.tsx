@@ -98,6 +98,38 @@ export default function SignupPage() {
 
     const handleGoogleSignIn = async () => {
         if (!isLoaded) return;
+
+        // Check if running in Tauri
+        if (typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__) {
+            try {
+                const { open } = await import("@tauri-apps/plugin-shell");
+                
+                // Get the Google Auth URL from Clerk
+                // For Sign Up, we use signUp.create
+                const result = await signUp.create({
+                    strategy: "oauth_google",
+                    redirectUrl: window.location.origin + "/sso-callback",
+                });
+
+                const googleAuthUrl = result.verifications.externalAccount?.externalVerificationRedirectUrl;
+
+                if (googleAuthUrl) {
+                    await open(googleAuthUrl.toString());
+                } else {
+                    // Fallback
+                    await signUp.authenticateWithRedirect({
+                        strategy: "oauth_google",
+                        redirectUrl: "/sso-callback",
+                        redirectUrlComplete: "/payment",
+                    });
+                }
+            } catch (err: any) {
+                console.error("Tauri Google Auth Error:", err);
+                toast.error("Opening system browser failed. Please try again.");
+            }
+            return;
+        }
+
         try {
             await signUp.authenticateWithRedirect({
                 strategy: "oauth_google",

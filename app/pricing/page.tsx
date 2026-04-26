@@ -4,6 +4,7 @@ import Navbar from "@/components/LandingPage/Navbar";
 import { Check, X } from "lucide-react";
 import { useState, useRef } from "react";
 import { motion, useInView } from "framer-motion";
+import { isTauri } from "@/utils/tauri";
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -25,6 +26,7 @@ const itemVariants = {
 };
 
 export default function PricingPage() {
+    if (isTauri()) return null;
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const heroRef = useRef(null);

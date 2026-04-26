@@ -91,25 +91,32 @@ export default function LoginPage() {
         if (typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__) {
             try {
                 setIsLoading(true);
-                // In Tauri, we use authenticateWithRedirect but it might be blocked or 
-                // cause issues if not handled carefully. 
-                // For a true "system browser" experience with Clerk, we can use their
-                // helper or a custom URL.
-                // However, authenticateWithRedirect with redirectUrl matching a deep link
-                // is the standard way.
+                const { open } = await import("@tauri-apps/plugin-shell");
                 
-                // For now, let's try to use the standard redirect but ensure the URL
-                // is one that Tauri can handle if we have deep links set up.
-                // If not, we can use tauri-plugin-shell to open a specific Clerk URL.
+                // Construct the Clerk OAuth URL manually or use a helper
+                // This will trigger the flow in the system browser
+                // Note: The redirectUrl must be a valid web URL (your production/preview site)
+                // that handles the handoff or deep links.
                 
-                await signIn.authenticateWithRedirect({
+                const googleAuthUrl = await signIn.create({
                     strategy: "oauth_google",
-                    redirectUrl: "/sign-in",
-                    redirectUrlComplete: "/products",
-                    continueSignUp: false,
-                });
+                    redirectUrl: window.location.origin + "/sign-in",
+                }).then(res => res.firstFactorVerification.externalVerificationRedirectUrl);
+
+                if (googleAuthUrl) {
+                    await open(googleAuthUrl.toString());
+                } else {
+                    // Fallback to internal if URL generation fails
+                    await signIn.authenticateWithRedirect({
+                        strategy: "oauth_google",
+                        redirectUrl: "/sign-in",
+                        redirectUrlComplete: "/products",
+                        continueSignUp: false,
+                    });
+                }
             } catch (err: any) {
-                toast.error("Failed to sign in with Google. Please try again.");
+                console.error("Tauri Google Auth Error:", err);
+                toast.error("Opening system browser failed. Please try again.");
                 setIsLoading(false);
             }
             return;

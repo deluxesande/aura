@@ -12,6 +12,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import PaymentModal from "@/components/modals/PaymentModal";
 import DowngradeModal from "@/components/modals/DowngradeModal";
+import { isTauri } from "@/utils/tauri";
 
 type Plan = {
     id: string;
@@ -112,6 +113,7 @@ const PLANS: Plan[] = [
 ];
 
 export default function PaymentPage() {
+    if (isTauri()) return null;
     const router = useRouter();
     const dispatch = useDispatch();
 

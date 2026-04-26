@@ -12,8 +12,12 @@ import WhySalesense from "@/components/LandingPage/WhySalesense";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-export default function App() {
+import { isTauri } from "@/utils/tauri";
+
+export default function LandingPage() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    if (isTauri()) return null;
 
     return (
         <div className="w-full min-h-screen bg-white">

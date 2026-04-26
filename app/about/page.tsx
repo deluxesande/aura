@@ -11,6 +11,7 @@ import {
     ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
+import { isTauri } from "@/utils/tauri";
 
 const fadeInUp = {
     hidden: { opacity: 0, y: 40 },
@@ -40,6 +41,7 @@ const fadeInLeft = {
 };
 
 export default function AboutPage() {
+    if (isTauri()) return null;
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const heroRef = useRef(null);

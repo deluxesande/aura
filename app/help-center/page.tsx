@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, ChevronRight, HelpCircle, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { isTauri } from "@/utils/tauri";
 
 const fadeIn = {
     hidden: { opacity: 0, y: 10 },
@@ -15,6 +16,7 @@ const fadeIn = {
 };
 
 export default function HelpCenterPage() {
+    if (isTauri()) return null;
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
 

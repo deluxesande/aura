@@ -16,6 +16,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useRef, useState } from "react";
+import { isTauri } from "@/utils/tauri";
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -37,6 +38,7 @@ const fadeInUp = {
 };
 
 export default function FeaturesPage() {
+    if (isTauri()) return null;
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     // Refs for sections

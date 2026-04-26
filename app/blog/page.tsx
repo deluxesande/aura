@@ -8,8 +8,10 @@ import { motion } from "framer-motion";
 import { ArrowRight, Calendar, Clock, Tag } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
+import { isTauri } from "@/utils/tauri";
 
 export default function BlogPage() {
+    if (isTauri()) return null;
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     return (
