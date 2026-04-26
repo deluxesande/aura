@@ -10,9 +10,9 @@ import { useState } from "react";
 import Image from "next/image";
 import { isTauri } from "@/utils/tauri";
 
-export default function BlogPage() {
-    if (isTauri()) return null;
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    if (isTauri()) return null;
 
     return (
         <div className="bg-gray-50 min-h-screen">

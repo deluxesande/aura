@@ -40,23 +40,12 @@ const fadeInLeft = {
     },
 };
 
-export default function AboutPage() {
-    if (isTauri()) return null;
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-    const heroRef = useRef(null);
-    const storyRef = useRef(null);
-    const valuesRef = useRef(null);
-
-    const isHeroInView = useInView(heroRef, { once: true });
-    const isStoryInView = useInView(storyRef, {
-        once: true,
-        margin: "-100px",
-    });
     const isValuesInView = useInView(valuesRef, {
         once: true,
         margin: "-100px",
     });
+
+    if (isTauri()) return null;
 
     return (
         <div className="bg-white selection:bg-green-100 selection:text-green-900">

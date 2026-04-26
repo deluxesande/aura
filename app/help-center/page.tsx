@@ -15,27 +15,9 @@ const fadeIn = {
     visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 };
 
-export default function HelpCenterPage() {
-    if (isTauri()) return null;
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
-
-    const filteredArticles =
-        searchQuery.length > 0
-            ? HELP_ARTICLES.filter(
-                  (article) =>
-                      article.title
-                          .toLowerCase()
-                          .includes(searchQuery.toLowerCase()) ||
-                      article.content.some((block: any) =>
-                          block.text
-                              ?.toLowerCase()
-                              .includes(searchQuery.toLowerCase()),
-                      ),
-              )
-            : [];
-
     const clearSearch = () => setSearchQuery("");
+
+    if (isTauri()) return null;
 
     return (
         <div className="bg-white min-h-screen">

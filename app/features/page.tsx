@@ -37,22 +37,9 @@ const fadeInUp = {
     },
 };
 
-export default function FeaturesPage() {
-    if (isTauri()) return null;
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-    // Refs for sections
-    const heroRef = useRef(null);
-    const featuresRef = useRef(null);
-    const ctaRef = useRef(null);
-
-    // Track visibility
-    const isHeroInView = useInView(heroRef, { once: true });
-    const isFeaturesInView = useInView(featuresRef, {
-        once: true,
-        margin: "-100px",
-    });
     const isCtaInView = useInView(ctaRef, { once: true });
+
+    if (isTauri()) return null;
 
     return (
         <div className="bg-gray-50">

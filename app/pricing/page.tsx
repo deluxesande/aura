@@ -25,15 +25,9 @@ const itemVariants = {
     },
 };
 
-export default function PricingPage() {
-    if (isTauri()) return null;
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-    const heroRef = useRef(null);
-    const pricingRef = useRef(null);
-
-    const isHeroInView = useInView(heroRef, { once: true });
     const isPricingInView = useInView(pricingRef, { once: true });
+
+    if (isTauri()) return null;
 
     return (
         <div>

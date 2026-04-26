@@ -112,41 +112,6 @@ const PLANS: Plan[] = [
     },
 ];
 
-export default function PaymentPage() {
-    if (isTauri()) return null;
-    const router = useRouter();
-    const dispatch = useDispatch();
-
-    const user = useSelector((state: AppState) => state.auth.user);
-    const businessDetails = useSelector(
-        (state: AppState) => state.businessData.businessDetails,
-    );
-
-    const [isFetching, setIsFetching] = useState(false);
-    const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
-
-    // Limit tracking
-    const [effectiveStaffLimit, setEffectiveStaffLimit] = useState(0);
-    const [effectiveStoreLimit, setEffectiveStoreLimit] = useState(0);
-
-    // Payment State
-    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-    const [paymentLoading, setPaymentLoading] = useState(false);
-    const [phoneNumber, setPhoneNumber] = useState("");
-
-    // Downgrade State
-    const [isDowngradeModalOpen, setIsDowngradeModalOpen] = useState(false);
-    const [staffList, setStaffList] = useState<StaffMember[]>([]);
-    const [storeList, setStoreList] = useState<StoreInfo[]>([]);
-    const [loadingLimits, setLoadingLimits] = useState(false);
-    const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
-    const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
-    const [downgradeLoading, setDowngradeLoading] = useState(false);
-
-    const [downgradeStep, setDowngradeStep] = useState<"STAFF" | "STORES">(
-        "STAFF",
-    );
-
     const fetchAttempted = useRef(false);
 
     useEffect(() => {
@@ -170,6 +135,8 @@ export default function PaymentPage() {
         };
         rehydrateBusiness();
     }, [user, businessDetails, dispatch]);
+
+    if (isTauri()) return null;
 
     const currentPlanId = businessDetails?.subscription?.plan || null;
     const currentPlanLimit =
