@@ -87,36 +87,48 @@ export default function LoginPage() {
     const handleGoogleSignIn = async () => {
         if (!isLoaded || isLoading) return;
 
-        // More robust Tauri detection
-        const isTauriEnv = typeof window !== "undefined" && 
-            ((window as any).__TAURI_INTERNALS__ || (window as any).__TAURI__);
+        // Extremely robust Tauri detection
+        const isTauriEnv = 
+            (typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__) ||
+            (typeof window !== "undefined" && (window as any).__TAURI__) ||
+            (typeof window !== "undefined" && window.navigator.userAgent.includes("Tauri"));
 
         if (isTauriEnv) {
+            console.log("Tauri environment detected, attempting external browser auth...");
             try {
                 setIsLoading(true);
                 const { open } = await import("@tauri-apps/plugin-shell");
                 
                 // Construct the Clerk OAuth URL
-                // Using signUp.create or signIn.create usually provides the URL
+                // Note: We use a real web URL for the redirect so the browser can handle the callback
+                // If you have a production domain, use it here instead of window.location.origin
+                const redirectUrl = window.location.origin.includes("localhost") 
+                    ? "https://trysalesense.online/sign-in" 
+                    : window.location.origin + "/sign-in";
+
                 const response = await signIn.create({
                     strategy: "oauth_google",
-                    redirectUrl: window.location.origin + "/sign-in",
+                    redirectUrl: redirectUrl,
                 });
 
                 const externalUrl = response.firstFactorVerification?.externalVerificationRedirectUrl;
 
                 if (externalUrl) {
-                    // FORCE open in system browser
+                    console.log("Opening external URL:", externalUrl);
                     await open(externalUrl.toString());
-                    toast.info("Opening Google Sign-In in your browser...");
-                    return; // Stop here, the browser takes over
+                    toast.success("Opening Google Sign-In in your system browser...");
+                    setIsLoading(false);
+                    return; 
+                } else {
+                    throw new Error("No external verification URL returned from Clerk");
                 }
             } catch (err: any) {
                 console.error("Tauri external auth failed:", err);
-                // Fallback will happen below
+                toast.error("External browser failed to open. Falling back...");
             }
         }
 
+        console.log("Using standard redirect auth...");
         setIsLoading(true);
         try {
             await signIn.authenticateWithRedirect({

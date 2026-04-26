@@ -99,35 +99,41 @@ export default function SignupPage() {
     const handleGoogleSignIn = async () => {
         if (!isLoaded) return;
 
-        // Check if running in Tauri
-        if (typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__) {
+        // Robust Tauri detection
+        const isTauriEnv = 
+            (typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__) ||
+            (typeof window !== "undefined" && (window as any).__TAURI__) ||
+            (typeof window !== "undefined" && window.navigator.userAgent.includes("Tauri"));
+
+        if (isTauriEnv) {
+            console.log("Tauri environment detected, attempting external browser auth...");
             try {
                 const { open } = await import("@tauri-apps/plugin-shell");
                 
-                // Get the Google Auth URL from Clerk
-                // For Sign Up, we use signUp.create
+                // Construct the Clerk OAuth URL
+                const redirectUrl = window.location.origin.includes("localhost") 
+                    ? "https://trysalesense.online/sign-up" 
+                    : window.location.origin + "/sign-up";
+
                 const result = await signUp.create({
                     strategy: "oauth_google",
-                    redirectUrl: window.location.origin + "/sso-callback",
+                    redirectUrl: redirectUrl,
                 });
 
                 const googleAuthUrl = result.verifications.externalAccount?.externalVerificationRedirectUrl;
 
                 if (googleAuthUrl) {
+                    console.log("Opening external URL:", googleAuthUrl);
                     await open(googleAuthUrl.toString());
+                    toast.success("Opening Google Sign-Up in your system browser...");
+                    return;
                 } else {
-                    // Fallback
-                    await signUp.authenticateWithRedirect({
-                        strategy: "oauth_google",
-                        redirectUrl: "/sso-callback",
-                        redirectUrlComplete: "/payment",
-                    });
+                    throw new Error("No external verification URL returned from Clerk");
                 }
             } catch (err: any) {
-                console.error("Tauri Google Auth Error:", err);
-                toast.error("Opening system browser failed. Please try again.");
+                console.error("Tauri external auth failed:", err);
+                toast.error("External browser failed to open. Falling back...");
             }
-            return;
         }
 
         try {

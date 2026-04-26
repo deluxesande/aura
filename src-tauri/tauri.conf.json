@@ -26,20 +26,7 @@
   },
   "plugins": {
     "shell": {
-      "open": true,
-      "scope": [
-        {
-          "name": "any-url",
-          "allow": [
-            {
-              "schemes": [
-                "http",
-                "https"
-              ]
-            }
-          ]
-        }
-      ]
+      "open": true
     }
   },
   "bundle": {
