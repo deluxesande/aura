@@ -13,4 +13,5 @@ export const FORBIDDEN_LANDING_PAGES = [
     "/help-center",
     "/about",
     "/payment",
+    "/download",
 ];

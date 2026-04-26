@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { signIn as signInAction } from "@/store/slices/authSlice";
+import { isTauri } from "@/utils/tauri";
 
 export default function SignupPage() {
     const { isLoaded, signUp, setActive } = useSignUp();
@@ -22,8 +23,7 @@ export default function SignupPage() {
     const router = useRouter();
     const dispatch = useDispatch();
 
-    // Check if the user is already signed in
-    // Updated: Redirects to /payment
+    // Reverted: Redirects to /payment
     useEffect(() => {
         if (isSignedIn) {
             router.push("/payment");
@@ -47,8 +47,7 @@ export default function SignupPage() {
                 });
                 setCodeSent(true);
             } catch (err: any) {
-                // toast.error(err.errors[0].message);
-                throw err; // Re-throw to trigger toast.promise error
+                throw err;
             }
         };
 
@@ -76,8 +75,6 @@ export default function SignupPage() {
                     dispatch(signInAction());
 
                     router.push("/payment");
-                } else {
-                    // console.error(JSON.stringify(result, null, 2));
                 }
             } catch (err: any) {
                 if (err.errors) {
@@ -99,40 +96,24 @@ export default function SignupPage() {
     const handleGoogleSignIn = async () => {
         if (!isLoaded) return;
 
-        // Robust Tauri detection
-        const isTauriEnv = 
-            (typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__) ||
-            (typeof window !== "undefined" && (window as any).__TAURI__) ||
-            (typeof window !== "undefined" && window.navigator.userAgent.includes("Tauri"));
-
-        if (isTauriEnv) {
-            console.log("Tauri environment detected, attempting external browser auth...");
+        if (isTauri()) {
             try {
                 const { open } = await import("@tauri-apps/plugin-shell");
                 
-                // Construct the Clerk OAuth URL
-                const redirectUrl = window.location.origin.includes("localhost") 
-                    ? "https://trysalesense.online/sign-up" 
-                    : window.location.origin + "/sign-up";
-
                 const result = await signUp.create({
                     strategy: "oauth_google",
-                    redirectUrl: redirectUrl,
+                    redirectUrl: "https://trysalesense.online/payment",
                 });
 
                 const googleAuthUrl = result.verifications.externalAccount?.externalVerificationRedirectUrl;
 
                 if (googleAuthUrl) {
-                    console.log("Opening external URL:", googleAuthUrl);
                     await open(googleAuthUrl.toString());
-                    toast.success("Opening Google Sign-Up in your system browser...");
+                    toast.success("Opening Google Sign-Up in your browser...");
                     return;
-                } else {
-                    throw new Error("No external verification URL returned from Clerk");
                 }
             } catch (err: any) {
-                console.error("Tauri external auth failed:", err);
-                toast.error("External browser failed to open. Falling back...");
+                console.error("Tauri Google Auth failed:", err);
             }
         }
 

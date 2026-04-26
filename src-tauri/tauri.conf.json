@@ -1,19 +1,19 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "aura",
-  "version": "0.1.0",
-  "identifier": "com.aura.desktop",
+  "productName": "SaleSense",
+  "version": "1.0.0",
+  "identifier": "com.salesense.desktop",
   "build": {
-    "frontendDist": "../out",
+    "frontendDist": "https://trysalesense.online/dashboard",
     "devUrl": "http://localhost:3000/dashboard",
     "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "beforeBuildCommand": ""
   },
   "app": {
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "Aura",
+        "title": "SaleSense",
         "width": 1280,
         "height": 800,
         "resizable": true,

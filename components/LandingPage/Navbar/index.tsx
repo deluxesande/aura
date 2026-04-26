@@ -62,6 +62,12 @@ export default function Navbar({
                         >
                             Integration
                         </Link>
+                        <Link
+                            href="/download"
+                            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-green-500 hover:bg-green-50 rounded-full transition-all"
+                        >
+                            Download
+                        </Link>
 
                         {/* RESOURCES DROPDOWN */}
                         <div

@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { signIn as signInAction, setUser } from "@/store/slices/authSlice";
 import { apiClient } from "@/utils/apiClient";
+import { isTauri } from "@/utils/tauri";
 
 export default function LoginPage() {
     const { isLoaded, signIn, setActive } = useSignIn();
@@ -24,7 +25,7 @@ export default function LoginPage() {
     useEffect(() => {
         const fetchUserData = async () => {
             if (isSignedIn && userId) {
-                // Redirect to dashboard immediately
+                // Redirect to products immediately
                 router.push("/products");
 
                 // Fetch user data in background
@@ -32,8 +33,7 @@ export default function LoginPage() {
                     const response = await apiClient.get("/auth/user/profile");
                     dispatch(setUser(response.data.user));
                 } catch (error) {
-                    // console.error("Error fetching user data:", error);
-                    // User will be handled by middleware or dashboard page
+                    // silent fail
                 }
             }
         };
@@ -58,7 +58,7 @@ export default function LoginPage() {
                 await setActive({ session: result.createdSessionId });
                 dispatch(signInAction());
 
-                // Redirect to dashboard immediately
+                // Redirect to products immediately
                 router.push("/products");
 
                 // Fetch user data in background
@@ -66,8 +66,7 @@ export default function LoginPage() {
                     const response = await apiClient.get("/auth/user/profile");
                     dispatch(setUser(response.data.user));
                 } catch (error) {
-                    // console.error("Error fetching user data:", error);
-                    // User will be handled by middleware or dashboard page
+                    // silent fail
                 }
             } else if (result.status === "needs_second_factor") {
                 // Send the email code
@@ -77,8 +76,7 @@ export default function LoginPage() {
                 router.push("/verify");
             }
         } catch (err: any) {
-            // console.log(err);
-            toast.error(err.errors[0].longMessage);
+            toast.error(err.errors?.[0]?.longMessage || "Sign in failed");
         } finally {
             setIsLoading(false);
         }
@@ -87,48 +85,33 @@ export default function LoginPage() {
     const handleGoogleSignIn = async () => {
         if (!isLoaded || isLoading) return;
 
-        // Extremely robust Tauri detection
-        const isTauriEnv = 
-            (typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__) ||
-            (typeof window !== "undefined" && (window as any).__TAURI__) ||
-            (typeof window !== "undefined" && window.navigator.userAgent.includes("Tauri"));
-
-        if (isTauriEnv) {
-            console.log("Tauri environment detected, attempting external browser auth...");
+        if (isTauri()) {
             try {
                 setIsLoading(true);
                 const { open } = await import("@tauri-apps/plugin-shell");
                 
-                // Construct the Clerk OAuth URL
-                // Note: We use a real web URL for the redirect so the browser can handle the callback
-                // If you have a production domain, use it here instead of window.location.origin
-                const redirectUrl = window.location.origin.includes("localhost") 
-                    ? "https://trysalesense.online/sign-in" 
-                    : window.location.origin + "/sign-in";
-
+                // Force Clerk to use the production domain for the OAuth flow.
+                // This ensures Clerk returns a valid external verification URL.
                 const response = await signIn.create({
                     strategy: "oauth_google",
-                    redirectUrl: redirectUrl,
+                    redirectUrl: "https://trysalesense.online/products",
                 });
 
-                const externalUrl = response.firstFactorVerification?.externalVerificationRedirectUrl;
+                const externalUrl = 
+                    response.firstFactorVerification?.externalVerificationRedirectUrl ||
+                    (response as any).verifications?.externalAccount?.externalVerificationRedirectUrl;
 
                 if (externalUrl) {
-                    console.log("Opening external URL:", externalUrl);
                     await open(externalUrl.toString());
-                    toast.success("Opening Google Sign-In in your system browser...");
+                    toast.success("Opening Google Sign-In in your browser...");
                     setIsLoading(false);
-                    return; 
-                } else {
-                    throw new Error("No external verification URL returned from Clerk");
+                    return;
                 }
             } catch (err: any) {
-                console.error("Tauri external auth failed:", err);
-                toast.error("External browser failed to open. Falling back...");
+                console.error("Tauri Google Auth failed:", err);
             }
         }
 
-        console.log("Using standard redirect auth...");
         setIsLoading(true);
         try {
             await signIn.authenticateWithRedirect({
@@ -143,21 +126,6 @@ export default function LoginPage() {
         }
     };
 
-    // Don't show loading screen, render the form normally
-    // if (!isLoaded) {
-    //     return (
-    //         <AuthLayout
-    //             title="Welcome back"
-    //             subtitle="Log in to your account to continue"
-    //         >
-    //             <div className="text-center">
-    //                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
-    //             </div>
-    //         </AuthLayout>
-    //     );
-    // }
-
-    // If already signed in, still show form but they'll be redirected
     return (
         <AuthLayout
             title="Welcome back"
