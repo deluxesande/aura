@@ -87,39 +87,34 @@ export default function LoginPage() {
     const handleGoogleSignIn = async () => {
         if (!isLoaded || isLoading) return;
 
-        // Check if running in Tauri
-        if (typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__) {
+        // More robust Tauri detection
+        const isTauriEnv = typeof window !== "undefined" && 
+            ((window as any).__TAURI_INTERNALS__ || (window as any).__TAURI__);
+
+        if (isTauriEnv) {
             try {
                 setIsLoading(true);
                 const { open } = await import("@tauri-apps/plugin-shell");
                 
-                // Construct the Clerk OAuth URL manually or use a helper
-                // This will trigger the flow in the system browser
-                // Note: The redirectUrl must be a valid web URL (your production/preview site)
-                // that handles the handoff or deep links.
-                
-                const googleAuthUrl = await signIn.create({
+                // Construct the Clerk OAuth URL
+                // Using signUp.create or signIn.create usually provides the URL
+                const response = await signIn.create({
                     strategy: "oauth_google",
                     redirectUrl: window.location.origin + "/sign-in",
-                }).then(res => res.firstFactorVerification.externalVerificationRedirectUrl);
+                });
 
-                if (googleAuthUrl) {
-                    await open(googleAuthUrl.toString());
-                } else {
-                    // Fallback to internal if URL generation fails
-                    await signIn.authenticateWithRedirect({
-                        strategy: "oauth_google",
-                        redirectUrl: "/sign-in",
-                        redirectUrlComplete: "/products",
-                        continueSignUp: false,
-                    });
+                const externalUrl = response.firstFactorVerification?.externalVerificationRedirectUrl;
+
+                if (externalUrl) {
+                    // FORCE open in system browser
+                    await open(externalUrl.toString());
+                    toast.info("Opening Google Sign-In in your browser...");
+                    return; // Stop here, the browser takes over
                 }
             } catch (err: any) {
-                console.error("Tauri Google Auth Error:", err);
-                toast.error("Opening system browser failed. Please try again.");
-                setIsLoading(false);
+                console.error("Tauri external auth failed:", err);
+                // Fallback will happen below
             }
-            return;
         }
 
         setIsLoading(true);
@@ -130,10 +125,8 @@ export default function LoginPage() {
                 redirectUrlComplete: "/products",
                 continueSignUp: false,
             });
-            dispatch(signInAction());
         } catch (err: any) {
             toast.error("Failed to sign in with Google. Please try again.");
-        } finally {
             setIsLoading(false);
         }
     };

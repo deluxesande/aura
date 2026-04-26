@@ -26,7 +26,20 @@
   },
   "plugins": {
     "shell": {
-      "open": true
+      "open": true,
+      "scope": [
+        {
+          "name": "any-url",
+          "allow": [
+            {
+              "schemes": [
+                "http",
+                "https"
+              ]
+            }
+          ]
+        }
+      ]
     }
   },
   "bundle": {
