@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { clerkClient, getAuth } from "@clerk/nextjs/server";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { logAction } from "@/utils/server/audit";
 
 async function getUserById(req: NextApiRequest, res: NextApiResponse) {
@@ -15,7 +15,7 @@ async function getUserById(req: NextApiRequest, res: NextApiResponse) {
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const requestor = await prisma.user.findUnique({
+        const requestor = await masterPrisma.user.findUnique({
             where: { clerkId: requestorClerkId },
             select: { businessId: true },
         });
@@ -34,7 +34,7 @@ async function getUserById(req: NextApiRequest, res: NextApiResponse) {
             return res.status(400).json({ error: "Missing user ID" });
         }
 
-        const targetUser = await prisma.user.findFirst({
+        const targetUser = await masterPrisma.user.findFirst({
             where: {
                 clerkId: targetId,
                 businessId: requestor.businessId,
@@ -64,7 +64,7 @@ async function getUserById(req: NextApiRequest, res: NextApiResponse) {
             imageUrl: "/images/user.png",
         };
 
-        const invitation = await prisma.userInvitation.findFirst({
+        const invitation = await masterPrisma.userInvitation.findFirst({
             where: {
                 email: targetUser.email,
                 businessId: requestor.businessId,
@@ -72,7 +72,7 @@ async function getUserById(req: NextApiRequest, res: NextApiResponse) {
         });
 
         if (invitation && invitation.invitedBy) {
-            const inviter = await prisma.user.findUnique({
+            const inviter = await masterPrisma.user.findUnique({
                 where: { id: invitation.invitedBy },
                 select: { clerkId: true, firstName: true, lastName: true },
             });
@@ -125,7 +125,7 @@ async function updateUser(req: NextApiRequest, res: NextApiResponse) {
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const requestor = await prisma.user.findUnique({
+        const requestor = await masterPrisma.user.findUnique({
             where: { clerkId: requestorClerkId },
             select: { id: true, businessId: true, role: true },
         });
@@ -159,7 +159,7 @@ async function updateUser(req: NextApiRequest, res: NextApiResponse) {
 
         const { storeId, role } = req.body;
 
-        const targetUser = await prisma.user.findFirst({
+        const targetUser = await masterPrisma.user.findFirst({
             where: {
                 clerkId: targetId,
                 businessId: requestor.businessId,
@@ -201,11 +201,20 @@ async function updateUser(req: NextApiRequest, res: NextApiResponse) {
             updateData.role = role.toLowerCase();
         }
 
-        const updatedUser = await prisma.user.update({
+        const updatedUser = await masterPrisma.user.update({
             where: { clerkId: targetId },
             data: updateData,
-            include: { Store: { select: { id: true, name: true } } },
         });
+
+        // Manually fetch Store info from Tenant DB if storeId is set
+        let storeInfo = null;
+        if (updatedUser.storeId) {
+            const tenantPrisma = await getTenantPrisma(requestor.businessId);
+            storeInfo = await tenantPrisma.store.findUnique({
+                where: { id: updatedUser.storeId },
+                select: { id: true, name: true }
+            });
+        }
 
         // Log Audit Action
         await logAction({
@@ -219,7 +228,10 @@ async function updateUser(req: NextApiRequest, res: NextApiResponse) {
             userAgent: req.headers["user-agent"],
         });
 
-        return res.status(200).json(updatedUser);
+        return res.status(200).json({
+            ...updatedUser,
+            Store: storeInfo
+        });
     } catch (error) {
         console.log("Error updating user details:", error);
         return res.status(500).json({ error: "Internal server error" });

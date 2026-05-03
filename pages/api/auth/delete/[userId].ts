@@ -1,7 +1,6 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/utils/lib/client";
-import { utapi, extractFileKey } from "@/utils/server/uploadthingServer";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 
 export const maxDuration = 30;
 
@@ -20,9 +19,8 @@ export default async function handler(
     }
 
     try {
-        const user = await prisma.user.findUnique({
+        const user = await masterPrisma.user.findUnique({
             where: { clerkId: userId },
-            include: { Business: true }
         });
 
         if (!user) {
@@ -34,9 +32,19 @@ export default async function handler(
         const isAdmin = user.role.toLowerCase() === "admin";
         const businessId = user.businessId;
 
+        if (!businessId) {
+            // User without business, just delete
+            await masterPrisma.user.delete({ where: { id: user.id } });
+            const client = await clerkClient();
+            await client.users.deleteUser(userId).catch(() => {});
+            return res.status(200).json({ message: "User deleted successfully" });
+        }
+
+        const tenantPrisma = await getTenantPrisma(businessId);
+
         // 1. Validation: If Admin, only allow deletion if they are the ONLY user in the business
-        if (isAdmin && businessId) {
-            const otherUsersCount = await prisma.user.count({
+        if (isAdmin) {
+            const otherUsersCount = await masterPrisma.user.count({
                 where: {
                     businessId: businessId,
                     clerkId: { not: userId },
@@ -55,8 +63,8 @@ export default async function handler(
         let assigneeUuid: string | null = null;
         let assigneeClerkId: string | null = null;
 
-        if (!isAdmin && businessId) {
-            const adminUser = await prisma.user.findFirst({
+        if (!isAdmin) {
+            const adminUser = await masterPrisma.user.findFirst({
                 where: { businessId: businessId, role: "admin" },
             });
             if (adminUser) {
@@ -66,12 +74,12 @@ export default async function handler(
         }
 
         // 3. Database Operations
-        await prisma.$transaction(async (tx) => {
-            if (isAdmin && businessId) {
-                // COMPLETE BUSINESS PURGE
-                // Delete everything linked to this businessId
-                const bId = businessId;
+        if (isAdmin) {
+            // COMPLETE BUSINESS PURGE
+            const bId = businessId;
 
+            // Delete everything in Tenant DB
+            await tenantPrisma.$transaction(async (tx) => {
                 // Tier 1: Leaf nodes/Dependencies
                 await tx.invoiceItem.deleteMany({ where: { Invoice: { businessId: bId } } });
                 await tx.successfulCallback.deleteMany({ where: { Invoice: { businessId: bId } } });
@@ -91,46 +99,55 @@ export default async function handler(
                 await tx.product.deleteMany({ where: { businessId: bId } });
                 await tx.category.deleteMany({ where: { businessId: bId } });
                 await tx.supplier.deleteMany({ where: { businessId: bId } });
-                await tx.userInvitation.deleteMany({ where: { businessId: bId } });
-                await tx.subscriptionPayment.deleteMany({ where: { userId: userId } });
-                await tx.subscription.deleteMany({ where: { businessId: bId } });
                 await tx.kraTotReturn.deleteMany({ where: { businessId: bId } });
                 await tx.kraDetails.deleteMany({ where: { businessId: bId } });
                 
-                // Tier 3: Stores and Business
+                // Tier 3: Stores and Mirror Users
                 await tx.store.deleteMany({ where: { businessId: bId } });
+                await tx.tenantUser.deleteMany({ where: { clerkId: { not: userId } } }); // Note: clerkId used in TenantUser
+                await tx.tenantUser.deleteMany({ where: { clerkId: userId } });
+            });
+
+            // Delete everything in Master DB
+            await masterPrisma.$transaction(async (tx) => {
+                await tx.userInvitation.deleteMany({ where: { businessId: bId } });
+                await tx.subscriptionPayment.deleteMany({ where: { userId: userId } });
+                await tx.subscription.deleteMany({ where: { businessId: bId } });
                 await tx.user.deleteMany({ where: { businessId: bId, clerkId: { not: userId } } });
-                
-                // Finally the user and business
                 await tx.user.delete({ where: { id: user.id } });
                 await tx.business.delete({ where: { id: bId } });
-            } else {
-                // STAFF MEMBER DELETION: Re-assign data to Admin
-                if (assigneeUuid && assigneeClerkId) {
-                    const staffId = user.id;
-                    const staffClerkId = user.clerkId;
+            });
+        } else {
+            // STAFF MEMBER DELETION: Re-assign data to Admin
+            if (assigneeUuid && assigneeClerkId) {
+                const staffId = user.id;
+                const staffClerkId = user.clerkId;
 
+                await tenantPrisma.$transaction(async (tx) => {
                     await tx.invoice.updateMany({ where: { createdBy: staffClerkId }, data: { createdBy: assigneeClerkId } });
                     await tx.invoiceItem.updateMany({ where: { createdBy: staffClerkId }, data: { createdBy: assigneeClerkId } });
                     await tx.product.updateMany({ where: { createdBy: staffClerkId }, data: { createdBy: assigneeClerkId } });
                     await tx.category.updateMany({ where: { createdBy: staffClerkId }, data: { createdBy: assigneeClerkId } });
-                    await tx.customer.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid } });
-                    await tx.supplier.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid } });
-                    await tx.expense.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid } });
-                    await tx.purchaseOrder.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid } });
-                    await tx.stockReceipt.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid } });
-                    await tx.stockTransfer.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid } });
-                    await tx.delivery.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid } });
-                    await tx.mpesaPayment.updateMany({ where: { userId: staffId }, data: { userId: assigneeUuid } });
-                }
+                    await tx.customer.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid as string } });
+                    await tx.supplier.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid as string } });
+                    await tx.expense.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid as string } });
+                    await tx.purchaseOrder.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid as string } });
+                    await tx.stockReceipt.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid as string } });
+                    await tx.stockTransfer.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid as string } });
+                    await tx.delivery.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid as string } });
+                    await tx.mpesaPayment.updateMany({ where: { userId: staffId }, data: { userId: assigneeUuid as string } });
+                    await tx.tenantUser.delete({ where: { clerkId: staffClerkId } });
+                });
+            }
 
-                // Cleanup invitations and delete user
+            // Cleanup invitations and delete user from Master
+            await masterPrisma.$transaction(async (tx) => {
                 if (user.email) {
                     await tx.userInvitation.deleteMany({ where: { email: user.email } });
                 }
                 await tx.user.delete({ where: { id: user.id } });
-            }
-        }, { timeout: 30000 });
+            });
+        }
 
         // 4. Cleanup Clerk User
         const client = await clerkClient();

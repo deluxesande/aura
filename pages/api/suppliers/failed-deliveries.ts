@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 
 export default async function handler(
     req: NextApiRequest,
@@ -14,7 +14,7 @@ export default async function handler(
         const { userId: clerkId } = getAuth(req);
         if (!clerkId) return res.status(401).json({ error: "Unauthorized" });
 
-        const user = await prisma.user.findUnique({
+        const user = await masterPrisma.user.findUnique({
             where: { clerkId },
             select: { id: true, businessId: true },
         });
@@ -24,9 +24,10 @@ export default async function handler(
         }
 
         const businessId = user.businessId;
+        const tenantPrisma = await getTenantPrisma(businessId);
 
         // Fetch deliveries that are linked to a PurchaseOrder
-        const deliveries = await prisma.delivery.findMany({
+        const deliveries = await tenantPrisma.delivery.findMany({
             where: {
                 businessId,
                 purchaseOrderId: { not: null },
@@ -66,7 +67,7 @@ export default async function handler(
             // Check for missing items or shortfalls
             for (const poItem of poItems) {
                 const receipt = receipts.find(
-                    (r) => r.productId === poItem.productId
+                    (r: any) => r.productId === poItem.productId
                 );
 
                 if (!receipt) {

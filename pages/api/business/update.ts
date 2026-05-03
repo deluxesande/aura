@@ -3,10 +3,64 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { masterPrisma as prisma, invalidateTenantClient } from "@/utils/lib/prisma";
 import { encrypt } from "@/utils/crypto";
 import { logAction } from "@/utils/server/audit";
+import { syncAllBusinessUsersToTenant } from "@/utils/lib/syncUser";
 import { exec } from "child_process";
 import util from "util";
+import net from "net";
 
 const execAsync = util.promisify(exec);
+
+/**
+ * Validates a database URL to prevent SSRF and other connection-based attacks.
+ * Rejects non-postgres protocols and blocks loopback, private RFC-1918, and link-local ranges.
+ */
+function isSafeUrl(urlStr: string): boolean {
+    if (!urlStr || typeof urlStr !== 'string') return false;
+    try {
+        const url = new URL(urlStr);
+        // 1. Reject non-postgres protocols
+        if (url.protocol !== "postgresql:" && url.protocol !== "postgres:") {
+            return false;
+        }
+
+        const host = url.hostname;
+        if (!host) return false;
+
+        // net.isIP returns 4 for IPv4, 6 for IPv6, 0 for non-IP
+        const ipVersion = net.isIP(host);
+
+        // 2. Block loopback and "any" interface
+        if (host === "localhost" || host === "0.0.0.0" || host === "::") {
+            return false;
+        }
+
+        if (ipVersion === 4) {
+            // Loopback 127.0.0.0/8
+            if (host.startsWith("127.")) return false;
+            // 3. Block private RFC-1918 ranges
+            // 10.0.0.0/8
+            if (host.startsWith("10.")) return false;
+            // 172.16.0.0/12
+            if (/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host)) return false;
+            // 192.168.0.0/16
+            if (host.startsWith("192.168.")) return false;
+            // 4. Block link-local 169.254.0.0/16
+            if (host.startsWith("169.254.")) return false;
+        } else if (ipVersion === 6) {
+            const lower = host.toLowerCase();
+            // Loopback ::1
+            if (lower === "::1") return false;
+            // Unique Local Addresses (fc00::/7)
+            if (lower.startsWith("fc") || lower.startsWith("fd")) return false;
+            // Link-local (fe80::/10)
+            if (lower.startsWith("fe8") || lower.startsWith("fe9") || lower.startsWith("fea") || lower.startsWith("feb")) return false;
+        }
+
+        return true;
+    } catch {
+        return false;
+    }
+}
 
 export const updateBusiness = async (
     req: NextApiRequest,
@@ -43,7 +97,7 @@ export const updateBusiness = async (
 
         const existingBusiness = await prisma.business.findUnique({
             where: { id },
-            select: { createdBy: true },
+            select: { id: true, createdBy: true, isConfigured: true },
         });
 
         if (!existingBusiness) {
@@ -61,25 +115,11 @@ export const updateBusiness = async (
             select: { id: true }
         });
 
-        // Deploy schema to BYODB if provided
-        if (tenantMode === "BYODB" && tenantDatabaseUrl) {
-            console.log("Pushing schema to BYO database...");
-            try {
-                await execAsync("npx prisma db push --schema=./prisma/schema.tenant.prisma --accept-data-loss", {
-                    env: { ...process.env, DATABASE_URL: tenantDatabaseUrl }
-                });
-            } catch (execError: any) {
-                console.error("Failed to push schema:", execError);
-                return res.status(500).json({ error: "Failed to initialize tables in BYO database." });
-            }
-        }
-
         const updateData: any = {
             name,
             logo,
             email: email || null,
             address: address || null,
-            tenantMode: tenantMode || undefined,
         };
 
         const changedFields: string[] = [];
@@ -87,13 +127,39 @@ export const updateBusiness = async (
         if (email) changedFields.push("email");
         if (address) changedFields.push("address");
         if (logo) changedFields.push("logo");
-        if (tenantMode) changedFields.push("tenantMode");
 
-        if (tenantDatabaseUrl !== undefined) {
-            updateData.tenantDatabaseUrl = tenantDatabaseUrl
-                ? encrypt(tenantDatabaseUrl)
-                : null;
-            changedFields.push("tenantDatabaseUrl");
+        // BYODB Logic with Security Fixes
+        if (tenantMode === "BYODB" && tenantDatabaseUrl) {
+            // SSRF Protection
+            if (!isSafeUrl(tenantDatabaseUrl)) {
+                return res.status(400).json({ error: "Invalid or restricted database URL provided." });
+            }
+
+            console.log("Pushing schema to BYO database...");
+            try {
+                // Remove --accept-data-loss and add timeout
+                await execAsync("npx prisma db push --schema=./prisma/schema.tenant.prisma", {
+                    env: { ...process.env, DATABASE_URL: tenantDatabaseUrl },
+                    timeout: 30000 // 30 second timeout
+                });
+                
+                // If push succeeds, mark as configured and update URL
+                updateData.tenantMode = "BYODB";
+                updateData.isConfigured = true;
+                updateData.tenantDatabaseUrl = encrypt(tenantDatabaseUrl);
+                changedFields.push("tenantMode", "tenantDatabaseUrl", "isConfigured");
+
+                // Sync all users to the new database to fix foreign key constraints
+                await syncAllBusinessUsersToTenant(id);
+            } catch (execError: any) {
+                console.error("Failed to push schema:", execError);
+                return res.status(500).json({ error: "Failed to initialize tables in BYO database. Ensure the database is accessible and permissions are correct." });
+            }
+        } else if (tenantMode === "SHARED") {
+            updateData.tenantMode = "SHARED";
+            updateData.tenantDatabaseUrl = null;
+            updateData.isConfigured = false; // Reset to false for shared as it's the default plane
+            changedFields.push("tenantMode", "tenantDatabaseUrl", "isConfigured");
         }
 
         if (mpesaConsumerKey !== undefined) {
@@ -162,5 +228,3 @@ export const updateBusiness = async (
         res.status(500).json({ error: "Failed to update business" });
     }
 };
-
-

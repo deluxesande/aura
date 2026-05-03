@@ -1,14 +1,32 @@
-import { PrismaClient } from '@prisma/client'
-const prisma = new PrismaClient()
+import { masterPrisma, getTenantPrisma } from './lib/prisma'
 
 async function main() {
-  const expenses = await prisma.expense.findMany({
+  const businessId = process.argv[2];
+  if (!businessId) {
+    console.error("Please provide a businessId as an argument");
+    process.exit(1);
+  }
+
+  const tenantPrisma = await getTenantPrisma(businessId);
+
+  const expenses = await tenantPrisma.expense.findMany({
     include: {
-      Business: { select: { name: true } },
       Store: { select: { name: true } },
     }
   })
-  console.log(JSON.stringify(expenses, null, 2))
+
+  // Manually fetch Business info from Master
+  const business = await masterPrisma.business.findUnique({
+    where: { id: businessId },
+    select: { name: true }
+  });
+
+  const enrichedExpenses = expenses.map(expense => ({
+    ...expense,
+    Business: business
+  }));
+
+  console.log(JSON.stringify(enrichedExpenses, null, 2))
 }
 
 main()
@@ -17,5 +35,5 @@ main()
     process.exit(1)
   })
   .finally(async () => {
-    await prisma.$disconnect()
+    // Note: disconnectAll() could be used here if we wanted to be thorough
   })

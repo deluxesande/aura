@@ -1,10 +1,9 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import * as XLSX from "xlsx";
 import formidable from "formidable";
 import fs from "fs";
-import { randomUUID } from "crypto";
 
 export const config = {
     api: {
@@ -38,7 +37,7 @@ export default async function handler(
         if (!clerkUserId)
             return res.status(401).json({ error: "Unauthorized" });
 
-        const currentUser = await prisma.user.findUnique({
+        const currentUser = await masterPrisma.user.findUnique({
             where: { clerkId: clerkUserId },
             select: { id: true, businessId: true, storeId: true },
         });
@@ -72,7 +71,9 @@ export default async function handler(
         const productsData = getSheetData("Products");
         const expensesData = getSheetData("Expenses");
 
-        await prisma.$transaction(
+        const tenantPrisma = await getTenantPrisma(businessId);
+
+        await tenantPrisma.$transaction(
             async (tx) => {
                 // 1. Categories
                 for (const row of categoriesData) {
@@ -94,7 +95,7 @@ export default async function handler(
                     where: { businessId },
                     select: { id: true, name: true },
                 });
-                const categoryMap = new Map(allCategories.map(c => [normalize(c.name), c.id]));
+                const categoryMap = new Map(allCategories.map((c: any) => [normalize(c.name), c.id]));
 
                 // 2. Customers
                 for (const row of customersData) {

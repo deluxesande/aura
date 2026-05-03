@@ -1,5 +1,5 @@
 // utils/kra/auto-filer.ts
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { subMonths, format } from "date-fns";
 import axios from "axios";
 
@@ -7,11 +7,10 @@ import axios from "axios";
 const API_DOMAIN = "https://sbx.kra.go.ke";
 
 export async function checkAndAutoFile(businessId: string) {
-    // 1. Get Business Details & Sub
-    const business = await prisma.business.findUnique({
+    // 1. Get Business Details & Sub from Master
+    const business = await masterPrisma.business.findUnique({
         where: { id: businessId },
         include: {
-            kraDetails: true,
             subscriptions: {
                 where: { status: "ACTIVE" },
                 orderBy: { createdAt: "desc" },
@@ -21,15 +20,24 @@ export async function checkAndAutoFile(businessId: string) {
         },
     });
 
+    if (!business) return;
+
+    const tenantPrisma = await getTenantPrisma(businessId);
+
+    // Fetch KRA details from Tenant DB
+    const kraDetails = await tenantPrisma.kraDetails.findUnique({
+        where: { businessId: businessId }
+    });
+
     // 2. Validation Checks
-    if (!business || !business.kraDetails?.kraPin) return; // No PIN, can't file
+    if (!kraDetails || !kraDetails.kraPin) return; // No PIN, can't file
 
     const activeSub = business.subscriptions[0];
     const plan = activeSub?.plan || "STARTER"; // Default to STARTER if null
 
     // --- NEW LOGIC: Starter OR Opt-in ---
     const isStarter = plan === "STARTER";
-    const hasOptedIn = business.kraDetails.isAutoFilingEnabled === true;
+    const hasOptedIn = kraDetails.isAutoFilingEnabled === true;
 
     // Skip ONLY IF it's a paid plan AND they haven't opted in
     if (!isStarter && !hasOptedIn) {
@@ -44,8 +52,8 @@ export async function checkAndAutoFile(businessId: string) {
     const lastMonthDate = subMonths(new Date(), 1);
     const period = format(lastMonthDate, "yyyy-MM"); // e.g., "2026-01"
 
-    // 4. Check if ALREADY filed for this period
-    const existingReturn = await prisma.kraTotReturn.findFirst({
+    // 4. Check if ALREADY filed for this period (in Tenant DB)
+    const existingReturn = await tenantPrisma.kraTotReturn.findFirst({
         where: {
             businessId: business.id,
             period: period,
@@ -76,7 +84,7 @@ export async function checkAndAutoFile(businessId: string) {
 
         const clerkIds = business.users.map((u) => u.clerkId);
 
-        const aggregations = await prisma.invoice.aggregate({
+        const aggregations = await tenantPrisma.invoice.aggregate({
             _sum: { totalAmount: true },
             where: {
                 OR: [
@@ -104,7 +112,7 @@ export async function checkAndAutoFile(businessId: string) {
         const filingUrl = `${API_DOMAIN}/filing/v1/tot/paymentregistration`;
         const totPayload = {
             TAXPAYERDETAILS: {
-                TaxpayerPIN: business.kraDetails.kraPin,
+                TaxpayerPIN: kraDetails.kraPin,
                 Month: month,
                 Year: year,
                 GrossTurnover: grossTurnover,
@@ -120,9 +128,9 @@ export async function checkAndAutoFile(businessId: string) {
 
         const kraData = filingResponse.data;
 
-        // D. Save to Database
+        // D. Save to Tenant Database
         if (kraData.Status === "OK" || kraData.ResponseCode === "87000") {
-            await prisma.kraTotReturn.create({
+            await tenantPrisma.kraTotReturn.create({
                 data: {
                     ackNumber: kraData.AckNumber,
                     paymentSlip: kraData.PRN,
