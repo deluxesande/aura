@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { addCreatedBy } from "../middleware";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { Novu } from "@novu/api";
 import { getAuth } from "@clerk/nextjs/server";
 
@@ -31,7 +31,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const invoiceStatus = paymentType === "CASH" ? "PAID" : "PENDING";
 
     try {
-        const creator = await prisma.user.findUnique({
+        const creator = await masterPrisma.user.findUnique({
             where: { clerkId: createdBy },
         });
 
@@ -41,14 +41,24 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 .json({ error: "User is not linked to a business" });
         }
 
+        const tenantPrisma = await getTenantPrisma(creator.businessId);
+
         const activeStoreHeader = req.headers["x-store-id"] as string;
-        const targetStoreId = creator.role === "admin" ? activeStoreHeader : (creator.storeId as string);
+        let targetStoreId = activeStoreHeader;
+
+        if (creator.role !== "admin") {
+            const tenantUser = await tenantPrisma.tenantUser.findUnique({
+                where: { clerkId: userId },
+                select: { storeId: true }
+            });
+            if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
+        }
 
         if (!targetStoreId) {
             return res.status(400).json({ error: "No active store selected." });
         }
 
-        const result = await prisma.$transaction(
+        const result = await tenantPrisma.$transaction(
             async (tx) => {
                 const productIds = cartItems.map((item: any) => item.productId);
                 const dbProducts = await tx.product.findMany({
@@ -119,7 +129,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                         paymentType,
                         status: invoiceStatus,
                         customerId: customerId || null,
-                        businessId: creator.businessId,
                         storeId: targetStoreId,
                         createdBy,
                     },
@@ -146,7 +155,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
         const { invoice, lowStockAlerts } = result;
 
-        const adminsAndManagers = await prisma.user.findMany({
+        const adminsAndManagers = await masterPrisma.user.findMany({
             where: {
                 businessId: creator.businessId,
                 OR: [
@@ -198,3 +207,4 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 };
 
 export default addCreatedBy(handler);
+

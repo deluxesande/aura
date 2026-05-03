@@ -29,17 +29,27 @@ export default async function handler(
                 where: { businessId: businessId },
                 orderBy: { createdAt: "desc" },
                 take: 100, // Limit to last 100 logs
-                include: {
-                    User: { // Synced TenantUser
-                        select: {
-                            firstName: true,
-                            lastName: true,
-                            email: true,
-                        },
-                    },
-                },
             });
-            return res.status(200).json(logs);
+
+            // 3. Manually attach User info if available
+            const userIds = [...new Set(logs.map(log => log.userId))];
+            const users = await tenantPrisma.tenantUser.findMany({
+                where: { clerkId: { in: userIds } },
+                select: {
+                    clerkId: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                }
+            });
+
+            const userMap = new Map(users.map(u => [u.clerkId, u]));
+            const logsWithUser = logs.map(log => ({
+                ...log,
+                User: userMap.get(log.userId) || null
+            }));
+
+            return res.status(200).json(logsWithUser);
         } catch (error) {
             console.error("GET_AUDIT_LOGS_ERROR", error);
             return res.status(500).json({ error: "Failed to fetch audit logs" });

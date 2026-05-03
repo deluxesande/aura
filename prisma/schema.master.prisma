@@ -57,6 +57,8 @@ model Business {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  isConfigured Boolean @default(false)
+
   createdBy String? @unique
 
   // Routing fields

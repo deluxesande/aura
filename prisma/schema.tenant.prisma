@@ -39,7 +39,6 @@ model TenantUser {
   createdStockReceipts  StockReceipt[]  @relation("ReceiptCreator")
   createdDeliveries     Delivery[]
   createdExpenses       Expense[]
-  auditLogs             AuditLog[]
   reconciliations       InventoryReconciliation[]
 }
 
@@ -506,8 +505,7 @@ model AuditLog {
   userAgent  String?
   createdAt  DateTime @default(now())
 
-  userId     String   @db.Uuid
-  User       TenantUser @relation(fields: [userId], references: [id])
+  userId     String
   businessId String   @db.Uuid // Logical reference
 
   @@index([businessId])

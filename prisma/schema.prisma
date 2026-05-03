@@ -61,6 +61,8 @@ model Business {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  isConfigured Boolean @default(false)
+
   createdBy String? @unique
 
   // Routing fields
@@ -99,7 +101,6 @@ model TenantUser {
   createdStockReceipts  StockReceipt[]  @relation("ReceiptCreator")
   createdDeliveries     Delivery[]
   createdExpenses       Expense[]
-  auditLogs             AuditLog[]
   reconciliations       InventoryReconciliation[]
 }
 
@@ -512,8 +513,7 @@ model AuditLog {
   ipAddress  String?
   userAgent  String?
   createdAt  DateTime @default(now())
-  userId     String   @db.Uuid
-  User       TenantUser @relation(fields: [userId], references: [id])
+  userId     String
   businessId String   @db.Uuid 
 
   @@index([businessId])
