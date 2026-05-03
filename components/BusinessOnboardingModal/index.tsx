@@ -99,42 +99,50 @@ const BusinessOnboardingModal = () => {
     const handleFinish = async () => {
         setIsLoading(true);
         try {
-            // 1. Update Business Name
-            const businessData = { name: businessName };
+            const businessId = user?.businessId;
+            if (!businessId) throw new Error("Business context not found. Please refresh.");
+
+            // 1. Update business profile with onboarding details, including BYODB settings
             const response = await apiClient.put(
-                `/business/${user?.businessId}`,
-                businessData,
+                `/business/${businessId}`,
                 {
-                    headers: { "Content-Type": "application/json" },
+                    name: businessName,
+                    tenantMode,
+                    tenantDatabaseUrl:
+                        tenantMode === "BYODB" ? tenantDatabaseUrl : undefined,
                 },
+                { headers: { "Content-Type": "application/json" } },
             );
+            const updatedBusiness = response.data;
 
-            // 2. Create the First Store/Branch
-            await apiClient.post("/stores/create", newStore);
+            // 2. Initialize the first branch (gracefully handling existing branches)
+            try {
+                await apiClient.post("/stores/create", newStore);
+            } catch (storeError: any) {
+                const errorMsg = storeError.response?.data?.error || "";
+                if (errorMsg.includes("Limit reached") || errorMsg.includes("exists")) {
+                    console.log("Branch already exists, skipping initial setup...");
+                } else {
+                    console.error("Branch initialization error:", storeError);
+                }
+            }
 
-            // 3. Update Global State
+            // 3. Synchronize global state
             dispatch(
                 setBusiness({
-                    id: response.data.id,
-                    name: response.data.name,
-                    logo: response.data.logo,
+                    id: updatedBusiness.id,
+                    name: updatedBusiness.name,
+                    logo: updatedBusiness.logo,
                 }),
             );
 
-            if (user) {
-                dispatch(
-                    setUser({
-                        ...user,
-                        Business: {
-                            ...(user.Business || {
-                                id: response.data.id,
-                                mpesaShortCode: undefined,
-                                mpesaConsumerKey: undefined,
-                            }),
-                            name: response.data.name,
-                        },
-                    } as any),
-                );
+            await dispatch(fetchUser());
+            
+            try {
+                const res = await apiClient.get(`/business/${businessId}`);
+                dispatch(setBusinessDetails(res.data));
+            } catch (e) {
+                console.warn("Full business details sync failed", e);
             }
 
             toast.success("Welcome to SaleSense!");
@@ -142,7 +150,7 @@ const BusinessOnboardingModal = () => {
             router.refresh();
         } catch (error: any) {
             toast.error(
-                error.response?.data?.error || "Failed to complete onboarding",
+                error.response?.data?.error || "Failed to finalize business setup",
             );
         } finally {
             setIsLoading(false);

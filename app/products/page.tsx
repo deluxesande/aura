@@ -66,7 +66,7 @@ export default function Page() {
     );
 
     // --- SWR DATA FETCHING ---
-    const { data: swrProducts, mutate: mutateProducts } = useSWR(
+    const { data: swrProducts, mutate: mutateProducts, isLoading: isProductsLoading } = useSWR(
         "/product",
         fetcher,
         {
@@ -88,11 +88,13 @@ export default function Page() {
         if (swrCategories) dispatch(setCategoriesInStore(swrCategories));
     }, [swrCategories, dispatch]);
 
-    const [loading, setLoading] = useState(!productsData.length);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (productsData.length > 0) setLoading(false);
-    }, [productsData.length]);
+        if (!isProductsLoading) {
+            setLoading(false);
+        }
+    }, [isProductsLoading]);
 
     const categories = useMemo(() => {
         const base = [

@@ -1,6 +1,6 @@
 import { getAuth } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
-import { masterPrisma as prisma } from "@/utils/lib/prisma";
+import { masterPrisma as prisma, invalidateTenantClient } from "@/utils/lib/prisma";
 import { encrypt } from "@/utils/crypto";
 import { logAction } from "@/utils/server/audit";
 import { exec } from "child_process";
@@ -121,6 +121,9 @@ export const updateBusiness = async (
             where: { id: id },
             data: updateData,
         });
+
+        // Invalidate the cached tenant client so the next request uses the fresh database details
+        invalidateTenantClient(id);
 
         // Log Audit Action
         if (currentUser) {

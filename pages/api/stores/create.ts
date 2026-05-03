@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
 import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { logAction } from "@/utils/server/audit";
+import { syncUserToTenant } from "@/utils/lib/syncUser";
 
 export default async function handler(
     req: NextApiRequest,
@@ -24,6 +25,9 @@ export default async function handler(
         }
 
         const businessId = user.businessId;
+
+        // Ensure user is synced to tenant DB to prevent AuditLog foreign key errors
+        await syncUserToTenant(clerkId);
 
         // 2. Fetch Subscription Limits from Master DB
         const subscription = await masterPrisma.subscription.findFirst({
@@ -79,7 +83,7 @@ export default async function handler(
             entityType: "STORE",
             entityId: result.id,
             details: { name: result.name, address: result.address },
-            userId: user.id,
+            userId: user.id, // This is the TenantUser ID which is synced via syncUserToTenant
             businessId: businessId,
             ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
             userAgent: req.headers["user-agent"],

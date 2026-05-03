@@ -9,7 +9,11 @@ const globalForMaster = globalThis as unknown as {
 export const masterPrisma =
     globalForMaster.masterPrisma ??
     new MasterPrismaClient({
-        datasourceUrl: process.env.DATABASE_URL,
+        datasources: {
+            db: {
+                url: process.env.DATABASE_URL,
+            },
+        },
         log: ["warn", "error"],
     });
 
@@ -17,6 +21,16 @@ if (process.env.NODE_ENV !== "production") globalForMaster.masterPrisma = master
 
 // Cache for tenant clients to avoid re-instantiating on every request
 const tenantClients: Record<string, TenantPrismaClient> = {};
+
+/**
+ * Invalidate a cached tenant client (e.g. after onboarding or updating connection details).
+ */
+export function invalidateTenantClient(businessId: string) {
+    if (tenantClients[businessId]) {
+        tenantClients[businessId].$disconnect().catch(console.error);
+        delete tenantClients[businessId];
+    }
+}
 
 /**
  * Dynamic factory to get the correct Tenant Prisma Client based on the Business ID.
@@ -29,7 +43,7 @@ export async function getTenantPrisma(businessId: string): Promise<TenantPrismaC
     // Lookup business routing in Master DB
     const business = await masterPrisma.business.findUnique({
         where: { id: businessId },
-        select: { tenantMode: true, tenantDatabaseUrl: true }
+        select: { name: true, tenantMode: true, tenantDatabaseUrl: true }
     });
 
     if (!business) {
@@ -38,7 +52,9 @@ export async function getTenantPrisma(businessId: string): Promise<TenantPrismaC
 
     let url = process.env.DATABASE_URL!; // Default to shared DB (SHARED mode)
 
-    if (business.tenantMode === "BYODB" && business.tenantDatabaseUrl) {
+    // If the business is still named "My New Business", force the shared DB to avoid
+    // connection errors before they have successfully configured their custom database.
+    if (business.name !== "My New Business" && business.tenantMode === "BYODB" && business.tenantDatabaseUrl) {
         try {
             url = decrypt(business.tenantDatabaseUrl);
         } catch (error) {
@@ -48,7 +64,11 @@ export async function getTenantPrisma(businessId: string): Promise<TenantPrismaC
     }
 
     const client = new TenantPrismaClient({
-        datasourceUrl: url,
+        datasources: {
+            db: {
+                url: url,
+            },
+        },
         log: ["warn", "error"],
     });
 

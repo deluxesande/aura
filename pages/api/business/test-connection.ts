@@ -28,7 +28,11 @@ export default async function handler(
 
         // Attempt to connect using the tenant Prisma client
         const tempClient = new PrismaClient({
-            datasourceUrl: url,
+            datasources: {
+                db: {
+                    url: url,
+                },
+            },
         });
 
         try {
