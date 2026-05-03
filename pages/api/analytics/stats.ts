@@ -1,4 +1,4 @@
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { getAuth } from "@clerk/nextjs/server";
 import type { NextApiRequest, NextApiResponse } from "next";
 
@@ -13,37 +13,38 @@ export default async function handler(
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
     try {
-        // 1. Get the business ID, role and storeId
-        const user = await prisma.user.findUnique({
+        // 1. Get the business ID and role from Master DB
+        const user = await masterPrisma.user.findUnique({
             where: { clerkId: userId },
-            select: { businessId: true, role: true, storeId: true },
+            select: { businessId: true, role: true },
         });
 
         if (!user || !user.businessId) {
             return res.status(200).json({
-                stats: {
-                    totalInvoices: 0,
-                    totalRevenue: 0,
-                    paidInvoices: 0,
-                    profit: 0,
-                },
-                percentageChanges: {
-                    totalInvoices: 0,
-                    totalRevenue: 0,
-                    paidInvoices: 0,
-                    profit: 0,
-                },
+                stats: { totalInvoices: 0, totalRevenue: 0, paidInvoices: 0, profit: 0, totalProcurement: 0, totalExpenses: 0 },
+                percentageChanges: { totalInvoices: 0, totalRevenue: 0, paidInvoices: 0, profit: 0 },
                 mpesaBalance: 0,
             });
         }
 
+        const businessId = user.businessId;
+        const tenantPrisma = await getTenantPrisma(businessId);
         const activeStoreHeader = req.headers["x-store-id"] as string;
-        let targetStoreId = user.role === "admin" ? activeStoreHeader : (user.storeId as string);
+
+        // Fetch user store info from Tenant DB if not admin
+        let targetStoreId = activeStoreHeader;
+        if (user.role !== "admin") {
+            const tenantUser = await tenantPrisma.tenantUser.findUnique({
+                where: { clerkId: userId },
+                select: { storeId: true }
+            });
+            if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
+        }
 
         // Fallback for admins if no store header is provided
         if (!targetStoreId && user.role === "admin") {
-            const firstStore = await prisma.store.findFirst({
-                where: { businessId: user.businessId, isActive: true },
+            const firstStore = await tenantPrisma.store.findFirst({
+                where: { businessId, isActive: true },
                 select: { id: true },
             });
             if (firstStore) targetStoreId = firstStore.id;
@@ -51,25 +52,11 @@ export default async function handler(
 
         if (!targetStoreId) {
             return res.status(200).json({
-                stats: {
-                    totalInvoices: 0,
-                    totalRevenue: 0,
-                    paidInvoices: 0,
-                    profit: 0,
-                    totalProcurement: 0,
-                    totalExpenses: 0,
-                },
-                percentageChanges: {
-                    totalInvoices: 0,
-                    totalRevenue: 0,
-                    paidInvoices: 0,
-                    profit: 0,
-                },
+                stats: { totalInvoices: 0, totalRevenue: 0, paidInvoices: 0, profit: 0, totalProcurement: 0, totalExpenses: 0 },
+                percentageChanges: { totalInvoices: 0, totalRevenue: 0, paidInvoices: 0, profit: 0 },
                 mpesaBalance: 0,
             });
         }
-
-        const businessId = user.businessId;
 
         // 2. Define Time Ranges
         const { timePeriod } = req.query;
@@ -106,8 +93,8 @@ export default async function handler(
 
         // 3. Helper to fetch stats (Optional Date Range)
         const getStats = async (startDate?: Date, endDate?: Date) => {
-            // Get all User IDs for this business
-            const businessUsers = await prisma.user.findMany({
+            // Get all User IDs for this business from Master DB
+            const businessUsers = await masterPrisma.user.findMany({
                 where: { businessId },
                 select: { clerkId: true },
             });
@@ -136,13 +123,13 @@ export default async function handler(
             }
 
             // Aggregate Totals (Invoices)
-            const invoiceData = await prisma.invoice.aggregate({
+            const invoiceData = await tenantPrisma.invoice.aggregate({
                 where: invoiceWhere,
                 _count: { id: true }, // Total Invoices
             });
 
             // Aggregate Revenue (Paid Only)
-            const paidData = await prisma.invoice.aggregate({
+            const paidData = await tenantPrisma.invoice.aggregate({
                 where: {
                     ...invoiceWhere,
                     status: { in: ["PAID", "paid", "COMPLETED", "completed"] },
@@ -152,7 +139,7 @@ export default async function handler(
             });
 
             // Aggregate Procurement (Deliveries)
-            const deliveryData = await prisma.delivery.aggregate({
+            const deliveryData = await tenantPrisma.delivery.aggregate({
                 where: {
                     ...whereClause,
                     status: "RECEIVED",
@@ -162,7 +149,7 @@ export default async function handler(
             });
 
             // Aggregate Expenses
-            const expenseData = await prisma.expense.aggregate({
+            const expenseData = await tenantPrisma.expense.aggregate({
                 where: {
                     ...whereClause,
                     status: "ACTIVE",
@@ -190,7 +177,7 @@ export default async function handler(
                 getStats(statsStartDate), // Period Stats (Filtered by timePeriod if provided)
                 getStats(startOfToday), // Today
                 getStats(startOfYesterday, endOfYesterday), // Yesterday
-                prisma.mpesaPayment.aggregate({
+                tenantPrisma.mpesaPayment.aggregate({
                     where: { 
                         businessId, 
                         status: "COMPLETED",

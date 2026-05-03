@@ -2,7 +2,7 @@ import { clerkClient, getAuth } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
 import { updateCustomer } from "./update";
 import { deleteCustomer } from "./delete";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 
 async function getCustomerById(req: NextApiRequest, res: NextApiResponse) {
     try {
@@ -11,7 +11,8 @@ async function getCustomerById(req: NextApiRequest, res: NextApiResponse) {
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const user = await prisma.user.findUnique({
+        // 1. Fetch User and Business context from Master DB
+        const user = await masterPrisma.user.findUnique({
             where: { clerkId: clerkUserId },
             select: { businessId: true },
         });
@@ -22,6 +23,9 @@ async function getCustomerById(req: NextApiRequest, res: NextApiResponse) {
                 .json({ error: "User is not linked to a business" });
         }
 
+        const businessId = user.businessId;
+        const tenantPrisma = await getTenantPrisma(businessId);
+
         const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
 
         if (!id) {
@@ -30,10 +34,11 @@ async function getCustomerById(req: NextApiRequest, res: NextApiResponse) {
                 .json({ error: "Invalid or missing customer ID" });
         }
 
-        const customer = await prisma.customer.findFirst({
+        // 2. Query Tenant DB for customer and synced Creator info
+        const customer = await tenantPrisma.customer.findFirst({
             where: {
                 id: id,
-                businessId: user.businessId,
+                businessId: businessId,
             },
             include: {
                 CreatedBy: {

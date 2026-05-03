@@ -1,6 +1,7 @@
 import { getAuth } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/utils/lib/client";
+import { getTenantPrisma } from "@/utils/lib/prisma";
 
 export default async function handler(
     req: NextApiRequest,
@@ -37,7 +38,9 @@ export default async function handler(
             });
         }
 
-        const returns = await prisma.kraTotReturn.findMany({
+        const tenantPrisma = await getTenantPrisma(user.businessId);
+
+        const returns = await tenantPrisma.kraTotReturn.findMany({
             where: {
                 businessId: user.businessId,
             },

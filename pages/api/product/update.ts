@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { getAuth } from "@clerk/nextjs/server";
 import { logAction } from "@/utils/server/audit";
 
@@ -21,7 +21,18 @@ export const updateProduct = async (
     }
 
     try {
-        const product = await prisma.product.findUnique({
+        // 1. Fetch User and Business context from Master DB
+        const user = await masterPrisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true, role: true, businessId: true }
+        });
+
+        if (!user || !user.businessId) return res.status(404).json({ error: "User or business not found" });
+
+        const businessId = user.businessId;
+        const tenantPrisma = await getTenantPrisma(businessId);
+
+        const product = await tenantPrisma.product.findUnique({
             where: { id },
         });
 
@@ -31,20 +42,22 @@ export const updateProduct = async (
 
         const activeStoreHeader = req.headers["x-store-id"] as string;
 
-        // Fetch User role and fixed storeId
-        const userWithRole = await prisma.user.findUnique({
-            where: { clerkId: userId },
-            select: { id: true, role: true, storeId: true, businessId: true }
-        });
-
-        const targetStoreId = userWithRole?.role === "admin" ? activeStoreHeader : (userWithRole?.storeId as string);
+        // Fetch user store access from Tenant DB if not admin
+        let targetStoreId = activeStoreHeader;
+        if (user.role !== "admin") {
+            const tenantUser = await tenantPrisma.tenantUser.findUnique({
+                where: { clerkId: userId },
+                select: { storeId: true }
+            });
+            if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
+        }
 
         if (!targetStoreId) {
             return res.status(400).json({ error: "No active store selected." });
         }
 
         if (sku) {
-            const existingSku = await prisma.product.findFirst({
+            const existingSku = await tenantPrisma.product.findFirst({
                 where: {
                     sku: sku,
                     id: { not: id },
@@ -69,16 +82,14 @@ export const updateProduct = async (
         // If it's not a template, we can update price and inventory
         if (product.type !== "TEMPLATE") {
             data.price = price;
-            // We no longer update quantity on the global Product model
-            // instead we update StoreInventory
             data.inStock = quantity > 0 ? true : false;
 
-            await prisma.$transaction([
-                prisma.product.update({
+            await tenantPrisma.$transaction([
+                tenantPrisma.product.update({
                     where: { id: id },
                     data,
                 }),
-                prisma.storeInventory.upsert({
+                tenantPrisma.storeInventory.upsert({
                     where: {
                         storeId_productId: {
                             storeId: targetStoreId,
@@ -94,18 +105,16 @@ export const updateProduct = async (
                 }),
             ]);
         } else {
-            // For templates, we don't update price/quantity directly (they are 0)
             data.price = 0;
-            data.quantity = 0;
             data.inStock = false;
 
-            await prisma.product.update({
+            await tenantPrisma.product.update({
                 where: { id: id },
                 data,
             });
         }
 
-        const updatedProduct = await prisma.product.findUnique({
+        const updatedProduct = await tenantPrisma.product.findUnique({
             where: { id },
             include: {
                 storeInventories: {
@@ -125,18 +134,16 @@ export const updateProduct = async (
         });
 
         // Log Audit Action
-        if (userWithRole) {
-            await logAction({
-                action: "UPDATE_PRODUCT",
-                entityType: "PRODUCT",
-                entityId: id,
-                details: { name, sku, price, quantity, storeId: targetStoreId },
-                userId: userWithRole.id,
-                businessId: userWithRole.businessId!,
-                ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
-                userAgent: req.headers["user-agent"],
-            });
-        }
+        await logAction({
+            action: "UPDATE_PRODUCT",
+            entityType: "PRODUCT",
+            entityId: id,
+            details: { name, sku, price, quantity, storeId: targetStoreId },
+            userId: user.id,
+            businessId: businessId,
+            ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
+            userAgent: req.headers["user-agent"],
+        });
 
         const inventoryQty = updatedProduct?.storeInventories[0]?.quantity || 0;
         const pendingQty = updatedProduct?.purchaseOrderItems.reduce((sum, po) => sum + po.quantity, 0) || 0;

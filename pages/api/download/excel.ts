@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
+import { getTenantPrisma } from "@/utils/lib/prisma";
 import * as XLSX from "xlsx";
 
 export default async function handler(
@@ -26,11 +27,12 @@ export default async function handler(
         }
 
         const businessId = currentUser.businessId;
+        const tenantPrisma = await getTenantPrisma(businessId);
         const storeId = currentUser.storeId;
         const isAdmin = currentUser.role.toLowerCase() === "admin";
 
         // Filter based on role: Admins get all business data, others get store-specific data
-        const filter = isAdmin ? { businessId } : { businessId, storeId };
+        const filter: any = isAdmin ? { businessId } : { businessId, storeId };
         const businessFilter = { businessId };
 
         // Fetch data in parallel
@@ -42,9 +44,9 @@ export default async function handler(
             expenses,
             mpesaPayments,
         ] = await Promise.all([
-            prisma.category.findMany({ where: businessFilter }),
-            prisma.customer.findMany({ where: filter }),
-            prisma.product.findMany({ 
+            tenantPrisma.category.findMany({ where: businessFilter }),
+            tenantPrisma.customer.findMany({ where: filter }),
+            tenantPrisma.product.findMany({ 
                 where: { businessId },
                 include: { 
                     Category: true, 
@@ -60,12 +62,12 @@ export default async function handler(
                     }
                 }
             }),
-            prisma.invoice.findMany({ 
+            tenantPrisma.invoice.findMany({ 
                 where: filter,
                 include: { Customer: true, invoiceItems: { include: { Product: true } } }
             }),
-            prisma.expense.findMany({ where: filter }),
-            prisma.mpesaPayment.findMany({ where: businessFilter }),
+            tenantPrisma.expense.findMany({ where: filter }),
+            tenantPrisma.mpesaPayment.findMany({ where: businessFilter }),
         ]);
 
         const workbook = XLSX.utils.book_new();

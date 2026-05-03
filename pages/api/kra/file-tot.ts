@@ -2,6 +2,7 @@ import axios from "axios";
 import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
+import { getTenantPrisma } from "@/utils/lib/prisma";
 
 // FIX: Use Sandbox for BOTH Auth and Filing
 const API_DOMAIN = "https://sbx.kra.go.ke";
@@ -41,7 +42,9 @@ export default async function handler(
                 .json({ error: "Business profile not found." });
         }
 
-        const kraDetails = await prisma.kraDetails.findUnique({
+        const tenantPrisma = await getTenantPrisma(user.businessId);
+
+        const kraDetails = await tenantPrisma.kraDetails.findUnique({
             where: { businessId: user.businessId },
         });
 
@@ -96,7 +99,7 @@ export default async function handler(
 
         if (kraData.Status === "OK" || kraData.ResponseCode === "87000") {
             // 4. SAVE TO DATABASE
-            await prisma.kraTotReturn.create({
+            await tenantPrisma.kraTotReturn.create({
                 data: {
                     ackNumber: kraData.AckNumber,
                     paymentSlip: kraData.PRN,

@@ -43,6 +43,11 @@ next-env.d.ts
 src-tauri/target/
 src-tauri/gen/
 
+# prisma
+/prisma/generated
+/prisma/dev.db
+/prisma/dev.db-journal
+
 performance_audit_report.md
 security_review_report.md
 error-context.md

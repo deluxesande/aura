@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
+import { getTenantPrisma } from "@/utils/lib/prisma";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     const { userId: clerkId } = getAuth(req);
@@ -14,11 +15,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (!user || !user.businessId) return res.status(403).json({ error: "Forbidden" });
     const { businessId } = user;
+    const tenantPrisma = await getTenantPrisma(businessId);
 
     switch (req.method) {
         case "GET":
             try {
-                const po = await prisma.purchaseOrder.findFirst({
+                const po = await tenantPrisma.purchaseOrder.findFirst({
                     where: { id, businessId, isDeleted: false },
                     include: { 
                         Supplier: true, 
@@ -35,7 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             try {
                 const { supplierId, storeId, reference, totalAmount, status, items } = req.body;
 
-                const result = await prisma.$transaction(async (tx) => {
+                const result = await tenantPrisma.$transaction(async (tx) => {
                     // 1. Delete existing items
                     await tx.purchaseOrderItem.deleteMany({ where: { purchaseOrderId: id } });
 
@@ -67,7 +69,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         case "DELETE":
             try {
-                await prisma.purchaseOrder.update({
+                await tenantPrisma.purchaseOrder.update({
                     where: { id, businessId },
                     data: { isDeleted: true },
                 });

@@ -1,4 +1,4 @@
-import { prisma } from "@/utils/lib/client";
+import { getTenantPrisma } from "@/utils/lib/prisma";
 
 export async function logAction({
     action,
@@ -20,14 +20,16 @@ export async function logAction({
     userAgent?: string;
 }) {
     try {
-        await prisma.auditLog.create({
+        const tenantPrisma = await getTenantPrisma(businessId);
+        
+        await tenantPrisma.auditLog.create({
             data: {
                 action,
                 entityType,
                 entityId,
                 details: details ? JSON.stringify(details) : null,
                 userId,
-                businessId,
+                businessId, // Logical reference in tenant DB
                 ipAddress,
                 userAgent,
             },

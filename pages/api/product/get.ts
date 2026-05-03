@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 
 export const getProducts = async (
     req: NextApiRequest,
@@ -13,34 +13,33 @@ export const getProducts = async (
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const currentUser = await prisma.user.findUnique({
+        const user = await masterPrisma.user.findUnique({
             where: { clerkId: userId },
-            select: { businessId: true },
+            select: { businessId: true, role: true },
         });
 
-        if (!currentUser || !currentUser.businessId) {
-            return res
-                .status(404)
-                .json({ error: "User or business not found" });
+        if (!user || !user.businessId) {
+            return res.status(200).json([]);
         }
 
+        const businessId = user.businessId;
+        const tenantPrisma = await getTenantPrisma(businessId);
         const activeStoreHeader = req.headers["x-store-id"] as string;
 
-        // Fetch User role and fixed storeId
-        const userWithRole = await prisma.user.findUnique({
-            where: { clerkId: userId },
-            select: { role: true, storeId: true },
-        });
-
-        let targetStoreId =
-            userWithRole?.role === "admin"
-                ? activeStoreHeader
-                : (userWithRole?.storeId as string);
+        // Fetch user store info from Tenant DB if not admin
+        let targetStoreId = activeStoreHeader;
+        if (user.role !== "admin") {
+            const tenantUser = await tenantPrisma.tenantUser.findUnique({
+                where: { clerkId: userId },
+                select: { storeId: true }
+            });
+            if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
+        }
 
         // Fallback for admins if no store header is provided
-        if (!targetStoreId && userWithRole?.role === "admin") {
-            const firstStore = await prisma.store.findFirst({
-                where: { businessId: currentUser.businessId, isActive: true },
+        if (!targetStoreId && user.role === "admin") {
+            const firstStore = await tenantPrisma.store.findFirst({
+                where: { businessId, isActive: true },
                 select: { id: true },
             });
             if (firstStore) targetStoreId = firstStore.id;
@@ -50,9 +49,9 @@ export const getProducts = async (
             return res.status(200).json([]);
         }
 
-        const products = await prisma.product.findMany({
+        const products = await tenantPrisma.product.findMany({
             where: {
-                businessId: currentUser.businessId,
+                businessId: businessId,
                 isArchived: false,
                 OR: [
                     { type: "TEMPLATE" },
@@ -149,8 +148,8 @@ export const getProducts = async (
             return { ...p, quantity, variants };
         });
 
-        const businessUsers = await prisma.user.findMany({
-            where: { businessId: currentUser.businessId },
+        const businessUsers = await masterPrisma.user.findMany({
+            where: { businessId: businessId },
             select: {
                 clerkId: true,
                 firstName: true,
@@ -216,7 +215,5 @@ export const getProducts = async (
     } catch (error) {
         console.error("Error fetching products:", error);
         res.status(500).json({ error: "Internal Server Error" });
-    } finally {
-        await prisma.$disconnect();
     }
 };

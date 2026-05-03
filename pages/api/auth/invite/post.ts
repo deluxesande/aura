@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma as prisma } from "@/utils/lib/prisma";
 import crypto from "crypto";
 
 export default async function handler(
@@ -121,7 +121,6 @@ export default async function handler(
                 });
             },
             {
-                // Explicitly give the transaction 10 seconds just in case of high traffic
                 timeout: 10000,
             },
         );
@@ -142,8 +141,6 @@ export default async function handler(
             });
             clerkInvitationId = clerkInvitation.id;
         } catch (clerkError: any) {
-            // If Clerk fails, we must rollback our local database creation so the user isn't stuck
-            // with a fake pending invite that eats up their quota.
             await prisma.userInvitation.delete({
                 where: { id: localInvitation.id },
             });

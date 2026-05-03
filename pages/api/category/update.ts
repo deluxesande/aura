@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
+import { getAuth } from "@clerk/nextjs/server";
 
 export const updateCategory = async (
     req: NextApiRequest,
@@ -8,6 +9,9 @@ export const updateCategory = async (
     const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
     const { name, description } = req.body;
 
+    const { userId } = getAuth(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
     if (!id) {
         return res
             .status(400)
@@ -15,7 +19,16 @@ export const updateCategory = async (
     }
 
     try {
-        const updatedCategory = await prisma.category.update({
+        const user = await masterPrisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { businessId: true }
+        });
+
+        if (!user?.businessId) return res.status(404).json({ error: "Business not found" });
+
+        const tenantPrisma = await getTenantPrisma(user.businessId);
+
+        const updatedCategory = await tenantPrisma.category.update({
             where: {
                 id: id,
             },
@@ -27,6 +40,7 @@ export const updateCategory = async (
 
         res.status(200).json(updatedCategory);
     } catch (error) {
+        console.error("Update Category Error:", error);
         res.status(500).json({ error: "Failed to update category" });
     }
 };

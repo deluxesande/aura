@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { getAuth } from "@clerk/nextjs/server";
 import { logAction } from "@/utils/server/audit";
 
@@ -17,7 +17,18 @@ export const deleteProduct = async (
     }
 
     try {
-        const product = await prisma.product.findUnique({
+        // 1. Fetch User and Business context from Master DB
+        const user = await masterPrisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true, businessId: true }
+        });
+
+        if (!user || !user.businessId) return res.status(404).json({ error: "User or business not found" });
+
+        const businessId = user.businessId;
+        const tenantPrisma = await getTenantPrisma(businessId);
+
+        const product = await tenantPrisma.product.findUnique({
             where: { id },
             select: { image: true, businessId: true, name: true, sku: true },
         });
@@ -26,29 +37,23 @@ export const deleteProduct = async (
             return res.status(404).json({ error: "Product not found" });
         }
 
-        const currentUser = await prisma.user.findUnique({
-            where: { clerkId: userId },
-            select: { id: true }
-        });
-
-        await prisma.product.update({
+        // 2. Archive in Tenant DB
+        await tenantPrisma.product.update({
             where: { id },
             data: { isArchived: true },
         });
 
-        // Log Audit Action
-        if (currentUser && product.businessId) {
-            await logAction({
-                action: "ARCHIVE_PRODUCT",
-                entityType: "PRODUCT",
-                entityId: id,
-                details: { name: product.name, sku: product.sku },
-                userId: currentUser.id,
-                businessId: product.businessId,
-                ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
-                userAgent: req.headers["user-agent"],
-            });
-        }
+        // 3. Log Audit Action (performs its own tenantPrisma lookup)
+        await logAction({
+            action: "ARCHIVE_PRODUCT",
+            entityType: "PRODUCT",
+            entityId: id,
+            details: { name: product.name, sku: product.sku },
+            userId: user.id,
+            businessId: businessId,
+            ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
+            userAgent: req.headers["user-agent"],
+        });
 
         return res
             .status(200)

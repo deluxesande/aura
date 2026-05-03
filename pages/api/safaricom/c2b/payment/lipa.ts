@@ -1,12 +1,9 @@
 import { getAuth } from "@clerk/nextjs/server";
-import { PrismaClient } from "@prisma/client";
 import axios, { AxiosError } from "axios";
 import type { NextApiRequest, NextApiResponse } from "next";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { storeResponseInDb } from "@/utils/storeInDb";
 import { decrypt } from "@/utils/crypto";
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient();
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 const { CALLBACK_URL } = process.env;
 
@@ -34,21 +31,6 @@ const formatPhoneNumber = (phone: string) => {
     return p;
 };
 
-async function getInvoiceCount(clerkIds: string[], subscription: any) {
-    if (!subscription) return 0;
-    return await prisma.invoice.count({
-        where: {
-            createdBy: { in: clerkIds },
-            status: "PAID",
-            paymentType: "MPESA",
-            createdAt: {
-                gte: subscription.currentPeriodStart,
-                lte: subscription.currentPeriodEnd,
-            },
-        },
-    });
-}
-
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse
@@ -58,14 +40,15 @@ export default async function handler(
 
     try {
         const { phoneNumber, amount, invoiceId } = req.body;
-        const { userId } = getAuth(req);
+        const { userId: clerkId } = getAuth(req);
 
-        if (!invoiceId || !userId || !amount || !phoneNumber) {
+        if (!invoiceId || !clerkId || !amount || !phoneNumber) {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
-        const user = await prisma.user.findUnique({
-            where: { clerkId: userId },
+        // 1. Fetch User and Business from Master DB
+        const user = await masterPrisma.user.findUnique({
+            where: { clerkId },
             select: {
                 id: true,
                 businessId: true,
@@ -87,7 +70,9 @@ export default async function handler(
                 .json({ error: "User is not linked to a valid business" });
         }
 
+        const businessId = user.businessId;
         const biz = user.Business;
+        const tenantPrisma = await getTenantPrisma(businessId);
 
         if (
             !biz.mpesaConsumerKey ||
@@ -97,8 +82,7 @@ export default async function handler(
         ) {
             return res.status(403).json({
                 error: "M-Pesa integration not configured",
-                message:
-                    "Please go to Settings > Integrations and enter your M-Pesa Daraja keys to enable payments.",
+                message: "Please go to Settings > Integrations and enter your M-Pesa Daraja keys to enable payments.",
             });
         }
 
@@ -107,18 +91,20 @@ export default async function handler(
         const passKey = decrypt(biz.mpesaPassKey);
         const shortCode = biz.mpesaShortCode;
 
-        const users = await prisma.user.findMany({
-            where: { businessId: user.businessId },
-            select: { clerkId: true },
-        });
-        const clerkIds = users.map((u) => u.clerkId);
-
+        // 2. Check Plan Limits from Master DB and stats from Tenant DB
         const subscription = biz.subscriptions[0];
         if (subscription && subscription.plan === "STARTER") {
-            const currentTxCount = await getInvoiceCount(
-                clerkIds,
-                subscription
-            );
+            const currentTxCount = await tenantPrisma.invoice.count({
+                where: {
+                    businessId: businessId,
+                    status: "PAID",
+                    paymentType: "MPESA",
+                    createdAt: {
+                        gte: subscription.currentPeriodStart,
+                        lte: subscription.currentPeriodEnd,
+                    },
+                },
+            });
             if (currentTxCount >= 100) {
                 return res
                     .status(403)
@@ -126,6 +112,7 @@ export default async function handler(
             }
         }
 
+        // 3. Initiate STK Push
         const token = await getAccessToken(consumerKey, consumerSecret);
         const date = new Date();
         const timestamp =
@@ -160,8 +147,19 @@ export default async function handler(
             headers: { Authorization: `Bearer ${token}` },
         });
 
-        await storeResponseInDb(stkResponse.data);
-        await prisma.mpesaPayment.create({
+        // 4. Record Response and Payment
+        await storeResponseInDb(tenantPrisma, stkResponse.data);
+
+        // A. Record Routing in Master DB (CRITICAL for callback routing)
+        await masterPrisma.mpesaRouting.create({
+            data: {
+                checkoutRequestId: stkResponse.data.CheckoutRequestID,
+                businessId: businessId,
+            }
+        });
+
+        // B. Record Pending Payment in Tenant DB
+        await tenantPrisma.mpesaPayment.create({
             data: {
                 amount: parseFloat(amount),
                 phoneNumber: formattedPhone,
@@ -172,7 +170,7 @@ export default async function handler(
                 status: "PENDING",
                 invoiceId: invoiceId,
                 userId: user.id,
-                businessId: user.businessId,
+                businessId: businessId, // Logical reference
             },
         });
 

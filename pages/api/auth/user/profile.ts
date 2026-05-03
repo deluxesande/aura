@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 
 export default async function handler(
     req: NextApiRequest,
@@ -17,8 +17,8 @@ export default async function handler(
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        // Fetch User, Business, and the latest Subscription
-        const user = await prisma.user.findUnique({
+        // 1. Fetch User from Master DB
+        const user = await masterPrisma.user.findUnique({
             where: { clerkId: userId },
             include: {
                 Business: {
@@ -37,9 +37,23 @@ export default async function handler(
         }
 
         let maskedBusiness = null;
+        let storeId = null;
 
+        // 2. If user is linked to a business, fetch tenant-specific info (like storeId)
         if (user.Business) {
+            try {
+                const tenantPrisma = await getTenantPrisma(user.Business.id);
+                const tenantUser = await tenantPrisma.tenantUser.findUnique({
+                    where: { clerkId: userId },
+                    select: { storeId: true }
+                });
+                storeId = tenantUser?.storeId || null;
+            } catch (tenantError) {
+                console.warn(`Could not fetch tenant data for user ${userId}:`, tenantError);
+            }
+
             let activeSubscription = user.Business.subscriptions[0] || null;
+            // ... (rest of subscription logic)
 
             if (activeSubscription) {
                 const now = new Date();
@@ -50,7 +64,7 @@ export default async function handler(
                     activeSubscription.plan !== "STARTER" &&
                     endDate < now
                 ) {
-                    activeSubscription = await prisma.subscription.update({
+                    activeSubscription = await masterPrisma.subscription.update({
                         where: { id: activeSubscription.id },
                         data: { status: "PAST_DUE" },
                     });
@@ -82,7 +96,7 @@ export default async function handler(
                 lastName: user.lastName,
                 role: user.role,
                 businessId: user.businessId,
-                storeId: user.storeId,
+                storeId: storeId,
                 status: user.status,
                 Business: maskedBusiness,
             },

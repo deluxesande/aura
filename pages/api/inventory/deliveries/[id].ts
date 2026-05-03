@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
+import { getTenantPrisma } from "@/utils/lib/prisma";
 
 export default async function handler(
     req: NextApiRequest,
@@ -18,16 +19,17 @@ export default async function handler(
         return res.status(403).json({ error: "Access denied." });
     }
 
+    const tenantPrisma = await getTenantPrisma(user.businessId);
+
     const deliveryId = req.query.id as string;
     if (!deliveryId)
         return res.status(400).json({ error: "Missing delivery ID" });
 
     if (req.method === "GET") {
         try {
-            const delivery = await prisma.delivery.findUnique({
+            const delivery = await tenantPrisma.delivery.findUnique({
                 where: {
                     id: deliveryId,
-                    businessId: user.businessId,
                 },
                 include: {
                     Store: { select: { name: true } },
@@ -100,9 +102,9 @@ export default async function handler(
         }
 
         try {
-            await prisma.$transaction(async (tx) => {
+            await tenantPrisma.$transaction(async (tx) => {
                 const delivery = await tx.delivery.findUnique({
-                    where: { id: deliveryId, businessId: user.businessId as string },
+                    where: { id: deliveryId },
                     include: { receipts: true },
                 });
 
@@ -158,9 +160,9 @@ export default async function handler(
             const { storeId, supplierId, purchaseOrderId, reference, items } =
                 req.body;
 
-            await prisma.$transaction(async (tx) => {
+            await tenantPrisma.$transaction(async (tx) => {
                 const oldDelivery = await tx.delivery.findUnique({
-                    where: { id: deliveryId, businessId: user.businessId as string },
+                    where: { id: deliveryId },
                     include: { receipts: true },
                 });
 

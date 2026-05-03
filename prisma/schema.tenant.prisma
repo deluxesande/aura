@@ -1,30 +1,13 @@
-// prisma/schema.prisma
+// prisma/schema.tenant.prisma
 
 generator client {
   provider = "prisma-client-js"
+  output   = "./generated/tenant"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-}
-
-enum PlanTier {
-  STARTER // Free
-  STANDARD // 1000 KSh
-  PREMIUM // 1500 KSh
-}
-
-enum SubscriptionStatus {
-  ACTIVE
-  PAST_DUE
-  CANCELED
-  TRIALING
-}
-
-enum TenantMode {
-  SHARED
-  BYODB
 }
 
 enum ProductType {
@@ -33,50 +16,6 @@ enum ProductType {
   VARIANT
 }
 
-model User {
-  id         String    @id @default(uuid()) @map("_id") @db.Uuid
-  clerkId    String    @unique
-  email      String    @unique
-  firstName  String?
-  lastName   String?
-  role       String    @default("user")
-  status     String    @default("active")
-  businessId String?   @db.Uuid
-  Business   Business? @relation(fields: [businessId], references: [id])
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  lastLogin  DateTime?
-  storeId    String?   @db.Uuid // Logical reference to Store in Tenant DB
-
-  invitationsSent UserInvitation[] @relation("Inviter")
-}
-
-model Business {
-  id        String   @id @default(uuid()) @map("_id") @db.Uuid
-  name      String
-  email     String?  @unique
-  address   String?
-  logo      String?  @db.Text
-  users     User[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  createdBy String? @unique
-
-  // Routing fields
-  tenantMode        TenantMode @default(SHARED)
-  tenantDatabaseUrl String? // Encrypted connection string for BYODB
-
-  invitations   UserInvitation[]
-  subscriptions Subscription[]
-
-  mpesaConsumerKey    String?
-  mpesaConsumerSecret String?
-  mpesaPassKey        String?
-  mpesaShortCode      String?
-}
-
-// Mirror of User for Tenant DB isolation
 model TenantUser {
   id        String   @id @db.Uuid
   clerkId   String   @unique
@@ -91,6 +30,7 @@ model TenantUser {
   storeId   String?  @db.Uuid
   Store     Store?   @relation(fields: [storeId], references: [id])
 
+  // Relations within tenant
   createdCustomers      Customer[]      @relation("CustomerCreator")
   mpesaPayments         MpesaPayment[]
   stockTransfers        StockTransfer[]
@@ -103,60 +43,23 @@ model TenantUser {
   reconciliations       InventoryReconciliation[]
 }
 
-model UserInvitation {
-  id                String   @id @default(uuid()) @map("_id") @db.Uuid
-  email             String
-  role              String   @default("user")
-  businessId        String   @db.Uuid
-  Business          Business @relation(fields: [businessId], references: [id])
-  invitedBy         String   @db.Uuid
-  Inviter           User     @relation("Inviter", fields: [invitedBy], references: [id])
-  status            String   @default("pending")
-  token             String   @unique
-  clerkInvitationId String?  @unique
-  expiresAt         DateTime
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  storeId           String?  @db.Uuid // Logical reference to Store in Tenant DB
-}
+model MpesaPayment {
+  id                String  @id @default(uuid()) @map("_id") @db.Uuid
+  amount            Float
+  phoneNumber       String
+  accountReference  String
+  transactionDesc   String?
+  merchantRequestId String
+  checkoutRequestId String  @unique
+  status            String  @default("PENDING")
 
-model Subscription {
-  id String @id @default(uuid()) @map("_id") @db.Uuid
-
-  businessId String   @db.Uuid
-  Business   Business @relation(fields: [businessId], references: [id])
-
-  plan   PlanTier           @default(STARTER)
-  status SubscriptionStatus @default(ACTIVE)
-
-  currentPeriodStart DateTime @default(now())
-  currentPeriodEnd   DateTime
-
-  payments SubscriptionPayment[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([businessId])
-  @@index([status])
-}
-
-model SubscriptionPayment {
-  id     String @id @default(uuid()) @map("_id") @db.Uuid
-  userId String // Clerk ID
-
-  amount      Float
-  phoneNumber String
-  planId      String
-
-  merchantRequestId  String
-  checkoutRequestId  String  @unique
-  mpesaReceiptNumber String?
-
-  status String @default("PENDING")
-
-  subscriptionId String?       @db.Uuid
-  Subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  // Relations
+  invoiceId  String   @db.Uuid
+  Invoice    Invoice  @relation(fields: [invoiceId], references: [id])
+  userId     String   @db.Uuid
+  User       TenantUser @relation(fields: [userId], references: [id])
+  
+  businessId String   @db.Uuid // Logical reference
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -178,8 +81,10 @@ model Product {
   invoiceItems InvoiceItem[]
   image        String?       @default("/images/default-product.png") @db.Text
   createdBy    String?
-  businessId   String?       @db.Uuid 
+  
+  businessId   String?       @db.Uuid // Logical reference
 
+  // Variants Logic
   type               ProductType             @default(SIMPLE)
   parentId           String?                 @db.Uuid
   parent             Product?                @relation("ProductVariants", fields: [parentId], references: [id], onDelete: Cascade)
@@ -198,8 +103,8 @@ model Product {
 
 model Attribute {
   id         String            @id @default(uuid()) @map("_id") @db.Uuid
-  name       String 
-  businessId String            @db.Uuid
+  name       String // e.g., "Color", "Size"
+  businessId String            @db.Uuid // Logical reference
   options    AttributeOption[]
 
   @@unique([name, businessId])
@@ -207,7 +112,7 @@ model Attribute {
 
 model AttributeOption {
   id                String                  @id @default(uuid()) @map("_id") @db.Uuid
-  value             String 
+  value             String // e.g., "Red", "XL"
   attributeId       String                  @db.Uuid
   attribute         Attribute               @relation(fields: [attributeId], references: [id], onDelete: Cascade)
   productAttributes ProductAttributeValue[]
@@ -231,7 +136,7 @@ model Category {
   description String?
   products    Product[]
   createdBy   String?
-  businessId  String?   @db.Uuid 
+  businessId  String?   @db.Uuid // Logical reference
 
   @@unique([name, createdBy])
 }
@@ -255,7 +160,8 @@ model Invoice {
   storeId             String?              @db.Uuid
   Store               Store?               @relation(fields: [storeId], references: [id])
   isDeleted           Boolean              @default(false)
-  businessId          String?              @db.Uuid 
+  
+  businessId          String?              @db.Uuid // Logical reference
 }
 
 model InvoiceItem {
@@ -282,28 +188,11 @@ model Customer {
   Store       Store?    @relation(fields: [storeId], references: [id])
   createdById String    @db.Uuid
   CreatedBy   TenantUser @relation("CustomerCreator", fields: [createdById], references: [id])
-  businessId  String    @db.Uuid 
+  
+  businessId  String    @db.Uuid // Logical reference
 
   @@unique([businessId, email])
   @@unique([businessId, phoneNumber])
-}
-
-model MpesaPayment {
-  id                String  @id @default(uuid()) @map("_id") @db.Uuid
-  amount            Float
-  phoneNumber       String
-  accountReference  String
-  transactionDesc   String?
-  merchantRequestId String
-  checkoutRequestId String  @unique
-  status            String  @default("PENDING")
-  invoiceId         String   @db.Uuid
-  Invoice           Invoice  @relation(fields: [invoiceId], references: [id])
-  userId            String   @db.Uuid
-  User              TenantUser @relation(fields: [userId], references: [id])
-  businessId        String   @db.Uuid 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
 }
 
 model FailedCallback {
@@ -337,14 +226,14 @@ model Store {
   name       String
   address    String?
   isActive   Boolean  @default(true)
-  businessId String   @db.Uuid 
+  businessId String   @db.Uuid // Logical reference
 
-  tenantUsers    TenantUser[]
-  inventory      StoreInventory[]
-  invoices       Invoice[]
-  customers      Customer[]
+  tenantUsers   TenantUser[]
+  inventory     StoreInventory[]
+  invoices      Invoice[]
+  customers     Customer[]
   expenses       Expense[]
-  stockReceipts  StockReceipt[]
+  stockReceipts StockReceipt[]
   purchaseOrders PurchaseOrder[]
 
   transfersOut StockTransfer[] @relation("OriginStore")
@@ -367,14 +256,17 @@ model Supplier {
   phoneNumber String?
   address     String?
   isDeleted   Boolean @default(false)
-  businessId  String   @db.Uuid 
+
+  businessId String   @db.Uuid // Logical reference
+
   purchaseOrders PurchaseOrder[]
   stockReceipts  StockReceipt[]
-  createdById    String     @db.Uuid
-  CreatedBy      TenantUser @relation("SupplierCreator", fields: [createdById], references: [id])
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-  deliveries     Delivery[]
+
+  createdById String     @db.Uuid
+  CreatedBy   TenantUser @relation("SupplierCreator", fields: [createdById], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deliveries  Delivery[]
 
   @@index([businessId])
 }
@@ -383,19 +275,25 @@ model PurchaseOrder {
   id          String  @id @default(uuid()) @map("_id") @db.Uuid
   reference   String
   totalAmount Float
-  status      String  @default("PENDING") 
+  status      String  @default("PENDING") // PENDING, DELIVERED, CANCELLED
   isDeleted   Boolean @default(false)
-  supplierId  String   @db.Uuid
-  Supplier    Supplier @relation(fields: [supplierId], references: [id])
-  items       PurchaseOrderItem[]
-  businessId  String   @db.Uuid 
-  storeId     String? @db.Uuid
-  Store       Store?  @relation(fields: [storeId], references: [id])
+
+  supplierId String   @db.Uuid
+  Supplier   Supplier @relation(fields: [supplierId], references: [id])
+
+  items PurchaseOrderItem[]
+
+  businessId String   @db.Uuid // Logical reference
+
+  storeId String? @db.Uuid
+  Store   Store?  @relation(fields: [storeId], references: [id])
+
   createdById String   @db.Uuid
   CreatedBy   TenantUser @relation("POCreator", fields: [createdById], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  deliveries  Delivery[]
+
+  deliveries Delivery[]
 
   @@index([businessId])
   @@index([supplierId])
@@ -405,10 +303,13 @@ model PurchaseOrderItem {
   id       String @id @default(uuid()) @map("_id") @db.Uuid
   quantity Int
   unitCost Float
+
   productId String  @db.Uuid
   Product   Product @relation(fields: [productId], references: [id])
+
   purchaseOrderId String        @db.Uuid
   PurchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -419,19 +320,25 @@ model StockReceipt {
   unitCost  Float
   totalCost Float
   reference String?
+
   productId String  @db.Uuid
   Product   Product @relation(fields: [productId], references: [id])
-  storeId   String @db.Uuid
-  Store     Store  @relation(fields: [storeId], references: [id])
+
+  storeId String @db.Uuid
+  Store   Store  @relation(fields: [storeId], references: [id])
+
   supplierId String?   @db.Uuid
   Supplier   Supplier? @relation(fields: [supplierId], references: [id])
-  businessId String   @db.Uuid 
+
+  businessId String   @db.Uuid // Logical reference
+
   createdById String   @db.Uuid
   CreatedBy   TenantUser @relation("ReceiptCreator", fields: [createdById], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  deliveryId  String?   @db.Uuid
-  Delivery    Delivery? @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  deliveryId String?   @db.Uuid
+  Delivery   Delivery? @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
 
   @@index([businessId])
   @@index([storeId])
@@ -443,8 +350,9 @@ model StoreInventory {
   storeId   String @db.Uuid
   productId String @db.Uuid
   quantity  Int    @default(0)
-  Store     Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  Product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  Store   Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  Product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([storeId, productId])
 }
@@ -457,143 +365,15 @@ model StockTransfer {
   destStoreId   String @db.Uuid
   createdById   String @db.Uuid
   status        String @default("COMPLETED")
+
   Product          Product @relation(fields: [productId], references: [id])
   OriginStore      Store   @relation("OriginStore", fields: [originStoreId], references: [id])
   DestinationStore Store   @relation("DestinationStore", fields: [destStoreId], references: [id])
   CreatedBy        TenantUser @relation(fields: [createdById], references: [id])
+
   createdAt DateTime @default(now())
 }
 
-model Expense {
-  id       String   @id @default(uuid()) @map("_id") @db.Uuid
-  title    String
-  category String
-  amount   Float
-  date     DateTime @default(now())
-  notes    String?
-  status   String   @default("ACTIVE") 
-  businessId String   @db.Uuid 
-  storeId String? @db.Uuid
-  Store   Store?  @relation(fields: [storeId], references: [id])
-  createdById String? @db.Uuid
-  CreatedBy   TenantUser? @relation(fields: [createdById], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([businessId])
-  @@index([storeId])
-  @@index([status])
-}
-
-model Delivery {
-  id        String  @id @default(uuid()) @map("_id") @db.Uuid
-  reference String?
-  totalCost Float   @default(0)
-  status    String  @default("RECEIVED")
-  supplierId String?   @db.Uuid
-  Supplier   Supplier? @relation(fields: [supplierId], references: [id])
-  storeId String @db.Uuid
-  Store   Store  @relation(fields: [storeId], references: [id])
-  businessId String   @db.Uuid 
-  createdById String @db.Uuid
-  CreatedBy   TenantUser @relation(fields: [createdById], references: [id])
-  receipts StockReceipt[]
-  purchaseOrderId String?        @db.Uuid
-  PurchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
-  createdAt DateTime @default(now())
-}
-
-model AuditLog {
-  id         String   @id @default(uuid()) @map("_id") @db.Uuid
-  action     String 
-  entityType String 
-  entityId   String?
-  details    String? 
-  ipAddress  String?
-  userAgent  String?
-  createdAt  DateTime @default(now())
-  userId     String   @db.Uuid
-  User       TenantUser @relation(fields: [userId], references: [id])
-  businessId String   @db.Uuid 
-
-  @@index([businessId])
-  @@index([userId])
-  @@index([entityType, entityId])
-}
-
-model InventoryReconciliation {
-  id        String   @id @default(uuid()) @map("_id") @db.Uuid
-  reference String?
-  status    String   @default("COMPLETED") 
-  notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  businessId String   @db.Uuid 
-  storeId String @db.Uuid
-  Store   Store  @relation(fields: [storeId], references: [id])
-  userId String @db.Uuid
-  User   TenantUser @relation(fields: [userId], references: [id])
-  items ReconciliationItem[]
-
-  @@index([businessId])
-  @@index([storeId])
-}
-
-model ReconciliationItem {
-  id               String @id @default(uuid()) @map("_id") @db.Uuid
-  reconciliationId String @db.Uuid
-  productId        String @db.Uuid
-  systemQuantity   Int 
-  physicalQuantity Int 
-  discrepancy      Int 
-  Reconciliation InventoryReconciliation @relation(fields: [reconciliationId], references: [id], onDelete: Cascade)
-  Product        Product                 @relation(fields: [productId], references: [id])
-
-  @@index([reconciliationId])
-  @@index([productId])
-}
-
-model ContactFormMessage {
-  id      Int    @id @default(autoincrement())
-  name    String
-  email   String
-  message String
-}
-
-model MpesaRouting {
-  checkoutRequestId String @id
-  businessId        String @db.Uuid
-  createdAt         DateTime @default(now())
-
-  @@index([checkoutRequestId])
-}
-
-model KraDetails {
-  id                  String  @id @default(cuid())
-  kraPin              String  @unique
-  taxpayerType        String
-  taxpayerName        String
-  pinStatus           String
-  isAutoFilingEnabled Boolean @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  businessId String?   @unique @db.Uuid 
-}
-
-model KraTotReturn {
-  id String @id @default(uuid()) @map("_id") @db.Uuid
-  ackNumber   String @unique
-  paymentSlip String
-  computedTax    Float
-  taxPayable     Float
-  utilizedCredit Float @default(0.0)
-  period String
-  createdAt DateTime @default(now())
-  businessId String   @db.Uuid 
-  @@index([businessId])
-}
-
-// M-Pesa Callbacks (Shared for simplicity in dev)
 model Response {
   id                  Int      @id @default(autoincrement())
   merchantRequestId   String
@@ -631,4 +411,143 @@ model ReferenceItem {
   value         String
   referenceData ReferenceData[]
   createdAt     DateTime        @default(now())
+}
+
+model Expense {
+  id       String   @id @default(uuid()) @map("_id") @db.Uuid
+  title    String
+  category String
+  amount   Float
+  date     DateTime @default(now())
+  notes    String?
+  status   String   @default("ACTIVE") // ACTIVE, VOIDED
+
+  businessId String   @db.Uuid // Logical reference
+
+  storeId String? @db.Uuid
+  Store   Store?  @relation(fields: [storeId], references: [id])
+
+  createdById String? @db.Uuid
+  CreatedBy   TenantUser? @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([storeId])
+  @@index([status])
+}
+
+model KraDetails {
+  id                  String  @id @default(cuid())
+  kraPin              String  @unique
+  taxpayerType        String
+  taxpayerName        String
+  pinStatus           String
+  isAutoFilingEnabled Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  businessId String?   @unique @db.Uuid // Logical reference
+}
+
+model KraTotReturn {
+  id String @id @default(uuid()) @map("_id") @db.Uuid
+
+  ackNumber   String @unique
+  paymentSlip String
+
+  computedTax    Float
+  taxPayable     Float
+  utilizedCredit Float @default(0.0)
+
+  period String
+
+  createdAt DateTime @default(now())
+
+  businessId String   @db.Uuid // Logical reference
+
+  @@index([businessId])
+}
+
+model Delivery {
+  id        String  @id @default(uuid()) @map("_id") @db.Uuid
+  reference String?
+  totalCost Float   @default(0)
+  status    String  @default("RECEIVED")
+
+  supplierId String?   @db.Uuid
+  Supplier   Supplier? @relation(fields: [supplierId], references: [id])
+
+  storeId String @db.Uuid
+  Store   Store  @relation(fields: [storeId], references: [id])
+
+  businessId String   @db.Uuid // Logical reference
+
+  createdById String @db.Uuid
+  CreatedBy   TenantUser @relation(fields: [createdById], references: [id])
+
+  receipts StockReceipt[]
+
+  purchaseOrderId String?        @db.Uuid
+  PurchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @map("_id") @db.Uuid
+  action     String // e.g., "CREATE_PRODUCT", "DELETE_INVOICE", "ADJUST_STOCK"
+  entityType String // e.g., "PRODUCT", "INVOICE", "PURCHASE_ORDER"
+  entityId   String?
+  details    String? // JSON string for metadata
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  userId     String   @db.Uuid
+  User       TenantUser @relation(fields: [userId], references: [id])
+  businessId String   @db.Uuid // Logical reference
+
+  @@index([businessId])
+  @@index([userId])
+  @@index([entityType, entityId])
+}
+
+model InventoryReconciliation {
+  id        String   @id @default(uuid()) @map("_id") @db.Uuid
+  reference String?
+  status    String   @default("COMPLETED") // COMPLETED, VOIDED
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  businessId String   @db.Uuid // Logical reference
+
+  storeId String @db.Uuid
+  Store   Store  @relation(fields: [storeId], references: [id])
+
+  userId String @db.Uuid
+  User   TenantUser @relation(fields: [userId], references: [id])
+
+  items ReconciliationItem[]
+
+  @@index([businessId])
+  @@index([storeId])
+}
+
+model ReconciliationItem {
+  id               String @id @default(uuid()) @map("_id") @db.Uuid
+  reconciliationId String @db.Uuid
+  productId        String @db.Uuid
+  systemQuantity   Int // Qty in system at time of reconciliation
+  physicalQuantity Int // Qty manually counted
+  discrepancy      Int // physicalQuantity - systemQuantity
+
+  Reconciliation InventoryReconciliation @relation(fields: [reconciliationId], references: [id], onDelete: Cascade)
+  Product        Product                 @relation(fields: [productId], references: [id])
+
+  @@index([reconciliationId])
+  @@index([productId])
 }

@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
+import { getTenantPrisma } from "@/utils/lib/prisma";
 import { logAction } from "@/utils/server/audit";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -16,16 +17,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (!user || !user.businessId) return res.status(403).json({ error: "Forbidden" });
     const { businessId, id: userId } = user;
+    const tenantPrisma = await getTenantPrisma(businessId);
 
     try {
         const { items, storeId, reference } = req.body; // items: { productId, receivedQty, unitCost }[]
 
         if (!items || !storeId) return res.status(400).json({ error: "Missing items or storeId" });
 
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await tenantPrisma.$transaction(async (tx) => {
             // 1. Update PO Status
             const po = await tx.purchaseOrder.update({
-                where: { id: orderId, businessId },
+                where: { id: orderId },
                 data: { status: "DELIVERED" },
             });
 

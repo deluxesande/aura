@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { addCreatedBy } from "../middleware";
 import { prisma } from "@/utils/lib/client";
+import { getTenantPrisma } from "@/utils/lib/prisma";
 import { notifyBusinessStaff } from "@/utils/server/novu";
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -12,10 +13,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     try {
         const user = await prisma.user.findUnique({
             where: { clerkId: userId },
-            select: { role: true, storeId: true }
+            select: { role: true, storeId: true, businessId: true }
         });
 
-        if (!user) return res.status(404).json({ error: "User not found" });
+        if (!user || !user.businessId) return res.status(404).json({ error: "User or business not found" });
+
+        const tenantPrisma = await getTenantPrisma(user.businessId);
 
         const targetStoreId = user.role === "admin" ? activeStoreHeader : (user.storeId as string);
 
@@ -24,7 +27,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         }
 
         // 1. Check if the inventory exists for this store
-        const inventory = await prisma.storeInventory.findUnique({
+        const inventory = await tenantPrisma.storeInventory.findUnique({
             where: {
                 storeId_productId: {
                     storeId: targetStoreId,
@@ -46,12 +49,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         }
 
         // 3. Update StoreInventory and global Product inStock status
-        const [updatedInventory, updatedProduct] = await prisma.$transaction([
-            prisma.storeInventory.update({
+        const [updatedInventory, updatedProduct] = await tenantPrisma.$transaction([
+            tenantPrisma.storeInventory.update({
                 where: { id: inventory.id },
                 data: { quantity: { decrement: quantity } },
             }),
-            prisma.product.update({
+            tenantPrisma.product.update({
                 where: { id: productId },
                 data: {
                     inStock: inventory.quantity - quantity === 0 ? false : undefined,
@@ -60,7 +63,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         ]);
 
         // 4. Create the invoice item
-        const invoiceItem = await prisma.invoiceItem.create({
+        const invoiceItem = await tenantPrisma.invoiceItem.create({
             data: {
                 invoiceId,
                 quantity,
@@ -73,14 +76,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         // 5. Check if updated inventory quantity is at or below threshold (5)
         try {
             if (updatedInventory.quantity <= 5) {
-                // Get current user to identify the business
-                const currentUser = await prisma.user.findUnique({
-                    where: { clerkId: userId },
-                });
-
-                if (currentUser?.businessId) {
+                if (user.businessId) {
                     await notifyBusinessStaff({
-                        businessId: currentUser.businessId,
+                        businessId: user.businessId,
                         workflowId: "low-stock-alert",
                         payload: {
                             name: updatedProduct.name,

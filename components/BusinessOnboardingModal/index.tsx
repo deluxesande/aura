@@ -3,9 +3,11 @@ import React, { useState } from "react";
 import { apiClient } from "@/utils/apiClient";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
-import { AppState } from "@/store";
+import { AppState, AppDispatch } from "@/store";
 import { setBusiness } from "@/store/slices/businessSlice";
 import { setUser } from "@/store/slices/authSlice";
+import { setBusinessDetails } from "@/store/slices/businessDataSlice";
+import { fetchUser } from "@/store/auth/authThunks";
 import {
     Building2,
     Loader2,
@@ -13,6 +15,10 @@ import {
     CheckCircle2,
     ChevronRight,
     ChevronLeft,
+    Database,
+    ShieldCheck,
+    Globe,
+    ExternalLink,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -31,12 +37,15 @@ interface UserState {
 const BusinessOnboardingModal = () => {
     const [step, setStep] = useState(1);
     const [businessName, setBusinessName] = useState("");
+    const [tenantMode, setTenantMode] = useState<"SHARED" | "BYODB">("SHARED");
+    const [tenantDatabaseUrl, setTenantDatabaseUrl] = useState("");
+    const [isTestingConnection, setIsTestingConnection] = useState(false);
     const [newStore, setNewStore] = useState({ name: "", address: "" });
     const [isLoading, setIsLoading] = useState(false);
     const [isFinished, setIsFinished] = useState(false);
 
     const router = useRouter();
-    const dispatch = useDispatch();
+    const dispatch = useDispatch<AppDispatch>();
 
     const user = useSelector(
         (state: AppState) => state.auth.user,
@@ -48,12 +57,35 @@ const BusinessOnboardingModal = () => {
 
     if (!shouldShowInitial || isFinished) return null;
 
-    const handleNextStep = () => {
+    const handleNextStep = async () => {
         if (step === 1 && !businessName.trim()) {
             toast.error("Please enter a business name");
             return;
         }
-        if (step === 5 && !newStore.name.trim()) {
+        if (step === 2 && tenantMode === "BYODB") {
+            if (!tenantDatabaseUrl.trim()) {
+                toast.error("Please enter your PostgreSQL connection string");
+                return;
+            }
+            // Test connection before proceeding
+            setIsTestingConnection(true);
+            try {
+                await apiClient.post("/business/test-connection", {
+                    url: tenantDatabaseUrl,
+                });
+                toast.success("Database connection successful!");
+            } catch (error: any) {
+                toast.error(
+                    error.response?.data?.error ||
+                        "Failed to connect to database",
+                );
+                setIsTestingConnection(false);
+                return;
+            } finally {
+                setIsTestingConnection(false);
+            }
+        }
+        if (step === 6 && !newStore.name.trim()) {
             toast.error("Please enter a branch name");
             return;
         }
@@ -119,7 +151,7 @@ const BusinessOnboardingModal = () => {
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-            <div className="w-full max-w-lg bg-white rounded-lg shadow-2xl border border-gray-100 overflow-hidden relative flex flex-col min-h-[450px]">
+            <div className="w-full max-w-lg bg-white rounded-lg shadow-2xl border border-gray-100 overflow-hidden relative flex flex-col min-h-[500px]">
                 {/* Background Pattern */}
                 <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03] z-0">
                     <div className="absolute -top-[10%] -left-[10%] w-[80%] h-[40%] rounded-full bg-green-900/20 blur-[60px]" />
@@ -138,9 +170,9 @@ const BusinessOnboardingModal = () => {
                     </svg>
                 </div>
 
-                {/* Progress Bar (Updated to 6 steps) */}
+                {/* Progress Bar (Updated to 7 steps) */}
                 <div className="absolute top-0 left-0 w-full h-1 bg-gray-100 flex z-20">
-                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                    {[1, 2, 3, 4, 5, 6, 7].map((i) => (
                         <div
                             key={i}
                             className={`flex-1 h-full transition-all duration-500 ${i <= step ? "bg-green-500" : "bg-transparent"}`}
@@ -191,6 +223,112 @@ const BusinessOnboardingModal = () => {
 
                             {step === 2 && (
                                 <div className="flex flex-col items-center w-full">
+                                    <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mb-5">
+                                        <Database className="w-6 h-6 stroke-green-500" />
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                                        Data Storage
+                                    </h2>
+                                    <p className="text-sm text-gray-500 mb-6 max-w-sm">
+                                        Where would you like to store your
+                                        operational data?
+                                    </p>
+
+                                    <div className="grid grid-cols-1 gap-3 w-full">
+                                        <button
+                                            onClick={() =>
+                                                setTenantMode("SHARED")
+                                            }
+                                            className={`flex items-start gap-4 p-4 rounded-xl border transition-all text-left ${tenantMode === "SHARED" ? "bg-green-50 border-green-500 ring-1 ring-green-500" : "bg-white border-gray-200 hover:border-gray-300"}`}
+                                        >
+                                            <div
+                                                className={`mt-1 w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${tenantMode === "SHARED" ? "border-green-500 bg-green-500" : "border-gray-300"}`}
+                                            >
+                                                {tenantMode === "SHARED" && (
+                                                    <div className="w-2 h-2 rounded-full bg-white" />
+                                                )}
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="font-bold text-gray-900">
+                                                        Shared Cloud (Starter)
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-gray-500 leading-relaxed">
+                                                    Standard secure hosting on
+                                                    SaleSense&apos;s global
+                                                    infrastructure. Perfect for
+                                                    most small to medium
+                                                    businesses.
+                                                </p>
+                                            </div>
+                                        </button>
+
+                                        <button
+                                            onClick={() =>
+                                                setTenantMode("BYODB")
+                                            }
+                                            className={`flex items-start gap-4 p-4 rounded-xl border transition-all text-left ${tenantMode === "BYODB" ? "bg-green-50 border-green-500 ring-1 ring-green-500" : "bg-white border-gray-200 hover:border-gray-300"}`}
+                                        >
+                                            <div
+                                                className={`mt-1 w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${tenantMode === "BYODB" ? "border-green-500 bg-green-500" : "border-gray-300"}`}
+                                            >
+                                                {tenantMode === "BYODB" && (
+                                                    <div className="w-2 h-2 rounded-full bg-white" />
+                                                )}
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="font-bold text-gray-900">
+                                                        Bring Your Own DB
+                                                        (Enterprise)
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-gray-500 leading-relaxed">
+                                                    Complete data sovereignty.
+                                                    Store your proprietary ERP
+                                                    data on your own private
+                                                    PostgreSQL instance.
+                                                </p>
+                                            </div>
+                                        </button>
+                                    </div>
+
+                                    {tenantMode === "BYODB" && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{
+                                                opacity: 1,
+                                                height: "auto",
+                                            }}
+                                            className="w-full mt-4 text-left"
+                                        >
+                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                                PostgreSQL Connection URL
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={tenantDatabaseUrl}
+                                                onChange={(e) =>
+                                                    setTenantDatabaseUrl(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="postgresql://user:password@host:port/dbname"
+                                                className="w-full px-4 py-3 rounded-lg outline-none bg-slate-50 focus:bg-white border border-gray-200 focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-xs font-mono"
+                                            />
+                                            <p className="mt-2 text-[10px] text-gray-400 flex items-center gap-1">
+                                                <ExternalLink className="w-3 h-3" />
+                                                Ensure your database allows
+                                                connections from SaleSense IPs.
+                                            </p>
+                                        </motion.div>
+                                    )}
+                                </div>
+                            )}
+
+                            {step === 3 && (
+                                <div className="flex flex-col items-center w-full">
                                     <div className="mb-5">
                                         <Image
                                             src="/images/M-PESA-logo-2.png"
@@ -235,7 +373,7 @@ const BusinessOnboardingModal = () => {
                                 </div>
                             )}
 
-                            {step === 3 && (
+                            {step === 4 && (
                                 <div className="flex flex-col items-center w-full">
                                     <div className="mb-5">
                                         <Image
@@ -274,7 +412,7 @@ const BusinessOnboardingModal = () => {
                                 </div>
                             )}
 
-                            {step === 4 && (
+                            {step === 5 && (
                                 <div className="flex flex-col items-center w-full">
                                     <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mb-5">
                                         <Store className="w-6 h-6 stroke-green-500" />
@@ -310,7 +448,7 @@ const BusinessOnboardingModal = () => {
                             )}
 
                             {/* NEW STORE CREATION STEP */}
-                            {step === 5 && (
+                            {step === 6 && (
                                 <div className="flex flex-col items-center w-full">
                                     <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mb-5">
                                         <Store className="w-6 h-6 stroke-green-500" />
@@ -362,7 +500,7 @@ const BusinessOnboardingModal = () => {
                                 </div>
                             )}
 
-                            {step === 6 && (
+                            {step === 7 && (
                                 <div className="flex flex-col items-center w-full">
                                     <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mb-5">
                                         <CheckCircle2 className="w-6 h-6 stroke-green-500" />
@@ -417,13 +555,23 @@ const BusinessOnboardingModal = () => {
                         <div /> // Placeholder to keep the layout balanced
                     )}
 
-                    {step < 6 ? (
+                    {step < 7 ? (
                         <button
                             onClick={handleNextStep}
-                            className="px-6 py-2.5 text-sm font-bold text-white bg-green-500 rounded-lg hover:bg-green-600 transition-colors flex items-center gap-1.5 ml-auto"
+                            disabled={isTestingConnection}
+                            className="px-6 py-2.5 text-sm font-bold text-white bg-green-500 rounded-lg hover:bg-green-600 transition-colors flex items-center gap-1.5 ml-auto disabled:opacity-50"
                         >
-                            Continue
-                            <ChevronRight className="stroke-white w-4 h-4" />
+                            {isTestingConnection ? (
+                                <>
+                                    <Loader2 className="animate-spin w-4 h-4 stroke-white" />
+                                    Testing Connection...
+                                </>
+                            ) : (
+                                <>
+                                    Continue
+                                    <ChevronRight className="stroke-white w-4 h-4" />
+                                </>
+                            )}
                         </button>
                     ) : (
                         <button

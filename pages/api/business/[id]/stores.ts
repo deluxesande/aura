@@ -1,5 +1,6 @@
 
 import { prisma } from "@/utils/lib/client";
+import { getTenantPrisma } from "@/utils/lib/prisma";
 import { getAuth } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
 
@@ -24,7 +25,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    const stores = await prisma.store.findMany({
+    const tenantPrisma = await getTenantPrisma(id as string);
+    const stores = await tenantPrisma.store.findMany({
       where: { businessId: id as string },
       orderBy: { createdAt: 'asc' }
     });

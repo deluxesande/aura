@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
+import { getTenantPrisma } from "@/utils/lib/prisma";
 import { notifyBusinessStaff } from "@/utils/server/novu";
 
 export default async function handler(
@@ -18,11 +19,12 @@ export default async function handler(
     if (!user || !user.businessId)
         return res.status(403).json({ error: "Forbidden" });
     const { businessId, id: userId } = user;
+    const tenantPrisma = await getTenantPrisma(businessId);
 
     switch (req.method) {
         case "GET":
             try {
-                const pos = await prisma.purchaseOrder.findMany({
+                const pos = await tenantPrisma.purchaseOrder.findMany({
                     where: { businessId, isDeleted: false },
                     include: {
                         Supplier: { select: { name: true } },
@@ -83,7 +85,7 @@ export default async function handler(
                         .status(400)
                         .json({ error: "Missing required fields" });
 
-                const po = await prisma.purchaseOrder.create({
+                const po = await tenantPrisma.purchaseOrder.create({
                     data: {
                         supplierId,
                         storeId: storeId || null,

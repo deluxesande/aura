@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { generateSKU } from "@/utils/generateSKU";
 import { addCreatedBy } from "../middleware";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { getAuth } from "@clerk/nextjs/server";
 import { checkSubscription } from "@/utils/subscription/checkSubscription";
 import { logAction } from "@/utils/server/audit";
@@ -31,15 +31,26 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
         const bId = businessId as string;
         
-        // Fetch current user and their store access
-        const currentUser = await prisma.user.findUnique({
+        // 1. Fetch current user from Master DB
+        const currentUser = await masterPrisma.user.findUnique({
             where: { clerkId: userId },
-            select: { id: true, role: true, storeId: true }
+            select: { id: true, role: true }
         });
 
         if (!currentUser) return res.status(404).json({ error: "User not found" });
 
-        const targetStoreId = currentUser.role === "admin" ? activeStoreHeader : (currentUser.storeId as string);
+        // 2. Get Tenant Prisma client
+        const tenantPrisma = await getTenantPrisma(bId);
+
+        // Fetch user store access from Tenant DB if not admin
+        let targetStoreId = activeStoreHeader;
+        if (currentUser.role !== "admin") {
+            const tenantUser = await tenantPrisma.tenantUser.findUnique({
+                where: { clerkId: userId },
+                select: { storeId: true }
+            });
+            if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
+        }
 
         if (!targetStoreId) {
             return res.status(400).json({ error: "No active store selected. Please select a branch first." });
@@ -49,9 +60,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         const isBatch = Array.isArray(body);
         const items = isBatch ? body : [body];
 
-        const results = await prisma.$transaction(
+        const results = await tenantPrisma.$transaction(
             async (tx) => {
-                // ... (Attribute and Option pre-fetching logic remains similar)
                 // --- STAGE 1: Pre-fetch all necessary metadata in bulk ---
                 const allAttrNames = new Set<string>();
                 const allOptValues = new Set<string>(); // "attrName:value"
@@ -72,7 +82,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     }
                 });
 
-                // Parallel pre-fetching
+                // Parallel pre-fetching in Tenant DB
                 const [
                     existingAttrs,
                     existingSkus,
@@ -182,8 +192,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                             create: {
                                 name, description, price: 0, sku: templateSku,
                                 quantity: 0, image: imageUrl, inStock: false, type: "TEMPLATE",
-                                Category: { connect: { id: categoryId } },
-                                Business: { connect: { id: bId } },
+                                categoryId: categoryId,
+                                businessId: bId,
                                 createdBy: itemCreatedBy,
                             },
                         });
@@ -201,9 +211,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                                 data: {
                                     name, description, price: parsedPrice, sku: finalSku,
                                     quantity: 0, image: imageUrl, inStock, type: "VARIANT",
-                                    parent: { connect: { id: parentId } },
-                                    Category: { connect: { id: categoryId } },
-                                    Business: { connect: { id: bId } },
+                                    parentId: parentId,
+                                    categoryId: categoryId,
+                                    businessId: bId,
                                     createdBy: itemCreatedBy,
                                     attributeValues: {
                                         create: attributes.map((a: any) => ({
@@ -225,15 +235,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                                 data: {
                                     name, description, price: parsedPrice, sku: finalSku,
                                     quantity: 0, image: imageUrl, inStock, type: "SIMPLE",
-                                    Category: { connect: { id: categoryId } },
-                                    Business: { connect: { id: bId } },
+                                    categoryId: categoryId,
+                                    businessId: bId,
                                     createdBy: itemCreatedBy,
                                 },
                             });
                         }
                     }
 
-                    // Update StoreInventory regardless of type (except template maybe, but keep logic simple)
+                    // Update StoreInventory in Tenant DB
                     if (type !== "TEMPLATE") {
                         const inventory = await tx.storeInventory.upsert({
                             where: {
@@ -262,7 +272,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             { timeout: 9500 },
         );
 
-        // Log Audit Action
+        // Log Audit Action (performs its own tenantPrisma lookup)
         await logAction({
             action: isBatch ? "CREATE_PRODUCTS_BATCH" : "CREATE_PRODUCT",
             entityType: "PRODUCT",

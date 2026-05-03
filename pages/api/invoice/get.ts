@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 
 export const getInvoices = async (
     req: NextApiRequest,
@@ -13,44 +13,45 @@ export const getInvoices = async (
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const activeStoreHeader = req.headers["x-store-id"] as string;
-
-        const dbUser = await prisma.user.findUnique({
+        // 1. Get current user with their business from Master DB
+        const user = await masterPrisma.user.findUnique({
             where: { clerkId: userId },
-            select: { role: true, storeId: true }
+            select: { businessId: true, role: true },
         });
 
-        const targetStoreId = dbUser?.role === "admin" ? activeStoreHeader : (dbUser?.storeId as string);
-
-        if (!targetStoreId) {
-            return res.status(400).json({ error: "No active store selected." });
+        if (!user || !user.businessId) {
+            return res.status(200).json([]);
         }
 
-        // 1. Get current user with their business
-        const currentUser = await prisma.user.findUnique({
-            where: { clerkId: userId },
-            select: { businessId: true },
-        });
+        const tenantPrisma = await getTenantPrisma(user.businessId);
+        const activeStoreHeader = req.headers["x-store-id"] as string;
 
-        if (!currentUser || !currentUser.businessId) {
-            return res
-                .status(404)
-                .json({ error: "User or business not found" });
+        // Fetch user store info from Tenant DB if not admin
+        let targetStoreId = activeStoreHeader;
+        if (user.role !== "admin") {
+            const tenantUser = await tenantPrisma.tenantUser.findUnique({
+                where: { clerkId: userId },
+                select: { storeId: true }
+            });
+            if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
+        }
+
+        if (!targetStoreId) {
+            return res.status(200).json([]);
         }
 
         // SELF-HEALING LOGIC: Handle Inventory Sync (Restock & Re-deduct) - Isolated to THIS business and store
-        const failedInvoices = await prisma.invoice.findMany({
+        const failedInvoices = await tenantPrisma.invoice.findMany({
             where: {
                 status: { in: ["FAILED", "CANCELLED"] },
                 stockRestored: false,
-                businessId: currentUser.businessId,
                 storeId: targetStoreId,
             },
             include: { invoiceItems: { include: { Product: { select: { type: true } } } } },
         });
 
         if (failedInvoices.length > 0) {
-            await prisma.$transaction(async (tx) => {
+            await tenantPrisma.$transaction(async (tx) => {
                 for (const invoice of failedInvoices) {
                     for (const item of invoice.invoiceItems) {
                         if (item.Product.type === "TEMPLATE") continue;
@@ -77,18 +78,17 @@ export const getInvoices = async (
             });
         }
 
-        const recoveredInvoices = await prisma.invoice.findMany({
+        const recoveredInvoices = await tenantPrisma.invoice.findMany({
             where: {
                 status: { in: ["PAID", "COMPLETED"] },
                 stockRestored: true,
-                businessId: currentUser.businessId,
                 storeId: targetStoreId,
             },
             include: { invoiceItems: { include: { Product: { select: { type: true } } } } },
         });
 
         if (recoveredInvoices.length > 0) {
-            await prisma.$transaction(async (tx) => {
+            await tenantPrisma.$transaction(async (tx) => {
                 for (const invoice of recoveredInvoices) {
                     for (const item of invoice.invoiceItems) {
                         if (item.Product.type === "TEMPLATE") continue;
@@ -119,16 +119,16 @@ export const getInvoices = async (
             });
         }
 
-        // Get all users in the same business
-        const businessUsers = await prisma.user.findMany({
-            where: { businessId: currentUser.businessId },
+        // Get all users in the same business from Master DB
+        const businessUsers = await masterPrisma.user.findMany({
+            where: { businessId: user.businessId },
             select: { clerkId: true },
         });
 
         const userIds = businessUsers.map((user) => user.clerkId);
 
-        // Get invoices created by any user in the same business AND for the current store
-        const invoices = await prisma.invoice.findMany({
+        // Get invoices created by any user in the same business AND for the current store from Tenant DB
+        const invoices = await tenantPrisma.invoice.findMany({
             where: {
                 createdBy: {
                     in: userIds,
@@ -171,8 +171,8 @@ export const getInvoices = async (
         // Get Clerk client to fetch user images
         const clerk = await clerkClient();
 
-        // Fetch user details from database and Clerk in Parallel
-        const dbUsers = await prisma.user.findMany({
+        // Fetch user details from Master DB and Clerk in Parallel
+        const dbUsers = await masterPrisma.user.findMany({
             where: { clerkId: { in: userIds } },
             select: {
                 clerkId: true,

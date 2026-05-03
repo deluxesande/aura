@@ -1,6 +1,6 @@
 import { getAuth } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 
 export const deleteCustomer = async (
     req: NextApiRequest,
@@ -15,7 +15,8 @@ export const deleteCustomer = async (
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const user = await prisma.user.findUnique({
+        // 1. Fetch User and Business context from Master DB
+        const user = await masterPrisma.user.findUnique({
             where: { clerkId: clerkUserId },
             select: { businessId: true },
         });
@@ -26,15 +27,14 @@ export const deleteCustomer = async (
                 .json({ error: "User is not linked to a business" });
         }
 
-        if (!id) {
-            return res.status(400).json({ error: "Missing customer ID" });
-        }
+        const businessId = user.businessId;
+        const tenantPrisma = await getTenantPrisma(businessId);
 
-        // Delete using deleteMany for security
-        const result = await prisma.customer.deleteMany({
+        // 2. Delete Customer in Tenant DB
+        const result = await tenantPrisma.customer.deleteMany({
             where: {
                 id: id,
-                businessId: user.businessId,
+                businessId: businessId,
             },
         });
 

@@ -1,11 +1,7 @@
 import { getAuth } from "@clerk/nextjs/server";
-import { PrismaClient } from "@prisma/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import axios from "axios";
 import type { NextApiRequest, NextApiResponse } from "next";
-
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient();
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 const {
     CONSUMER_KEY,
@@ -69,7 +65,7 @@ export default async function handler(
             });
         }
 
-        const user = await prisma.user.findUnique({
+        const user = await masterPrisma.user.findUnique({
             where: { clerkId: userId },
             select: { id: true, businessId: true },
         });
@@ -80,7 +76,9 @@ export default async function handler(
                 .json({ error: "User is not linked to a business" });
         }
 
-        const invoice = await prisma.invoice.findUnique({
+        const tenantPrisma = await getTenantPrisma(user.businessId);
+
+        const invoice = await tenantPrisma.invoice.findUnique({
             where: { id: invoiceId },
             include: {
                 Customer: true,
@@ -158,7 +156,7 @@ export default async function handler(
         );
 
         // Create NEW Payment Record linked to Invoice
-        await prisma.mpesaPayment.create({
+        await tenantPrisma.mpesaPayment.create({
             data: {
                 amount: invoice.totalAmount,
                 phoneNumber: formattedPhone,
@@ -174,7 +172,7 @@ export default async function handler(
         });
 
         if (invoice.status !== "PENDING") {
-            await prisma.invoice.update({
+            await tenantPrisma.invoice.update({
                 where: { id: invoice.id },
                 data: { status: "PENDING" },
             });

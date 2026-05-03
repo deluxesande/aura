@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { logAction } from "@/utils/server/audit";
 
 export default async function handler(
@@ -10,7 +10,8 @@ export default async function handler(
     const { userId: clerkId } = getAuth(req);
     if (!clerkId) return res.status(401).json({ error: "Unauthorized" });
 
-    const user = await prisma.user.findUnique({
+    // 1. Fetch User and Business context from Master DB
+    const user = await masterPrisma.user.findUnique({
         where: { clerkId },
         select: { id: true, businessId: true, role: true },
     });
@@ -19,14 +20,17 @@ export default async function handler(
         return res.status(403).json({ error: "Access denied." });
     }
 
+    const businessId = user.businessId;
+    const tenantPrisma = await getTenantPrisma(businessId);
+
     if (req.method === "GET") {
         try {
-            const reconciliations = await prisma.inventoryReconciliation.findMany({
-                where: { businessId: user.businessId },
+            const reconciliations = await tenantPrisma.inventoryReconciliation.findMany({
+                where: { businessId: businessId },
                 orderBy: { createdAt: "desc" },
                 include: {
                     Store: { select: { name: true } },
-                    User: { select: { firstName: true, lastName: true } },
+                    User: { select: { firstName: true, lastName: true } }, // Synced TenantUser
                     items: {
                         include: {
                             Product: { select: { name: true, sku: true } },
@@ -53,21 +57,20 @@ export default async function handler(
                 return res.status(400).json({ error: "Missing required reconciliation data." });
             }
 
-            const result = await prisma.$transaction(async (tx) => {
+            const result = await tenantPrisma.$transaction(async (tx) => {
                 const reconciliation = await tx.inventoryReconciliation.create({
                     data: {
                         reference: reference || null,
                         notes: notes || null,
                         storeId,
                         userId: user.id,
-                        businessId: user.businessId!,
+                        businessId: businessId, // Logical reference
                     },
                 });
 
                 for (const item of items) {
                     const { productId, physicalQuantity } = item;
                     
-                    // Get current system quantity from store inventory
                     const inventory = await tx.storeInventory.findUnique({
                         where: {
                             storeId_productId: {
@@ -77,7 +80,6 @@ export default async function handler(
                         },
                     });
 
-                    // Also account for pending/in-transit purchase orders for this store
                     const pendingPOItems = await tx.purchaseOrderItem.findMany({
                         where: {
                             productId,
@@ -106,9 +108,6 @@ export default async function handler(
                         },
                     });
 
-                    // Update system quantity to match physical count
-                    // Note: We update the store inventory. If there was a discrepancy 
-                    // due to pending POs, it will still show in the reconciliation report.
                     await tx.storeInventory.upsert({
                         where: {
                             storeId_productId: {
@@ -130,14 +129,14 @@ export default async function handler(
                 return reconciliation;
             });
 
-            // Log the action
+            // Log Audit Action (tenantPrisma)
             await logAction({
                 action: "INVENTORY_RECONCILIATION",
                 entityType: "INVENTORY_RECONCILIATION",
                 entityId: result.id,
                 details: { storeId, reference, itemsCount: items.length },
                 userId: user.id,
-                businessId: user.businessId,
+                businessId: businessId,
                 ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
                 userAgent: req.headers["user-agent"],
             });

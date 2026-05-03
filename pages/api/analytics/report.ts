@@ -1,7 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { getAuth } from "@clerk/nextjs/server";
-import { checkSubscription } from "@/utils/subscription/checkSubscription";
 
 export default async function handler(
     req: NextApiRequest,
@@ -17,25 +16,32 @@ export default async function handler(
 
         const activeStoreHeader = req.headers["x-store-id"] as string;
 
-        // Get current user with their business and role
-        const currentUser = await prisma.user.findUnique({
+        // 1. Get current user context from Master DB
+        const user = await masterPrisma.user.findUnique({
             where: { clerkId: userId },
-            select: { businessId: true, role: true, storeId: true },
+            select: { businessId: true, role: true },
         });
 
-        if (!currentUser || !currentUser.businessId) {
-            return res
-                .status(404)
-                .json({ error: "User or business not found" });
+        if (!user || !user.businessId) {
+            return res.status(404).json({ error: "User or business not found" });
         }
 
-        const targetStoreId = currentUser.role === "admin" ? activeStoreHeader : (currentUser.storeId as string);
+        const businessId = user.businessId;
+        const tenantPrisma = await getTenantPrisma(businessId);
+
+        // Fetch user store access from Tenant DB if not admin
+        let targetStoreId = activeStoreHeader;
+        if (user.role !== "admin") {
+            const tenantUser = await tenantPrisma.tenantUser.findUnique({
+                where: { clerkId: userId },
+                select: { storeId: true }
+            });
+            if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
+        }
 
         if (!targetStoreId) {
             return res.status(400).json({ error: "No active store selected." });
         }
-
-        const businessId = currentUser.businessId;
 
         const { timePeriod } = req.query;
         let startDate = new Date(0);
@@ -56,62 +62,51 @@ export default async function handler(
             }
         }
 
-        // Get all users in the same business to match invoice list logic
-        const businessUsers = await prisma.user.findMany({
+        // 2. Fetch Team Member IDs from Master DB
+        const businessUsers = await masterPrisma.user.findMany({
             where: { businessId: businessId },
             select: { clerkId: true },
         });
         const userIds = businessUsers.map((u) => u.clerkId);
 
-        const invoices = await prisma.invoice.findMany({
-            where: {
-                createdBy: { in: userIds },
-                storeId: targetStoreId,
-                createdAt: { gte: startDate },
-                status: {
-                    in: ["PAID", "paid", "COMPLETED", "completed"],
+        // 3. Fetch Operational Data from Tenant DB
+        const [invoices, deliveries, expenses] = await Promise.all([
+            tenantPrisma.invoice.findMany({
+                where: {
+                    createdBy: { in: userIds },
+                    storeId: targetStoreId,
+                    createdAt: { gte: startDate },
+                    status: { in: ["PAID", "paid", "COMPLETED", "completed"] },
+                    isDeleted: false,
                 },
-                isDeleted: false,
-            },
-            include: {
-                Customer: {
-                    select: { firstName: true, lastName: true },
+                include: {
+                    Customer: { select: { firstName: true, lastName: true } },
+                    invoiceItems: { include: { Product: { select: { name: true, sku: true } } } },
                 },
-                invoiceItems: {
-                    include: {
-                        Product: {
-                            select: { name: true, sku: true },
-                        },
-                    },
+                orderBy: { createdAt: "desc" },
+            }),
+            tenantPrisma.delivery.findMany({
+                where: {
+                    businessId: businessId,
+                    storeId: targetStoreId,
+                    createdAt: { gte: startDate },
+                    status: "RECEIVED",
                 },
-            },
-            orderBy: { createdAt: "desc" },
-        });
-
-        // Fetch Deliveries
-        const deliveries = await prisma.delivery.findMany({
-            where: {
-                businessId: businessId,
-                storeId: targetStoreId,
-                createdAt: { gte: startDate },
-                status: "RECEIVED",
-            },
-            include: {
-                Supplier: { select: { name: true } },
-                Store: { select: { name: true } },
-            },
-            orderBy: { createdAt: "desc" },
-        });
-
-        // Fetch Expenses
-        const expenses = await prisma.expense.findMany({
-            where: {
-                businessId: businessId,
-                storeId: targetStoreId,
-                createdAt: { gte: startDate },
-                status: "ACTIVE",
-            },
-        });
+                include: {
+                    Supplier: { select: { name: true } },
+                    Store: { select: { name: true } },
+                },
+                orderBy: { createdAt: "desc" },
+            }),
+            tenantPrisma.expense.findMany({
+                where: {
+                    businessId: businessId,
+                    storeId: targetStoreId,
+                    createdAt: { gte: startDate },
+                    status: "ACTIVE",
+                },
+            })
+        ]);
 
         // 4. Aggregation Engine
         let totalRevenue = 0;

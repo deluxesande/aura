@@ -1,4 +1,4 @@
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { getAuth } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
 
@@ -16,7 +16,7 @@ export default async function handler(
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const currentUser = await prisma.user.findUnique({
+        const currentUser = await masterPrisma.user.findUnique({
             where: { clerkId: userId },
             include: { Business: true },
         });
@@ -33,26 +33,27 @@ export default async function handler(
 
         const businessId = currentUser.businessId;
 
-        if (!businessId || typeof businessId !== "string") {
+        if (!businessId) {
             return res.status(400).json({ error: "Business ID required" });
         }
 
-        if (currentUser.businessId !== businessId) {
-            return res.status(403).json({ error: "Forbidden" });
-        }
-
-        const invitations = await prisma.userInvitation.findMany({
+        const invitations = await masterPrisma.userInvitation.findMany({
             where: { businessId },
             include: {
                 Business: {
                     select: { name: true },
                 },
-                Store: {
-                    select: { name: true },
-                },
             },
             orderBy: { createdAt: "desc" },
         });
+
+        const tenantPrisma = await getTenantPrisma(businessId);
+        const stores = await tenantPrisma.store.findMany({
+            where: { businessId },
+            select: { id: true, name: true }
+        });
+
+        const storeMap = new Map(stores.map(s => [s.id, s.name]));
 
         const sanitizedInvitations = await Promise.all(
             invitations.map(async ({ token, ...invitation }) => {
@@ -60,7 +61,7 @@ export default async function handler(
                 let linkedClerkId = null;
 
                 if (invitation.invitedBy) {
-                    const inviter = await prisma.user.findUnique({
+                    const inviter = await masterPrisma.user.findUnique({
                         where: { id: invitation.invitedBy },
                         select: {
                             firstName: true,
@@ -72,7 +73,7 @@ export default async function handler(
 
                 // If accepted, fetch the User's Clerk ID
                 if (invitation.status === "accepted") {
-                    const linkedUser = await prisma.user.findUnique({
+                    const linkedUser = await masterPrisma.user.findUnique({
                         where: { email: invitation.email },
                         select: { clerkId: true },
                     });
@@ -86,12 +87,14 @@ export default async function handler(
                     ...invitation,
                     inviter: inviterDetails,
                     clerkUserId: linkedClerkId,
+                    Store: invitation.storeId ? { name: storeMap.get(invitation.storeId) || "Unknown Branch" } : null
                 };
             })
         );
 
         return res.status(200).json({ invitations: sanitizedInvitations });
     } catch (error) {
+        console.error("Invite Fetch Error:", error);
         return res.status(500).json({
             error: "Internal server error",
         });

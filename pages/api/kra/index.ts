@@ -1,6 +1,6 @@
 import { getAuth } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 
 export default async function handler(
     req: NextApiRequest,
@@ -17,7 +17,8 @@ export default async function handler(
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const user = await prisma.user.findUnique({
+        // 1. Fetch User context from Master DB
+        const user = await masterPrisma.user.findUnique({
             where: {
                 clerkId: userId,
             },
@@ -28,9 +29,13 @@ export default async function handler(
             return res.status(404).json({ error: "Business not found" });
         }
 
-        const kraDetails = await prisma.kraDetails.findUnique({
+        const businessId = user.businessId;
+        const tenantPrisma = await getTenantPrisma(businessId);
+
+        // 2. Fetch KRA details from Tenant DB
+        const kraDetails = await tenantPrisma.kraDetails.findUnique({
             where: {
-                businessId: user.businessId,
+                businessId: businessId,
             },
         });
 

@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { addCreatedBy } from "../middleware";
-import { prisma } from "@/utils/lib/client";
+import { getTenantPrisma } from "@/utils/lib/prisma";
 import { getAuth } from "@clerk/nextjs/server";
 import { checkSubscription } from "@/utils/subscription/checkSubscription";
 
@@ -24,7 +24,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
         const { name, description } = req.body;
 
-        const newCategory = await prisma.category.create({
+        const tenantPrisma = await getTenantPrisma(businessId as string);
+
+        const newCategory = await tenantPrisma.category.create({
             data: {
                 name,
                 description,

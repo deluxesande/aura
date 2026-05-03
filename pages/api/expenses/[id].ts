@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     const { userId: clerkId } = getAuth(req);
@@ -10,25 +10,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(401).json({ error: "Unauthorized" });
     }
 
-    // Fetch user details for RBAC
-    const user = await prisma.user.findUnique({
+    // 1. Fetch User details from Master DB for RBAC
+    const user = await masterPrisma.user.findUnique({
         where: { clerkId },
-        select: { businessId: true, role: true, storeId: true },
+        select: { businessId: true, role: true },
     });
 
     if (!user || !user.businessId) {
         return res.status(403).json({ error: "Forbidden" });
     }
 
-    const { businessId, role, storeId } = user;
+    const { businessId, role } = user;
 
     // RBAC: Only Admins and Managers can edit/void
     if (role === "user") {
         return res.status(403).json({ error: "Access denied. Only admins and managers can manage financials." });
     }
 
-    // Verify expense existence and multi-tenant ownership
-    const existingExpense = await prisma.expense.findFirst({
+    // 2. Get Tenant Prisma client
+    const tenantPrisma = await getTenantPrisma(businessId);
+
+    // Fetch user store info from Tenant DB if manager
+    let userStoreId: string | null = null;
+    if (role === "manager") {
+        const tenantUser = await tenantPrisma.tenantUser.findUnique({
+            where: { clerkId },
+            select: { storeId: true }
+        });
+        userStoreId = tenantUser?.storeId || null;
+    }
+
+    // 3. Verify expense existence in Tenant DB
+    const existingExpense = await tenantPrisma.expense.findFirst({
         where: { id: expenseId, businessId },
     });
 
@@ -37,7 +50,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // RBAC: Managers can only modify expenses belonging to their store
-    if (role === "manager" && existingExpense.storeId !== storeId) {
+    if (role === "manager" && existingExpense.storeId !== userStoreId) {
         return res.status(403).json({ error: "Access denied. You can only manage expenses for your assigned store." });
     }
 
@@ -60,7 +73,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     updateData.storeId = payloadStoreId;
                 }
 
-                const updatedExpense = await prisma.expense.update({
+                const updatedExpense = await tenantPrisma.expense.update({
                     where: { id: expenseId },
                     data: updateData,
                 });
@@ -73,8 +86,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         case "DELETE":
             try {
-                // SOFT DELETE: Void the expense record
-                const voidedExpense = await prisma.expense.update({
+                // SOFT DELETE: Void the expense record in Tenant DB
+                const voidedExpense = await tenantPrisma.expense.update({
                     where: { id: expenseId },
                     data: { status: "VOIDED" },
                 });

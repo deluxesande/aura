@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
+import { getTenantPrisma } from "@/utils/lib/prisma";
 
 export default async function handler(
     req: NextApiRequest,
@@ -18,10 +19,11 @@ export default async function handler(
         return res.status(403).json({ error: "Access denied." });
     }
 
+    const tenantPrisma = await getTenantPrisma(user.businessId);
+
     if (req.method === "GET") {
         try {
-            const deliveries = await prisma.delivery.findMany({
-                where: { businessId: user.businessId },
+            const deliveries = await tenantPrisma.delivery.findMany({
                 orderBy: { createdAt: "desc" },
                 include: {
                     Store: { select: { name: true } },
@@ -142,7 +144,7 @@ export default async function handler(
                 totalDeliveryCost += qty * uCost;
             }
 
-            const result = await prisma.$transaction(async (tx) => {
+            const result = await tenantPrisma.$transaction(async (tx) => {
                 const delivery = await tx.delivery.create({
                     data: {
                         reference: reference || null,

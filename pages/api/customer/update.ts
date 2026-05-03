@@ -1,6 +1,6 @@
 import { getAuth } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 
 export const updateCustomer = async (
     req: NextApiRequest,
@@ -12,7 +12,8 @@ export const updateCustomer = async (
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const user = await prisma.user.findUnique({
+        // 1. Fetch User context from Master DB
+        const user = await masterPrisma.user.findUnique({
             where: { clerkId: clerkUserId },
             select: { businessId: true },
         });
@@ -22,6 +23,9 @@ export const updateCustomer = async (
                 .status(403)
                 .json({ error: "User is not linked to a business" });
         }
+
+        const businessId = user.businessId;
+        const tenantPrisma = await getTenantPrisma(businessId);
 
         const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
         const { firstName, lastName, email: rawEmail, phoneNumber } = req.body;
@@ -34,10 +38,11 @@ export const updateCustomer = async (
 
         const email = rawEmail && rawEmail.trim() !== "" ? rawEmail : null;
 
-        const result = await prisma.customer.updateMany({
+        // 2. Perform Update in Tenant DB
+        const result = await tenantPrisma.customer.updateMany({
             where: {
                 id: id,
-                businessId: user.businessId,
+                businessId: businessId,
             },
             data: {
                 firstName,
@@ -53,7 +58,7 @@ export const updateCustomer = async (
                 .json({ error: "Customer not found or access denied" });
         }
 
-        const updatedCustomer = await prisma.customer.findUnique({
+        const updatedCustomer = await tenantPrisma.customer.findUnique({
             where: { id: id },
         });
 

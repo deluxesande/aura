@@ -1,10 +1,3 @@
-import { PrismaClient } from "@prisma/client";
-
-// Use global Prisma instance to prevent connection limits in dev
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient();
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
-
 interface FailedCallbackData {
     MerchantRequestID: string;
     CheckoutRequestID: string;
@@ -25,10 +18,12 @@ interface SuccessCallbackData {
     invoiceId?: string | null;
 }
 
-// 1. Store Failed Callback (Now accepts flat data)
-export const storeFailedCallbackInDb = async (data: FailedCallbackData) => {
+/**
+ * Stores a failed M-Pesa callback in the provided tenant database.
+ */
+export const storeFailedCallbackInDb = async (tenantPrisma: any, data: FailedCallbackData) => {
     try {
-        await prisma.failedCallback.create({
+        await tenantPrisma.failedCallback.create({
             data: {
                 merchantRequestId: data.MerchantRequestID,
                 checkoutRequestId: data.CheckoutRequestID,
@@ -37,18 +32,21 @@ export const storeFailedCallbackInDb = async (data: FailedCallbackData) => {
                 invoiceId: data.invoiceId || null,
             },
         });
-        console.log("Failed transaction stored in DB");
+        console.log("Failed transaction stored in Tenant DB");
     } catch (error) {
         console.error("Prisma Error (FailedCallback):", error);
     }
 };
 
-// 2. Store Successful Callback (Now accepts flat data)
+/**
+ * Stores a successful M-Pesa callback in the provided tenant database.
+ */
 export const storeSuccessfulCallbackInDb = async (
+    tenantPrisma: any,
     data: SuccessCallbackData
 ) => {
     try {
-        await prisma.successfulCallback.create({
+        await tenantPrisma.successfulCallback.create({
             data: {
                 merchantRequestId: data.MerchantRequestID,
                 checkoutRequestId: data.CheckoutRequestID,
@@ -61,20 +59,27 @@ export const storeSuccessfulCallbackInDb = async (
                 invoiceId: data.invoiceId || null,
             },
         });
-        console.log("Successful transaction stored in DB");
+        console.log("Successful transaction stored in Tenant DB");
     } catch (error) {
         console.error("Prisma Error (SuccessfulCallback):", error);
     }
 };
 
-export const storeResponseInDb = async (response: any) => {
-    await prisma.response.create({
-        data: {
-            merchantRequestId: response.MerchantRequestID,
-            checkoutRequestId: response.CheckoutRequestID,
-            responseCode: response.ResponseCode,
-            responseDescription: response.ResponseDescription,
-            customerMessage: response.CustomerMessage,
-        },
-    });
+/**
+ * Stores the raw STK Push response in the provided tenant database.
+ */
+export const storeResponseInDb = async (tenantPrisma: any, response: any) => {
+    try {
+        await tenantPrisma.response.create({
+            data: {
+                merchantRequestId: response.MerchantRequestID,
+                checkoutRequestId: response.CheckoutRequestID,
+                responseCode: response.ResponseCode,
+                responseDescription: response.ResponseDescription,
+                customerMessage: response.CustomerMessage,
+            },
+        });
+    } catch (error) {
+        console.error("Prisma Error (Response):", error);
+    }
 };

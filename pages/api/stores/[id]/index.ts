@@ -1,5 +1,6 @@
 
 import { prisma } from "@/utils/lib/client";
+import { getTenantPrisma } from "@/utils/lib/prisma";
 import { getAuth } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
 import { logAction } from "@/utils/server/audit";
@@ -19,14 +20,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 select: { id: true, role: true, businessId: true }
             });
 
-            if (user?.role !== "admin") return res.status(403).json({ error: "Forbidden" });
+            if (!user || user.role !== "admin" || !user.businessId) return res.status(403).json({ error: "Forbidden" });
 
-            const store = await prisma.store.findUnique({ where: { id: storeId } });
+            const tenantPrisma = await getTenantPrisma(user.businessId);
+
+            const store = await tenantPrisma.store.findUnique({ where: { id: storeId } });
             if (!store || store.businessId !== user.businessId) {
                 return res.status(403).json({ error: "Forbidden" });
             }
 
-            const updatedStore = await prisma.store.update({
+            const updatedStore = await tenantPrisma.store.update({
                 where: { id: storeId },
                 data: { name, address }
             });
@@ -38,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 entityId: storeId,
                 details: { name: updatedStore.name, address: updatedStore.address },
                 userId: user.id,
-                businessId: user.businessId!,
+                businessId: user.businessId,
                 ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
                 userAgent: req.headers["user-agent"],
             });

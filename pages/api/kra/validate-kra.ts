@@ -2,6 +2,7 @@ import { getAuth } from "@clerk/nextjs/server";
 import axios from "axios";
 import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/utils/lib/client";
+import { getTenantPrisma } from "@/utils/lib/prisma";
 
 const BASE_URL = "https://api.kra.go.ke";
 
@@ -36,6 +37,8 @@ export default async function handler(
                 .status(404)
                 .json({ error: "Business profile not found for this user." });
         }
+
+        const tenantPrisma = await getTenantPrisma(user.businessId);
 
         const authUrl = `${BASE_URL}/v1/token/generate?grant_type=client_credentials`;
         const credentials = Buffer.from(
@@ -73,7 +76,7 @@ export default async function handler(
             const { KRAPIN, TypeOfTaxpayer, Name, StatusOfPIN } =
                 kraData.PINDATA;
 
-            await prisma.kraDetails.upsert({
+            await tenantPrisma.kraDetails.upsert({
                 where: {
                     businessId: user.businessId,
                 },

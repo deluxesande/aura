@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { logAction } from "@/utils/server/audit";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -8,18 +8,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { id } = req.query;
     if (!clerkId || typeof id !== "string") return res.status(401).json({ error: "Unauthorized" });
 
-    const user = await prisma.user.findUnique({
+    // 1. Fetch User and Business context from Master DB
+    const user = await masterPrisma.user.findUnique({
         where: { clerkId },
         select: { id: true, businessId: true },
     });
 
     if (!user || !user.businessId) return res.status(403).json({ error: "Forbidden" });
 
+    const businessId = user.businessId;
+    const tenantPrisma = await getTenantPrisma(businessId);
+
     switch (req.method) {
         case "GET":
             try {
-                const supplier = await prisma.supplier.findUnique({
-                    where: { id: id as string, businessId: user.businessId },
+                const supplier = await tenantPrisma.supplier.findUnique({
+                    where: { id: id as string, businessId: businessId },
                     include: {
                         deliveries: {
                             where: { status: "RECEIVED" },
@@ -43,8 +47,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }
         case "PATCH":
             try {
-                const updated = await prisma.supplier.update({
-                    where: { id, businessId: user.businessId },
+                const updated = await tenantPrisma.supplier.update({
+                    where: { id, businessId: businessId },
                     data: req.body,
                 });
 
@@ -55,7 +59,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     entityId: id,
                     details: { name: updated.name, email: updated.email },
                     userId: user.id,
-                    businessId: user.businessId,
+                    businessId: businessId,
                     ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
                     userAgent: req.headers["user-agent"],
                 });
@@ -66,8 +70,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }
         case "DELETE":
             try {
-                const deleted = await prisma.supplier.update({
-                    where: { id, businessId: user.businessId },
+                const deleted = await tenantPrisma.supplier.update({
+                    where: { id, businessId: businessId },
                     data: { isDeleted: true },
                 });
 
@@ -78,7 +82,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     entityId: id,
                     details: { name: deleted.name },
                     userId: user.id,
-                    businessId: user.businessId,
+                    businessId: businessId,
                     ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
                     userAgent: req.headers["user-agent"],
                 });
@@ -88,7 +92,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 return res.status(500).json({ error: "Delete failed" });
             }
         default:
-            res.setHeader("Allow", ["PATCH", "DELETE"]);
+            res.setHeader("Allow", ["GET", "PATCH", "DELETE"]);
             return res.status(405).end();
     }
 }

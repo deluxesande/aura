@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { notifyBusinessStaff } from "@/utils/server/novu";
 
 export default async function handler(
@@ -13,13 +13,13 @@ export default async function handler(
         return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const user = await prisma.user.findUnique({
+    // 1. Fetch User and Business context from Master DB
+    const user = await masterPrisma.user.findUnique({
         where: { clerkId },
         select: {
             id: true,
             businessId: true,
             role: true,
-            storeId: true,
             firstName: true,
             lastName: true,
         },
@@ -31,8 +31,21 @@ export default async function handler(
             .json({ error: "User or Business profile not found" });
     }
 
-    const { businessId, role, storeId, id: userId } = user;
+    const { businessId, role, id: masterUserId } = user;
     const activeStoreHeader = req.headers["x-store-id"] as string;
+
+    // 2. Get Tenant Prisma client
+    const tenantPrisma = await getTenantPrisma(businessId);
+
+    // Fetch user store access from Tenant DB if not admin
+    let userStoreId: string | null = null;
+    if (role !== "admin") {
+        const tenantUser = await tenantPrisma.tenantUser.findUnique({
+            where: { clerkId },
+            select: { storeId: true }
+        });
+        userStoreId = tenantUser?.storeId || null;
+    }
 
     switch (req.method) {
         case "GET":
@@ -46,9 +59,9 @@ export default async function handler(
                         ? isAll
                             ? null
                             : activeStoreHeader
-                        : storeId;
+                        : userStoreId;
 
-                const expenses = await prisma.expense.findMany({
+                const expenses = await tenantPrisma.expense.findMany({
                     where: {
                         businessId,
                         status: "ACTIVE",
@@ -69,7 +82,7 @@ export default async function handler(
                     orderBy: { date: "desc" },
                 });
 
-                // Get creator IDs (internal User IDs), filtering out nulls
+                // Get unique internal User IDs from Master DB for enrichment
                 const creatorIds = Array.from(
                     new Set(
                         expenses
@@ -78,8 +91,8 @@ export default async function handler(
                     ),
                 ) as string[];
 
-                // Fetch internal users to get their clerkIds
-                const dbUsers = await prisma.user.findMany({
+                // Fetch team members from Master DB
+                const dbUsers = await masterPrisma.user.findMany({
                     where: { id: { in: creatorIds } },
                     select: {
                         id: true,
@@ -90,23 +103,17 @@ export default async function handler(
                     },
                 });
 
-                const clerkIds = dbUsers.map((u) => u.clerkId);
-
-                // Fetch Clerk user details
                 const clerk = await clerkClient();
+                const usersMap = new Map();
+
                 const clerkUsersResults = await Promise.allSettled(
-                    clerkIds.map((cid) => clerk.users.getUser(cid)),
+                    dbUsers.map((u) => clerk.users.getUser(u.clerkId)),
                 );
 
-                const usersMap = new Map();
-                dbUsers.forEach((dbU) => {
-                    const result = clerkUsersResults.find(
-                        (r) =>
-                            r.status === "fulfilled" &&
-                            r.value.id === dbU.clerkId,
-                    );
+                dbUsers.forEach((dbU, index) => {
+                    const result = clerkUsersResults[index];
 
-                    if (result && result.status === "fulfilled") {
+                    if (result.status === "fulfilled") {
                         const clerkUser = result.value;
                         usersMap.set(dbU.id, {
                             firstName: dbU.firstName || clerkUser.firstName,
@@ -155,7 +162,7 @@ export default async function handler(
                 let targetStoreId: string | null = null;
 
                 if (role !== "admin") {
-                    targetStoreId = storeId;
+                    targetStoreId = userStoreId;
                 } else {
                     const explicitStoreId = payloadStoreId || activeStoreHeader;
                     targetStoreId =
@@ -174,20 +181,21 @@ export default async function handler(
                     targetStoreId = null;
                 }
 
-                const expense = await prisma.expense.create({
+                // Create Expense in Tenant DB
+                const expense = await tenantPrisma.expense.create({
                     data: {
                         title,
                         category,
                         amount: parseFloat(amount),
                         notes: notes || null,
                         date: date ? new Date(date) : new Date(),
-                        businessId,
+                        businessId, // Logical reference
                         storeId: targetStoreId,
-                        createdById: userId,
+                        createdById: masterUserId,
                     },
                 });
 
-                // NOTIFY
+                // NOTIFY via Novu (Master Plane context)
                 await notifyBusinessStaff({
                     businessId,
                     workflowId: "expense-created",
@@ -199,7 +207,7 @@ export default async function handler(
                             ? `${user.firstName} ${user.lastName || ""}`.trim()
                             : "Unknown User",
                     },
-                    roles: ["admin"], // Only notify admins for expenses
+                    roles: ["admin"],
                 });
 
                 return res.status(201).json(expense);

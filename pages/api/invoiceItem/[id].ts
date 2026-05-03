@@ -2,12 +2,26 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { updateInvoiceItem } from "./update";
 import { deleteInvoiceItem } from "./delete";
 import { prisma } from "@/utils/lib/client";
+import { getTenantPrisma } from "@/utils/lib/prisma";
+import { getAuth } from "@clerk/nextjs/server";
 
 async function getInvoiceItemById(req: NextApiRequest, res: NextApiResponse) {
     const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
+    const { userId } = getAuth(req);
+
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
     try {
-        const invoiceItem = await prisma.invoiceItem.findUnique({
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { businessId: true }
+        });
+
+        if (!user || !user.businessId) return res.status(404).json({ error: "User or business not found" });
+
+        const tenantPrisma = await getTenantPrisma(user.businessId);
+
+        const invoiceItem = await tenantPrisma.invoiceItem.findUnique({
             where: {
                 id: id,
             },

@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma as prisma } from "@/utils/lib/prisma";
 
 export const getBusiness = async (
     req: NextApiRequest,

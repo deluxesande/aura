@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { logAction } from "@/utils/server/audit";
 
 export default async function handler(
@@ -13,47 +13,45 @@ export default async function handler(
     if (!clerkId) return res.status(401).json({ error: "Unauthorized" });
 
     try {
-        const result = await prisma.$transaction(async (tx) => {
-            // 1. Authoritatively fetch User and Business context
-            const user = await tx.user.findUnique({
-                where: { clerkId },
-                select: { id: true, businessId: true, role: true },
+        // 1. Fetch User and Business context from Master DB
+        const user = await masterPrisma.user.findUnique({
+            where: { clerkId },
+            select: { id: true, businessId: true, role: true },
+        });
+
+        if (!user?.businessId || user.role !== "admin") {
+            return res.status(403).json({ error: "Unauthorized: Admin access required." });
+        }
+
+        const businessId = user.businessId;
+
+        // 2. Fetch Subscription Limits from Master DB
+        const subscription = await masterPrisma.subscription.findFirst({
+            where: { businessId: businessId },
+            select: { plan: true, status: true },
+            orderBy: { createdAt: "desc" },
+        });
+
+        if (
+            subscription?.status !== "ACTIVE" &&
+            subscription?.status !== "TRIALING"
+        ) {
+            return res.status(402).json({
+                error: "Subscription inactive. Please renew to add branches.",
             });
+        }
 
-            if (!user?.businessId || user.role !== "admin") {
-                throw new Error("Unauthorized: Admin access required.");
-            }
+        // 3. Get Tenant Prisma client
+        const tenantPrisma = await getTenantPrisma(businessId);
 
-            // 2. CRITICAL: Row-Level Lock via Prisma Native Update
-            // This acquires a ROW EXCLUSIVE lock on the Business record until the transaction ends,
-            // perfectly serializing concurrent store creation attempts without raw SQL.
-            await tx.business.update({
-                where: { id: user.businessId },
-                data: { updatedAt: new Date() },
-                select: { id: true }, // Minimal payload
-            });
-            // 3. Fetch Subscription Limits
-            const subscription = await tx.subscription.findFirst({
-                where: { businessId: user.businessId },
-                select: { plan: true, status: true },
-                orderBy: { createdAt: "desc" },
-            });
-
-            if (
-                subscription?.status !== "ACTIVE" &&
-                subscription?.status !== "TRIALING"
-            ) {
-                throw new Error(
-                    "Subscription inactive. Please renew to add branches.",
-                );
-            }
-
-            // 4. Count existing stores
+        // 4. Perform Tenant Writes in a Transaction
+        const result = await tenantPrisma.$transaction(async (tx) => {
+            // Count existing stores in Tenant DB
             const storeCount = await tx.store.count({
-                where: { businessId: user.businessId },
+                where: { businessId: businessId },
             });
 
-            // 5. Enforce Limits based on PlanTier
+            // Enforce Limits based on PlanTier
             const limits = { STARTER: 1, STANDARD: 5, PREMIUM: 20 };
             const maxAllowed =
                 limits[subscription.plan as keyof typeof limits] || 1;
@@ -64,27 +62,27 @@ export default async function handler(
                 );
             }
 
-            // 6. Create the store using the AUTHORITATIVE businessId
+            // Create the store in Tenant DB
             const newStore = await tx.store.create({
                 data: {
                     ...req.body,
-                    businessId: user.businessId, // Force the secure ID
+                    businessId: businessId, // Logical reference
                 },
             });
 
-            // Log Audit Action
-            await logAction({
-                action: "CREATE_BRANCH",
-                entityType: "STORE",
-                entityId: newStore.id,
-                details: { name: newStore.name, address: newStore.address },
-                userId: user.id,
-                businessId: user.businessId,
-                ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
-                userAgent: req.headers["user-agent"],
-            });
-
             return newStore;
+        });
+
+        // 5. Log Audit Action (also in Tenant DB)
+        await logAction({
+            action: "CREATE_BRANCH",
+            entityType: "STORE",
+            entityId: result.id,
+            details: { name: result.name, address: result.address },
+            userId: user.id,
+            businessId: businessId,
+            ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
+            userAgent: req.headers["user-agent"],
         });
 
         return res.status(201).json(result);

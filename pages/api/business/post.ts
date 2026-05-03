@@ -2,8 +2,10 @@ import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
 import { addCreatedBy } from "../middleware";
 import formidable from "formidable";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma as prisma } from "@/utils/lib/prisma";
+import { syncUserToTenant } from "@/utils/lib/syncUser";
 import { readFileSync } from "fs";
+import { encrypt } from "@/utils/crypto";
 import { Novu } from "@novu/api";
 
 const novu = new Novu({
@@ -12,7 +14,7 @@ const novu = new Novu({
 
 const addBusinessHandler = async (
     req: NextApiRequest,
-    res: NextApiResponse
+    res: NextApiResponse,
 ) => {
     try {
         const user = getAuth(req);
@@ -33,16 +35,37 @@ const addBusinessHandler = async (
         // --- PATH A: Business Exists ---
         if (existingBusiness) {
             // Check if they already have an active subscription
-            if (
-                existingBusiness.subscriptions &&
-                existingBusiness.subscriptions.length > 0
-            ) {
-                return res.status(400).json({
-                    error: "You already have an active subscription.",
+            const activeSub = existingBusiness.subscriptions.find(
+                (s) => s.status === "ACTIVE",
+            );
+
+            if (activeSub) {
+                // If it's already linked to this business, just return it (idempotent)
+                const latestPayment =
+                    await prisma.subscriptionPayment.findFirst({
+                        where: {
+                            userId: user.userId,
+                            status: "COMPLETED",
+                            subscriptionId: null,
+                        },
+                        orderBy: { createdAt: "desc" },
+                    });
+
+                if (latestPayment) {
+                    await prisma.subscriptionPayment.update({
+                        where: { id: latestPayment.id },
+                        data: { subscriptionId: activeSub.id },
+                    });
+                }
+
+                await syncUserToTenant(user.userId);
+                return res.status(200).json({
+                    business: existingBusiness,
+                    subscription: activeSub,
+                    message: "Active subscription found and verified.",
                 });
             }
 
-            // Business exists but no active subscription -> Create Subscription Only
             const latestPayment = await prisma.subscriptionPayment.findFirst({
                 where: {
                     userId: user.userId,
@@ -62,7 +85,7 @@ const addBusinessHandler = async (
                         status: "ACTIVE",
                         currentPeriodStart: new Date(),
                         currentPeriodEnd: new Date(
-                            new Date().setMonth(new Date().getMonth() + 1)
+                            new Date().setMonth(new Date().getMonth() + 1),
                         ),
                     },
                 });
@@ -81,6 +104,9 @@ const addBusinessHandler = async (
                 };
             });
 
+            // Sync user to tenant DB
+            await syncUserToTenant(user.userId);
+
             return res.status(200).json(result);
         }
 
@@ -96,6 +122,9 @@ const addBusinessHandler = async (
         });
 
         const name = fields.name?.[0];
+        const tenantMode = fields.tenantMode?.[0] || "SHARED";
+        const tenantDatabaseUrl = fields.tenantDatabaseUrl?.[0];
+
         if (!name)
             return res.status(400).json({ error: "Business name is required" });
 
@@ -127,6 +156,10 @@ const addBusinessHandler = async (
                     name,
                     logo: logoBase64,
                     createdBy: user.userId,
+                    tenantMode: tenantMode as any,
+                    tenantDatabaseUrl: tenantDatabaseUrl
+                        ? encrypt(tenantDatabaseUrl)
+                        : null,
                 },
             });
 
@@ -148,7 +181,7 @@ const addBusinessHandler = async (
                     status: "ACTIVE",
                     currentPeriodStart: new Date(),
                     currentPeriodEnd: new Date(
-                        new Date().setMonth(new Date().getMonth() + 1)
+                        new Date().setMonth(new Date().getMonth() + 1),
                     ),
                 },
             });
@@ -166,6 +199,9 @@ const addBusinessHandler = async (
                 subscription: newSubscription,
             };
         });
+
+        // Sync user to tenant DB (Shared by default)
+        await syncUserToTenant(user.userId);
 
         try {
             await novu.trigger({

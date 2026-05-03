@@ -1,8 +1,12 @@
 import { getAuth } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma as prisma } from "@/utils/lib/prisma";
 import { encrypt } from "@/utils/crypto";
 import { logAction } from "@/utils/server/audit";
+import { exec } from "child_process";
+import util from "util";
+
+const execAsync = util.promisify(exec);
 
 export const updateBusiness = async (
     req: NextApiRequest,
@@ -27,6 +31,8 @@ export const updateBusiness = async (
             mpesaConsumerSecret,
             mpesaPassKey,
             mpesaShortCode,
+            tenantMode,
+            tenantDatabaseUrl,
         } = req.body;
 
         if (!id) {
@@ -55,11 +61,25 @@ export const updateBusiness = async (
             select: { id: true }
         });
 
+        // Deploy schema to BYODB if provided
+        if (tenantMode === "BYODB" && tenantDatabaseUrl) {
+            console.log("Pushing schema to BYO database...");
+            try {
+                await execAsync("npx prisma db push --schema=./prisma/schema.tenant.prisma --accept-data-loss", {
+                    env: { ...process.env, DATABASE_URL: tenantDatabaseUrl }
+                });
+            } catch (execError: any) {
+                console.error("Failed to push schema:", execError);
+                return res.status(500).json({ error: "Failed to initialize tables in BYO database." });
+            }
+        }
+
         const updateData: any = {
             name,
             logo,
             email: email || null,
             address: address || null,
+            tenantMode: tenantMode || undefined,
         };
 
         const changedFields: string[] = [];
@@ -67,6 +87,14 @@ export const updateBusiness = async (
         if (email) changedFields.push("email");
         if (address) changedFields.push("address");
         if (logo) changedFields.push("logo");
+        if (tenantMode) changedFields.push("tenantMode");
+
+        if (tenantDatabaseUrl !== undefined) {
+            updateData.tenantDatabaseUrl = tenantDatabaseUrl
+                ? encrypt(tenantDatabaseUrl)
+                : null;
+            changedFields.push("tenantDatabaseUrl");
+        }
 
         if (mpesaConsumerKey !== undefined) {
             updateData.mpesaConsumerKey = mpesaConsumerKey
@@ -131,4 +159,5 @@ export const updateBusiness = async (
         res.status(500).json({ error: "Failed to update business" });
     }
 };
+
 

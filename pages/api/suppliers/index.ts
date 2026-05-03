@@ -1,24 +1,29 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { logAction } from "@/utils/server/audit";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     const { userId: clerkId } = getAuth(req);
     if (!clerkId) return res.status(401).json({ error: "Unauthorized" });
 
-    const user = await prisma.user.findUnique({
+    // 1. Fetch User context from Master DB
+    const user = await masterPrisma.user.findUnique({
         where: { clerkId },
         select: { id: true, businessId: true, role: true },
     });
 
     if (!user || !user.businessId) return res.status(403).json({ error: "Business profile not found" });
-    const { businessId, id: userId } = user;
+    const { businessId, id: masterUserId } = user;
+
+    // 2. Get Tenant Prisma client
+    const tenantPrisma = await getTenantPrisma(businessId);
 
     switch (req.method) {
         case "GET":
             try {
-                const suppliers = await prisma.supplier.findMany({
+                // Fetch suppliers from Tenant DB, including the synced TenantUser (CreatedBy)
+                const suppliers = await tenantPrisma.supplier.findMany({
                     where: { businessId, isDeleted: false },
                     include: {
                         CreatedBy: { 
@@ -33,7 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     orderBy: { createdAt: "desc" },
                 });
 
-                // Fetch image from Clerk
+                // Fetch images from Clerk using clerkId from synced TenantUser
                 const clerk = await clerkClient();
                 const clerkIds = Array.from(new Set(suppliers.map(s => s.CreatedBy.clerkId)));
                 const clerkUsersResults = await Promise.allSettled(clerkIds.map(id => clerk.users.getUser(id)));
@@ -64,18 +69,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 const { name, email, phoneNumber, address } = req.body;
                 if (!name) return res.status(400).json({ error: "Name is required" });
 
-                const supplier = await prisma.supplier.create({
-                    data: { name, email, phoneNumber, address, businessId, createdById: userId },
+                // Create Supplier in Tenant DB
+                const supplier = await tenantPrisma.supplier.create({
+                    data: { 
+                        name, 
+                        email, 
+                        phoneNumber, 
+                        address, 
+                        businessId, // Logical reference
+                        createdById: masterUserId 
+                    },
                 });
 
-                // Log Audit Action
+                // Log Audit Action (performs its own tenantPrisma lookup)
                 await logAction({
                     action: "CREATE_SUPPLIER",
                     entityType: "SUPPLIER",
                     entityId: supplier.id,
                     details: { name: supplier.name, email: supplier.email },
                     userId: user.id,
-                    businessId: user.businessId,
+                    businessId: businessId,
                     ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
                     userAgent: req.headers["user-agent"],
                 });

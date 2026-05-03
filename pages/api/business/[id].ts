@@ -1,9 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { updateBusiness } from "./update";
 import { deleteBusiness } from "./delete";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { checkAndRenewStarterPlan } from "@/utils/subscription/subscription";
-import { checkAndAutoFile } from "@/utils/kra/auto-filler";
 
 async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
     let id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
@@ -16,7 +15,7 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
     }
 
     try {
-        const business = await prisma.business.findUnique({
+        const business = await masterPrisma.business.findUnique({
             where: { id: id },
             include: {
                 subscriptions: {
@@ -39,13 +38,6 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
             return res.status(404).json({ error: "Business not found" });
         }
 
-        // checkAndAutoFile(business.id).catch((err) => {
-        //     console.error(
-        //         `Auto-filing failed for Business ID ${business.id}:`,
-        //         err,
-        //     );
-        // });
-
         let activeSubscription = business.subscriptions[0] || null;
 
         if (activeSubscription) {
@@ -58,13 +50,11 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
         let currentPeriodTransactions = 0;
 
         if (activeSubscription) {
+            const tenantPrisma = await getTenantPrisma(id);
             const clerkIds = business.users.map((u) => u.clerkId);
-            currentPeriodTransactions = await prisma.invoice.count({
+            currentPeriodTransactions = await tenantPrisma.invoice.count({
                 where: {
-                    OR: [
-                        { businessId: business.id },
-                        { createdBy: { in: clerkIds } },
-                    ],
+                    createdBy: { in: clerkIds },
                     status: "PAID",
                     paymentType: "MPESA",
                     createdAt: {

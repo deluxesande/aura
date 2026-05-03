@@ -1,6 +1,6 @@
 import { InvoiceItem } from "@/utils/typesDefinitions";
 import { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { Novu } from "@novu/api";
 import { getAuth } from "@clerk/nextjs/server";
 
@@ -16,30 +16,44 @@ export const updateInvoice = async (
     const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
     const { customerId, invoiceItems, totalAmount, status } = req.body;
 
+    const { userId } = getAuth(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
     if (!id) {
         return res.status(400).json({ error: "Invalid or missing invoice ID" });
     }
 
-    // 1. Construct Update Data
-    const dataToUpdate: any = {};
-    if (customerId) dataToUpdate.customerId = customerId;
-    if (totalAmount) dataToUpdate.totalAmount = totalAmount;
-    if (status) dataToUpdate.status = status;
-
-    if (invoiceItems && Array.isArray(invoiceItems)) {
-        dataToUpdate.invoiceItems = {
-            deleteMany: {},
-            create: invoiceItems.map((item: InvoiceItem) => ({
-                quantity: item.quantity,
-                price: item.price,
-                productId: item.productId,
-            })),
-        };
-    }
-
     try {
-        // 2. Perform the Update
-        const updatedInvoice = await prisma.invoice.update({
+        // 1. Fetch User and Business context from Master DB
+        const user = await masterPrisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { businessId: true }
+        });
+
+        if (!user?.businessId) return res.status(404).json({ error: "Business not found" });
+
+        const businessId = user.businessId;
+        const tenantPrisma = await getTenantPrisma(businessId);
+
+        // 2. Construct Update Data
+        const dataToUpdate: any = {};
+        if (customerId) dataToUpdate.customerId = customerId;
+        if (totalAmount) dataToUpdate.totalAmount = totalAmount;
+        if (status) dataToUpdate.status = status;
+
+        if (invoiceItems && Array.isArray(invoiceItems)) {
+            dataToUpdate.invoiceItems = {
+                deleteMany: {},
+                create: invoiceItems.map((item: InvoiceItem) => ({
+                    quantity: item.quantity,
+                    price: item.price,
+                    productId: item.productId,
+                })),
+            };
+        }
+
+        // 3. Perform the Update in Tenant DB
+        const updatedInvoice = await tenantPrisma.invoice.update({
             where: { id: id },
             data: dataToUpdate,
             include: {
@@ -48,39 +62,37 @@ export const updateInvoice = async (
             },
         });
 
-        // 3. CHECK FOR CANCELLATION & SEND NOTIFICATION
+        // 4. CHECK FOR CANCELLATION & SEND NOTIFICATION
         if (status === "CANCELLED") {
-            // Get the logged in user
-            const user = getAuth(req);
-            const cancelledBy = await prisma.user.findUnique({
-                where: { clerkId: user.userId || "" },
+            const cancelledBy = await masterPrisma.user.findUnique({
+                where: { clerkId: userId },
                 select: { firstName: true, lastName: true },
             });
-            sendCancellationNotification(updatedInvoice, cancelledBy).catch(
+            sendCancellationNotification(updatedInvoice, cancelledBy, businessId).catch(
                 (err) => console.error("Notification Error:", err)
             );
         }
 
         res.status(200).json(updatedInvoice);
     } catch (error) {
-        // console.error(error);
+        console.error("Update Invoice Error:", error);
         res.status(500).json({ error: "Failed to update invoice" });
     }
 };
 
-async function sendCancellationNotification(invoice: any, cancelledBy: any) {
-    const creator = await prisma.user.findUnique({
+async function sendCancellationNotification(invoice: any, cancelledBy: any, businessId: string) {
+    const creator = await masterPrisma.user.findUnique({
         where: { clerkId: invoice.createdBy },
     });
 
-    if (!creator || !creator.businessId) {
-        console.error("Creator or business not found for notification");
+    if (!creator) {
+        console.error("Creator not found for notification");
         return;
     }
 
-    const adminsAndManagers = await prisma.user.findMany({
+    const adminsAndManagers = await masterPrisma.user.findMany({
         where: {
-            businessId: creator.businessId,
+            businessId: businessId,
             role: { in: ["admin", "manager"] },
         },
     });
@@ -95,7 +107,7 @@ async function sendCancellationNotification(invoice: any, cancelledBy: any) {
                 payload: {
                     invoiceName: invoice.invoiceName || "Unnamed Invoice",
                     totalAmount: String(invoice.totalAmount),
-                    cancelledBy: `${cancelledBy.firstName} ${cancelledBy.lastName}`,
+                    cancelledBy: cancelledBy ? `${cancelledBy.firstName} ${cancelledBy.lastName}` : "Unknown User",
                 },
             });
         } catch (error) {

@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 
 export default async function handler(
     req: NextApiRequest,
@@ -9,7 +9,8 @@ export default async function handler(
     const { userId: clerkId } = getAuth(req);
     if (!clerkId) return res.status(401).json({ error: "Unauthorized" });
 
-    const user = await prisma.user.findUnique({
+    // 1. Fetch User context from Master DB
+    const user = await masterPrisma.user.findUnique({
         where: { clerkId },
         select: { id: true, businessId: true, role: true },
     });
@@ -18,14 +19,18 @@ export default async function handler(
         return res.status(403).json({ error: "Access denied. Admins only." });
     }
 
+    const businessId = user.businessId;
+    const tenantPrisma = await getTenantPrisma(businessId);
+
     if (req.method === "GET") {
         try {
-            const logs = await prisma.auditLog.findMany({
-                where: { businessId: user.businessId },
+            // 2. Query Audit Logs from Tenant DB
+            const logs = await tenantPrisma.auditLog.findMany({
+                where: { businessId: businessId },
                 orderBy: { createdAt: "desc" },
                 take: 100, // Limit to last 100 logs
                 include: {
-                    User: {
+                    User: { // Synced TenantUser
                         select: {
                             firstName: true,
                             lastName: true,

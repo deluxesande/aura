@@ -4,8 +4,11 @@
     "private": true,
     "scripts": {
         "dev": "next dev",
-        "build": "prisma generate && next build",
-        "postbuild": "prisma migrate deploy",
+        "prisma:generate:master": "prisma generate --schema=./prisma/schema.master.prisma",
+        "prisma:generate:tenant": "prisma generate --schema=./prisma/schema.tenant.prisma",
+        "prisma:generate": "npm run prisma:generate:master && npm run prisma:generate:tenant",
+        "build": "npm run prisma:generate && next build",
+        "postbuild": "prisma migrate deploy --schema=./prisma/schema.master.prisma",
         "start": "next start",
         "lint": "next lint",
         "desktop": "tauri dev",

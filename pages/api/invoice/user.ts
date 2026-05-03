@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
+import { getTenantPrisma } from "@/utils/lib/prisma";
 
 export default async function handler(
     req: NextApiRequest,
@@ -36,6 +37,8 @@ export default async function handler(
                 .json({ error: "User or business not found" });
         }
 
+        const tenantPrisma = await getTenantPrisma(currentUser.businessId);
+
         const targetUserVerification = await prisma.user.findFirst({
             where: {
                 clerkId: targetUserId,
@@ -49,7 +52,7 @@ export default async function handler(
                 .json({ error: "User not found in your business" });
         }
 
-        const invoices = await prisma.invoice.findMany({
+        const invoices = await tenantPrisma.invoice.findMany({
             where: {
                 createdBy: targetUserId,
             },

@@ -1,5 +1,5 @@
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export const getUsers = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -14,23 +14,18 @@ export const getUsers = async (req: NextApiRequest, res: NextApiResponse) => {
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const requestingUser = await prisma.user.findUnique({
+        // 1. Fetch Requesting User context from Master DB
+        const requestingUser = await masterPrisma.user.findUnique({
             where: { clerkId: userId },
             include: {
                 Business: true,
             },
         });
 
-        if (!requestingUser) {
+        if (!requestingUser || !requestingUser.Business) {
             return res
                 .status(404)
-                .json({ error: "User not found in database" });
-        }
-
-        if (!requestingUser.Business) {
-            return res
-                .status(400)
-                .json({ error: "User is not linked to a valid business" });
+                .json({ error: "User or business not found" });
         }
 
         if (
@@ -42,9 +37,12 @@ export const getUsers = async (req: NextApiRequest, res: NextApiResponse) => {
             });
         }
 
-        const businessUsers = await prisma.user.findMany({
+        const businessId = requestingUser.Business.id;
+
+        // 2. Fetch all team members from Master DB
+        const businessUsers = await masterPrisma.user.findMany({
             where: {
-                businessId: requestingUser.Business.id,
+                businessId: businessId,
             },
             select: {
                 id: true,
@@ -56,20 +54,25 @@ export const getUsers = async (req: NextApiRequest, res: NextApiResponse) => {
                 status: true,
                 lastLogin: true,
                 createdAt: true,
-                Store: {
-                    select: {
-                        name: true,
-                        id: true,
-                    }
-                }
+                storeId: true, // Logical reference
             },
             orderBy: {
                 createdAt: "desc",
             },
         });
 
+        const tenantPrisma = await getTenantPrisma(businessId);
+        
+        // 3. Fetch all stores from Tenant DB to map names
+        const stores = await tenantPrisma.store.findMany({
+            where: { businessId: businessId },
+            select: { id: true, name: true }
+        });
+        const storeMap = new Map(stores.map(s => [s.id, s.name]));
+
         const clerk = await clerkClient();
 
+        // 4. Enrich users with Clerk images, Tenant stats, and Store names
         const enrichedUsers = await Promise.all(
             businessUsers.map(async (member) => {
                 let imageUrl = "/images/user.png";
@@ -82,7 +85,8 @@ export const getUsers = async (req: NextApiRequest, res: NextApiResponse) => {
                     );
                 }
 
-                const invoicesSold = await prisma.invoice.count({
+                // Query stats from Tenant DB
+                const invoicesSold = await tenantPrisma.invoice.count({
                     where: {
                         createdBy: member.clerkId,
                         status: "PAID",
@@ -91,15 +95,15 @@ export const getUsers = async (req: NextApiRequest, res: NextApiResponse) => {
 
                 let invitedByName = "Direct Join";
 
-                const invitation = await prisma.userInvitation.findFirst({
+                const invitation = await masterPrisma.userInvitation.findFirst({
                     where: {
                         email: member.email,
-                        businessId: requestingUser.Business!.id,
+                        businessId: businessId,
                     },
                 });
 
                 if (invitation && invitation.invitedBy) {
-                    const inviter = await prisma.user.findUnique({
+                    const inviter = await masterPrisma.user.findUnique({
                         where: { id: invitation.invitedBy },
                         select: { firstName: true, lastName: true },
                     });
@@ -116,6 +120,10 @@ export const getUsers = async (req: NextApiRequest, res: NextApiResponse) => {
                     imageUrl,
                     invoicesSold,
                     invitedBy: invitedByName,
+                    Store: member.storeId ? {
+                        id: member.storeId,
+                        name: storeMap.get(member.storeId) || "Unknown Branch"
+                    } : null
                 };
             })
         );

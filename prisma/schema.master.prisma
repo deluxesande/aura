@@ -1,0 +1,147 @@
+// prisma/schema.master.prisma
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/master"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PlanTier {
+  STARTER // Free
+  STANDARD // 1000 KSh
+  PREMIUM // 1500 KSh
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+}
+
+enum TenantMode {
+  SHARED
+  BYODB
+}
+
+model User {
+  id         String    @id @default(uuid()) @map("_id") @db.Uuid
+  clerkId    String    @unique
+  email      String    @unique
+  firstName  String?
+  lastName   String?
+  role       String    @default("user")
+  status     String    @default("active")
+  businessId String?   @db.Uuid
+  Business   Business? @relation(fields: [businessId], references: [id])
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  lastLogin  DateTime?
+  storeId    String?   @db.Uuid // Logical reference to Store in Tenant DB
+
+  // Relations within master
+  invitationsSent UserInvitation[] @relation("Inviter")
+}
+
+model Business {
+  id        String   @id @default(uuid()) @map("_id") @db.Uuid
+  name      String
+  email     String?  @unique
+  address   String?
+  logo      String?  @db.Text
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdBy String? @unique
+
+  // Routing fields
+  tenantMode        TenantMode @default(SHARED)
+  tenantDatabaseUrl String? // Encrypted connection string for BYODB
+
+  invitations   UserInvitation[]
+  subscriptions Subscription[]
+
+  mpesaConsumerKey    String?
+  mpesaConsumerSecret String?
+  mpesaPassKey        String?
+  mpesaShortCode      String?
+}
+
+model UserInvitation {
+  id                String   @id @default(uuid()) @map("_id") @db.Uuid
+  email             String
+  role              String   @default("user")
+  businessId        String   @db.Uuid
+  Business          Business @relation(fields: [businessId], references: [id])
+  invitedBy         String   @db.Uuid
+  Inviter           User     @relation("Inviter", fields: [invitedBy], references: [id])
+  status            String   @default("pending")
+  token             String   @unique
+  clerkInvitationId String?  @unique
+  expiresAt         DateTime
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  storeId           String?  @db.Uuid // Logical reference to Store in Tenant DB
+}
+
+model Subscription {
+  id String @id @default(uuid()) @map("_id") @db.Uuid
+
+  businessId String   @db.Uuid
+  Business   Business @relation(fields: [businessId], references: [id])
+
+  plan   PlanTier           @default(STARTER)
+  status SubscriptionStatus @default(ACTIVE)
+
+  currentPeriodStart DateTime @default(now())
+  currentPeriodEnd   DateTime
+
+  payments SubscriptionPayment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([status])
+}
+
+model SubscriptionPayment {
+  id     String @id @default(uuid()) @map("_id") @db.Uuid
+  userId String // Clerk ID
+
+  amount      Float
+  phoneNumber String
+  planId      String
+
+  merchantRequestId  String
+  checkoutRequestId  String  @unique
+  mpesaReceiptNumber String?
+
+  status String @default("PENDING")
+
+  subscriptionId String?       @db.Uuid
+  Subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ContactFormMessage {
+  id      Int    @id @default(autoincrement())
+  name    String
+  email   String
+  message String
+}
+
+model MpesaRouting {
+  checkoutRequestId String @id
+  businessId        String @db.Uuid
+  createdAt         DateTime @default(now())
+
+  @@index([checkoutRequestId])
+}

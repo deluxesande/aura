@@ -177,10 +177,10 @@ export default function DownloadPage() {
                             </ul>
                         </div>
 
-                        <div className="relative z-10 mt-auto">
+                        <div className="relative z-10 mt-auto cursor-not-allowed">
                             <a
                                 href="https://github.com/deluxesande/aura/releases/latest/download/salesense-mobile.apk"
-                                className="inline-flex items-center justify-center w-full bg-white text-green-600 px-6 py-4 rounded-xl font-bold shadow-lg hover:bg-green-50 transition-colors"
+                                className="cursor-not-allowed inline-flex items-center justify-center w-full bg-white text-green-600 px-6 py-4 rounded-xl font-bold shadow-lg hover:bg-green-50 transition-colors"
                             >
                                 <Download className="mr-2 shrink-0" size={20} />
                                 Download (.apk)

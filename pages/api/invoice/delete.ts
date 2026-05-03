@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { Novu } from "@novu/api";
 import { getAuth } from "@clerk/nextjs/server";
 import { logAction } from "@/utils/server/audit";
@@ -8,18 +8,18 @@ const novu = new Novu({
     secretKey: process.env.NOVU_SECRET_KEY!,
 });
 
-async function sendDeleteNotification(invoice: any, deletedBy: any) {
+async function sendDeleteNotification(invoice: any, deletedBy: any, businessId: string) {
     if (!invoice.createdBy) return;
 
-    const creator = await prisma.user.findUnique({
+    const creator = await masterPrisma.user.findUnique({
         where: { clerkId: invoice.createdBy },
     });
 
-    if (!creator || !creator.businessId) return;
+    if (!creator) return;
 
-    const adminsAndManagers = await prisma.user.findMany({
+    const adminsAndManagers = await masterPrisma.user.findMany({
         where: {
-            businessId: creator.businessId,
+            businessId: businessId,
             role: { in: ["admin", "manager"] },
         },
     });
@@ -58,7 +58,18 @@ export const deleteInvoice = async (
     if (!id) return res.status(400).json({ error: "Missing invoice ID" });
 
     try {
-        const existingInvoice = await prisma.invoice.findUnique({
+        // 1. Fetch User and Business context from Master DB
+        const user = await masterPrisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { id: true, businessId: true }
+        });
+
+        if (!user || !user.businessId) return res.status(404).json({ error: "User or business not found" });
+
+        const businessId = user.businessId;
+        const tenantPrisma = await getTenantPrisma(businessId);
+
+        const existingInvoice = await tenantPrisma.invoice.findUnique({
             where: { id: id },
         });
 
@@ -66,23 +77,15 @@ export const deleteInvoice = async (
             return res.status(404).json({ error: "Invoice not found or already deleted" });
         }
 
-        const currentUser = await prisma.user.findUnique({
-            where: { clerkId: userId },
-            select: { id: true, businessId: true }
-        });
-
-        if (!currentUser) return res.status(404).json({ error: "User not found" });
-
-        const invoiceItems = await prisma.invoiceItem.findMany({
+        const invoiceItems = await tenantPrisma.invoiceItem.findMany({
             where: { invoiceId: id },
             include: { Product: true },
         });
 
-        await prisma.$transaction(async (tx) => {
-            // 1. Restore product quantities to StoreInventory
+        await tenantPrisma.$transaction(async (tx) => {
+            // 1. Restore product quantities to StoreInventory in Tenant DB
             if (existingInvoice.storeId) {
                 for (const item of invoiceItems) {
-                    // Skip if it's a template
                     if (item.Product.type === "TEMPLATE") continue;
 
                     await tx.storeInventory.updateMany({
@@ -95,46 +98,42 @@ export const deleteInvoice = async (
                         },
                     });
 
-                    // Update global inStock status
                     await tx.product.update({
                         where: { id: item.productId },
-                        data: {
-                            inStock: true,
-                        },
+                        data: { inStock: true },
                     });
                 }
             }
 
-            // SOFT DELETE: Update the invoice status and isDeleted flag
-            // We keep M-Pesa related data for historical reference in soft-deleted invoices
+            // 2. SOFT DELETE in Tenant DB
             await tx.invoice.update({
                 where: { id: id },
                 data: {
                     isDeleted: true,
                     status: "VOIDED",
-                    stockRestored: true, // Mark as restored since we just did it above
+                    stockRestored: true,
                 },
             });
         });
 
-        // Log Audit Action
+        // Log Audit Action (tenantPrisma)
         await logAction({
             action: "VOID_INVOICE",
             entityType: "INVOICE",
             entityId: id,
             details: { invoiceName: existingInvoice.invoiceName, totalAmount: existingInvoice.totalAmount },
-            userId: currentUser.id,
-            businessId: currentUser.businessId!,
+            userId: user.id,
+            businessId: businessId,
             ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
             userAgent: req.headers["user-agent"],
         });
 
-        const deleteBy = await prisma.user.findUnique({
+        const deleteBy = await masterPrisma.user.findUnique({
             where: { clerkId: userId || "" },
             select: { firstName: true, lastName: true },
         });
 
-        sendDeleteNotification(existingInvoice, deleteBy).catch((err) =>
+        sendDeleteNotification(existingInvoice, deleteBy, businessId).catch((err) =>
             console.error("Notification Error:", err)
         );
 

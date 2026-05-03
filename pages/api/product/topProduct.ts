@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { getAuth } from "@clerk/nextjs/server";
 
 export default async function handler(
@@ -16,23 +16,31 @@ export default async function handler(
 
             const activeStoreHeader = req.headers["x-store-id"] as string;
 
-            const currentUser = await prisma.user.findUnique({
+            const user = await masterPrisma.user.findUnique({
                 where: { clerkId: userId },
-                select: { businessId: true, role: true, storeId: true },
+                select: { businessId: true, role: true },
             });
 
-            if (!currentUser || !currentUser.businessId) {
-                return res
-                    .status(404)
-                    .json({ error: "User or business not found" });
+            if (!user || !user.businessId) {
+                return res.status(200).json([]);
             }
 
-            let targetStoreId = currentUser.role === "admin" ? activeStoreHeader : (currentUser.storeId as string);
+            const tenantPrisma = await getTenantPrisma(user.businessId);
+
+            // Fetch user store info from Tenant DB if not admin
+            let targetStoreId = activeStoreHeader;
+            if (user.role !== "admin") {
+                const tenantUser = await tenantPrisma.tenantUser.findUnique({
+                    where: { clerkId: userId },
+                    select: { storeId: true }
+                });
+                if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
+            }
 
             // Fallback for admins if no store header is provided
-            if (!targetStoreId && currentUser.role === "admin") {
-                const firstStore = await prisma.store.findFirst({
-                    where: { businessId: currentUser.businessId, isActive: true },
+            if (!targetStoreId && user.role === "admin") {
+                const firstStore = await tenantPrisma.store.findFirst({
+                    where: { businessId: user.businessId, isActive: true },
                     select: { id: true },
                 });
                 if (firstStore) targetStoreId = firstStore.id;
@@ -42,8 +50,8 @@ export default async function handler(
                 return res.status(200).json([]);
             }
 
-            const businessUsers = await prisma.user.findMany({
-                where: { businessId: currentUser.businessId },
+            const businessUsers = await masterPrisma.user.findMany({
+                where: { businessId: user.businessId },
                 select: { clerkId: true },
             });
 
@@ -119,7 +127,7 @@ export default async function handler(
                 endDate.setHours(23, 59, 59, 999);
             }
 
-            const invoices = await prisma.invoice.findMany({
+            const invoices = await tenantPrisma.invoice.findMany({
                 where: {
                     createdBy: { in: userIds },
                     storeId: targetStoreId,

@@ -1,10 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { updateCategory } from "./update";
 import { deleteCategory } from "./delete";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
+import { getAuth } from "@clerk/nextjs/server";
 
 async function getCategoryById(req: NextApiRequest, res: NextApiResponse) {
     const id = req.query.id as string;
+    const { userId } = getAuth(req);
+
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
     if (!id) {
         return res
@@ -13,7 +17,16 @@ async function getCategoryById(req: NextApiRequest, res: NextApiResponse) {
     }
 
     try {
-        const category = await prisma.category.findUnique({
+        const user = await masterPrisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { businessId: true }
+        });
+
+        if (!user?.businessId) return res.status(404).json({ error: "Business not found" });
+
+        const tenantPrisma = await getTenantPrisma(user.businessId);
+
+        const category = await tenantPrisma.category.findUnique({
             where: {
                 id: id,
             },
@@ -25,6 +38,7 @@ async function getCategoryById(req: NextApiRequest, res: NextApiResponse) {
 
         res.status(200).json(category);
     } catch (error) {
+        console.error("Fetch Category Error:", error);
         res.status(500).json({ error: "Failed to fetch category" });
     }
 }

@@ -1,6 +1,7 @@
-import { InvoiceItem } from "@/utils/typesDefinitions";
 import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/utils/lib/client";
+import { getTenantPrisma } from "@/utils/lib/prisma";
+import { getAuth } from "@clerk/nextjs/server";
 
 export const updateInvoiceItem = async (
     req: NextApiRequest,
@@ -8,6 +9,9 @@ export const updateInvoiceItem = async (
 ) => {
     const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
     const { invoiceId, productId, quantity, price } = req.body;
+    const { userId } = getAuth(req);
+
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
     if (!id) {
         return res
@@ -16,7 +20,16 @@ export const updateInvoiceItem = async (
     }
 
     try {
-        const updatedInvoiceItem = await prisma.invoiceItem.update({
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { businessId: true }
+        });
+
+        if (!user || !user.businessId) return res.status(404).json({ error: "User or business not found" });
+
+        const tenantPrisma = await getTenantPrisma(user.businessId);
+
+        const updatedInvoiceItem = await tenantPrisma.invoiceItem.update({
             where: {
                 id: id,
             },

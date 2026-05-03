@@ -1,6 +1,6 @@
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 
 export const getCustomers = async (
     req: NextApiRequest,
@@ -13,33 +13,27 @@ export const getCustomers = async (
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const activeStoreHeader = req.headers["x-store-id"] as string;
-
-        const dbUser = await prisma.user.findUnique({
+        const user = await masterPrisma.user.findUnique({
             where: { clerkId: clerkUserId },
-            select: { role: true, storeId: true }
-        });
-
-        const targetStoreId = dbUser?.role === "admin" ? activeStoreHeader : (dbUser?.storeId as string);
-
-        if (!targetStoreId) {
-            return res.status(400).json({ error: "No active store selected." });
-        }
-
-        const user = await prisma.user.findUnique({
-            where: { clerkId: clerkUserId },
-            select: { businessId: true },
+            select: { businessId: true, role: true },
         });
 
         if (!user || !user.businessId) {
-            return res
-                .status(400)
-                .json({ error: "User is not linked to a business" });
+            // During onboarding, return empty list instead of erroring
+            return res.status(200).json([]);
         }
 
-        const customers = await prisma.customer.findMany({
+        const tenantPrisma = await getTenantPrisma(user.businessId);
+        const activeStoreHeader = req.headers["x-store-id"] as string;
+
+        const targetStoreId = activeStoreHeader;
+
+        if (!targetStoreId) {
+            return res.status(200).json([]); // No store selected yet
+        }
+
+        const customers = await tenantPrisma.customer.findMany({
             where: {
-                businessId: user.businessId,
                 storeId: targetStoreId,
             },
             include: {

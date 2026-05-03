@@ -1,6 +1,7 @@
 import { getAuth } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/utils/lib/client";
+import { getTenantPrisma } from "@/utils/lib/prisma";
 
 export default async function handler(
     req: NextApiRequest,
@@ -37,6 +38,8 @@ export default async function handler(
             });
         }
 
+        const tenantPrisma = await getTenantPrisma(user.businessId);
+
         const {
             isAutoFilingEnabled,
             kraPin,
@@ -45,7 +48,7 @@ export default async function handler(
             pinStatus,
         } = req.body;
 
-        const updatedSettings = await prisma.kraDetails.update({
+        const updatedSettings = await tenantPrisma.kraDetails.update({
             where: {
                 businessId: user.businessId,
             },

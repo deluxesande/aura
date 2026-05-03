@@ -1,18 +1,32 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/utils/lib/client";
+import { getTenantPrisma } from "@/utils/lib/prisma";
+import { getAuth } from "@clerk/nextjs/server";
 
 export const deleteInvoiceItem = async (
     req: NextApiRequest,
     res: NextApiResponse
 ) => {
     const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
+    const { userId } = getAuth(req);
+
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
     if (!id) {
         return res.status(400).json({ error: "Missing invoice item ID" });
     }
 
     try {
-        const item = await prisma.invoiceItem.findUnique({
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { businessId: true }
+        });
+
+        if (!user || !user.businessId) return res.status(404).json({ error: "User or business not found" });
+
+        const tenantPrisma = await getTenantPrisma(user.businessId);
+
+        const item = await tenantPrisma.invoiceItem.findUnique({
             where: { id: id },
             include: {
                 Invoice: { select: { storeId: true } },
@@ -24,7 +38,7 @@ export const deleteInvoiceItem = async (
             return res.status(404).json({ error: "Invoice item not found" });
         }
 
-        await prisma.$transaction(async (tx) => {
+        await tenantPrisma.$transaction(async (tx) => {
             // Restore stock if not a template and storeId exists
             if (item.Product.type !== "TEMPLATE" && item.Invoice?.storeId) {
                 await tx.storeInventory.updateMany({

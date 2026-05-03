@@ -1,9 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { InvoiceItem } from "@/utils/typesDefinitions";
 import { addCreatedBy } from "../middleware";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { Novu } from "@novu/api";
-import { buffer } from "stream/consumers";
 import { getAuth } from "@clerk/nextjs/server";
 import { checkSubscription } from "@/utils/subscription/checkSubscription";
 import { logAction } from "@/utils/server/audit";
@@ -37,22 +36,30 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         return res.status(403).json({ error: subError });
     }
 
-    const dbUser = await prisma.user.findUnique({
+    const bId = businessId as string;
+
+    // 1. Fetch User context from Master DB
+    const dbUser = await masterPrisma.user.findUnique({
         where: { clerkId: userId },
-        select: { id: true, businessId: true, role: true, storeId: true },
+        select: { id: true, businessId: true, role: true },
     });
 
-    if (!dbUser) {
-        return res.status(404).json({ error: "User not found" });
+    if (!dbUser || !dbUser.businessId) {
+        return res.status(404).json({ error: "User or business not found" });
     }
 
-    if (!dbUser.businessId) {
-        return res
-            .status(400)
-            .json({ error: "User is not linked to a business" });
-    }
+    // 2. Get Tenant Prisma client
+    const tenantPrisma = await getTenantPrisma(bId);
 
-    const targetStoreId = dbUser.role === "admin" ? activeStoreHeader : (dbUser.storeId as string);
+    // Fetch user store access from Tenant DB if not admin
+    let targetStoreId = activeStoreHeader;
+    if (dbUser.role !== "admin") {
+        const tenantUser = await tenantPrisma.tenantUser.findUnique({
+            where: { clerkId: userId },
+            select: { storeId: true }
+        });
+        if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
+    }
 
     if (!targetStoreId) {
         return res.status(400).json({ error: "No active store selected." });
@@ -60,7 +67,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     try {
         if (customerId) {
-            const customerExists = await prisma.customer.findUnique({
+            const customerExists = await tenantPrisma.customer.findUnique({
                 where: { id: customerId },
             });
             if (!customerExists) {
@@ -68,8 +75,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             }
         }
 
-        // Check for already linked items
-        const existingInvoiceItems = await prisma.invoiceItem.findMany({
+        // Check for already linked items in Tenant DB
+        const existingInvoiceItems = await tenantPrisma.invoiceItem.findMany({
             where: {
                 id: { in: invoiceItems.map((item: InvoiceItem) => item.id) },
                 invoiceId: { not: null },
@@ -83,7 +90,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         }
 
         // If paymentType is CASH, automatically mark as PAID.
-        // Otherwise, use the status passed in body or default to PENDING.
         const invoiceStatus =
             paymentType === "CASH" ? "PAID" : (req.body.status ?? "PENDING");
 
@@ -98,7 +104,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             paymentType: paymentType,
             status: invoiceStatus,
             createdBy: req.body.createdBy,
-            businessId: dbUser.businessId,
+            businessId: bId, // Logical reference
             storeId: targetStoreId,
         };
 
@@ -106,88 +112,83 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             invoiceData.customerId = customerId;
         }
 
-        const invoice = await prisma.invoice.create({
+        const invoice = await tenantPrisma.invoice.create({
             data: invoiceData,
         });
 
-        // Log Audit Action
+        // Log Audit Action (tenantPrisma)
         await logAction({
             action: "CREATE_INVOICE",
             entityType: "INVOICE",
             entityId: invoice.id,
             details: { invoiceName, totalAmount, paymentType, storeId: targetStoreId },
             userId: dbUser.id,
-            businessId: dbUser.businessId,
+            businessId: bId,
             ipAddress: req.headers["x-forwarded-for"] as string || req.socket.remoteAddress,
             userAgent: req.headers["user-agent"],
         });
 
-        const creator = await prisma.user.findUnique({
+        // 3. Handle M-Pesa payment linking if applicable
+        if (mpesaDetails && paymentType === "MPESA") {
+            const parsedAmount = parseFloat(totalAmount);
+            if (!isNaN(parsedAmount)) {
+                try {
+                    await tenantPrisma.mpesaPayment.create({
+                        data: {
+                            invoiceId: invoice.id,
+                            businessId: bId,
+                            userId: dbUser.id,
+                            amount: parsedAmount,
+                            phoneNumber: mpesaDetails.phoneNumber,
+                            accountReference: "Salesense",
+                            transactionDesc: "Invoice Payment",
+                            merchantRequestId: mpesaDetails.merchantRequestId,
+                            checkoutRequestId: mpesaDetails.checkoutRequestId,
+                            status: "PENDING",
+                        },
+                    });
+                } catch (mpesaError) {
+                    console.error("Failed to link M-Pesa payment to invoice:", mpesaError);
+                }
+            }
+        }
+
+        // 4. Send Novu Notifications
+        // Fetch creator and relevant team members from Master DB
+        const creator = await masterPrisma.user.findUnique({
             where: { clerkId: req.body.createdBy },
         });
 
-        if (!creator || !creator.businessId) {
-            console.error("Creator or business not found");
-        } else {
-            if (mpesaDetails && paymentType === "MPESA") {
-                const parsedAmount = parseFloat(totalAmount);
-                if (isNaN(parsedAmount)) {
-                    console.error("Invalid totalAmount for MpesaPayment:", totalAmount);
-                } else {
-                    try {
-                        await prisma.mpesaPayment.create({
-                            data: {
-                                invoiceId: invoice.id,
-                                businessId: creator.businessId,
-                                userId: creator.id,
-                                amount: parsedAmount,
-                                phoneNumber: mpesaDetails.phoneNumber,
-                                accountReference: "Salesense",
-                                transactionDesc: "Invoice Payment",
-                                merchantRequestId: mpesaDetails.merchantRequestId,
-                                checkoutRequestId: mpesaDetails.checkoutRequestId,
-                                status: "PENDING",
-                            },
-                        });
-                    } catch (mpesaError) {
-                        console.error(
-                            "Failed to link M-Pesa payment to invoice:",
-                            mpesaError,
-                        );
-                    }
-                }
-            }
-
-            // 3. Send Novu Notifications in Parallel
-            const adminsAndManagers = await prisma.user.findMany({
+        if (creator) {
+            const adminsAndManagers = await masterPrisma.user.findMany({
                 where: {
-                    businessId: creator.businessId,
+                    businessId: bId,
                     OR: [
-                        { role: { in: ["admin", "manager"] } }, // Admins & Managers
-                        { clerkId: creator.clerkId }, // Plus the Creator (even if they are just a 'user')
+                        { role: { in: ["admin", "manager"] } },
+                        { clerkId: creator.clerkId },
                     ],
                 },
             });
 
             await Promise.allSettled(
-                adminsAndManagers.map((admin) =>
+                adminsAndManagers.map((recipient) =>
                     novu.trigger({
-                        to: { subscriberId: admin.clerkId },
+                        to: { subscriberId: recipient.clerkId },
                         workflowId: "invoice-generated",
                         payload: {
                             invoiceId: invoice.id,
                             invoiceName: invoice.invoiceName,
                             totalAmount: invoice.totalAmount,
-                            createdBy:
-                                creator.firstName + " " + creator.lastName,
+                            createdBy: creator.firstName + " " + creator.lastName,
                         },
-                    }).catch(err => console.error(`Failed to notify ${admin.email}:`, err))
+                    }).catch(err => console.error(`Failed to notify ${recipient.email}:`, err))
                 )
             );
         }
 
         res.status(201).json(invoice);
     } catch (error) {
+        console.error("Invoice Creation Error:", error);
         res.status(400).json({ error: "Failed to add or update invoice" });
     }
 };

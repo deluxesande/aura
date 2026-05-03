@@ -2,12 +2,8 @@ import {
     storeFailedCallbackInDb,
     storeSuccessfulCallbackInDb,
 } from "@/utils/storeInDb";
-import { PrismaClient } from "@prisma/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import type { NextApiRequest, NextApiResponse } from "next";
-
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient();
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 interface CallbackItem {
     Name: string;
@@ -49,46 +45,42 @@ export default async function handler(
             CheckoutRequestID,
         } = payload.Body.stkCallback;
 
-        let pendingPayment = null;
+        // 1. Look up routing info in Master DB
+        let routingInfo = null;
         let retries = 5;
 
         while (retries > 0) {
-            pendingPayment = await prisma.mpesaPayment.findUnique({
+            routingInfo = await masterPrisma.mpesaRouting.findUnique({
                 where: { checkoutRequestId: CheckoutRequestID },
-                include: {
-                    Business: {
-                        include: {
-                            subscriptions: {
-                                where: { status: "ACTIVE" },
-                                take: 1,
-                            },
-                        },
-                    },
-                },
             });
 
-            if (pendingPayment) break;
+            if (routingInfo) break;
 
             await wait(500);
             retries--;
         }
 
+        if (!routingInfo) {
+            console.warn(`Orphaned Callback (No Routing Info): ${CheckoutRequestID}`);
+            return res.status(200).json({ result: "orphaned_record" });
+        }
+
+        const businessId = routingInfo.businessId;
+        const tenantPrisma = await getTenantPrisma(businessId);
+
+        // 2. Fetch the pending payment from Tenant DB
+        const pendingPayment = await tenantPrisma.mpesaPayment.findUnique({
+            where: { checkoutRequestId: CheckoutRequestID },
+        });
+
         if (!pendingPayment) {
-            console.warn(`Orphaned Callback: ${CheckoutRequestID}`);
-            if (ResultCode !== 0) {
-                await storeFailedCallbackInDb({
-                    MerchantRequestID,
-                    CheckoutRequestID,
-                    ResultCode,
-                    ResultDesc,
-                });
-            }
+            console.warn(`Orphaned Callback (No Payment Record in Tenant DB): ${CheckoutRequestID}`);
             return res.status(200).json({ result: "orphaned_record" });
         }
 
         // Handle Failed Transaction
         if (ResultCode !== 0) {
-            await storeFailedCallbackInDb({
+            await storeFailedCallbackInDb(tenantPrisma, {
                 MerchantRequestID,
                 CheckoutRequestID,
                 ResultCode,
@@ -98,12 +90,12 @@ export default async function handler(
 
             const newStatus = ResultCode === 1032 ? "CANCELLED" : "FAILED";
 
-            await prisma.$transaction([
-                prisma.mpesaPayment.update({
+            await tenantPrisma.$transaction([
+                tenantPrisma.mpesaPayment.update({
                     where: { id: pendingPayment.id },
                     data: { status: "FAILED" },
                 }),
-                prisma.invoice.update({
+                tenantPrisma.invoice.update({
                     where: { id: pendingPayment.invoiceId },
                     data: { status: newStatus as any },
                 }),
@@ -121,31 +113,8 @@ export default async function handler(
         const phoneNumber = String(getMetaValue("PhoneNumber"));
         const transactionDate = String(getMetaValue("TransactionDate") || "0");
 
-        const biz = pendingPayment.Business;
-        const sub = biz.subscriptions?.[0];
-
-        if (sub?.plan === "STARTER") {
-            const currentTxCount = await prisma.invoice.count({
-                where: {
-                    businessId: biz.id,
-                    status: "PAID",
-                    paymentType: "MPESA",
-                    createdAt: {
-                        gte: sub.currentPeriodStart,
-                        lte: sub.currentPeriodEnd,
-                    },
-                },
-            });
-
-            if (currentTxCount >= 100) {
-                console.error(
-                    `Cap Reached for Business ${biz.id}. Payment accepted but limit exceeded.`
-                );
-            }
-        }
-
-        // Store full details in the dedicated Callback table (which DOES have the receipt number field)
-        await storeSuccessfulCallbackInDb({
+        // 3. Finalize in Tenant DB
+        await storeSuccessfulCallbackInDb(tenantPrisma, {
             MerchantRequestID,
             CheckoutRequestID,
             ResultCode,
@@ -157,16 +126,15 @@ export default async function handler(
             invoiceId: pendingPayment.invoiceId,
         });
 
-        // Update the Payment and Invoice
-        await prisma.$transaction([
-            prisma.mpesaPayment.update({
+        await tenantPrisma.$transaction([
+            tenantPrisma.mpesaPayment.update({
                 where: { id: pendingPayment.id },
                 data: {
                     status: "COMPLETED",
                     amount: amountPaid,
                 },
             }),
-            prisma.invoice.update({
+            tenantPrisma.invoice.update({
                 where: { id: pendingPayment.invoiceId },
                 data: {
                     status: "PAID",

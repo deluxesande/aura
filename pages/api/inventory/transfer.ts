@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
-import { prisma } from "@/utils/lib/client";
+import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 
 export default async function handler(
     req: NextApiRequest,
@@ -30,7 +30,8 @@ export default async function handler(
     }
 
     try {
-        const requestor = await prisma.user.findUnique({
+        // 1. Fetch Requestor context from Master DB
+        const requestor = await masterPrisma.user.findUnique({
             where: { clerkId },
             select: { businessId: true, role: true },
         });
@@ -47,14 +48,17 @@ export default async function handler(
                 .json({ error: "Insufficient permissions to transfer stock." });
         }
 
+        const businessId = requestor.businessId;
+        const tenantPrisma = await getTenantPrisma(businessId);
         const parsedQty = Number(quantity);
 
-        const result = await prisma.$transaction(async (tx) => {
+        // 2. Perform Atomic Transfer in Tenant DB
+        const result = await tenantPrisma.$transaction(async (tx) => {
             const originStock = await tx.storeInventory.findFirst({
                 where: {
                     storeId: fromStoreId,
                     productId: productId,
-                    Store: { businessId: requestor.businessId! },
+                    Store: { businessId: businessId },
                 },
             });
 
@@ -71,7 +75,7 @@ export default async function handler(
                 where: {
                     storeId: toStoreId,
                     productId: productId,
-                    Store: { businessId: requestor.businessId! },
+                    Store: { businessId: businessId },
                 },
             });
 

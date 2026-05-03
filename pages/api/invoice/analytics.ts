@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
 import { prisma } from "@/utils/lib/client";
+import { getTenantPrisma } from "@/utils/lib/prisma";
 
 interface AnalyticsData {
     labels: string[];
@@ -36,11 +37,13 @@ export default async function handler(
                 .json({ error: "User or business not found" });
         }
 
+        const tenantPrisma = await getTenantPrisma(currentUser.businessId);
+
         let targetStoreId = currentUser.role === "admin" ? activeStoreHeader : (currentUser.storeId as string);
 
         // Fallback for admins if no store header is provided
         if (!targetStoreId && currentUser.role === "admin") {
-            const firstStore = await prisma.store.findFirst({
+            const firstStore = await tenantPrisma.store.findFirst({
                 where: { businessId: currentUser.businessId, isActive: true },
                 select: { id: true },
             });
@@ -78,7 +81,7 @@ export default async function handler(
         );
 
         // Fetch invoices created by users in the same business within the time period for the specific store
-        const invoices = await prisma.invoice.findMany({
+        const invoices = await tenantPrisma.invoice.findMany({
             where: {
                 createdBy: {
                     in: userIds,
