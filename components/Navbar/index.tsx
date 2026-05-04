@@ -317,9 +317,12 @@ export default function Navbar({
 
     const storeLabel = useMemo(() => {
         if (activeStore?.name) return activeStore.name;
-        if (user?.role !== "admin") return "Assigned Branch";
+        if (user?.role !== "admin") {
+            const userStore = stores.find((s: any) => s.id === user?.storeId);
+            return userStore?.name || "Assigned Branch";
+        }
         return stores.length === 0 ? "Loading..." : "Select Branch";
-    }, [activeStore?.name, user?.role, stores.length]);
+    }, [activeStore?.name, user?.role, user?.storeId, stores]);
 
     useEffect(() => {
         const fetchStores = async () => {

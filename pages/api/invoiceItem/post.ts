@@ -22,8 +22,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
         const targetStoreId = user.role === "admin" ? activeStoreHeader : (user.storeId as string);
 
-        if (!targetStoreId) {
-            return res.status(400).json({ error: "No active store selected." });
+        if (!targetStoreId || targetStoreId === "all" || targetStoreId === "All") {
+            return res.status(400).json({ error: "No active store selected. Please select a branch first." });
         }
 
         // 1. Check if the inventory exists for this store

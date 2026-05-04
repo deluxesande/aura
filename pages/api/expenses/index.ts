@@ -22,6 +22,7 @@ export default async function handler(
             role: true,
             firstName: true,
             lastName: true,
+            storeId: true,
         },
     });
 
@@ -40,11 +41,15 @@ export default async function handler(
     // Fetch user store access from Tenant DB if not admin
     let userStoreId: string | null = null;
     if (role !== "admin") {
-        const tenantUser = await tenantPrisma.tenantUser.findUnique({
-            where: { clerkId },
-            select: { storeId: true }
-        });
-        userStoreId = tenantUser?.storeId || null;
+        if (user.storeId) {
+            userStoreId = user.storeId;
+        } else {
+            const tenantUser = await tenantPrisma.tenantUser.findUnique({
+                where: { clerkId },
+                select: { storeId: true }
+            });
+            userStoreId = tenantUser?.storeId || null;
+        }
     }
 
     switch (req.method) {

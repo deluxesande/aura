@@ -37,21 +37,10 @@ export default async function handler(
         }
 
         let maskedBusiness = null;
-        let storeId = null;
+        let storeId = user.storeId;
 
-        // 2. If user is linked to a business, fetch tenant-specific info (like storeId)
+        // 2. If user is linked to a business, fetch business-specific info
         if (user.Business) {
-            try {
-                const tenantPrisma = await getTenantPrisma(user.Business.id);
-                const tenantUser = await tenantPrisma.tenantUser.findUnique({
-                    where: { clerkId: userId },
-                    select: { storeId: true }
-                });
-                storeId = tenantUser?.storeId || null;
-            } catch (tenantError) {
-                console.warn(`Could not fetch tenant data for user ${userId}:`, tenantError);
-            }
-
             let activeSubscription = user.Business.subscriptions[0] || null;
             // ... (rest of subscription logic)
 

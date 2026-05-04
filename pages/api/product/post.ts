@@ -34,7 +34,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         // 1. Fetch current user from Master DB
         const currentUser = await masterPrisma.user.findUnique({
             where: { clerkId: userId },
-            select: { id: true, role: true }
+            select: { id: true, role: true, storeId: true }
         });
 
         if (!currentUser) return res.status(404).json({ error: "User not found" });
@@ -45,14 +45,20 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         // Fetch user store access from Tenant DB if not admin
         let targetStoreId = activeStoreHeader;
         if (currentUser.role !== "admin") {
-            const tenantUser = await tenantPrisma.tenantUser.findUnique({
-                where: { clerkId: userId },
-                select: { storeId: true }
-            });
-            if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
+            // Priority 1: User's assigned store from Master DB (Invited users/Staff)
+            if (currentUser.storeId) {
+                targetStoreId = currentUser.storeId;
+            } else {
+                // Priority 2: User's assigned store from Tenant DB
+                const tenantUser = await tenantPrisma.tenantUser.findUnique({
+                    where: { clerkId: userId },
+                    select: { storeId: true }
+                });
+                if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
+            }
         }
 
-        if (!targetStoreId) {
+        if (!targetStoreId || targetStoreId === "all" || targetStoreId === "All") {
             return res.status(400).json({ error: "No active store selected. Please select a branch first." });
         }
 

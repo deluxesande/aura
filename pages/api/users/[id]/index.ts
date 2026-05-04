@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { clerkClient, getAuth } from "@clerk/nextjs/server";
 import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { logAction } from "@/utils/server/audit";
+import { syncUserToTenant } from "@/utils/lib/syncUser";
 
 async function getUserById(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== "GET") {
@@ -205,6 +206,9 @@ async function updateUser(req: NextApiRequest, res: NextApiResponse) {
             where: { clerkId: targetId },
             data: updateData,
         });
+
+        // SYNC changes to Tenant DB (including branch assignment)
+        await syncUserToTenant(targetId);
 
         // Manually fetch Store info from Tenant DB if storeId is set
         let storeInfo = null;

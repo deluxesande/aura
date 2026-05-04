@@ -28,7 +28,7 @@ const addCustomerHandler = async (
         // 1. Fetch User context from Master DB
         const dbUser = await masterPrisma.user.findUnique({
             where: { clerkId: clerkUserId },
-            select: { id: true, businessId: true, role: true },
+            select: { id: true, businessId: true, role: true, storeId: true },
         });
 
         if (!dbUser || !dbUser.businessId) {
@@ -44,15 +44,19 @@ const addCustomerHandler = async (
         // Fetch user store access from Tenant DB if not admin
         let targetStoreId = activeStoreHeader;
         if (dbUser.role !== "admin") {
-            const tenantUser = await tenantPrisma.tenantUser.findUnique({
-                where: { clerkId: clerkUserId },
-                select: { storeId: true }
-            });
-            if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
+            if (dbUser.storeId) {
+                targetStoreId = dbUser.storeId;
+            } else {
+                const tenantUser = await tenantPrisma.tenantUser.findUnique({
+                    where: { clerkId: clerkUserId },
+                    select: { storeId: true }
+                });
+                if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
+            }
         }
 
-        if (!targetStoreId) {
-            return res.status(400).json({ error: "No active store selected." });
+        if (!targetStoreId || targetStoreId === "all" || targetStoreId === "All") {
+            return res.status(400).json({ error: "No active store selected. Please select a branch first." });
         }
 
         const { firstName, lastName, phoneNumber, email: rawEmail } = req.body;
