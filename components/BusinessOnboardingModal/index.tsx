@@ -51,6 +51,9 @@ const BusinessOnboardingModal = () => {
         (state: AppState) => state.auth.user,
     ) as UserState | null;
 
+    const plan = useSelector((state: AppState) => state.businessData.businessDetails?.subscription?.plan);
+    const isPaidPlan = plan === "STANDARD" || plan === "PREMIUM";
+
     const shouldShowInitial =
         (user && !user.businessId) ||
         user?.Business?.name === "My New Business";

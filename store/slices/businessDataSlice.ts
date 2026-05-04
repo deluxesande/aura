@@ -24,7 +24,8 @@ type BusinessDetails = {
         canExportData: boolean;
         hasCustomBranding: boolean;
     };
-    tenantMode: "single" | "multi";
+    tenantMode: "SHARED" | "BYODB";
+    tenantDatabaseUrl?: string | null;
 };
 
 interface BusinessDataState {

@@ -28,7 +28,7 @@ const steps: TourStep[] = [
         title: "Overview",
         badge: "Snapshot",
         description:
-            "Your daily performance - revenue, orders and key metrics at a glance.",
+            "Your daily performance - revenue, orders, net profit, and inventory value at a glance.",
         side: "right",
     },
     {
@@ -44,7 +44,7 @@ const steps: TourStep[] = [
         title: "Inventory Control",
         badge: "Stock",
         description:
-            "Manage your product catalog and track live stock levels across branches.",
+            "Manage your product catalog, product variants, and track live stock levels across branches.",
         side: "right",
     },
     {
@@ -52,7 +52,7 @@ const steps: TourStep[] = [
         title: "Supply Chain",
         badge: "Procurement",
         description:
-            "Manage suppliers, place purchase orders, and track incoming stock.",
+            "Manage suppliers, place purchase orders, and track incoming stock and deliveries.",
         side: "right",
     },
     {
@@ -68,7 +68,7 @@ const steps: TourStep[] = [
         title: "System Settings",
         badge: "Control Panel",
         description:
-            "Configure your business profile, manage team roles, and app preferences.",
+            "Connect your own BYODB PostgreSQL database, configure M-Pesa & KRA integrations, and manage team roles.",
         side: "right",
     },
     {
@@ -93,8 +93,7 @@ interface PopoverPosition {
     left: number;
 }
 
-function getPosition(el: Element, side: TourStep["side"]): PopoverPosition {
-    const rect = el.getBoundingClientRect();
+function getPosition(rect: DOMRect, side: TourStep["side"]): PopoverPosition {
     const gap = 12;
 
     switch (side) {
@@ -111,14 +110,35 @@ function getPosition(el: Element, side: TourStep["side"]): PopoverPosition {
     }
 }
 
-function Highlight({ target }: { target: string }) {
+function useTrackElement(target: string) {
     const [rect, setRect] = useState<DOMRect | null>(null);
 
     useEffect(() => {
         const el = document.querySelector(target);
         if (!el) return;
-        setRect(el.getBoundingClientRect());
-    }, [target]); // ← re-runs every time target changes
+
+        // Ensure the element is visible by scrolling it into view
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        let frameId: number;
+        const updateRect = () => {
+            const currentEl = document.querySelector(target);
+            if (currentEl) {
+                setRect(currentEl.getBoundingClientRect());
+            }
+            frameId = requestAnimationFrame(updateRect);
+        };
+
+        updateRect();
+
+        return () => cancelAnimationFrame(frameId);
+    }, [target]);
+
+    return rect;
+}
+
+function Highlight({ target }: { target: string }) {
+    const rect = useTrackElement(target);
 
     if (!rect) return null;
 
@@ -143,7 +163,7 @@ function Highlight({ target }: { target: string }) {
                     clipPath,
                     zIndex: 9997,
                     pointerEvents: "none",
-                    transition: "clip-path 0.25s ease",
+                    transition: "clip-path 0.1s ease-out",
                 }}
             />
             <div
@@ -156,7 +176,7 @@ function Highlight({ target }: { target: string }) {
                     border: "2px solid #22c55e",
                     zIndex: 9998,
                     pointerEvents: "none",
-                    transition: "all 0.25s ease",
+                    transition: "all 0.1s ease-out",
                 }}
             />
         </>,
@@ -179,13 +199,8 @@ function Popover({
     onPrev: () => void;
     onClose: () => void;
 }) {
-    const [pos, setPos] = useState<PopoverPosition | null>(null);
-
-    useEffect(() => {
-        const el = document.querySelector(step.target);
-        if (!el) return;
-        setPos(getPosition(el, step.side));
-    }, [step]);
+    const rect = useTrackElement(step.target);
+    const pos = rect ? getPosition(rect, step.side) : null;
 
     if (!pos) return null;
 
@@ -197,7 +212,7 @@ function Popover({
                 left: pos.left,
                 zIndex: 99999,
                 width: 300,
-                transition: "all 0.2s ease",
+                transition: "all 0.1s ease-out",
             }}
             className="bg-white border border-gray-200 rounded-lg shadow-lg p-5"
         >

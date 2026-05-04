@@ -1,5 +1,5 @@
 "use client";
-import { AppDispatch } from "@/store";
+import { AppDispatch, AppState } from "@/store";
 import { fetchUser } from "@/store/auth/authThunks";
 import { setBusinessDetails } from "@/store/slices/businessDataSlice";
 import { apiClient } from "@/utils/apiClient";
@@ -15,27 +15,33 @@ import {
     Save,
     Trash2,
     XCircle,
+    Lock,
 } from "lucide-react";
 import React, { useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
+import Link from "next/link";
 
 interface DatabaseSettingsProps {
     businessId: string;
     currentMode: "SHARED" | "BYODB";
+    databaseUrl?: string | null;
 }
 
 const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
     businessId,
     currentMode,
+    databaseUrl,
 }) => {
     const dispatch = useDispatch<AppDispatch>();
+    const plan = useSelector((state: AppState) => state.businessData.businessDetails?.subscription?.plan);
+    const isPaidPlan = plan === "STANDARD" || plan === "PREMIUM";
 
     const [selectedMode, setSelectedMode] = useState<"SHARED" | "BYODB">(
         currentMode,
     );
     const [liveMode, setLiveMode] = useState<"SHARED" | "BYODB">(currentMode);
-    const [dbUrl, setDbUrl] = useState("");
+    const [dbUrl, setDbUrl] = useState(databaseUrl || "");
     const [showUrl, setShowUrl] = useState(false);
     const [isTesting, setIsTesting] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -46,10 +52,24 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
     );
     const [confirmRemove, setConfirmRemove] = useState(false);
 
+    // Sync local state when prop changes (e.g. after a re-fetch)
+    React.useEffect(() => {
+        setLiveMode(currentMode);
+        setSelectedMode(currentMode);
+        if (currentMode === "BYODB" && databaseUrl) {
+            setDbUrl(databaseUrl);
+        }
+    }, [currentMode, databaseUrl]);
+
     const switchingToShared = selectedMode === "SHARED" && liveMode === "BYODB";
+    const isAlreadyConfigured = liveMode === "BYODB" && selectedMode === "BYODB";
     const urlHasValue = dbUrl.trim().length > 0;
 
     const handleModeSelect = (mode: "SHARED" | "BYODB") => {
+        if (mode === "BYODB" && !isPaidPlan) {
+            toast.error("Bring Your Own DB is only available on paid plans.");
+            return;
+        }
         setSelectedMode(mode);
         setConnectionTested(false);
         setTestResult(null);
@@ -67,9 +87,8 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
         setIsTesting(true);
         setTestResult(null);
         try {
-            await apiClient.post("/business/test-connection", {
+            await apiClient.post("/business/test-url", {
                 url: dbUrl,
-                businessId,
             });
             setConnectionTested(true);
             setTestResult("success");
@@ -89,7 +108,7 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
         if (!connectionTested) return;
         setIsSaving(true);
         try {
-            const res = await apiClient.put(`/business/${businessId}`, {
+            await apiClient.put(`/business/${businessId}`, {
                 tenantMode: "BYODB",
                 tenantDatabaseUrl: dbUrl,
             });
@@ -97,9 +116,14 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
             setConnectionTested(false);
             setDbUrl("");
             setTestResult(null);
-            dispatch(setBusinessDetails(res.data));
+            
+            // Fetch the fully populated business object including usage and subscriptions
+            const freshRes = await apiClient.get(`/business/${businessId}`);
+            dispatch(setBusinessDetails(freshRes.data));
+            
+            // Force re-fetch of user to update dynamic prisma clients in context if needed
             await dispatch(fetchUser());
-            toast.success("BYODB configuration saved successfully.");
+            toast.success("BYODB configuration saved successfully. Your data is being synchronized.");
         } catch (error: any) {
             toast.error(
                 error.response?.data?.error || "Failed to save configuration",
@@ -112,7 +136,7 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
     const handleRollback = async () => {
         setIsRollingBack(true);
         try {
-            const res = await apiClient.put(`/business/${businessId}`, {
+            await apiClient.put(`/business/${businessId}`, {
                 tenantMode: "SHARED",
                 tenantDatabaseUrl: null,
             });
@@ -122,9 +146,13 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
             setDbUrl("");
             setTestResult(null);
             setConnectionTested(false);
-            dispatch(setBusinessDetails(res.data));
+            
+            // Fetch the fully populated business object including usage and subscriptions
+            const freshRes = await apiClient.get(`/business/${businessId}`);
+            dispatch(setBusinessDetails(freshRes.data));
+            
             await dispatch(fetchUser());
-            toast.success("Rolled back to shared cloud successfully.");
+            toast.success("Rolled back to shared cloud successfully. Your data is being synchronized back.");
         } catch (error: any) {
             toast.error(error.response?.data?.error || "Rollback failed");
         } finally {
@@ -203,7 +231,7 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
                             selectedMode === "BYODB"
                                 ? "bg-green-50 border-green-500 ring-1 ring-green-500"
                                 : "bg-white border-gray-200 hover:border-gray-300"
-                        }`}
+                        } ${!isPaidPlan ? "opacity-60 cursor-not-allowed" : ""}`}
                     >
                         <div
                             className={`mt-1 w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
@@ -216,16 +244,26 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
                                 <div className="w-2 h-2 rounded-full bg-white" />
                             )}
                         </div>
-                        <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <span className="font-bold text-gray-900 text-sm">
+                        <div className="flex-1">
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="font-bold text-gray-900 text-sm flex items-center gap-2">
                                     Bring Your Own DB
+                                    {!isPaidPlan && <Lock className="w-3.5 h-3.5 text-gray-400" />}
                                 </span>
                             </div>
-                            <p className="text-xs text-gray-500 leading-relaxed">
+                            <p className="text-xs text-gray-500 leading-relaxed mb-2">
                                 Connect your own PostgreSQL instance for
                                 complete data sovereignty.
                             </p>
+                            {!isPaidPlan && (
+                                <Link
+                                    href="/pricing"
+                                    className="text-xs font-bold text-green-600 hover:text-green-700 hover:underline"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    Upgrade to unlock &rarr;
+                                </Link>
+                            )}
                         </div>
                     </button>
                 </div>
@@ -242,8 +280,9 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
                                     type={showUrl ? "text" : "password"}
                                     value={dbUrl}
                                     onChange={handleUrlChange}
+                                    readOnly={isAlreadyConfigured}
                                     placeholder="postgresql://user:password@host:5432/dbname"
-                                    className="w-full px-4 py-3 pr-10 rounded-lg outline-none bg-slate-50 focus:bg-white border border-gray-200 focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-xs font-mono"
+                                    className={`w-full px-4 py-3 pr-10 rounded-lg outline-none bg-slate-50 focus:bg-white border border-gray-200 focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all text-xs font-mono ${isAlreadyConfigured ? "cursor-not-allowed opacity-75" : ""}`}
                                 />
                                 <button
                                     type="button"
@@ -257,15 +296,17 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
                                     )}
                                 </button>
                             </div>
-                            <p className="mt-2 text-[11px] text-gray-400 flex items-center gap-1">
-                                <ExternalLink className="w-3 h-3 shrink-0" />
-                                Ensure your database allows inbound connections
-                                from Salesense&apos;s IPs before testing.
-                            </p>
+                            {!isAlreadyConfigured && (
+                                <p className="mt-2 text-[11px] text-gray-400 flex items-center gap-1">
+                                    <ExternalLink className="w-3 h-3 shrink-0" />
+                                    Ensure your database allows inbound connections
+                                    from Salesense&apos;s IPs before testing.
+                                </p>
+                            )}
                         </div>
 
                         {/* Test Result Banner */}
-                        {testResult === "success" && (
+                        {testResult === "success" && !isAlreadyConfigured && (
                             <div className="flex items-start gap-3 p-3 rounded-lg bg-green-50 border border-green-100">
                                 <CheckCircle2 className="w-4 h-4 stroke-green-500 shrink-0 mt-0.5" />
                                 <p className="text-xs text-green-700 font-medium">
@@ -275,7 +316,7 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
                                 </p>
                             </div>
                         )}
-                        {testResult === "error" && (
+                        {testResult === "error" && !isAlreadyConfigured && (
                             <div className="flex items-start gap-3 p-3 rounded-lg bg-red-50 border border-red-100">
                                 <XCircle className="w-4 h-4 stroke-red-500 shrink-0 mt-0.5" />
                                 <p className="text-xs text-red-700 font-medium">
@@ -287,32 +328,34 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
                         )}
 
                         {/* Action Buttons */}
-                        <div className="pt-6 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <button
-                                onClick={handleTestConnection}
-                                disabled={isTesting || !urlHasValue}
-                                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-lg hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed w-full"
-                            >
-                                {isTesting ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <Activity size={18} />
-                                )}
-                                {isTesting ? "Testing..." : "Test Connection"}
-                            </button>
-                            <button
-                                onClick={handleSave}
-                                disabled={isSaving || !connectionTested}
-                                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-green-500 text-white text-sm font-bold rounded-lg hover:bg-green-700 transition-all shadow-md shadow-green-100 disabled:opacity-50 disabled:cursor-not-allowed w-full"
-                            >
-                                {isSaving ? (
-                                    <Loader2 className="w-4 h-4 animate-spin stroke-white" />
-                                ) : (
-                                    <Save size={18} className="stroke-white" />
-                                )}
-                                {isSaving ? "Saving..." : "Save Configuration"}
-                            </button>
-                        </div>
+                        {!isAlreadyConfigured && (
+                            <div className="pt-6 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <button
+                                    onClick={handleTestConnection}
+                                    disabled={isTesting || !urlHasValue}
+                                    className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-lg hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed w-full"
+                                >
+                                    {isTesting ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Activity size={18} />
+                                    )}
+                                    {isTesting ? "Testing..." : "Test Connection"}
+                                </button>
+                                <button
+                                    onClick={handleSave}
+                                    disabled={isSaving || !connectionTested}
+                                    className="flex items-center justify-center gap-2 px-5 py-2.5 bg-green-500 text-white text-sm font-bold rounded-lg hover:bg-green-700 transition-all shadow-md shadow-green-100 disabled:opacity-50 disabled:cursor-not-allowed w-full"
+                                >
+                                    {isSaving ? (
+                                        <Loader2 className="w-4 h-4 animate-spin stroke-white" />
+                                    ) : (
+                                        <Save size={18} className="stroke-white" />
+                                    )}
+                                    {isSaving ? "Saving..." : "Save Configuration"}
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
 

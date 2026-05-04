@@ -120,9 +120,13 @@ const SettingsPage: React.FC = () => {
                                     }
                                     currentMode={
                                         businessDetails.businessDetails
-                                            ?.tenantMode === "multi"
+                                            ?.tenantMode === "BYODB"
                                             ? "BYODB"
                                             : "SHARED"
+                                    }
+                                    databaseUrl={
+                                        businessDetails.businessDetails
+                                            ?.tenantDatabaseUrl
                                     }
                                 />
                             </div>

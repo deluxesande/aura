@@ -348,6 +348,7 @@ export default function PaymentPage() {
                         canExportData: false,
                         hasCustomBranding: false,
                     },
+                    tenantMode: newBusiness.tenantMode || "SHARED",
                 };
 
                 dispatch(setBusinessDetails(formattedBusinessDetails));

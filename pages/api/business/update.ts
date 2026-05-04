@@ -98,7 +98,20 @@ export const updateBusiness = async (
 
         const existingBusiness = await prisma.business.findUnique({
             where: { id },
-            select: { id: true, createdBy: true, isConfigured: true, tenantMode: true, tenantDatabaseUrl: true },
+            select: { 
+                id: true, 
+                createdBy: true, 
+                isConfigured: true, 
+                tenantMode: true, 
+                tenantDatabaseUrl: true,
+                subscriptions: {
+                    where: {
+                        status: { in: ["ACTIVE", "PAST_DUE", "TRIALING"] },
+                    },
+                    orderBy: { createdAt: "desc" },
+                    take: 1,
+                }
+            },
         });
 
         if (!existingBusiness) {
@@ -110,6 +123,9 @@ export const updateBusiness = async (
                 error: "Forbidden: Only the business administrator can perform this action.",
             });
         }
+
+        const activeSubscription = existingBusiness.subscriptions[0];
+        const isPaidPlan = activeSubscription && (activeSubscription.plan === "STANDARD" || activeSubscription.plan === "PREMIUM");
 
         const currentUser = await prisma.user.findUnique({
             where: { clerkId: user.userId },
@@ -135,6 +151,10 @@ export const updateBusiness = async (
 
         // BYODB Logic with Security Fixes
         if (tenantMode === "BYODB" && tenantDatabaseUrl) {
+            if (!isPaidPlan) {
+                return res.status(403).json({ error: "BYODB configuration is only available on paid plans." });
+            }
+
             // SSRF Protection
             if (!isSafeUrl(tenantDatabaseUrl)) {
                 return res.status(400).json({ error: "Invalid or restricted database URL provided." });
@@ -207,12 +227,16 @@ export const updateBusiness = async (
         try {
             if (shouldSyncToByoDb && tenantDatabaseUrl) {
                 const sharedDbUrl = process.env.DATABASE_URL!;
+                // Sync users FIRST to satisfy foreign key constraints (like createdById)
+                await syncAllBusinessUsersToTenant(id); 
+                // Then sync the rest of the business data
                 await syncBusinessData(sharedDbUrl, tenantDatabaseUrl, id);
-                await syncAllBusinessUsersToTenant(id); // Will correctly hit BYODB now
             } else if (shouldSyncToSharedDb && oldByoDbUrl) {
                 const sharedDbUrl = process.env.DATABASE_URL!;
+                // Sync users FIRST
+                await syncAllBusinessUsersToTenant(id); 
+                // Then sync the data
                 await syncBusinessData(oldByoDbUrl, sharedDbUrl, id);
-                await syncAllBusinessUsersToTenant(id); // Will correctly hit SHARED DB now
             }
         } catch (syncError) {
             console.error("Error during data synchronization between stores:", syncError);

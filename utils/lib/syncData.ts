@@ -9,20 +9,37 @@ export async function syncBusinessData(sourceUrl: string, targetUrl: string, bus
     try {
         // 1. Stores
         const stores = await sourceDb.store.findMany({ where: { businessId } });
-        if (stores.length > 0) {
-            await targetDb.store.createMany({ data: stores, skipDuplicates: true });
-        }
+        const storeIds = stores.map(s => s.id);
 
-        // 2. Users (TenantUser)
-        // Some users might not have a direct businessId in TenantUser schema, 
-        // but we can query them via masterPrisma if needed. 
-        // Actually, we should just use syncAllBusinessUsersToTenant for users, but it only syncs from master.
-        // It's better to rely on `syncAllBusinessUsersToTenant` separately, but let's sync Store relations here.
-        // Wait, TenantUser doesn't have businessId! It's global to the tenant DB or tied by storeId. 
-        // Let's skip TenantUser here as `syncAllBusinessUsersToTenant` handles it via MasterDB.
+        // Fetch products by businessId OR by being in the business's stores
+        const storeInventories = await sourceDb.storeInventory.findMany({
+            where: { storeId: { in: storeIds } },
+            select: { productId: true }
+        });
+        const inventoryProductIds = storeInventories.map(si => si.productId);
 
-        // 3. Base Entities
-        const categories = await sourceDb.category.findMany({ where: { businessId } });
+        const products = await sourceDb.product.findMany({
+            where: {
+                OR: [
+                    { businessId: businessId },
+                    { id: { in: inventoryProductIds } }
+                ]
+            }
+        });
+
+        // 2. Categories
+        const categoryIds = [...new Set(products.map(p => p.categoryId))];
+        const categories = await sourceDb.category.findMany({
+            where: {
+                OR: [
+                    { businessId: businessId },
+                    { id: { in: categoryIds } }
+                ]
+            }
+        });
+
+        // Write independent entities first
+        if (stores.length > 0) await targetDb.store.createMany({ data: stores, skipDuplicates: true });
         if (categories.length > 0) await targetDb.category.createMany({ data: categories, skipDuplicates: true });
 
         const customers = await sourceDb.customer.findMany({ where: { businessId } });
@@ -37,31 +54,37 @@ export async function syncBusinessData(sourceUrl: string, targetUrl: string, bus
         const expenses = await sourceDb.expense.findMany({ where: { businessId } });
         if (expenses.length > 0) await targetDb.expense.createMany({ data: expenses, skipDuplicates: true });
 
-        // 4. Products and Related
-        const products = await sourceDb.product.findMany({ where: { businessId } });
-        if (products.length > 0) await targetDb.product.createMany({ data: products, skipDuplicates: true });
+        // 3. Products (Parents first, then variants)
+        const parentProducts = products.filter(p => !p.parentId);
+        const variantProducts = products.filter(p => p.parentId);
 
+        if (parentProducts.length > 0) await targetDb.product.createMany({ data: parentProducts, skipDuplicates: true });
+        if (variantProducts.length > 0) await targetDb.product.createMany({ data: variantProducts, skipDuplicates: true });
+
+        // 4. Product Relations
+        const productIds = products.map(p => p.id);
+        
         const attrOptions = await sourceDb.attributeOption.findMany({
             where: { attribute: { businessId } }
         });
         if (attrOptions.length > 0) await targetDb.attributeOption.createMany({ data: attrOptions, skipDuplicates: true });
 
         const prodAttrValues = await sourceDb.productAttributeValue.findMany({
-            where: { product: { businessId } }
+            where: { productId: { in: productIds } }
         });
         if (prodAttrValues.length > 0) await targetDb.productAttributeValue.createMany({ data: prodAttrValues, skipDuplicates: true });
 
-        const storeInventories = await sourceDb.storeInventory.findMany({
-            where: { Store: { businessId } }
+        const fullStoreInventories = await sourceDb.storeInventory.findMany({
+            where: { storeId: { in: storeIds } }
         });
-        if (storeInventories.length > 0) await targetDb.storeInventory.createMany({ data: storeInventories, skipDuplicates: true });
+        if (fullStoreInventories.length > 0) await targetDb.storeInventory.createMany({ data: fullStoreInventories, skipDuplicates: true });
 
         // 5. Operations
         const purchaseOrders = await sourceDb.purchaseOrder.findMany({ where: { businessId } });
         if (purchaseOrders.length > 0) await targetDb.purchaseOrder.createMany({ data: purchaseOrders, skipDuplicates: true });
 
         const poItems = await sourceDb.purchaseOrderItem.findMany({
-            where: { PurchaseOrder: { businessId } }
+            where: { purchaseOrderId: { in: purchaseOrders.map(po => po.id) } }
         });
         if (poItems.length > 0) await targetDb.purchaseOrderItem.createMany({ data: poItems, skipDuplicates: true });
 
@@ -72,7 +95,7 @@ export async function syncBusinessData(sourceUrl: string, targetUrl: string, bus
         if (stockReceipts.length > 0) await targetDb.stockReceipt.createMany({ data: stockReceipts, skipDuplicates: true });
 
         const stockTransfers = await sourceDb.stockTransfer.findMany({
-            where: { OriginStore: { businessId } }
+            where: { originStoreId: { in: storeIds } }
         });
         if (stockTransfers.length > 0) await targetDb.stockTransfer.createMany({ data: stockTransfers, skipDuplicates: true });
 
@@ -80,16 +103,23 @@ export async function syncBusinessData(sourceUrl: string, targetUrl: string, bus
         if (reconciliations.length > 0) await targetDb.inventoryReconciliation.createMany({ data: reconciliations, skipDuplicates: true });
 
         const recItems = await sourceDb.reconciliationItem.findMany({
-            where: { Reconciliation: { businessId } }
+            where: { reconciliationId: { in: reconciliations.map(r => r.id) } }
         });
         if (recItems.length > 0) await targetDb.reconciliationItem.createMany({ data: recItems, skipDuplicates: true });
 
         // 6. Invoices & Payments
-        const invoices = await sourceDb.invoice.findMany({ where: { businessId } });
+        const invoices = await sourceDb.invoice.findMany({
+            where: {
+                OR: [
+                    { businessId: businessId },
+                    { storeId: { in: storeIds } }
+                ]
+            }
+        });
         if (invoices.length > 0) await targetDb.invoice.createMany({ data: invoices, skipDuplicates: true });
 
         const invoiceItems = await sourceDb.invoiceItem.findMany({
-            where: { Invoice: { businessId } }
+            where: { invoiceId: { in: invoices.map(i => i.id) } }
         });
         if (invoiceItems.length > 0) await targetDb.invoiceItem.createMany({ data: invoiceItems, skipDuplicates: true });
 
