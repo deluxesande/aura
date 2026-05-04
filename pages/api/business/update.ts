@@ -1,9 +1,10 @@
 import { getAuth } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
 import { masterPrisma as prisma, invalidateTenantClient } from "@/utils/lib/prisma";
-import { encrypt } from "@/utils/crypto";
+import { encrypt, decrypt } from "@/utils/crypto";
 import { logAction } from "@/utils/server/audit";
 import { syncAllBusinessUsersToTenant } from "@/utils/lib/syncUser";
+import { syncBusinessData } from "@/utils/lib/syncData";
 import { exec } from "child_process";
 import util from "util";
 import net from "net";
@@ -97,7 +98,7 @@ export const updateBusiness = async (
 
         const existingBusiness = await prisma.business.findUnique({
             where: { id },
-            select: { id: true, createdBy: true, isConfigured: true },
+            select: { id: true, createdBy: true, isConfigured: true, tenantMode: true, tenantDatabaseUrl: true },
         });
 
         if (!existingBusiness) {
@@ -128,6 +129,10 @@ export const updateBusiness = async (
         if (address) changedFields.push("address");
         if (logo) changedFields.push("logo");
 
+        let shouldSyncToByoDb = false;
+        let shouldSyncToSharedDb = false;
+        let oldByoDbUrl = "";
+
         // BYODB Logic with Security Fixes
         if (tenantMode === "BYODB" && tenantDatabaseUrl) {
             // SSRF Protection
@@ -149,17 +154,24 @@ export const updateBusiness = async (
                 updateData.tenantDatabaseUrl = encrypt(tenantDatabaseUrl);
                 changedFields.push("tenantMode", "tenantDatabaseUrl", "isConfigured");
 
-                // Sync all users to the new database to fix foreign key constraints
-                await syncAllBusinessUsersToTenant(id);
+                // Only sync data if we are switching from SHARED
+                if (existingBusiness.tenantMode !== "BYODB") {
+                    shouldSyncToByoDb = true;
+                }
             } catch (execError: any) {
                 console.error("Failed to push schema:", execError);
                 return res.status(500).json({ error: "Failed to initialize tables in BYO database. Ensure the database is accessible and permissions are correct." });
             }
-        } else if (tenantMode === "SHARED") {
+        } else if (tenantMode === "SHARED" && existingBusiness.tenantMode === "BYODB") {
             updateData.tenantMode = "SHARED";
             updateData.tenantDatabaseUrl = null;
             updateData.isConfigured = false; // Reset to false for shared as it's the default plane
             changedFields.push("tenantMode", "tenantDatabaseUrl", "isConfigured");
+            
+            shouldSyncToSharedDb = true;
+            if (existingBusiness.tenantDatabaseUrl) {
+                oldByoDbUrl = decrypt(existingBusiness.tenantDatabaseUrl);
+            }
         }
 
         if (mpesaConsumerKey !== undefined) {
@@ -191,6 +203,22 @@ export const updateBusiness = async (
         // Invalidate the cached tenant client so the next request uses the fresh database details
         invalidateTenantClient(id);
 
+        // Perform Data Synchronization after the database routing cache is cleared
+        try {
+            if (shouldSyncToByoDb && tenantDatabaseUrl) {
+                const sharedDbUrl = process.env.DATABASE_URL!;
+                await syncBusinessData(sharedDbUrl, tenantDatabaseUrl, id);
+                await syncAllBusinessUsersToTenant(id); // Will correctly hit BYODB now
+            } else if (shouldSyncToSharedDb && oldByoDbUrl) {
+                const sharedDbUrl = process.env.DATABASE_URL!;
+                await syncBusinessData(oldByoDbUrl, sharedDbUrl, id);
+                await syncAllBusinessUsersToTenant(id); // Will correctly hit SHARED DB now
+            }
+        } catch (syncError) {
+            console.error("Error during data synchronization between stores:", syncError);
+            // Data is not lost, but maybe not fully synced. Don't block the UI, it can be retried.
+        }
+
         // Log Audit Action
         if (currentUser) {
             await logAction({
@@ -214,6 +242,7 @@ export const updateBusiness = async (
                 ? "********"
                 : null,
             mpesaPassKey: updatedBusiness.mpesaPassKey ? "********" : null,
+            tenantDatabaseUrl: updatedBusiness.tenantDatabaseUrl ? "********" : null,
         };
 
         res.status(200).json(safeResponse);

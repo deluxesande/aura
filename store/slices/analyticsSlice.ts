@@ -5,6 +5,9 @@ interface AnalyticsStats {
     totalRevenue: number;
     paidInvoices: number;
     profit: number;
+    inventoryValue: number;
+    totalProcurement: number;
+    totalExpenses: number;
 }
 
 interface AnalyticsPercentageChanges {

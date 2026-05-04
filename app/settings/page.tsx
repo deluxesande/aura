@@ -15,11 +15,15 @@ import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { toast } from "sonner";
 import KraSettings from "@/components/KraSettings";
+import DatabaseSettings from "@/components/DatabaseSettings";
 
 const SettingsPage: React.FC = () => {
     const router = useRouter();
     const dispatch = useDispatch();
     const user = useSelector((state: AppState) => state.auth.user);
+    const businessDetails = useSelector(
+        (state: AppState) => state.businessData,
+    );
 
     useEffect(() => {
         if (user === null) {
@@ -108,6 +112,21 @@ const SettingsPage: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
+                            <div className="w-full mb-6">
+                                <DatabaseSettings
+                                    businessId={
+                                        businessDetails.businessDetails?.id ||
+                                        ""
+                                    }
+                                    currentMode={
+                                        businessDetails.businessDetails
+                                            ?.tenantMode === "multi"
+                                            ? "BYODB"
+                                            : "SHARED"
+                                    }
+                                />
+                            </div>
+
                             <div className="w-full">
                                 <DataManagement />
                             </div>

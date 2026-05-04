@@ -58,7 +58,14 @@ export default async function handler(
             });
         }
 
-        // 2. Define Time Ranges
+        // 2. Fetch Business User IDs for inclusive filtering
+        const businessUsers = await masterPrisma.user.findMany({
+            where: { businessId },
+            select: { clerkId: true },
+        });
+        const userIds = businessUsers.map((u) => u.clerkId);
+
+        // 3. Define Time Ranges
         const { timePeriod } = req.query;
         const now = new Date();
         
@@ -91,15 +98,8 @@ export default async function handler(
             now.getDate()
         );
 
-        // 3. Helper to fetch stats (Optional Date Range)
+        // 4. Helper to fetch stats (Optional Date Range)
         const getStats = async (startDate?: Date, endDate?: Date) => {
-            // Get all User IDs for this business from Master DB
-            const businessUsers = await masterPrisma.user.findMany({
-                where: { businessId },
-                select: { clerkId: true },
-            });
-            const userIds = businessUsers.map((u) => u.clerkId);
-
             // Build Filter: If no dates provided, fetch ALL TIME
             const dateFilter: any = {};
             if (startDate) dateFilter.gte = startDate;
@@ -111,9 +111,12 @@ export default async function handler(
             };
 
             const invoiceWhere: any = {
-                ...whereClause,
-                createdBy: { in: userIds },
+                storeId: targetStoreId,
                 isDeleted: false,
+                OR: [
+                    { businessId: businessId },
+                    { createdBy: { in: userIds } }
+                ]
             };
 
             // Only add createdAt to query if dates are provided
@@ -167,14 +170,13 @@ export default async function handler(
                 totalRevenue: totalRevenue,
                 totalProcurement: totalProcurement,
                 totalExpenses: totalExpenses,
-                profit: totalRevenue - totalProcurement - totalExpenses,
+                profit: totalRevenue - totalExpenses - totalProcurement,
             };
         };
 
-        // 4. Execute Queries in Parallel
-        const [periodStats, todayStats, yesterdayStats, mpesaData] =
+        const [periodStats, todayStats, yesterdayStats, mpesaData, inventoryData] =
             await Promise.all([
-                getStats(statsStartDate), // Period Stats (Filtered by timePeriod if provided)
+                getStats(statsStartDate), // Period Stats
                 getStats(startOfToday), // Today
                 getStats(startOfYesterday, endOfYesterday), // Yesterday
                 tenantPrisma.mpesaPayment.aggregate({
@@ -188,7 +190,13 @@ export default async function handler(
                     },
                     _sum: { amount: true },
                 }),
+                tenantPrisma.storeInventory.findMany({
+                    where: { storeId: targetStoreId, Product: { isArchived: false } },
+                    include: { Product: { select: { price: true } } }
+                })
             ]);
+
+        const currentInventoryValue = inventoryData.reduce((acc, inv) => acc + (inv.quantity * inv.Product.price), 0);
 
         // 5. Calculate Percentages (Velocity: Today vs Yesterday)
         const calcChange = (curr: number, prev: number) => {
@@ -196,8 +204,13 @@ export default async function handler(
             return ((curr - prev) / prev) * 100;
         };
 
+        const finalStats = {
+            ...periodStats,
+            inventoryValue: currentInventoryValue,
+        };
+
         res.status(200).json({
-            stats: periodStats, // Returns filtered numbers for the main cards
+            stats: finalStats, // Returns filtered numbers for the main cards
             percentageChanges: {
                 totalInvoices: calcChange(
                     todayStats.totalInvoices,

@@ -25,7 +25,15 @@ export default async function handler(
                 return res.status(200).json([]);
             }
 
-            const tenantPrisma = await getTenantPrisma(user.businessId);
+            const businessId = user.businessId;
+            const tenantPrisma = await getTenantPrisma(businessId);
+
+            // Fetch Business User IDs for inclusive filtering
+            const businessUsers = await masterPrisma.user.findMany({
+                where: { businessId },
+                select: { clerkId: true },
+            });
+            const userIds = businessUsers.map((u) => u.clerkId);
 
             // Fetch user store info from Tenant DB if not admin
             let targetStoreId = activeStoreHeader;
@@ -50,17 +58,8 @@ export default async function handler(
                 return res.status(200).json([]);
             }
 
-            const businessUsers = await masterPrisma.user.findMany({
-                where: { businessId: user.businessId },
-                select: { clerkId: true },
-            });
-
-            const userIds = businessUsers.map((user) => user.clerkId);
-
             const { timePeriod = "30" } = req.query;
             const days = parseInt(timePeriod as string);
-            
-            // ... (rest of date logic)
             
             const formatLocalDate = (date: Date): string => {
                 const year = date.getUTCFullYear();
@@ -129,11 +128,14 @@ export default async function handler(
 
             const invoices = await tenantPrisma.invoice.findMany({
                 where: {
-                    createdBy: { in: userIds },
                     storeId: targetStoreId,
                     createdAt: { gte: startDate, lte: endDate },
                     status: { in: ["PAID", "paid", "COMPLETED", "completed"] },
                     isDeleted: false,
+                    OR: [
+                        { businessId: businessId },
+                        { createdBy: { in: userIds } }
+                    ]
                 },
                 include: {
                     invoiceItems: {
@@ -237,17 +239,19 @@ export default async function handler(
 
                 invoice.invoiceItems.forEach((item) => {
                     const productId = item.productId;
-                    if (!productSalesByPeriod[periodKey][productId]) {
-                        productSalesByPeriod[periodKey][productId] = {
-                            product: item.Product,
-                            quantity: 0,
-                            revenue: 0,
-                        };
+                    if (productId && item.Product) {
+                        if (!productSalesByPeriod[periodKey][productId]) {
+                            productSalesByPeriod[periodKey][productId] = {
+                                product: item.Product,
+                                quantity: 0,
+                                revenue: 0,
+                            };
+                        }
+                        productSalesByPeriod[periodKey][productId].quantity +=
+                            item.quantity;
+                        productSalesByPeriod[periodKey][productId].revenue +=
+                            item.price * item.quantity;
                     }
-                    productSalesByPeriod[periodKey][productId].quantity +=
-                        item.quantity;
-                    productSalesByPeriod[periodKey][productId].revenue +=
-                        item.price * item.quantity;
                 });
             });
 
@@ -276,6 +280,7 @@ export default async function handler(
             });
             return res.status(200).json(result);
         } catch (error) {
+            console.error("topProduct Error:", error);
             return res.status(500).json({ error: "Failed to fetch data" });
         }
     } else {

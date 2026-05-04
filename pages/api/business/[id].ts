@@ -74,6 +74,7 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
                 ? "***********"
                 : null,
             mpesaPassKey: business.mpesaPassKey ? "***********" : null,
+            tenantDatabaseUrl: business.tenantDatabaseUrl ? "********" : null,
             subscription: activeSubscription,
             usage: {
                 transactionCount: currentPeriodTransactions,

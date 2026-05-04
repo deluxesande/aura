@@ -24,6 +24,7 @@ type BusinessDetails = {
         canExportData: boolean;
         hasCustomBranding: boolean;
     };
+    tenantMode: "single" | "multi";
 };
 
 interface BusinessDataState {

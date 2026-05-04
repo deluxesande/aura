@@ -29,6 +29,13 @@ export default async function handler(
         const businessId = user.businessId;
         const tenantPrisma = await getTenantPrisma(businessId);
 
+        // Fetch Business User IDs for inclusive filtering
+        const businessUsers = await masterPrisma.user.findMany({
+            where: { businessId },
+            select: { clerkId: true },
+        });
+        const userIds = businessUsers.map((u) => u.clerkId);
+
         // Fetch user store access from Tenant DB if not admin
         let targetStoreId = activeStoreHeader;
         if (user.role !== "admin") {
@@ -62,22 +69,18 @@ export default async function handler(
             }
         }
 
-        // 2. Fetch Team Member IDs from Master DB
-        const businessUsers = await masterPrisma.user.findMany({
-            where: { businessId: businessId },
-            select: { clerkId: true },
-        });
-        const userIds = businessUsers.map((u) => u.clerkId);
-
-        // 3. Fetch Operational Data from Tenant DB
+        // 2. Fetch Operational Data from Tenant DB
         const [invoices, deliveries, expenses] = await Promise.all([
             tenantPrisma.invoice.findMany({
                 where: {
-                    createdBy: { in: userIds },
                     storeId: targetStoreId,
                     createdAt: { gte: startDate },
                     status: { in: ["PAID", "paid", "COMPLETED", "completed"] },
                     isDeleted: false,
+                    OR: [
+                        { businessId: businessId },
+                        { createdBy: { in: userIds } }
+                    ]
                 },
                 include: {
                     Customer: { select: { firstName: true, lastName: true } },
