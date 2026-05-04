@@ -32,27 +32,29 @@ export default async function handler(
             });
 
             // 3. Manually attach User info if available
-            const userIds = [...new Set(logs.map(log => log.userId))];
+            const userIds = [...new Set(logs.map((log) => log.userId))];
             const users = await tenantPrisma.tenantUser.findMany({
-                where: { clerkId: { in: userIds } },
+                where: { id: { in: userIds } },
                 select: {
-                    clerkId: true,
+                    id: true,
                     firstName: true,
                     lastName: true,
                     email: true,
-                }
+                },
             });
 
-            const userMap = new Map(users.map(u => [u.clerkId, u]));
-            const logsWithUser = logs.map(log => ({
+            const userMap = new Map(users.map((u) => [u.id, u]));
+            const logsWithUser = logs.map((log) => ({
                 ...log,
-                User: userMap.get(log.userId) || null
+                User: userMap.get(log.userId) || null,
             }));
 
             return res.status(200).json(logsWithUser);
         } catch (error) {
             console.error("GET_AUDIT_LOGS_ERROR", error);
-            return res.status(500).json({ error: "Failed to fetch audit logs" });
+            return res
+                .status(500)
+                .json({ error: "Failed to fetch audit logs" });
         }
     }
 
