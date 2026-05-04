@@ -34,7 +34,10 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
     databaseUrl,
 }) => {
     const dispatch = useDispatch<AppDispatch>();
-    const plan = useSelector((state: AppState) => state.businessData.businessDetails?.subscription?.plan);
+    const plan = useSelector(
+        (state: AppState) =>
+            state.businessData.businessDetails?.subscription?.plan,
+    );
     const isPaidPlan = plan === "STANDARD" || plan === "PREMIUM";
 
     const [selectedMode, setSelectedMode] = useState<"SHARED" | "BYODB">(
@@ -62,7 +65,8 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
     }, [currentMode, databaseUrl]);
 
     const switchingToShared = selectedMode === "SHARED" && liveMode === "BYODB";
-    const isAlreadyConfigured = liveMode === "BYODB" && selectedMode === "BYODB";
+    const isAlreadyConfigured =
+        liveMode === "BYODB" && selectedMode === "BYODB";
     const urlHasValue = dbUrl.trim().length > 0;
 
     const handleModeSelect = (mode: "SHARED" | "BYODB") => {
@@ -116,14 +120,16 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
             setConnectionTested(false);
             setDbUrl("");
             setTestResult(null);
-            
+
             // Fetch the fully populated business object including usage and subscriptions
             const freshRes = await apiClient.get(`/business/${businessId}`);
             dispatch(setBusinessDetails(freshRes.data));
-            
+
             // Force re-fetch of user to update dynamic prisma clients in context if needed
             await dispatch(fetchUser());
-            toast.success("BYODB configuration saved successfully. Your data is being synchronized.");
+            toast.success(
+                "BYODB configuration saved successfully. Your data is being synchronized.",
+            );
         } catch (error: any) {
             toast.error(
                 error.response?.data?.error || "Failed to save configuration",
@@ -146,13 +152,15 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
             setDbUrl("");
             setTestResult(null);
             setConnectionTested(false);
-            
+
             // Fetch the fully populated business object including usage and subscriptions
             const freshRes = await apiClient.get(`/business/${businessId}`);
             dispatch(setBusinessDetails(freshRes.data));
-            
+
             await dispatch(fetchUser());
-            toast.success("Rolled back to shared cloud successfully. Your data is being synchronized back.");
+            toast.success(
+                "Rolled back to shared cloud successfully. Your data is being synchronized back.",
+            );
         } catch (error: any) {
             toast.error(error.response?.data?.error || "Rollback failed");
         } finally {
@@ -248,7 +256,9 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
                             <div className="flex items-center justify-between mb-1">
                                 <span className="font-bold text-gray-900 text-sm flex items-center gap-2">
                                     Bring Your Own DB
-                                    {!isPaidPlan && <Lock className="w-3.5 h-3.5 text-gray-400" />}
+                                    {!isPaidPlan && (
+                                        <Lock className="w-3.5 h-3.5 text-gray-400" />
+                                    )}
                                 </span>
                             </div>
                             <p className="text-xs text-gray-500 leading-relaxed mb-2">
@@ -258,7 +268,7 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
                             {!isPaidPlan && (
                                 <Link
                                     href="/pricing"
-                                    className="text-xs font-bold text-green-600 hover:text-green-700 hover:underline"
+                                    className="text-xs font-bold text-green-500 hover:text-green-500 hover:underline"
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     Upgrade to unlock &rarr;
@@ -299,8 +309,9 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
                             {!isAlreadyConfigured && (
                                 <p className="mt-2 text-[11px] text-gray-400 flex items-center gap-1">
                                     <ExternalLink className="w-3 h-3 shrink-0" />
-                                    Ensure your database allows inbound connections
-                                    from Salesense&apos;s IPs before testing.
+                                    Ensure your database allows inbound
+                                    connections from Salesense&apos;s IPs before
+                                    testing.
                                 </p>
                             )}
                         </div>
@@ -309,7 +320,7 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
                         {testResult === "success" && !isAlreadyConfigured && (
                             <div className="flex items-start gap-3 p-3 rounded-lg bg-green-50 border border-green-100">
                                 <CheckCircle2 className="w-4 h-4 stroke-green-500 shrink-0 mt-0.5" />
-                                <p className="text-xs text-green-700 font-medium">
+                                <p className="text-xs text-green-500 font-medium">
                                     Connection successful. Your database is
                                     reachable. You can now save the
                                     configuration.
@@ -340,7 +351,9 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
                                     ) : (
                                         <Activity size={18} />
                                     )}
-                                    {isTesting ? "Testing..." : "Test Connection"}
+                                    {isTesting
+                                        ? "Testing..."
+                                        : "Test Connection"}
                                 </button>
                                 <button
                                     onClick={handleSave}
@@ -350,9 +363,14 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
                                     {isSaving ? (
                                         <Loader2 className="w-4 h-4 animate-spin stroke-white" />
                                     ) : (
-                                        <Save size={18} className="stroke-white" />
+                                        <Save
+                                            size={18}
+                                            className="stroke-white"
+                                        />
                                     )}
-                                    {isSaving ? "Saving..." : "Save Configuration"}
+                                    {isSaving
+                                        ? "Saving..."
+                                        : "Save Configuration"}
                                 </button>
                             </div>
                         )}
