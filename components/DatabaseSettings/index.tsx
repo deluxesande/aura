@@ -266,7 +266,7 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
                             {!isPaidPlan && (
                                 <Link
                                     href="/pricing"
-                                    className="text-[10px] font-bold text-gray-400 uppercase tracking-wider hover:underline"
+                                    className="text-[10px] font-bold text-green-500 uppercase tracking-wider hover:underline"
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     Requires Standard or Premium Plan &rarr;

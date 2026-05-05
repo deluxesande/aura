@@ -80,41 +80,67 @@ export default async function handler(
 
             // Delete everything in Tenant DB
             await tenantPrisma.$transaction(async (tx) => {
-                // Tier 1: Leaf nodes/Dependencies
-                await tx.invoiceItem.deleteMany({ where: { Invoice: { businessId: bId } } });
-                await tx.successfulCallback.deleteMany({ where: { Invoice: { businessId: bId } } });
-                await tx.failedCallback.deleteMany({ where: { Invoice: { businessId: bId } } });
-                await tx.mpesaPayment.deleteMany({ where: { businessId: bId } });
-                await tx.storeInventory.deleteMany({ where: { Store: { businessId: bId } } });
-                await tx.stockTransfer.deleteMany({ where: { OriginStore: { businessId: bId } } });
-                await tx.purchaseOrderItem.deleteMany({ where: { PurchaseOrder: { businessId: bId } } });
+                // Tier 1: Leaf nodes/Dependencies (Independent)
+                await Promise.all([
+                    tx.invoiceItem.deleteMany({ where: { Invoice: { businessId: bId } } }),
+                    tx.successfulCallback.deleteMany({ where: { Invoice: { businessId: bId } } }),
+                    tx.failedCallback.deleteMany({ where: { Invoice: { businessId: bId } } }),
+                    tx.mpesaPayment.deleteMany({ where: { businessId: bId } }),
+                    tx.storeInventory.deleteMany({ where: { Store: { businessId: bId } } }),
+                    tx.stockTransfer.deleteMany({ where: { OriginStore: { businessId: bId } } }),
+                    tx.purchaseOrderItem.deleteMany({ where: { PurchaseOrder: { businessId: bId } } }),
+                    tx.reconciliationItem.deleteMany({ where: { Reconciliation: { businessId: bId } } }),
+                    tx.productAttributeValue.deleteMany({ where: { product: { businessId: bId } } }),
+                    tx.stockReceipt.deleteMany({ where: { businessId: bId } }),
+                ]);
                 
-                // Tier 2: Parent entities
-                await tx.stockReceipt.deleteMany({ where: { businessId: bId } });
-                await tx.purchaseOrder.deleteMany({ where: { businessId: bId } });
-                await tx.delivery.deleteMany({ where: { businessId: bId } });
-                await tx.invoice.deleteMany({ where: { businessId: bId } });
-                await tx.expense.deleteMany({ where: { businessId: bId } });
-                await tx.customer.deleteMany({ where: { businessId: bId } });
-                await tx.product.deleteMany({ where: { businessId: bId } });
-                await tx.category.deleteMany({ where: { businessId: bId } });
-                await tx.supplier.deleteMany({ where: { businessId: bId } });
-                await tx.kraTotReturn.deleteMany({ where: { businessId: bId } });
-                await tx.kraDetails.deleteMany({ where: { businessId: bId } });
+                // Tier 2: Intermediate Parents
+                await Promise.all([
+                    tx.invoice.deleteMany({ where: { businessId: bId } }),
+                    tx.purchaseOrder.deleteMany({ where: { businessId: bId } }),
+                    tx.delivery.deleteMany({ where: { businessId: bId } }),
+                    tx.inventoryReconciliation.deleteMany({ where: { businessId: bId } }),
+                    tx.product.deleteMany({ where: { businessId: bId } }),
+                    tx.attributeOption.deleteMany({ where: { attribute: { businessId: bId } } }),
+                ]);
                 
-                // Tier 3: Stores and Mirror Users
-                await tx.store.deleteMany({ where: { businessId: bId } });
-                await tx.tenantUser.deleteMany({ where: { clerkId: { not: userId } } }); // Note: clerkId used in TenantUser
-                await tx.tenantUser.deleteMany({ where: { clerkId: userId } });
+                // Tier 3: Root Parents
+                await Promise.all([
+                    tx.category.deleteMany({ where: { businessId: bId } }),
+                    tx.customer.deleteMany({ where: { businessId: bId } }),
+                    tx.supplier.deleteMany({ where: { businessId: bId } }),
+                    tx.store.deleteMany({ where: { businessId: bId } }),
+                    tx.attribute.deleteMany({ where: { businessId: bId } }),
+                    tx.expense.deleteMany({ where: { businessId: bId } }),
+                    tx.kraTotReturn.deleteMany({ where: { businessId: bId } }),
+                    tx.kraDetails.deleteMany({ where: { businessId: bId } }),
+                    tx.auditLog.deleteMany({ where: { businessId: bId } }),
+                ]);
+
+                // Tier 4: Tenant Users
+                await Promise.all([
+                    tx.tenantUser.deleteMany({ where: { clerkId: { not: userId } } }),
+                    tx.tenantUser.deleteMany({ where: { clerkId: userId } }),
+                ]);
             });
 
             // Delete everything in Master DB
             await masterPrisma.$transaction(async (tx) => {
-                await tx.userInvitation.deleteMany({ where: { businessId: bId } });
-                await tx.subscriptionPayment.deleteMany({ where: { userId: userId } });
-                await tx.subscription.deleteMany({ where: { businessId: bId } });
-                await tx.user.deleteMany({ where: { businessId: bId, clerkId: { not: userId } } });
-                await tx.user.delete({ where: { id: user.id } });
+                // Tier 1: Leaf Master entities
+                await Promise.all([
+                    tx.userInvitation.deleteMany({ where: { businessId: bId } }),
+                    tx.subscriptionPayment.deleteMany({ where: { Subscription: { businessId: bId } } }),
+                    tx.mpesaRouting.deleteMany({ where: { businessId: bId } }),
+                    tx.user.deleteMany({ where: { businessId: bId, clerkId: { not: userId } } }),
+                ]);
+
+                // Tier 2: Parent Master entities
+                await Promise.all([
+                    tx.subscription.deleteMany({ where: { businessId: bId } }),
+                    tx.user.delete({ where: { id: user.id } }),
+                ]);
+
+                // Tier 3: Final root
                 await tx.business.delete({ where: { id: bId } });
             });
         } else {
@@ -124,28 +150,31 @@ export default async function handler(
                 const staffClerkId = user.clerkId;
 
                 await tenantPrisma.$transaction(async (tx) => {
-                    await tx.invoice.updateMany({ where: { createdBy: staffClerkId }, data: { createdBy: assigneeClerkId } });
-                    await tx.invoiceItem.updateMany({ where: { createdBy: staffClerkId }, data: { createdBy: assigneeClerkId } });
-                    await tx.product.updateMany({ where: { createdBy: staffClerkId }, data: { createdBy: assigneeClerkId } });
-                    await tx.category.updateMany({ where: { createdBy: staffClerkId }, data: { createdBy: assigneeClerkId } });
-                    await tx.customer.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid as string } });
-                    await tx.supplier.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid as string } });
-                    await tx.expense.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid as string } });
-                    await tx.purchaseOrder.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid as string } });
-                    await tx.stockReceipt.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid as string } });
-                    await tx.stockTransfer.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid as string } });
-                    await tx.delivery.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid as string } });
-                    await tx.mpesaPayment.updateMany({ where: { userId: staffId }, data: { userId: assigneeUuid as string } });
+                    await Promise.all([
+                        tx.invoice.updateMany({ where: { createdBy: staffClerkId }, data: { createdBy: assigneeClerkId } }),
+                        tx.invoiceItem.updateMany({ where: { createdBy: staffClerkId }, data: { createdBy: assigneeClerkId } }),
+                        tx.product.updateMany({ where: { createdBy: staffClerkId }, data: { createdBy: assigneeClerkId } }),
+                        tx.category.updateMany({ where: { createdBy: staffClerkId }, data: { createdBy: assigneeClerkId } }),
+                        tx.customer.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid as string } }),
+                        tx.supplier.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid as string } }),
+                        tx.expense.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid as string } }),
+                        tx.purchaseOrder.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid as string } }),
+                        tx.stockReceipt.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid as string } }),
+                        tx.stockTransfer.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid as string } }),
+                        tx.delivery.updateMany({ where: { createdById: staffId }, data: { createdById: assigneeUuid as string } }),
+                        tx.mpesaPayment.updateMany({ where: { userId: staffId }, data: { userId: assigneeUuid as string } }),
+                    ]);
                     await tx.tenantUser.delete({ where: { clerkId: staffClerkId } });
                 });
             }
 
             // Cleanup invitations and delete user from Master
             await masterPrisma.$transaction(async (tx) => {
+                const tasks: any[] = [tx.user.delete({ where: { id: user.id } })];
                 if (user.email) {
-                    await tx.userInvitation.deleteMany({ where: { email: user.email } });
+                    tasks.push(tx.userInvitation.deleteMany({ where: { email: user.email } }));
                 }
-                await tx.user.delete({ where: { id: user.id } });
+                await Promise.all(tasks);
             });
         }
 
