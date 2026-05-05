@@ -131,20 +131,22 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                         customerId: customerId || null,
                         storeId: targetStoreId,
                         createdBy,
+                        businessId: creator.businessId,
                     },
                 });
 
-                await tx.invoiceItem.createMany({
-                    data: cartItems.map((item: any) => ({
-                        invoiceId: invoice.id,
-                        productId: item.productId,
-                        quantity: item.quantity,
-                        price: item.price,
-                        createdBy,
-                    })),
-                });
-
-                await Promise.all(updatePromises);
+                await Promise.all([
+                    tx.invoiceItem.createMany({
+                        data: cartItems.map((item: any) => ({
+                            invoiceId: invoice.id,
+                            productId: item.productId,
+                            quantity: item.quantity,
+                            price: item.price,
+                            createdBy,
+                        })),
+                    }),
+                    ...updatePromises
+                ]);
 
                 return { invoice, lowStockAlerts };
             },

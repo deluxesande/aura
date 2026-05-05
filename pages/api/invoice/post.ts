@@ -116,11 +116,41 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             invoiceData.customerId = customerId;
         }
 
-        const invoice = await tenantPrisma.invoice.create({
-            data: invoiceData,
-        });
+        const invoice = await tenantPrisma.$transaction(async (tx) => {
+            const createdInvoice = await tx.invoice.create({
+                data: invoiceData,
+            });
 
-        // Log Audit Action (tenantPrisma)
+            // Parallel Stock Updates
+            const updatePromises = invoiceItems.map(async (item: InvoiceItem) => {
+                const inventory = await tx.storeInventory.findUnique({
+                    where: {
+                        storeId_productId: {
+                            storeId: targetStoreId,
+                            productId: item.productId,
+                        },
+                    },
+                });
+
+                if (inventory) {
+                    return Promise.all([
+                        tx.storeInventory.update({
+                            where: { id: inventory.id },
+                            data: { quantity: { decrement: item.quantity } },
+                        }),
+                        tx.product.update({
+                            where: { id: item.productId },
+                            data: { inStock: inventory.quantity - item.quantity > 0 },
+                        })
+                    ]);
+                }
+            });
+
+            await Promise.all(updatePromises);
+            return createdInvoice;
+        }, { timeout: 10000 });
+
+        // Log Audit Action
         await logAction({
             action: "CREATE_INVOICE",
             entityType: "INVOICE",
