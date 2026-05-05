@@ -122,6 +122,8 @@ export default async function handler(
                     tx.tenantUser.deleteMany({ where: { clerkId: { not: userId } } }),
                     tx.tenantUser.deleteMany({ where: { clerkId: userId } }),
                 ]);
+            }, {
+                timeout: 25000 // Increased from default 5s
             });
 
             // Delete everything in Master DB
@@ -142,6 +144,8 @@ export default async function handler(
 
                 // Tier 3: Final root
                 await tx.business.delete({ where: { id: bId } });
+            }, {
+                timeout: 20000 // Increased from default 5s
             });
         } else {
             // STAFF MEMBER DELETION: Re-assign data to Admin
