@@ -24,6 +24,7 @@ const PUBLIC_ROUTES = new Set([
     "/help-center",
     "/access-suspended",
     "/subscription-expired",
+    "/download",
 ]);
 
 const PUBLIC_PREFIXES = ["/auth/accept-invitation", "/blog", "/help-center"];
