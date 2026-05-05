@@ -172,13 +172,13 @@ export default function ReceiveStockModal({
                         newItems[0] = {
                             productId: foundProduct.id,
                             quantity: "1",
-                            unitCost: foundProduct.costPrice?.toString() || "",
+                            unitCost: "",
                         };
                     } else {
                         newItems.push({
                             productId: foundProduct.id,
                             quantity: "1",
-                            unitCost: foundProduct.costPrice?.toString() || "",
+                            unitCost: "",
                         });
                     }
                     toast.success(`Added: ${foundProduct.name}`);

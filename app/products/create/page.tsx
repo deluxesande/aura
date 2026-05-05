@@ -653,7 +653,7 @@ export default function CreateProductPage() {
                                             htmlFor="price"
                                             className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5"
                                         >
-                                            Price:
+                                            Selling Price:
                                         </label>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -671,12 +671,12 @@ export default function CreateProductPage() {
                                             />
                                         </div>
                                     </div>
-                                    <div>
+                                    <div className="sm:col-span-2">
                                         <label
                                             htmlFor="quantity"
                                             className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5"
                                         >
-                                            Quantity:
+                                            Initial Quantity:
                                         </label>
                                         <input
                                             id="quantity"

@@ -235,11 +235,12 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
 
                     <button
                         onClick={() => handleModeSelect("BYODB")}
+                        disabled={!isPaidPlan}
                         className={`flex items-start gap-4 p-4 rounded-xl border transition-all text-left ${
                             selectedMode === "BYODB"
                                 ? "bg-green-50 border-green-500 ring-1 ring-green-500"
                                 : "bg-white border-gray-200 hover:border-gray-300"
-                        } ${!isPaidPlan ? "opacity-60 cursor-not-allowed" : ""}`}
+                        } ${!isPaidPlan ? "opacity-40 grayscale cursor-not-allowed" : ""}`}
                     >
                         <div
                             className={`mt-1 w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
@@ -256,9 +257,6 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
                             <div className="flex items-center justify-between mb-1">
                                 <span className="font-bold text-gray-900 text-sm flex items-center gap-2">
                                     Bring Your Own DB
-                                    {!isPaidPlan && (
-                                        <Lock className="w-3.5 h-3.5 text-gray-400" />
-                                    )}
                                 </span>
                             </div>
                             <p className="text-xs text-gray-500 leading-relaxed mb-2">
@@ -268,10 +266,10 @@ const DatabaseSettings: React.FC<DatabaseSettingsProps> = ({
                             {!isPaidPlan && (
                                 <Link
                                     href="/pricing"
-                                    className="text-xs font-bold text-green-500 hover:text-green-500 hover:underline"
+                                    className="text-[10px] font-bold text-gray-400 uppercase tracking-wider hover:underline"
                                     onClick={(e) => e.stopPropagation()}
                                 >
-                                    Upgrade to unlock &rarr;
+                                    Requires Standard or Premium Plan &rarr;
                                 </Link>
                             )}
                         </div>

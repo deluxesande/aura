@@ -156,14 +156,14 @@ export default function PurchaseOrderModal({
                         newItems[0] = {
                             productId: foundProduct.id,
                             quantity: "1",
-                            unitCost: foundProduct.costPrice?.toString() || "",
+                            unitCost: "",
                         };
                     } else {
                         // Otherwise, add a new row
                         newItems.push({
                             productId: foundProduct.id,
                             quantity: "1",
-                            unitCost: foundProduct.costPrice?.toString() || "",
+                            unitCost: "",
                         });
                     }
                     toast.success(`Added: ${foundProduct.name}`);

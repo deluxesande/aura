@@ -323,7 +323,7 @@ export default function EditProductPage() {
         <Navbar>
             <div className="max-w-5xl mx-auto px-4 py-8 relative">
                 {isDataLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">        
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
                     </div>
                 )}
@@ -383,7 +383,7 @@ export default function EditProductPage() {
                 >
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                            <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
+                            <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">  
                                 General Information
                             </h2>
                             <div className="space-y-4">
@@ -524,7 +524,7 @@ export default function EditProductPage() {
                         )}
 
                         {isTemplate && (
-                            <div className="bg-blue-50 p-6 rounded-lg border border-blue-100 flex gap-4">
+                            <div className="bg-blue-50 p-6 rounded-lg border border-blue-100 flex gap-4">       
                                 <div className="p-2 bg-blue-500 rounded-lg h-fit">
                                     <Info className="w-5 h-5 stroke-white" />
                                 </div>
@@ -582,7 +582,7 @@ export default function EditProductPage() {
                         )}
 
                         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                            <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
+                            <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">  
                                 Organization
                             </h2>
                             <div>
@@ -612,7 +612,7 @@ export default function EditProductPage() {
                         </div>
 
                         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                            <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">
+                            <h2 className="text-sm font-semibold text-gray-800 mb-4 uppercase tracking-wider">  
                                 Product Image
                             </h2>
                             <div className="relative w-full aspect-square border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 transition-colors group bg-gray-50 overflow-hidden cursor-pointer">
@@ -620,7 +620,7 @@ export default function EditProductPage() {
                                     type="file"
                                     accept="image/png"
                                     onChange={handleImageFileSelect}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"    
                                 />
 
                                 {imagePreview ? (

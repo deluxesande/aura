@@ -77,11 +77,11 @@ export const updateProduct = async (
             categoryId,
             image,
             sku,
+            price: parseFloat(price) || 0,
         };
 
         // If it's not a template, we can update price and inventory
         if (product.type !== "TEMPLATE") {
-            data.price = price;
             data.inStock = quantity > 0 ? true : false;
 
             await tenantPrisma.$transaction([
@@ -165,4 +165,3 @@ export const updateProduct = async (
         res.status(500).json({ error: "Failed to update product" });
     }
 };
-

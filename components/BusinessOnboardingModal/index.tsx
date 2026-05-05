@@ -276,10 +276,15 @@ const BusinessOnboardingModal = () => {
                                         </button>
 
                                         <button
-                                            onClick={() =>
-                                                setTenantMode("BYODB")
-                                            }
-                                            className={`flex items-start gap-4 p-4 rounded-xl border transition-all text-left ${tenantMode === "BYODB" ? "bg-green-50 border-green-500 ring-1 ring-green-500" : "bg-white border-gray-200 hover:border-gray-300"}`}
+                                            onClick={() => {
+                                                if (!isPaidPlan) {
+                                                    toast.error("Bring Your Own DB is only available on paid plans.");
+                                                    return;
+                                                }
+                                                setTenantMode("BYODB");
+                                            }}
+                                            disabled={!isPaidPlan}
+                                            className={`flex items-start gap-4 p-4 rounded-xl border transition-all text-left ${tenantMode === "BYODB" ? "bg-green-50 border-green-500 ring-1 ring-green-500" : "bg-white border-gray-200 hover:border-gray-300"} ${!isPaidPlan ? "opacity-40 grayscale cursor-not-allowed" : ""}`}
                                         >
                                             <div
                                                 className={`mt-1 w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${tenantMode === "BYODB" ? "border-green-500 bg-green-500" : "border-gray-300"}`}
@@ -301,6 +306,11 @@ const BusinessOnboardingModal = () => {
                                                     data on your own private
                                                     PostgreSQL instance.
                                                 </p>
+                                                {!isPaidPlan && (
+                                                    <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">
+                                                        Requires Standard or Premium Plan
+                                                    </p>
+                                                )}
                                             </div>
                                         </button>
                                     </div>
