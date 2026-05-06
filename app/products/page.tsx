@@ -149,7 +149,7 @@ export default function Page() {
         dispatch(hide());
     }, [dispatch]);
 
-    const toggleActiveCategory = useCallback((categoryId: string) => {
+    const toggleActiveCategory(category.id) = useCallback((categoryId: string) => {
         setSelectedCategoryId(categoryId);
         setActiveFolderTemplate(null);
         setSearchQuery(""); // Clear search when switching categories
@@ -602,7 +602,7 @@ export default function Page() {
                                         active={
                                             selectedCategoryId === category.id
                                         }
-                                        onCategoryClick={toggleActiveCategory}
+                                        onCategoryClick={() => toggleActiveCategory(category.id)}
                                     />
                                 ))}
                             </div>

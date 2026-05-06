@@ -118,7 +118,6 @@ export default function CustomerDetailsPage() {
                     `/invoice/customer?customerId=${customerId}`,
                 );
                 setInvoices(response.data);
-                console.log(response.data);
             } catch (error) {
                 // console.error("Error fetching invoices:", error);
             } finally {
