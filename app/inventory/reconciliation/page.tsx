@@ -526,59 +526,6 @@ export default function ReconciliationPage() {
                                         </button>
                                     </div>
                                 </div>
-
-                                <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg space-y-4">
-                                    <div className="flex gap-3">
-                                        <AlertCircle
-                                            className="text-blue-500 shrink-0"
-                                            size={20}
-                                        />
-                                        <p className="text-xs text-blue-700 leading-relaxed">
-                                            <strong>Pro Tip:</strong> Use a
-                                            barcode scanner in this page to
-                                            quickly find products. Completing
-                                            the reconciliation will immediately
-                                            update the system quantities to
-                                            match your physical counts.
-                                        </p>
-                                    </div>
-
-                                    <div className="pt-3 border-t border-blue-200/50">
-                                        <p className="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-3">
-                                            Cross-Reference
-                                        </p>
-                                        <div className="flex flex-col gap-2">
-                                            <button
-                                                onClick={() =>
-                                                    router.push(
-                                                        "/suppliers/orders",
-                                                    )
-                                                }
-                                                className="w-full text-left px-3 py-2 bg-white/50 hover:bg-white border border-blue-100 rounded-lg text-xs text-blue-600 font-bold transition-all flex items-center justify-between group"
-                                            >
-                                                View Open Orders
-                                                <ArrowRight
-                                                    size={12}
-                                                    className="transition-transform group-hover:translate-x-1"
-                                                />
-                                            </button>
-                                            <button
-                                                onClick={() =>
-                                                    router.push(
-                                                        "/suppliers/failed-deliveries",
-                                                    )
-                                                }
-                                                className="w-full text-left px-3 py-2 bg-white/50 hover:bg-white border border-blue-100 rounded-lg text-xs text-blue-600 font-bold transition-all flex items-center justify-between group"
-                                            >
-                                                Supplier Discrepancies
-                                                <ArrowRight
-                                                    size={12}
-                                                    className="transition-transform group-hover:translate-x-1"
-                                                />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </motion.div>
                     ) : (

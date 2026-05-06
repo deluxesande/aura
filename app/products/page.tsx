@@ -136,6 +136,7 @@ export default function Page() {
         useState<Product | null>(null);
 
     const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+    const [displayLimit, setDisplayLimit] = useState(20);
 
     const productsRef = useRef(productsData);
     productsRef.current = productsData;
@@ -572,9 +573,11 @@ export default function Page() {
     }, [isLoaded, user, reduxUser, dispatch]);
 
     // Determine what to display in the main grid
-    const displayItems = activeFolderTemplate
+    const allDisplayItems = activeFolderTemplate
         ? activeFolderTemplate.variants || []
         : filteredProducts;
+
+    const displayItems = allDisplayItems.slice(0, displayLimit);
 
     return (
         <div className="flex h-screen overflow-hidden">
@@ -722,6 +725,19 @@ export default function Page() {
                             })
                         )}
                     </div>
+                    {/* --- LOAD MORE BUTTON --- */}
+                    {!loading && allDisplayItems.length > displayLimit && (
+                        <div className="py-8 flex justify-center w-full">
+                            <button
+                                onClick={() =>
+                                    setDisplayLimit((prev) => prev + 20)
+                                }
+                                className="px-8 py-3 bg-white border-2 border-green-500 text-green-500 font-bold rounded-xl hover:bg-green-50 transition-all active:scale-95 shadow-sm"
+                            >
+                                Load More Products
+                            </button>
+                        </div>
+                    )}
                 </Navbar>
             </div>
 

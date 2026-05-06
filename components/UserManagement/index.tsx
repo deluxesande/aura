@@ -160,7 +160,6 @@ const UserManagement: React.FC = () => {
         plan === "STARTER" ? 1 : plan === "STANDARD" ? 5 : Infinity;
     const canInvite = staffCount < teamLimit;
 
-    // ─── CUSTOM LOGIC: ALL Pending + Paginated Accepted ─────────────────────────
     const {
         pendingUsers,
         paginatedAccepted,
@@ -196,7 +195,6 @@ const UserManagement: React.FC = () => {
     }, [userInvitations, currentPage]);
 
     const displayUsers = [...pendingUsers, ...paginatedAccepted];
-    // ────────────────────────────────────────────────────────────────────────────
 
     const handleInviteUser = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -358,7 +356,7 @@ const UserManagement: React.FC = () => {
     };
 
     return (
-        <section className="relative w-full">
+        <section className="relative w-full bg-white p-4 sm:p-8 shadow sm:rounded-lg border border-gray-100">
             <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
                 <div>
                     <h2 className="text-xl font-semibold text-gray-900">

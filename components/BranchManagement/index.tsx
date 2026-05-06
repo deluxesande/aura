@@ -141,7 +141,7 @@ const BranchManagement: React.FC = () => {
     const canCreate = currentCount < maxStores;
 
     return (
-        <section className="w-full">
+        <section className="w-full bg-white p-4 sm:p-8 shadow sm:rounded-lg border border-gray-100">
             {/* Header */}
             <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
                 <div>

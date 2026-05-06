@@ -24,7 +24,6 @@ const DataManagement: React.FC = () => {
     const [importFile, setImportFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // --- EXPORT LOGIC ---
     const handleDownloadConfirm = async () => {
         setIsDownloading(true);
         try {
@@ -98,10 +97,10 @@ const DataManagement: React.FC = () => {
                 </p>
             </header>
 
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="mt-8 flex flex-col sm:flex-row items-center flex-wrap gap-4">
                 <button
                     onClick={() => setShowExportModal(true)}
-                    className="btn btn-md btn-ghost flex items-center justify-center bg-green-500 text-white hover:bg-green-600 w-full"
+                    className="btn btn-md btn-ghost flex items-center justify-center bg-green-500 text-white hover:bg-green-600 flex-1"
                 >
                     <Download className="w-4 h-4 mr-2 stroke-white" />
                     Export Data
@@ -109,18 +108,10 @@ const DataManagement: React.FC = () => {
 
                 <button
                     onClick={() => setShowImportModal(true)}
-                    className="btn btn-md btn-ghost flex items-center justify-center border border-gray-300 text-gray-700 hover:bg-gray-50 w-full"
+                    className="btn btn-md btn-ghost flex items-center justify-center border border-gray-300 text-gray-700 hover:bg-gray-50 flex-1"
                 >
                     <Upload className="w-4 h-4 mr-2" />
                     Import Data
-                </button>
-
-                <button
-                    onClick={() => router.push("/settings/audit-logs")}
-                    className="btn btn-md btn-ghost flex items-center justify-center border border-gray-300 text-gray-700 hover:bg-gray-50 w-full"
-                >
-                    <History className="w-4 h-4 mr-2" />
-                    Audit Logs
                 </button>
             </div>
 

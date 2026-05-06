@@ -232,21 +232,6 @@ const BusinessSettingsForm: React.FC<BusinessSettingsFormProps> = ({
                 </p>
             </header>
 
-            <div className="mb-8 rounded-lg border border-blue-200 bg-blue-50 p-4">
-                <div className="flex items-start gap-3">
-                    <div>
-                        <h3 className="text-sm font-semibold text-blue-900">
-                            Public Information
-                        </h3>
-                        <p className="mt-1 text-sm text-blue-700">
-                            These details will appear on all invoices and
-                            receipts sent to your customers. Ensure they are
-                            accurate for tax compliance.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
             {isLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10 rounded-lg">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>

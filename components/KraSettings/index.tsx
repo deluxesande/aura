@@ -4,7 +4,8 @@ import React, { useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 
-const getFetcher = (url: string) => apiClient.get(url.replace("/api", "")).then((res) => res.data);
+const getFetcher = (url: string) =>
+    apiClient.get(url.replace("/api", "")).then((res) => res.data);
 
 const KraSettings = () => {
     const [inputPin, setInputPin] = useState("");
@@ -76,7 +77,7 @@ const KraSettings = () => {
     };
 
     return (
-        <section className="bg-white p-6 rounded-lg shadow-md w-full mt-6">
+        <section className="bg-white p-6 rounded-lg shadow-md w-full">
             <header className="mb-4">
                 <h2 className="text-lg font-medium text-gray-900 flex items-center gap-2">
                     KRA PIN Validator
