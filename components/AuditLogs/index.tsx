@@ -2,25 +2,18 @@
 
 import React, { useEffect, useState } from "react";
 import { apiClient } from "@/utils/apiClient";
-import {
-    Search,
-    ChevronLeft,
-    ChevronRight,
-} from "lucide-react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
 import { AppState } from "@/store";
-import {
-    setAuditLogs,
-} from "@/store/slices/auditLogSlice";
+import { setAuditLogs } from "@/store/slices/auditLogSlice";
 
 const AuditLogs: React.FC = () => {
     const dispatch = useDispatch();
-    const {
-        logs,
-        lastFetched,
-    } = useSelector((state: AppState) => state.auditLog);
+    const { logs, lastFetched } = useSelector(
+        (state: AppState) => state.auditLog,
+    );
     const [loading, setLoading] = useState(!lastFetched);
     const [searchQuery, setSearchQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
@@ -76,22 +69,34 @@ const AuditLogs: React.FC = () => {
                 case "CREATE_PRODUCT":
                     return (
                         <div className="flex flex-col text-[11px] leading-tight">
-                            <span className="font-bold text-green-500">{details.name}</span>
-                            <span className="text-gray-500 text-[10px]">SKU: {details.sku}</span>
+                            <span className="font-bold text-green-500">
+                                {details.name}
+                            </span>
+                            <span className="text-gray-500 text-[10px]">
+                                SKU: {details.sku}
+                            </span>
                         </div>
                     );
                 case "UPDATE_PRODUCT":
                     return (
                         <div className="flex flex-col text-[11px] leading-tight">
-                            <span className="font-bold text-gray-700">{details.name}</span>
-                            <span className="text-gray-400 text-[10px]">Updated</span>
+                            <span className="font-bold text-gray-700">
+                                {details.name}
+                            </span>
+                            <span className="text-gray-400 text-[10px]">
+                                Updated
+                            </span>
                         </div>
                     );
                 case "CREATE_INVOICE":
                     return (
                         <div className="flex flex-col text-[11px] leading-tight">
-                            <span className="font-bold text-gray-700">{details.invoiceName}</span>
-                            <span className="text-green-500 font-black">KSH {details.totalAmount}</span>
+                            <span className="font-bold text-gray-700">
+                                {details.invoiceName}
+                            </span>
+                            <span className="text-green-500 font-black">
+                                KSH {details.totalAmount}
+                            </span>
                         </div>
                     );
                 default:
@@ -102,7 +107,11 @@ const AuditLogs: React.FC = () => {
                     );
             }
         } catch (e) {
-            return <span className="text-[10px] text-gray-400 italic">Unparseable details</span>;
+            return (
+                <span className="text-[10px] text-gray-400 italic">
+                    Unparseable details
+                </span>
+            );
         }
     };
 
@@ -115,7 +124,7 @@ const AuditLogs: React.FC = () => {
     }
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
+        <div className="space-y-6 animate-in fade-in duration-500 bg-white p-4 sm:p-8 shadow sm:rounded-lg border border-gray-100">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h2 className="text-xl font-bold text-gray-900">Audit Logs</h2>
                 <div className="relative w-full md:w-80">
@@ -138,17 +147,32 @@ const AuditLogs: React.FC = () => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-gray-50/50 border-b border-gray-100">
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Action</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Entity</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Details</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">User</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Timestamp</th>
+                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    Action
+                                </th>
+                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    Entity
+                                </th>
+                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    Details
+                                </th>
+                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    User
+                                </th>
+                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    Timestamp
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             {paginatedLogs.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500 text-sm">No activity found.</td>
+                                    <td
+                                        colSpan={5}
+                                        className="px-6 py-12 text-center text-gray-500 text-sm"
+                                    >
+                                        No activity found.
+                                    </td>
                                 </tr>
                             ) : (
                                 paginatedLogs.map((log, index) => (
@@ -169,14 +193,21 @@ const AuditLogs: React.FC = () => {
                                                 {log.entityType}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4">{renderDetails(log)}</td>
+                                        <td className="px-6 py-4">
+                                            {renderDetails(log)}
+                                        </td>
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-gray-700">{log.User?.firstName} {log.User?.lastName}</span>
+                                                <span className="text-sm font-bold text-gray-700">
+                                                    {log.User?.firstName}{" "}
+                                                    {log.User?.lastName}
+                                                </span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-xs text-gray-500">
-                                            {new Date(log.createdAt).toLocaleString()}
+                                            {new Date(
+                                                log.createdAt,
+                                            ).toLocaleString()}
                                         </td>
                                     </motion.tr>
                                 ))
@@ -192,14 +223,22 @@ const AuditLogs: React.FC = () => {
                         </p>
                         <div className="flex gap-2">
                             <button
-                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                onClick={() =>
+                                    setCurrentPage((prev) =>
+                                        Math.max(prev - 1, 1),
+                                    )
+                                }
                                 disabled={currentPage === 1}
                                 className="p-1.5 rounded-lg hover:bg-white border border-transparent hover:border-gray-200 disabled:opacity-30 transition-all"
                             >
                                 <ChevronLeft size={16} />
                             </button>
                             <button
-                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                onClick={() =>
+                                    setCurrentPage((prev) =>
+                                        Math.min(prev + 1, totalPages),
+                                    )
+                                }
                                 disabled={currentPage === totalPages}
                                 className="p-1.5 rounded-lg hover:bg-white border border-transparent hover:border-gray-200 disabled:opacity-30 transition-all"
                             >
