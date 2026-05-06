@@ -66,13 +66,13 @@ export default function Page() {
     );
 
     // --- SWR DATA FETCHING ---
-    const { data: swrProducts, mutate: mutateProducts, isLoading: isProductsLoading } = useSWR(
-        "/product",
-        fetcher,
-        {
-            revalidateOnFocus: false,
-        },
-    );
+    const {
+        data: swrProducts,
+        mutate: mutateProducts,
+        isLoading: isProductsLoading,
+    } = useSWR("/product", fetcher, {
+        revalidateOnFocus: false,
+    });
     const { data: swrCustomers } = useSWR("/customer", fetcher);
     const { data: swrCategories } = useSWR("/category", fetcher);
 
@@ -149,7 +149,7 @@ export default function Page() {
         dispatch(hide());
     }, [dispatch]);
 
-    const toggleActiveCategory(category.id) = useCallback((categoryId: string) => {
+    const toggleActiveCategory = useCallback((categoryId: string) => {
         setSelectedCategoryId(categoryId);
         setActiveFolderTemplate(null);
         setSearchQuery(""); // Clear search when switching categories
@@ -602,7 +602,9 @@ export default function Page() {
                                         active={
                                             selectedCategoryId === category.id
                                         }
-                                        onCategoryClick={() => toggleActiveCategory(category.id)}
+                                        onCategoryClick={() =>
+                                            toggleActiveCategory(category.id)
+                                        }
                                     />
                                 ))}
                             </div>
