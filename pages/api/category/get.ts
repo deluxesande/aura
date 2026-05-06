@@ -5,7 +5,7 @@ import { getTenantPrisma } from "@/utils/lib/prisma";
 
 export const getCategories = async (
     req: NextApiRequest,
-    res: NextApiResponse
+    res: NextApiResponse,
 ) => {
     try {
         const { userId } = getAuth(req);
@@ -28,7 +28,11 @@ export const getCategories = async (
         const tenantPrisma = await getTenantPrisma(currentUser.businessId);
 
         // Get categories from Tenant DB (Tenant DBs are already isolated per business)
-        const categories = await tenantPrisma.category.findMany();
+        const categories = await tenantPrisma.category.findMany({
+            where: {
+                businessId: currentUser.businessId,
+            },
+        });
 
         res.status(200).json(categories);
     } catch (error) {
