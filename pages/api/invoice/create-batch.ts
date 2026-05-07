@@ -137,13 +137,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
                 await Promise.all([
                     tx.invoiceItem.createMany({
-                        data: cartItems.map((item: any) => ({
-                            invoiceId: invoice.id,
-                            productId: item.productId,
-                            quantity: item.quantity,
-                            price: item.price,
-                            createdBy,
-                        })),
+                        data: cartItems.map((item: any) => {
+                            const product = productMap.get(item.productId);
+                            return {
+                                invoiceId: invoice.id,
+                                productId: item.productId,
+                                quantity: item.quantity,
+                                price: product?.price || item.price, // Use actual product price
+                                createdBy,
+                            };
+                        }),
                     }),
                     ...updatePromises
                 ]);

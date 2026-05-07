@@ -67,7 +67,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             data: {
                 invoiceId,
                 quantity,
-                price,
+                price: inventory.Product.price, // Use actual product price
                 productId,
                 createdBy: userId,
             },

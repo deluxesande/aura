@@ -65,7 +65,7 @@ export default async function handler(
         });
         const userIds = businessUsers.map((u) => u.clerkId);
 
-        // 3. Define Time Ranges
+        // 3. Define Time Ranges (UTC)
         const { timePeriod } = req.query;
         const now = new Date();
         
@@ -74,29 +74,20 @@ export default async function handler(
             const days = parseInt(timePeriod as string);
             if (!isNaN(days)) {
                 statsStartDate = new Date(
-                    now.getFullYear(),
-                    now.getMonth(),
-                    now.getDate() - days,
+                    now.getUTCFullYear(),
+                    now.getUTCMonth(),
+                    now.getUTCDate() - days,
                     0, 0, 0, 0
                 );
             }
         }
 
         const startOfToday = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate()
+            Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
         );
-        const startOfYesterday = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate() - 1
-        );
-        const endOfYesterday = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate()
-        );
+        const startOfYesterday = new Date(startOfToday);
+        startOfYesterday.setUTCDate(startOfYesterday.getUTCDate() - 1);
+        const endOfYesterday = new Date(startOfToday);
 
         // 4. Helper to fetch stats (Optional Date Range)
         const getStats = async (startDate?: Date, endDate?: Date) => {
@@ -125,20 +116,23 @@ export default async function handler(
                 whereClause.createdAt = dateFilter;
             }
 
-            // Aggregate Totals (Invoices)
-            const invoiceData = await tenantPrisma.invoice.aggregate({
-                where: invoiceWhere,
-                _count: { id: true }, // Total Invoices
-            });
-
-            // Aggregate Revenue (Paid Only)
-            const paidData = await tenantPrisma.invoice.aggregate({
+            // Fetch Invoices with items to calculate Gross Revenue
+            const invoices = await tenantPrisma.invoice.findMany({
                 where: {
                     ...invoiceWhere,
                     status: { in: ["PAID", "paid", "COMPLETED", "completed"] },
                 },
-                _count: { id: true }, // Paid Invoices count
-                _sum: { totalAmount: true }, // Total Revenue
+                select: { 
+                    totalAmount: true,
+                    invoiceItems: {
+                        select: { quantity: true, price: true }
+                    }
+                }
+            });
+
+            // Aggregate Totals (Invoices Count)
+            const invoiceCount = await tenantPrisma.invoice.count({
+                where: invoiceWhere,
             });
 
             // Aggregate Procurement (Deliveries)
@@ -148,7 +142,6 @@ export default async function handler(
                     status: "RECEIVED",
                 },
                 _sum: { totalCost: true },
-                _count: { id: true },
             });
 
             // Aggregate Expenses
@@ -160,13 +153,19 @@ export default async function handler(
                 _sum: { amount: true },
             });
 
-            const totalRevenue = paidData._sum.totalAmount || 0;
+            let totalRevenue = 0;
+            invoices.forEach(inv => {
+                inv.invoiceItems.forEach(item => {
+                    totalRevenue += item.quantity * item.price;
+                });
+            });
+
             const totalProcurement = deliveryData._sum.totalCost || 0;
             const totalExpenses = expenseData._sum.amount || 0;
 
             return {
-                totalInvoices: invoiceData._count.id,
-                paidInvoices: paidData._count.id,
+                totalInvoices: invoiceCount,
+                paidInvoices: invoices.length,
                 totalRevenue: totalRevenue,
                 totalProcurement: totalProcurement,
                 totalExpenses: totalExpenses,
@@ -201,7 +200,8 @@ export default async function handler(
         // 5. Calculate Percentages (Velocity: Today vs Yesterday)
         const calcChange = (curr: number, prev: number) => {
             if (prev === 0) return curr > 0 ? 100 : 0;
-            return ((curr - prev) / prev) * 100;
+            const change = ((curr - prev) / prev) * 100;
+            return isFinite(change) ? change : (curr > 0 ? 100 : 0);
         };
 
         const finalStats = {

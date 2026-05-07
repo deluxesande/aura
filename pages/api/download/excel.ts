@@ -120,6 +120,9 @@ export default async function handler(
                     "Quantity": stock,
                     "Description": p.description,
                     "In Stock": p.inStock ? "Yes" : "No",
+                    "Type": p.type,
+                    "Parent ID": p.parentId,
+                    "Business ID": p.businessId,
                 };
             })
         );
@@ -136,6 +139,8 @@ export default async function handler(
                 "Status": inv.status,
                 "Payment Type": inv.paymentType,
                 "Date Issued": inv.createdAt,
+                "Store ID": inv.storeId,
+                "Business ID": inv.businessId,
             }))
         );
         XLSX.utils.book_append_sheet(workbook, invoicesSheet, "Invoices");

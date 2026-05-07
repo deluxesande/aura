@@ -126,30 +126,16 @@ export default async function handler(
         const deliveryLedger: any[] = [];
 
         invoices.forEach((inv) => {
-            totalRevenue += inv.totalAmount;
-
             const pType = (inv.paymentType || "CASH").toUpperCase();
-
-            if (pType === "MPESA") {
-                mpesaTotal += inv.totalAmount;
-            } else {
-                cashTotal += inv.totalAmount;
-            }
-
             const customerName = inv.Customer
                 ? `${inv.Customer.firstName || ""} ${inv.Customer.lastName || ""}`.trim()
                 : inv.invoiceName || "Walk-in";
 
-            ledger.push({
-                date: inv.createdAt.toISOString(),
-                invoiceId: inv.id,
-                customer: customerName || "Walk-in",
-                method: pType,
-                amount: inv.totalAmount,
-            });
-
+            let invoiceGrossRevenue = 0;
             inv.invoiceItems.forEach((item) => {
                 const pid = item.productId;
+                const itemRevenue = item.quantity * item.price;
+                invoiceGrossRevenue += itemRevenue;
 
                 if (!productSales[pid]) {
                     productSales[pid] = {
@@ -161,7 +147,23 @@ export default async function handler(
                 }
 
                 productSales[pid].qty += item.quantity;
-                productSales[pid].revenue += item.quantity * item.price;
+                productSales[pid].revenue += itemRevenue;
+            });
+
+            totalRevenue += invoiceGrossRevenue;
+
+            if (pType === "MPESA") {
+                mpesaTotal += invoiceGrossRevenue;
+            } else {
+                cashTotal += invoiceGrossRevenue;
+            }
+
+            ledger.push({
+                date: inv.createdAt.toISOString(),
+                invoiceId: inv.id,
+                customer: customerName || "Walk-in",
+                method: pType,
+                amount: invoiceGrossRevenue,
             });
         });
 

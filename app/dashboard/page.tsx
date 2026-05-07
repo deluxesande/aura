@@ -56,7 +56,8 @@ export default function Page() {
     const [invoicesLoading, setInvoicesLoading] = useState<boolean>(
         invoices.length === 0,
     );
-    const [chartDataArray, setChartDataArray] = useState<number[]>([]);
+    const [revenueChartData, setRevenueChartData] = useState<number[]>([]);
+    const [profitChartData, setProfitChartData] = useState<number[]>([]);
 
     // --- NEW: Report Modal State ---
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -86,8 +87,9 @@ export default function Page() {
                 const response = await apiClient.get(
                     `/invoice/analytics?timePeriod=${timeRange}`,
                 );
-                if (response.data && Array.isArray(response.data.data)) {
-                    setChartDataArray(response.data.data);
+                if (response.data) {
+                    setRevenueChartData(response.data.revenue || []);
+                    setProfitChartData(response.data.profit || []);
                 }
             } catch (error) {
                 console.error(
@@ -203,7 +205,7 @@ export default function Page() {
             number: `Ksh ${(stats?.totalRevenue || 0).toLocaleString()}`,
             percentageChange: percentageChanges?.totalRevenue || 0,
             chartData:
-                chartDataArray.length > 0 ? chartDataArray : [0, 0, 0, 0, 0],
+                revenueChartData.length > 0 ? revenueChartData : [0, 0, 0, 0, 0],
             showChart: true,
         },
         {
@@ -211,8 +213,8 @@ export default function Page() {
             number: `Ksh ${(stats?.profit || 0).toLocaleString()}`,
             percentageChange: percentageChanges?.profit || 0,
             chartData:
-                chartDataArray.length > 0
-                    ? chartDataArray.map((v) => v * 0.3)
+                profitChartData.length > 0
+                    ? profitChartData
                     : [0, 0, 0, 0, 0],
             showChart: true,
         },

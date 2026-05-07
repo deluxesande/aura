@@ -25,7 +25,7 @@ export default function ActiveTransactionsTracker() {
         const interval = setInterval(async () => {
             for (const tx of pending) {
                 try {
-                    // Check status of invoice - assuming status updates when payment is confirmed
+                    // Check status of invoice
                     const res = await apiClient.get(
                         `/invoice?id=${tx.invoiceId}`,
                     );

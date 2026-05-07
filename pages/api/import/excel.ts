@@ -75,34 +75,45 @@ export default async function handler(
 
         await tenantPrisma.$transaction(
             async (tx) => {
-                // 1. Categories
-                for (const row of categoriesData) {
-                    const name = cleanString(row["Name"] || row["Category Name"]);
-                    if (!name) continue;
-                    await tx.category.upsert({
-                        where: { name_createdBy: { name, createdBy: clerkUserId } },
-                        update: { description: cleanString(row["Description"]) },
+                // 1. Categories - Deduplicate and Upsert in Parallel
+                const uniqueCategories = Array.from(new Map(
+                    categoriesData.map(row => {
+                        const name = cleanString(row["Name"] || row["Category Name"]);
+                        return [normalize(name), { name, description: cleanString(row["Description"]) }];
+                    })
+                ).values()).filter(c => c.name);
+
+                await Promise.all(uniqueCategories.map(cat => 
+                    tx.category.upsert({
+                        where: { name_createdBy: { name: cat.name, createdBy: clerkUserId } },
+                        update: { description: cat.description },
                         create: {
-                            name,
-                            description: cleanString(row["Description"]),
+                            name: cat.name,
+                            description: cat.description,
                             createdBy: clerkUserId,
                             businessId: businessId,
                         },
-                    });
-                }
+                    })
+                ));
 
                 const allCategories = await tx.category.findMany({
                     where: { businessId },
                     select: { id: true, name: true },
                 });
                 const categoryMap = new Map(allCategories.map((c: any) => [normalize(c.name), c.id]));
+                const defaultCategoryId = allCategories[0]?.id;
 
-                // 2. Customers
-                for (const row of customersData) {
+                // 2. Customers - Deduplicate and Upsert in Parallel
+                const uniqueCustomers = Array.from(new Map(
+                    customersData.map(row => {
+                        const phone = cleanString(row["Phone Number"] || row["Phone"]);
+                        return [phone, row];
+                    })
+                ).values()).filter(row => cleanString(row["Phone Number"] || row["Phone"]));
+
+                const customerTasks = uniqueCustomers.map(row => {
                     const phone = cleanString(row["Phone Number"] || row["Phone"]);
-                    if (!phone) continue;
-
-                    await tx.customer.upsert({
+                    return tx.customer.upsert({
                         where: { businessId_phoneNumber: { businessId, phoneNumber: phone } },
                         update: {
                             firstName: cleanString(row["First Name"] || row["Name"]?.split(" ")[0]),
@@ -119,17 +130,19 @@ export default async function handler(
                             createdById: internalUserId,
                         },
                     });
-                }
+                });
 
-                // 3. Products & Store Inventory
-                for (const row of productsData) {
+                // 3. Products - Deduplicate and Upsert in Parallel
+                const uniqueProducts = Array.from(new Map(
+                    productsData.map(row => [cleanString(row["SKU"]), row])
+                ).values()).filter(row => cleanString(row["SKU"]));
+
+                const productTasks = uniqueProducts.map(async (row) => {
                     const sku = cleanString(row["SKU"]);
-                    if (!sku) continue;
-
                     const catName = cleanString(row["Category"]);
-                    const categoryId = categoryMap.get(normalize(catName)) || allCategories[0]?.id;
+                    const categoryId = categoryMap.get(normalize(catName)) || defaultCategoryId;
 
-                    if (!categoryId) continue;
+                    if (!categoryId) return;
 
                     const product = await tx.product.upsert({
                         where: { sku },
@@ -151,7 +164,6 @@ export default async function handler(
                         },
                     });
 
-                    // Update Inventory for the current store
                     if (userStoreId) {
                         const qty = parseInt(row["Quantity"] || row["Qty"]) || 0;
                         await tx.storeInventory.upsert({
@@ -164,16 +176,13 @@ export default async function handler(
                             },
                         });
                     }
-                }
+                });
 
-                // 4. Expenses
-                for (const row of expensesData) {
-                    const title = cleanString(row["Title"]);
-                    if (!title) continue;
-
-                    await tx.expense.create({
+                // 4. Expenses - Create in Parallel
+                const expenseTasks = expensesData.filter(row => cleanString(row["Title"])).map(row => 
+                    tx.expense.create({
                         data: {
-                            title,
+                            title: cleanString(row["Title"]),
                             category: cleanString(row["Category"] || "General"),
                             amount: parseAmount(row["Amount"]),
                             date: row["Date"] ? new Date(row["Date"]) : new Date(),
@@ -182,8 +191,11 @@ export default async function handler(
                             storeId: userStoreId,
                             createdById: internalUserId,
                         },
-                    });
-                }
+                    })
+                );
+
+                // Execute all independent tasks in parallel
+                await Promise.all([...customerTasks, ...productTasks, ...expenseTasks]);
             },
             { timeout: 30000 }
         );

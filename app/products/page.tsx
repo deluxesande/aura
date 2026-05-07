@@ -736,7 +736,7 @@ export default function Page() {
                                 }
                                 className="px-8 py-3 bg-white border-2 border-green-500 text-green-500 font-bold rounded-xl hover:bg-green-50 transition-all active:scale-95 shadow-sm"
                             >
-                                Load More Products
+                                Load More
                             </button>
                         </div>
                     )}

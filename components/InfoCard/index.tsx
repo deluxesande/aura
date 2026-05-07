@@ -43,22 +43,24 @@ export default function InfoCard({
     chartData = [],
     showChart = false,
 }: InfoCardProps) {
+    const isNegativeValue = typeof number === "string" ? number.includes("-") : Number(number) < 0;
     const isTrendingUp = percentageChange >= 0;
+    const isNegative = isNegativeValue || !isTrendingUp;
 
     const data = {
         labels: chartData.map((_, i) => i),
         datasets: [
             {
                 data: chartData,
-                fill: true,
+                fill: "start",
                 backgroundColor: (context: any) => {
                     const ctx = context.chart.ctx;
                     const gradient = ctx.createLinearGradient(0, 0, 0, 50);
-                    gradient.addColorStop(0, isTrendingUp ? "rgba(34, 197, 94, 0.2)" : "rgba(239, 68, 68, 0.2)");
+                    gradient.addColorStop(0, !isNegative ? "rgba(34, 197, 94, 0.2)" : "rgba(239, 68, 68, 0.2)");
                     gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
                     return gradient;
                 },
-                borderColor: isTrendingUp ? "#22c55e" : "#ef4444",
+                borderColor: !isNegative ? "#22c55e" : "#ef4444",
                 borderWidth: 2,
                 tension: 0.4,
                 pointRadius: 0,
@@ -84,11 +86,13 @@ export default function InfoCard({
             <div className="flex items-start justify-between">
                 <div>
                     <p className="font-light text-lg text-gray-400">{title}</p>
-                    <p className="font-bold text-2xl text-black mt-1">{number}</p>
+                    <p className={`font-bold text-2xl mt-1 ${isNegativeValue ? "text-red-600" : "text-black"}`}>
+                        {number}
+                    </p>
                 </div>
                 {Icon && !showChart && (
-                    <div className="mt-1 bg-green-50 p-3 rounded-full">
-                        <Icon size={24} className="stroke-green-500" />
+                    <div className={`mt-1 p-3 rounded-full ${isNegative ? "bg-red-50" : "bg-green-50"}`}>
+                        <Icon size={24} className={isNegative ? "stroke-red-500" : "stroke-green-500"} />
                     </div>
                 )}
             </div>
