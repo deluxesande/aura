@@ -62,7 +62,7 @@ export default function ActiveTransactionsTracker() {
         const interval = setInterval(poll, 5000);
 
         return () => clearInterval(interval);
-    }, [transactions.length, dispatch]);
+    }, [transactions, dispatch]);
 
     if (transactions.length === 0) return null;
 

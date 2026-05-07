@@ -41,7 +41,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 .json({ error: "User is not linked to a business" });
         }
 
-        const tenantPrisma = await getTenantPrisma(creator.businessId);
+        const businessId = creator.businessId;
+        const tenantPrisma = await getTenantPrisma(businessId);
 
         const activeStoreHeader = req.headers["x-store-id"] as string;
         let targetStoreId = activeStoreHeader;
@@ -131,7 +132,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                         customerId: customerId || null,
                         storeId: targetStoreId,
                         createdBy,
-                        businessId: creator.businessId,
+                        businessId: businessId,
                     },
                 });
 
