@@ -1,9 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
-import { PrismaClient, PlanTier } from "@prisma/client";
+import { prisma } from "@/utils/lib/client";
+import { getTenantPrisma } from "@/utils/lib/prisma";
 import { z } from "zod";
-
-const prisma = new PrismaClient();
 
 const downgradeSchema = z.object({
     planId: z.string().min(1, "Plan ID is required"),
@@ -45,17 +44,9 @@ export default async function handler(
         const { planId, activeStaffIds, activeStoreIds } = downgradeSchema.parse(req.body);
         const businessId = currentUser.businessId;
 
-        const planTierMap: Record<string, PlanTier> = {
-            STARTER: PlanTier.STARTER,
-            STANDARD: PlanTier.STANDARD,
-            PREMIUM: PlanTier.PREMIUM,
-        };
+        const targetPlan = planId as any;
 
-        const targetPlan = planTierMap[planId];
-        if (!targetPlan) {
-            return res.status(400).json({ error: "Invalid Plan ID" });
-        }
-
+        // 1. Update Master Database (Subscription and Users)
         await prisma.$transaction(async (tx) => {
             await tx.subscription.updateMany({
                 where: {
@@ -97,8 +88,12 @@ export default async function handler(
                     data: { status: "inactive" },
                 });
             }
+        });
 
-            if (activeStoreIds && Array.isArray(activeStoreIds)) {
+        // 2. Update Tenant Database (Stores)
+        if (activeStoreIds && Array.isArray(activeStoreIds)) {
+            const tenantPrisma = await getTenantPrisma(businessId);
+            await tenantPrisma.$transaction(async (tx) => {
                 await tx.store.updateMany({
                     where: {
                         businessId: businessId,
@@ -114,8 +109,8 @@ export default async function handler(
                     },
                     data: { isActive: false },
                 });
-            }
-        });
+            });
+        }
 
         return res.status(200).json({
             success: true,

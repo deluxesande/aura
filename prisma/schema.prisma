@@ -114,7 +114,7 @@ model UserInvitation {
   email             String
   role              String   @default("user")
   businessId String?  @db.Uuid // Logical reference
-  Business          Business @relation(fields: [businessId], references: [id])
+  Business          Business? @relation(fields: [businessId], references: [id])
   invitedBy         String   @db.Uuid
   Inviter           User     @relation("Inviter", fields: [invitedBy], references: [id])
   status            String   @default("pending")
