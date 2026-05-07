@@ -4,21 +4,83 @@ import { masterPrisma, getTenantPrisma } from "./prisma";
  * Synchronizes user data from the Control Plane (Master DB) to the Tenant Plane (Isolated DB).
  * This ensures that the Tenant DB has the necessary identity information for fast local joins
  * and data integrity (foreign keys).
+ * 
+ * HEALING LOGIC: If businessId or storeId are missing, it attempts to prefill them based on 
+ * existing database records (activity logs or business defaults).
  */
 export async function syncUserToTenant(clerkId: string) {
     try {
         // 1. Fetch user profile from Master DB
-        const masterUser = await masterPrisma.user.findUnique({
+        let masterUser = await masterPrisma.user.findUnique({
             where: { clerkId },
         });
 
-        if (!masterUser || !masterUser.businessId) {
-            console.log(`User sync skipped: User ${clerkId} not found or not associated with a business.`);
+        if (!masterUser) {
+            console.warn(`User sync failed: User ${clerkId} not found in Master DB.`);
             return;
         }
 
-        // 2. Obtain the correct Tenant Prisma client (Shared or BYODB)
-        const tenantPrisma = await getTenantPrisma(masterUser.businessId);
+        // HEAL: If businessId is missing in Master, try to find it from invitations or activity
+        if (!masterUser.businessId) {
+            const invitation = await masterPrisma.userInvitation.findFirst({
+                where: { email: masterUser.email },
+                select: { businessId: true }
+            });
+            if (invitation) {
+                masterUser = await masterPrisma.user.update({
+                    where: { id: masterUser.id },
+                    data: { businessId: invitation.businessId },
+                });
+                console.log(`Healed missing businessId for user ${clerkId} from invitation.`);
+            }
+        }
+
+        if (!masterUser.businessId) {
+            console.log(`User sync skipped: User ${clerkId} has no associated business.`);
+            return;
+        }
+
+        const businessId = masterUser.businessId;
+        const tenantPrisma = await getTenantPrisma(businessId);
+
+        // HEAL: If storeId is missing, look for existing activity in the Tenant DB
+        if (!masterUser.storeId) {
+            // Check most recent invoice created by this user
+            const lastInvoice = await tenantPrisma.invoice.findFirst({
+                where: { createdBy: clerkId },
+                orderBy: { createdAt: "desc" },
+                select: { storeId: true }
+            });
+
+            let inferredStoreId = lastInvoice?.storeId;
+
+            // Fallback: Check most recent customer created by this user
+            if (!inferredStoreId) {
+                const lastCustomer = await tenantPrisma.customer.findFirst({
+                    where: { createdById: masterUser.id },
+                    orderBy: { createdAt: "desc" },
+                    select: { storeId: true }
+                });
+                inferredStoreId = lastCustomer?.storeId;
+            }
+
+            // Ultimate Fallback: Use the first active store in the business
+            if (!inferredStoreId) {
+                const firstStore = await tenantPrisma.store.findFirst({
+                    where: { businessId, isActive: true },
+                    select: { id: true }
+                });
+                inferredStoreId = firstStore?.id;
+            }
+
+            if (inferredStoreId) {
+                masterUser = await masterPrisma.user.update({
+                    where: { id: masterUser.id },
+                    data: { storeId: inferredStoreId },
+                });
+                console.log(`Healed missing storeId for user ${clerkId} to ${inferredStoreId}.`);
+            }
+        }
 
         // 3. Sync to the Tenant DB
         await tenantPrisma.tenantUser.upsert({
@@ -31,7 +93,7 @@ export async function syncUserToTenant(clerkId: string) {
                 status: masterUser.status,
                 storeId: masterUser.storeId,
                 updatedAt: masterUser.updatedAt,
-                businessId: masterUser.businessId!,
+                businessId: businessId,
             },
             create: {
                 id: masterUser.id,
@@ -44,11 +106,11 @@ export async function syncUserToTenant(clerkId: string) {
                 storeId: masterUser.storeId,
                 createdAt: masterUser.createdAt,
                 updatedAt: masterUser.updatedAt,
-                businessId: masterUser.businessId!,
+                businessId: businessId,
             }
         });
 
-        console.log(`Successfully synced user ${clerkId} to tenant DB for business ${masterUser.businessId}`);
+        console.log(`Successfully synced user ${clerkId} to tenant DB.`);
     } catch (error) {
         console.error(`Failed to sync user ${clerkId} to tenant DB:`, error);
     }

@@ -20,7 +20,8 @@ export default function ActiveTransactionsTracker() {
 
     useEffect(() => {
         const poll = async () => {
-            const pending = transactions.filter((t) => t.status === "PENDING");
+            const safeTransactions = Array.isArray(transactions) ? transactions : [];
+            const pending = safeTransactions.filter((t) => t.status === "PENDING");
             if (pending.length === 0) return;
 
             for (const tx of pending) {

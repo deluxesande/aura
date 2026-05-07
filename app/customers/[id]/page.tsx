@@ -117,7 +117,15 @@ export default function CustomerDetailsPage() {
                 const response = await apiClient.get(
                     `/invoice/customer?customerId=${customerId}`,
                 );
-                setInvoices(response.data);
+                let invoicesArray = [];
+                if (response.data && response.data.data && Array.isArray(response.data.data)) {
+                    invoicesArray = response.data.data;
+                } else if (Array.isArray(response.data)) {
+                    invoicesArray = response.data;
+                } else if (response.data && Array.isArray(response.data.invoices)) {
+                    invoicesArray = response.data.invoices;
+                }
+                setInvoices(invoicesArray);
             } catch (error) {
                 // console.error("Error fetching invoices:", error);
             } finally {

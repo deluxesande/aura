@@ -166,10 +166,11 @@ const UserManagement: React.FC = () => {
         totalAcceptedPages,
         totalAcceptedCount,
     } = useMemo(() => {
-        const pending = userInvitations.filter((u) => u.status === "pending");
+        const safeUserInvitations = Array.isArray(userInvitations) ? userInvitations : [];
+        const pending = safeUserInvitations.filter((u) => u.status === "pending");
 
         // Filter out pending, sort by newest
-        const accepted = userInvitations
+        const accepted = safeUserInvitations
             .filter((u) => u.status !== "pending")
             .sort(
                 (a, b) =>

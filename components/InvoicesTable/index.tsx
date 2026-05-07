@@ -38,7 +38,10 @@ export default function InvoicesTable({
     const [filterTime, setFilterTime] = useState<string>("30_days");
     const [filterPayment, setFilterPayment] = useState<string>("all");
 
-    const filteredInvoices = invoices.filter((inv) => {
+    // Ensure invoices is an array before filtering
+    const safeInvoices = Array.isArray(invoices) ? invoices : [];
+
+    const filteredInvoices = safeInvoices.filter((inv) => {
         if (filterStatus !== "all") {
             if (inv.status?.toLowerCase() !== filterStatus.toLowerCase()) {
                 return false;

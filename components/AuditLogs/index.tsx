@@ -29,7 +29,13 @@ const AuditLogs: React.FC = () => {
 
             try {
                 const res = await apiClient.get("/audit-logs");
-                dispatch(setAuditLogs(res.data || []));
+                let logsArray = [];
+                if (res.data && res.data.data && Array.isArray(res.data.data)) {
+                    logsArray = res.data.data;
+                } else if (Array.isArray(res.data)) {
+                    logsArray = res.data;
+                }
+                dispatch(setAuditLogs(logsArray));
             } catch (error: any) {
                 toast.error("Failed to load audit logs");
             } finally {
@@ -40,7 +46,9 @@ const AuditLogs: React.FC = () => {
         fetchLogs();
     }, [dispatch, lastFetched]);
 
-    const filteredLogs = logs.filter((log) => {
+    const safeLogs = Array.isArray(logs) ? logs : [];
+
+    const filteredLogs = safeLogs.filter((log) => {
         const searchLower = searchQuery.toLowerCase();
         const userName =
             `${log.User?.firstName} ${log.User?.lastName}`.toLowerCase();

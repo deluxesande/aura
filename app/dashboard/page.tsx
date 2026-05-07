@@ -109,7 +109,15 @@ export default function Page() {
 
             try {
                 const response = await apiClient.get("/invoice");
-                dispatch(setInvoices(response.data));
+                let invoicesArray = [];
+                if (response.data && response.data.data && Array.isArray(response.data.data)) {
+                    invoicesArray = response.data.data;
+                } else if (Array.isArray(response.data)) {
+                    invoicesArray = response.data;
+                } else if (response.data && Array.isArray(response.data.invoices)) {
+                    invoicesArray = response.data.invoices;
+                }
+                dispatch(setInvoices(invoicesArray));
             } catch (error) {
                 // Handle error
             } finally {

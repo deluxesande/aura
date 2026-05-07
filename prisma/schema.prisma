@@ -91,7 +91,7 @@ model TenantUser {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  businessId String?  @db.Uuid // Logical reference
+  businessId String   @db.Uuid // Logical reference
 
   storeId   String?  @db.Uuid
   Store     Store?   @relation(fields: [storeId], references: [id])
@@ -113,8 +113,8 @@ model UserInvitation {
   id                String   @id @default(uuid()) @map("_id") @db.Uuid
   email             String
   role              String   @default("user")
-  businessId String?  @db.Uuid // Logical reference
-  Business          Business? @relation(fields: [businessId], references: [id])
+  businessId String  @db.Uuid // Logical reference
+  Business          Business @relation(fields: [businessId], references: [id])
   invitedBy         String   @db.Uuid
   Inviter           User     @relation("Inviter", fields: [invitedBy], references: [id])
   status            String   @default("pending")
@@ -189,7 +189,7 @@ model Product {
   invoiceItems InvoiceItem[]
   image        String?       @default("/images/default-product.png") @db.Text
   createdBy    String?
-  businessId   String?       @db.Uuid 
+  businessId   String        @db.Uuid 
 
   type               ProductType             @default(SIMPLE)
   parentId           String?                 @db.Uuid
@@ -215,6 +215,7 @@ model Attribute {
   options    AttributeOption[]
 
   @@unique([name, businessId])
+  @@index([businessId])
 }
 
 model AttributeOption {
@@ -243,7 +244,7 @@ model Category {
   description String?
   products    Product[]
   createdBy   String?
-  businessId  String?   @db.Uuid 
+  businessId  String    @db.Uuid 
 
   @@unique([name, createdBy])
   @@index([businessId])
@@ -269,7 +270,7 @@ model Invoice {
   storeId             String?              @db.Uuid
   Store               Store?               @relation(fields: [storeId], references: [id])
   isDeleted           Boolean              @default(false)
-  businessId          String?              @db.Uuid 
+  businessId          String               @db.Uuid 
 
   @@index([businessId])
   @@index([storeId])
@@ -326,7 +327,7 @@ model MpesaPayment {
   Invoice           Invoice  @relation(fields: [invoiceId], references: [id])
   userId            String   @db.Uuid
   User              TenantUser @relation(fields: [userId], references: [id])
-  businessId String?  @db.Uuid // Logical reference 
+  businessId String  @db.Uuid // Logical reference 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -615,7 +616,7 @@ model KraDetails {
   isAutoFilingEnabled Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  businessId String?   @unique @db.Uuid 
+  businessId String    @unique @db.Uuid 
 }
 
 model KraTotReturn {
