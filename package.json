@@ -8,7 +8,7 @@
         "prisma:generate:tenant": "prisma generate --schema=./prisma/schema.tenant.prisma",
         "prisma:generate": "npm run prisma:generate:master && npm run prisma:generate:tenant",
         "build": "npm run prisma:generate && next build",
-        "postbuild": "prisma migrate resolve --rolled-back 20260507073305_add_performance_indexes --schema=./prisma/schema.master.prisma || true && prisma migrate deploy --schema=./prisma/schema.master.prisma && prisma db push --schema=./prisma/schema.prisma --skip-generate",
+        "postbuild": "prisma migrate deploy --schema=./prisma/schema.master.prisma && prisma db push --schema=./prisma/schema.tenant.prisma --skip-generate",
         "start": "next start",
         "lint": "next lint",
         "desktop": "tauri dev",
