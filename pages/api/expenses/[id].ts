@@ -1,6 +1,16 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
 import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
+import { z } from "zod";
+
+const updateExpenseSchema = z.object({
+    title: z.string().optional(),
+    category: z.string().optional(),
+    amount: z.union([z.number(), z.string()]).optional(),
+    storeId: z.string().optional(),
+    notes: z.string().optional().nullable(),
+    date: z.string().optional().nullable(),
+}).strict();
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     const { userId: clerkId } = getAuth(req);
@@ -58,12 +68,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         case "PUT":
         case "PATCH":
             try {
-                const { title, category, amount, storeId: payloadStoreId, notes, date } = req.body;
+                // Validate request body
+                const validation = updateExpenseSchema.safeParse(req.body);
+                if (!validation.success) {
+                    return res.status(400).json({ 
+                        error: "Invalid request body", 
+                        details: validation.error.format() 
+                    });
+                }
+
+                const { title, category, amount, storeId: payloadStoreId, notes, date } = validation.data;
 
                 const updateData: any = {
                     title,
                     category,
-                    amount: amount !== undefined ? parseFloat(amount) : undefined,
+                    amount: amount !== undefined ? parseFloat(amount as string) : undefined,
                     notes,
                     date: date ? new Date(date) : undefined,
                 };

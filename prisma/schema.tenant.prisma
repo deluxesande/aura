@@ -30,7 +30,7 @@ model TenantUser {
   businessId String   @db.Uuid // Logical reference
 
   storeId   String?  @db.Uuid
-  Store     Store?   @relation(fields: [storeId], references: [id])
+  Store     Store?   @relation(fields: [storeId], references: [id], onDelete: SetNull)
 
   // Relations within tenant
   createdCustomers      Customer[]      @relation("CustomerCreator")
@@ -66,6 +66,9 @@ model MpesaPayment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([invoiceId])
+  @@index([businessId])
 }
 
 model Product {
@@ -79,7 +82,7 @@ model Product {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   categoryId   String        @db.Uuid
-  Category     Category      @relation(fields: [categoryId], references: [id])
+  Category     Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   inStock      Boolean       @default(false)
   invoiceItems InvoiceItem[]
   image        String?       @default("/images/default-product.png") @db.Text
@@ -142,6 +145,7 @@ model Category {
   businessId  String?   @db.Uuid // Logical reference
 
   @@unique([name, createdBy])
+  @@index([businessId])
 }
 
 model Invoice {
@@ -149,7 +153,7 @@ model Invoice {
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   customerId          String?              @db.Uuid
-  Customer            Customer?            @relation(fields: [customerId], references: [id])
+  Customer            Customer?            @relation(fields: [customerId], references: [id], onDelete: Restrict)
   invoiceItems        InvoiceItem[]
   totalAmount         Float
   paymentType         String               @default("CASH")
@@ -165,6 +169,9 @@ model Invoice {
   isDeleted           Boolean              @default(false)
   
   businessId          String?              @db.Uuid // Logical reference
+
+  @@index([businessId])
+  @@index([storeId])
 }
 
 model InvoiceItem {
@@ -172,10 +179,13 @@ model InvoiceItem {
   quantity  Int
   price     Float
   productId String   @db.Uuid
-  Product   Product  @relation(fields: [productId], references: [id])
+  Product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
   invoiceId String?  @db.Uuid
   Invoice   Invoice? @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   createdBy String?
+
+  @@index([invoiceId])
+  @@index([productId])
 }
 
 model Customer {
@@ -196,6 +206,8 @@ model Customer {
 
   @@unique([businessId, email])
   @@unique([businessId, phoneNumber])
+  @@index([businessId])
+  @@index([storeId])
 }
 
 model FailedCallback {
@@ -497,6 +509,8 @@ model Delivery {
   PurchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
 
   createdAt DateTime @default(now())
+
+  @@index([businessId])
 }
 
 model AuditLog {

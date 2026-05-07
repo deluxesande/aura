@@ -77,8 +77,11 @@ export default async function handler(
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const { url } = req.body;
+        const { url, acceptDataLoss } = req.body;
         let { businessId } = req.body;
+
+        // Explicit boolean validation for acceptDataLoss
+        const shouldAcceptDataLoss = acceptDataLoss === true;
 
         if (!url) {
             return res.status(400).json({ error: "Database URL is required" });
@@ -146,8 +149,16 @@ export default async function handler(
             // Push the tenant schema to their BYO database to create the necessary tables
             console.log("Connection successful. Pushing tenant schema to BYO database...");
             try {
-                // Remove --accept-data-loss and Add timeout
-                const { stdout, stderr } = await execAsync("npx prisma db push --schema=./prisma/schema.tenant.prisma", {
+                /**
+                 * UI REQUIREMENT: The client UI must require the user to explicitly 
+                 * acknowledge data loss before setting the acceptDataLoss flag.
+                 */
+                let command = "npx prisma db push --schema=./prisma/schema.tenant.prisma --skip-generate";
+                if (shouldAcceptDataLoss) {
+                    command += " --accept-data-loss";
+                }
+
+                const { stdout, stderr } = await execAsync(command, {
                     env: { ...process.env, DATABASE_URL: url },
                     timeout: 30000 // 30 second timeout
                 });

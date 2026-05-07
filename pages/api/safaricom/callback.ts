@@ -5,6 +5,22 @@ import {
 import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import type { NextApiRequest, NextApiResponse } from "next";
 
+// Known Safaricom Daraja callback IP ranges
+const SAFARICOM_IPS = [
+    "196.201.214.200",
+    "196.201.214.206",
+    "196.201.213.114",
+    "196.201.214.207",
+    "196.201.214.208",
+    "196.201.213.44",
+    "196.201.212.127",
+    "196.201.212.138",
+    "196.201.212.129",
+    "196.201.212.136",
+    "196.201.212.74",
+    "196.201.212.69",
+];
+
 interface CallbackItem {
     Name: string;
     Value?: string | number;
@@ -28,6 +44,16 @@ export default async function handler(
 ) {
     if (req.method !== "POST") {
         return res.status(405).json({ error: "Method not allowed" });
+    }
+
+    // IP Verification for Safaricom Callbacks
+    const clientIp = (req.headers["x-forwarded-for"] as string || req.socket.remoteAddress || "").split(',')[0].trim();
+    if (!SAFARICOM_IPS.includes(clientIp)) {
+        console.warn(`SECURITY: Received callback from unauthorized IP: ${clientIp}. This endpoint is unauthenticated except for IP allowlisting.`);
+        // We might want to allow this in development or if using a proxy that hides the IP
+        if (process.env.NODE_ENV === "production") {
+            return res.status(403).json({ error: "Unauthorized source" });
+        }
     }
 
     try {

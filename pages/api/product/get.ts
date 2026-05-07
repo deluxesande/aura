@@ -49,87 +49,100 @@ export const getProducts = async (
             return res.status(200).json([]);
         }
 
-        const products = await tenantPrisma.product.findMany({
-            where: {
-                businessId: businessId,
-                isArchived: false,
-                OR: [
-                    { type: "TEMPLATE" },
-                    {
-                        storeInventories: {
-                            some: { storeId: targetStoreId },
-                        },
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+        const skip = (page - 1) * limit;
+
+        const baseWhere = {
+            businessId: businessId,
+            isArchived: false,
+            OR: [
+                { type: "TEMPLATE" },
+                {
+                    storeInventories: {
+                        some: { storeId: targetStoreId },
                     },
-                    {
-                        variants: {
-                            some: {
-                                isArchived: false,
-                                storeInventories: {
-                                    some: { storeId: targetStoreId },
-                                },
+                },
+                {
+                    variants: {
+                        some: {
+                            isArchived: false,
+                            storeInventories: {
+                                some: { storeId: targetStoreId },
                             },
                         },
                     },
-                ],
-            },
-            include: {
-                Category: true,
-                storeInventories: {
-                    where: { storeId: targetStoreId },
-                    select: { quantity: true },
                 },
-                purchaseOrderItems: {
-                    where: {
-                        PurchaseOrder: {
-                            storeId: targetStoreId,
-                            status: { in: ["PENDING", "IN_TRANSIT"] },
-                            isDeleted: false,
-                        },
+            ],
+        };
+
+        const [products, total] = await Promise.all([
+            tenantPrisma.product.findMany({
+                where: baseWhere as any,
+                include: {
+                    Category: true,
+                    storeInventories: {
+                        where: { storeId: targetStoreId },
+                        select: { quantity: true },
                     },
-                    select: { quantity: true },
-                },
-                variants: {
-                    where: { isArchived: false },
-                    include: {
-                        storeInventories: {
-                            where: { storeId: targetStoreId },
-                            select: { quantity: true },
-                        },
-                        purchaseOrderItems: {
-                            where: {
-                                PurchaseOrder: {
-                                    storeId: targetStoreId,
-                                    status: { in: ["PENDING", "IN_TRANSIT"] },
-                                    isDeleted: false,
-                                },
+                    purchaseOrderItems: {
+                        where: {
+                            PurchaseOrder: {
+                                storeId: targetStoreId,
+                                status: { in: ["PENDING", "IN_TRANSIT"] },
+                                isDeleted: false,
                             },
-                            select: { quantity: true },
                         },
-                        attributeValues: {
-                            include: {
-                                attributeOption: {
-                                    include: {
-                                        attribute: true,
+                        select: { quantity: true },
+                    },
+                    variants: {
+                        where: { isArchived: false },
+                        include: {
+                            storeInventories: {
+                                where: { storeId: targetStoreId },
+                                select: { quantity: true },
+                            },
+                            purchaseOrderItems: {
+                                where: {
+                                    PurchaseOrder: {
+                                        storeId: targetStoreId,
+                                        status: { in: ["PENDING", "IN_TRANSIT"] },
+                                        isDeleted: false,
+                                    },
+                                },
+                                select: { quantity: true },
+                            },
+                            attributeValues: {
+                                include: {
+                                    attributeOption: {
+                                        include: {
+                                            attribute: true,
+                                        },
                                     },
                                 },
                             },
                         },
                     },
-                },
-                attributeValues: {
-                    include: {
-                        attributeOption: {
-                            include: {
-                                attribute: true,
+                    attributeValues: {
+                        include: {
+                            attributeOption: {
+                                include: {
+                                    attribute: true,
+                                },
                             },
                         },
                     },
                 },
-            },
-            orderBy: {
-                createdAt: "desc",
-            },
-        });
+                orderBy: {
+                    createdAt: "desc",
+                },
+                take: limit,
+                skip: skip,
+            }),
+            tenantPrisma.product.count({
+                where: baseWhere as any,
+            }),
+        ]);
 
         // Map quantity from storeInventories AND purchaseOrderItems to the flat quantity field for frontend compatibility
         const productsWithQuantity = products.map((p) => {
@@ -207,11 +220,12 @@ export const getProducts = async (
 
         const productsWithCreator = productsWithQuantity.map(attachCreator);
 
-        if (productsWithCreator.length === 0) {
-            return res.status(200).json([]);
-        }
-
-        res.status(200).json(productsWithCreator);
+        res.status(200).json({
+            data: productsWithCreator,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+        });
     } catch (error) {
         console.error("Error fetching products:", error);
         res.status(500).json({ error: "Internal Server Error" });

@@ -147,7 +147,12 @@ export default function Page() {
         const fetchCustomers = async () => {
             try {
                 const response = await apiClient.get("/customer");
-                setCustomers(response.data);
+                // Check if response.data has the new paginated structure
+                if (response.data && response.data.data && Array.isArray(response.data.data)) {
+                    setCustomers(response.data.data);
+                } else {
+                    setCustomers(response.data);
+                }
             } catch (error) {
                 toast.error("Failed to load customers");
             } finally {

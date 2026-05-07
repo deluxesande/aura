@@ -188,11 +188,13 @@ export default async function handler(
         });
 
         return res.status(200).json({ message: "User deleted successfully" });
-    } catch (error) {
-        console.error("Delete Error:", error);
+    } catch (error: any) {
+        console.error("Delete User Error:", {
+            message: error.message,
+            stack: error.stack
+        });
         return res.status(500).json({
-            error: "Error deleting user",
-            details: error instanceof Error ? error.message : "Unknown error",
+            error: "An unexpected error occurred while deleting the user",
         });
     }
 }

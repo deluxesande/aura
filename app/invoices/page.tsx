@@ -38,7 +38,11 @@ export default function Page() {
 
             try {
                 const response = await apiClient.get("/invoice");
-                dispatch(setInvoices(response.data));
+                if (response.data && response.data.data && Array.isArray(response.data.data)) {
+                    dispatch(setInvoices(response.data.data));
+                } else {
+                    dispatch(setInvoices(response.data));
+                }
             } catch (error) {
                 // console.error("Error fetching invoices:", error);
             } finally {

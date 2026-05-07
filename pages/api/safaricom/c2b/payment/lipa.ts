@@ -12,6 +12,27 @@ const OAUTH_URL =
 const STK_PUSH_URL =
     "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest";
 
+// Rate limiting state (In-memory)
+const rateLimitMap = new Map<string, { count: number, resetTime: number }>();
+
+function isRateLimited(userId: string): boolean {
+    const now = Date.now();
+    const userLimit = rateLimitMap.get(userId);
+
+    if (!userLimit || now > userLimit.resetTime) {
+        // First request or window expired
+        rateLimitMap.set(userId, { count: 1, resetTime: now + 60000 });
+        return false;
+    }
+
+    if (userLimit.count >= 3) {
+        return true;
+    }
+
+    userLimit.count += 1;
+    return false;
+}
+
 const getAccessToken = async (consumerKey: string, consumerSecret: string) => {
     const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString(
         "base64"
@@ -42,7 +63,19 @@ export default async function handler(
         const { phoneNumber, amount, invoiceId } = req.body;
         const { userId: clerkId } = getAuth(req);
 
-        if (!invoiceId || !clerkId || !amount || !phoneNumber) {
+        if (!clerkId) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        // Apply Rate Limiting
+        if (isRateLimited(clerkId)) {
+            return res.status(429).json({ 
+                error: "Too Many Requests", 
+                message: "You can only initiate 3 STK pushes per minute. Please wait before trying again." 
+            });
+        }
+
+        if (!invoiceId || !amount || !phoneNumber) {
             return res.status(400).json({ error: "Missing required fields" });
         }
 

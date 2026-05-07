@@ -15,18 +15,18 @@ interface TourStep {
     side?: "right" | "left" | "top" | "bottom";
 }
 
+// Remove badges, they are redundant with the title and add visual noise.
 const steps: TourStep[] = [
     {
         target: '[data-tour="sidebar"]',
         title: "Navigation",
-        badge: "Getting Started",
-        description: "Everything you need to run your business is organized right here.",
+        description:
+            "Everything you need to run your business is organized right here.",
         side: "right",
     },
     {
         target: '[data-tour="nav-overview"]',
         title: "Overview",
-        badge: "Snapshot",
         description:
             "Your daily performance - revenue, orders, net profit, and inventory value at a glance.",
         side: "right",
@@ -34,7 +34,6 @@ const steps: TourStep[] = [
     {
         target: '[data-tour="nav-sales & crm"]',
         title: "Sales & CRM",
-        badge: "Sales",
         description:
             "Generate invoices, track payments, and manage your customer relationships.",
         side: "right",
@@ -42,7 +41,6 @@ const steps: TourStep[] = [
     {
         target: '[data-tour="nav-inventory"]',
         title: "Inventory Control",
-        badge: "Stock",
         description:
             "Manage your product catalog, product variants, and track live stock levels across branches.",
         side: "right",
@@ -50,7 +48,6 @@ const steps: TourStep[] = [
     {
         target: '[data-tour="nav-supply chain"]',
         title: "Supply Chain",
-        badge: "Procurement",
         description:
             "Manage suppliers, place purchase orders, and track incoming stock and deliveries.",
         side: "right",
@@ -58,7 +55,6 @@ const steps: TourStep[] = [
     {
         target: '[data-tour="nav-finance"]',
         title: "Financials",
-        badge: "Finance",
         description:
             "Track business expenses and monitor your overall profitability.",
         side: "right",
@@ -66,7 +62,6 @@ const steps: TourStep[] = [
     {
         target: '[data-tour="nav-system"]',
         title: "System Settings",
-        badge: "Control Panel",
         description:
             "Connect your own BYODB PostgreSQL database, configure M-Pesa & KRA integrations, and manage team roles.",
         side: "right",
@@ -74,7 +69,6 @@ const steps: TourStep[] = [
     {
         target: '[data-tour="search-bar"]',
         title: "Universal Search",
-        badge: "Pro Tip",
         description:
             "Instantly find products, customers, or invoices from anywhere.",
         side: "bottom",
@@ -82,7 +76,6 @@ const steps: TourStep[] = [
     {
         target: '[data-tour="create-order"]',
         title: "Quick Sale",
-        badge: "Action",
         description: "Ready to sell? Create new orders in seconds.",
         side: "left",
     },
@@ -216,16 +209,6 @@ function Popover({
             }}
             className="bg-white border border-gray-200 rounded-lg shadow-lg p-5"
         >
-            {/* Badge */}
-            {step.badge && (
-                <span
-                    className="inline-block bg-green-100 text-green-500 text-xs font-bold 
-          px-2 py-0.5 rounded-full uppercase tracking-wider mb-2"
-                >
-                    {step.badge}
-                </span>
-            )}
-
             {/* Header */}
             <div className="flex items-start justify-between mb-1">
                 <p className="text-sm font-bold text-gray-900 uppercase tracking-wider">

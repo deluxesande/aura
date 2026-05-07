@@ -32,24 +32,39 @@ export const getCustomers = async (
             return res.status(200).json([]); // No store selected yet
         }
 
-        const customers = await tenantPrisma.customer.findMany({
-            where: {
-                storeId: targetStoreId,
-            },
-            include: {
-                CreatedBy: {
-                    select: {
-                        firstName: true,
-                        lastName: true,
-                        role: true,
-                        clerkId: true,
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+        const skip = (page - 1) * limit;
+
+        const [customers, total] = await Promise.all([
+            tenantPrisma.customer.findMany({
+                where: {
+                    storeId: targetStoreId,
+                    businessId: user.businessId,
+                },
+                include: {
+                    CreatedBy: {
+                        select: {
+                            firstName: true,
+                            lastName: true,
+                            role: true,
+                            clerkId: true,
+                        },
                     },
                 },
-            },
-            orderBy: {
-                createdAt: "desc",
-            },
-        });
+                orderBy: {
+                    createdAt: "desc",
+                },
+                take: limit,
+                skip: skip,
+            }),
+            tenantPrisma.customer.count({
+                where: {
+                    storeId: targetStoreId,
+                    businessId: user.businessId,
+                },
+            }),
+        ]);
 
         const client = await clerkClient();
         const imageCache = new Map<string, string>();
@@ -90,7 +105,12 @@ export const getCustomers = async (
             })
         );
 
-        res.status(200).json(customersWithImages);
+        res.status(200).json({
+            data: customersWithImages,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+        });
     } catch (error) {
         console.error("Error fetching customers:", error);
         res.status(500).json({ error: "Failed to fetch customers" });

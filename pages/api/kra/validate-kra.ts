@@ -105,21 +105,24 @@ export default async function handler(
 
         return res.status(200).json(kraData);
     } catch (error: any) {
-        console.error("KRA/DB Error:", error.response?.data || error.message);
+        console.error("KRA/DB Validation Error:", {
+            message: error.message,
+            response: error.response?.data,
+            stack: error.stack
+        });
 
         if (error.response?.status === 401) {
             return res.status(401).json({
-                error: "Authentication failed. Check Gava credentials.",
+                error: "Authentication failed. Please contact support.",
             });
         }
 
         if (error.response?.status === 404) {
-            return res.status(404).json({ error: "PIN not found or invalid" });
+            return res.status(404).json({ error: "KRA PIN not found or invalid" });
         }
 
         return res.status(500).json({
-            error: "Failed to validate KRA PIN",
-            details: error.response?.data || error.message,
+            error: "An unexpected error occurred during KRA PIN validation",
         });
     }
 }

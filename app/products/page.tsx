@@ -48,7 +48,12 @@ import { Search, Zap } from "lucide-react";
 import { addTransaction } from "@/store/slices/activeTransactionsSlice";
 import ActiveTransactionsTracker from "@/components/ActiveTransactionsTracker";
 
-const fetcher = (url: string) => apiClient.get(url).then((res) => res.data);
+const fetcher = (url: string) => apiClient.get(url).then((res) => {
+    if (res.data && res.data.data && Array.isArray(res.data.data)) {
+        return res.data.data;
+    }
+    return res.data;
+});
 
 export default function Page() {
     const dispatch = useDispatch();

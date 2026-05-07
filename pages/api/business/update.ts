@@ -8,8 +8,23 @@ import { syncBusinessData } from "@/utils/lib/syncData";
 import { exec } from "child_process";
 import util from "util";
 import net from "net";
+import { z } from "zod";
 
 const execAsync = util.promisify(exec);
+
+const updateBusinessSchema = z.object({
+    name: z.string().optional(),
+    email: z.string().email().optional().nullable(),
+    phone: z.string().optional().nullable(),
+    address: z.string().optional().nullable(),
+    logo: z.string().url().optional().nullable(),
+    mpesaConsumerKey: z.string().optional().nullable(),
+    mpesaConsumerSecret: z.string().optional().nullable(),
+    mpesaPassKey: z.string().optional().nullable(),
+    mpesaShortCode: z.string().optional().nullable(),
+    tenantMode: z.enum(["SHARED", "BYODB"]).optional(),
+    tenantDatabaseUrl: z.string().optional().nullable(),
+}).strict();
 
 /**
  * Validates a database URL to prevent SSRF and other connection-based attacks.
@@ -74,6 +89,15 @@ export const updateBusiness = async (
             return res.status(401).json({ error: "Unauthorized" });
         }
 
+        // Validate request body
+        const validation = updateBusinessSchema.safeParse(req.body);
+        if (!validation.success) {
+            return res.status(400).json({ 
+                error: "Invalid request body", 
+                details: validation.error.format() 
+            });
+        }
+
         const id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
 
         const {
@@ -88,7 +112,7 @@ export const updateBusiness = async (
             mpesaShortCode,
             tenantMode,
             tenantDatabaseUrl,
-        } = req.body;
+        } = validation.data;
 
         if (!id) {
             return res

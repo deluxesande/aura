@@ -4,6 +4,14 @@ import { addCreatedBy } from "../middleware";
 import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { checkSubscription } from "@/utils/subscription/checkSubscription";
 import { syncUserToTenant } from "@/utils/lib/syncUser";
+import { z } from "zod";
+
+const addCustomerSchema = z.object({
+    firstName: z.string().min(1),
+    lastName: z.string().min(1),
+    phoneNumber: z.string().min(1),
+    email: z.string().email().optional().nullable(),
+}).strict();
 
 const addCustomerHandler = async (
     req: NextApiRequest,
@@ -14,6 +22,15 @@ const addCustomerHandler = async (
 
         if (!clerkUserId) {
             return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        // Validate request body
+        const validation = addCustomerSchema.safeParse(req.body);
+        if (!validation.success) {
+            return res.status(400).json({ 
+                error: "Invalid request body", 
+                details: validation.error.format() 
+            });
         }
 
         const { authorized, error: subError, businessId } = await checkSubscription(clerkUserId);
@@ -59,7 +76,7 @@ const addCustomerHandler = async (
             return res.status(400).json({ error: "No active store selected. Please select a branch first." });
         }
 
-        const { firstName, lastName, phoneNumber, email: rawEmail } = req.body;
+        const { firstName, lastName, phoneNumber, email: rawEmail } = validation.data;
         const email = rawEmail && rawEmail.trim() !== "" ? rawEmail : null;
 
         // 3. Create Customer in Tenant DB

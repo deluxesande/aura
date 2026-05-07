@@ -46,6 +46,7 @@ export const getInvoices = async (
                 status: { in: ["FAILED", "CANCELLED"] },
                 stockRestored: false,
                 storeId: targetStoreId,
+                businessId: user.businessId,
             },
             include: { invoiceItems: { include: { Product: { select: { type: true } } } } },
         });
@@ -83,6 +84,7 @@ export const getInvoices = async (
                 status: { in: ["PAID", "COMPLETED"] },
                 stockRestored: true,
                 storeId: targetStoreId,
+                businessId: user.businessId,
             },
             include: { invoiceItems: { include: { Product: { select: { type: true } } } } },
         });
@@ -127,46 +129,60 @@ export const getInvoices = async (
 
         const userIds = businessUsers.map((user) => user.clerkId);
 
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+        const skip = (page - 1) * limit;
+
+        const baseWhere = {
+            createdBy: {
+                in: userIds,
+            },
+            storeId: targetStoreId,
+            businessId: user.businessId,
+            isDeleted: false,
+        };
+
         // Get invoices created by any user in the same business AND for the current store from Tenant DB
-        const invoices = await tenantPrisma.invoice.findMany({
-            where: {
-                createdBy: {
-                    in: userIds,
+        const [invoices, total] = await Promise.all([
+            tenantPrisma.invoice.findMany({
+                where: baseWhere,
+                orderBy: {
+                    createdAt: "desc",
                 },
-                storeId: targetStoreId,
-                isDeleted: false,
-            },
-            orderBy: {
-                createdAt: "desc",
-            },
-            include: {
-                invoiceItems: {
-                    select: {
-                        quantity: true,
-                        Product: {
-                            select: {
-                                name: true,
-                                price: true,
-                                type: true,
-                                attributeValues: {
-                                    include: {
-                                        attributeOption: true
+                include: {
+                    invoiceItems: {
+                        select: {
+                            quantity: true,
+                            Product: {
+                                select: {
+                                    name: true,
+                                    price: true,
+                                    type: true,
+                                    attributeValues: {
+                                        include: {
+                                            attributeOption: true
+                                        }
                                     }
-                                }
+                                },
                             },
                         },
                     },
-                },
-                Customer: {
-                    select: {
-                        firstName: true,
-                        lastName: true,
-                        email: true,
-                        phoneNumber: true,
+                    Customer: {
+                        select: {
+                            firstName: true,
+                            lastName: true,
+                            email: true,
+                            phoneNumber: true,
+                        },
                     },
                 },
-            },
-        });
+                take: limit,
+                skip: skip,
+            }),
+            tenantPrisma.invoice.count({
+                where: baseWhere,
+            }),
+        ]);
 
         // Get Clerk client to fetch user images
         const clerk = await clerkClient();
@@ -242,7 +258,12 @@ export const getInvoices = async (
             };
         });
 
-        res.status(200).json(updatedInvoices);
+        res.status(200).json({
+            data: updatedInvoices,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+        });
     } catch (error) {
         console.error("Error fetching invoices:", error);
         res.status(500).json({ error: "Internal Server Error" });

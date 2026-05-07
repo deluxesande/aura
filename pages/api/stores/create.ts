@@ -91,10 +91,19 @@ export default async function handler(
 
         return res.status(201).json(result);
     } catch (error: any) {
-        console.error("Store Creation Security Error:", error.message);
+        console.error("Store Creation Error:", {
+            message: error.message,
+            stack: error.stack
+        });
+        
+        // Return a short domain-specific message if it's a known error
+        if (error.message.includes("Limit reached")) {
+            return res.status(403).json({ error: error.message });
+        }
+
         return res
-            .status(400)
-            .json({ error: error.message || "Failed to create store" });
+            .status(500)
+            .json({ error: "An unexpected error occurred while creating the branch" });
     }
 }
 
