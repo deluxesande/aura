@@ -24,10 +24,10 @@ model TenantUser {
   lastName  String?
   role      String
   status    String
-  createdAt DateTime
-  updatedAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  businessId String   @db.Uuid // Logical reference
+  businessId String?  @db.Uuid // Logical reference
 
   storeId   String?  @db.Uuid
   Store     Store?   @relation(fields: [storeId], references: [id], onDelete: SetNull)
@@ -62,7 +62,7 @@ model MpesaPayment {
   userId     String   @db.Uuid
   User       TenantUser @relation(fields: [userId], references: [id])
   
-  businessId String   @db.Uuid // Logical reference
+  businessId String?  @db.Uuid // Logical reference
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -112,7 +112,7 @@ model Product {
 model Attribute {
   id         String            @id @default(uuid()) @map("_id") @db.Uuid
   name       String // e.g., "Color", "Size"
-  businessId String            @db.Uuid // Logical reference
+  businessId String?  @db.Uuid // Logical reference
   options    AttributeOption[]
 
   @@unique([name, businessId])
@@ -207,7 +207,7 @@ model Customer {
   createdById String    @db.Uuid
   CreatedBy   TenantUser @relation("CustomerCreator", fields: [createdById], references: [id])
   
-  businessId  String    @db.Uuid // Logical reference
+  businessId  String?    @db.Uuid // Logical reference
 
   @@unique([businessId, email])
   @@unique([businessId, phoneNumber])
@@ -247,7 +247,7 @@ model Store {
   name       String
   address    String?
   isActive   Boolean  @default(true)
-  businessId String   @db.Uuid // Logical reference
+  businessId String?  @db.Uuid // Logical reference
 
   tenantUsers   TenantUser[]
   inventory     StoreInventory[]
@@ -278,7 +278,7 @@ model Supplier {
   address     String?
   isDeleted   Boolean @default(false)
 
-  businessId String   @db.Uuid // Logical reference
+  businessId String?  @db.Uuid // Logical reference
 
   purchaseOrders PurchaseOrder[]
   stockReceipts  StockReceipt[]
@@ -305,7 +305,7 @@ model PurchaseOrder {
 
   items PurchaseOrderItem[]
 
-  businessId String   @db.Uuid // Logical reference
+  businessId String?  @db.Uuid // Logical reference
 
   storeId String? @db.Uuid
   Store   Store?  @relation(fields: [storeId], references: [id])
@@ -353,7 +353,7 @@ model StockReceipt {
   supplierId String?   @db.Uuid
   Supplier   Supplier? @relation(fields: [supplierId], references: [id])
 
-  businessId String   @db.Uuid // Logical reference
+  businessId String?  @db.Uuid // Logical reference
 
   createdById String   @db.Uuid
   CreatedBy   TenantUser @relation("ReceiptCreator", fields: [createdById], references: [id])
@@ -448,7 +448,7 @@ model Expense {
   notes    String?
   status   String   @default("ACTIVE") // ACTIVE, VOIDED
 
-  businessId String   @db.Uuid // Logical reference
+  businessId String?  @db.Uuid // Logical reference
 
   storeId String? @db.Uuid
   Store   Store?  @relation(fields: [storeId], references: [id])
@@ -493,7 +493,7 @@ model KraTotReturn {
 
   createdAt DateTime @default(now())
 
-  businessId String   @db.Uuid // Logical reference
+  businessId String?  @db.Uuid // Logical reference
 
   @@index([businessId])
 }
@@ -510,7 +510,7 @@ model Delivery {
   storeId String @db.Uuid
   Store   Store  @relation(fields: [storeId], references: [id])
 
-  businessId String   @db.Uuid // Logical reference
+  businessId String?  @db.Uuid // Logical reference
 
   createdById String @db.Uuid
   CreatedBy   TenantUser @relation(fields: [createdById], references: [id])
@@ -537,7 +537,7 @@ model AuditLog {
   createdAt  DateTime @default(now())
 
   userId     String
-  businessId String   @db.Uuid // Logical reference
+  businessId String?  @db.Uuid // Logical reference
 
   @@index([businessId])
   @@index([userId])
@@ -552,7 +552,7 @@ model InventoryReconciliation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  businessId String   @db.Uuid // Logical reference
+  businessId String?  @db.Uuid // Logical reference
 
   storeId String @db.Uuid
   Store   Store  @relation(fields: [storeId], references: [id])
