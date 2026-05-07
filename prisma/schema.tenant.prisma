@@ -69,6 +69,7 @@ model MpesaPayment {
 
   @@index([invoiceId])
   @@index([businessId])
+  @@index([userId])
 }
 
 model Product {
@@ -105,6 +106,7 @@ model Product {
   @@index([businessId])
   @@index([businessId, sku])
   @@index([businessId, categoryId])
+  @@index([createdBy])
 }
 
 model Attribute {
@@ -146,6 +148,7 @@ model Category {
 
   @@unique([name, createdBy])
   @@index([businessId])
+  @@index([createdBy])
 }
 
 model Invoice {
@@ -172,6 +175,7 @@ model Invoice {
 
   @@index([businessId])
   @@index([storeId])
+  @@index([createdBy])
 }
 
 model InvoiceItem {
@@ -186,6 +190,7 @@ model InvoiceItem {
 
   @@index([invoiceId])
   @@index([productId])
+  @@index([createdBy])
 }
 
 model Customer {
@@ -208,6 +213,7 @@ model Customer {
   @@unique([businessId, phoneNumber])
   @@index([businessId])
   @@index([storeId])
+  @@index([createdById])
 }
 
 model FailedCallback {
@@ -215,7 +221,7 @@ model FailedCallback {
   merchantRequestId String
   checkoutRequestId String
   resultCode        Int
-  resultDesc        String
+  resultDesc         String
   createdAt         DateTime @default(now())
   invoiceId         String?  @db.Uuid
   Invoice           Invoice? @relation(fields: [invoiceId], references: [id])
@@ -284,6 +290,7 @@ model Supplier {
   deliveries  Delivery[]
 
   @@index([businessId])
+  @@index([createdById])
 }
 
 model PurchaseOrder {
@@ -312,6 +319,7 @@ model PurchaseOrder {
 
   @@index([businessId])
   @@index([supplierId])
+  @@index([createdById])
 }
 
 model PurchaseOrderItem {
@@ -358,6 +366,7 @@ model StockReceipt {
   @@index([businessId])
   @@index([storeId])
   @@index([productId])
+  @@index([createdById])
 }
 
 model StoreInventory {
@@ -387,6 +396,8 @@ model StockTransfer {
   CreatedBy        TenantUser @relation(fields: [createdById], references: [id])
 
   createdAt DateTime @default(now())
+
+  @@index([createdById])
 }
 
 model Response {
@@ -451,6 +462,7 @@ model Expense {
   @@index([businessId])
   @@index([storeId])
   @@index([status])
+  @@index([createdById])
 }
 
 model KraDetails {
@@ -511,6 +523,7 @@ model Delivery {
   createdAt DateTime @default(now())
 
   @@index([businessId])
+  @@index([createdById])
 }
 
 model AuditLog {
@@ -551,6 +564,7 @@ model InventoryReconciliation {
 
   @@index([businessId])
   @@index([storeId])
+  @@index([userId])
 }
 
 model ReconciliationItem {

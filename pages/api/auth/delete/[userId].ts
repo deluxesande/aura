@@ -2,7 +2,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { NextApiRequest, NextApiResponse } from "next";
 import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 
-export const maxDuration = 30;
+export const maxDuration = 10; // Explicitly set to 10s to match Vercel limit
 
 export default async function handler(
     req: NextApiRequest,
@@ -119,7 +119,7 @@ export default async function handler(
 
                     // Tier 4: Tenant Users
                     await tx.tenantUser.deleteMany({ where: { businessId: bId } });
-                }, { timeout: 25000 });
+                }, { timeout: 8000 });
             } else if (assigneeUuid && assigneeClerkId) {
                 // STAFF MEMBER DELETION: Re-assign data to Admin in Tenant DB
                 const staffId = user.id;
@@ -141,7 +141,7 @@ export default async function handler(
                         tx.mpesaPayment.updateMany({ where: { userId: staffId }, data: { userId: assigneeUuid as string } }),
                     ]);
                     await tx.tenantUser.delete({ where: { clerkId: staffClerkId } });
-                });
+                }, { timeout: 8000 });
             }
         })();
 
@@ -165,20 +165,30 @@ export default async function handler(
                     // 3. Delete Root Parents (Admin user and Business)
                     await tx.user.delete({ where: { id: user.id } });
                     await tx.business.delete({ where: { id: bId } });
-                }, { timeout: 20000 });
+                }, { timeout: 8000 });
             } else {
                 // STAFF MEMBER DELETION: Master DB Cleanup
                 await masterPrisma.$transaction(async (tx) => {
-                    // Delete invitations first (child) then the user (parent)
+                    // 1. Re-assign sent invitations to Admin
+                    if (assigneeUuid) {
+                        await tx.userInvitation.updateMany({
+                            where: { invitedBy: user.id },
+                            data: { invitedBy: assigneeUuid }
+                        });
+                    }
+
+                    // 2. Delete invitations sent TO this user
                     if (user.email) {
                         await tx.userInvitation.deleteMany({ where: { email: user.email } });
                     }
+
+                    // 3. Finally delete the user
                     await tx.user.delete({ where: { id: user.id } });
-                });
+                }, { timeout: 8000 });
             }
         })();
 
-        // Execute both database purges in parallel to beat the 10s limit
+        // Execute both database purges in parallel
         await Promise.all([tenantTask, masterTask]);
 
         // 4. Cleanup Clerk User

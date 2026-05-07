@@ -90,6 +90,8 @@ model TenantUser {
   createdAt DateTime
   updatedAt DateTime
 
+  businessId String   @db.Uuid // Logical reference
+
   storeId   String?  @db.Uuid
   Store     Store?   @relation(fields: [storeId], references: [id])
 
@@ -102,6 +104,8 @@ model TenantUser {
   createdDeliveries     Delivery[]
   createdExpenses       Expense[]
   reconciliations       InventoryReconciliation[]
+
+  @@index([businessId])
 }
 
 model UserInvitation {
@@ -195,6 +199,7 @@ model Product {
   @@index([businessId])
   @@index([businessId, sku])
   @@index([businessId, categoryId])
+  @@index([createdBy])
 }
 
 model Attribute {
@@ -235,6 +240,8 @@ model Category {
   businessId  String?   @db.Uuid 
 
   @@unique([name, createdBy])
+  @@index([businessId])
+  @@index([createdBy])
 }
 
 model Invoice {
@@ -257,6 +264,10 @@ model Invoice {
   Store               Store?               @relation(fields: [storeId], references: [id])
   isDeleted           Boolean              @default(false)
   businessId          String?              @db.Uuid 
+
+  @@index([businessId])
+  @@index([storeId])
+  @@index([createdBy])
 }
 
 model InvoiceItem {
@@ -268,6 +279,10 @@ model InvoiceItem {
   invoiceId String?  @db.Uuid
   Invoice   Invoice? @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   createdBy String?
+
+  @@index([invoiceId])
+  @@index([productId])
+  @@index([createdBy])
 }
 
 model Customer {
@@ -287,6 +302,9 @@ model Customer {
 
   @@unique([businessId, email])
   @@unique([businessId, phoneNumber])
+  @@index([businessId])
+  @@index([storeId])
+  @@index([createdById])
 }
 
 model MpesaPayment {
@@ -305,6 +323,10 @@ model MpesaPayment {
   businessId        String   @db.Uuid 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  @@index([invoiceId])
+  @@index([businessId])
+  @@index([userId])
 }
 
 model FailedCallback {
@@ -378,6 +400,7 @@ model Supplier {
   deliveries     Delivery[]
 
   @@index([businessId])
+  @@index([createdById])
 }
 
 model PurchaseOrder {
@@ -400,6 +423,7 @@ model PurchaseOrder {
 
   @@index([businessId])
   @@index([supplierId])
+  @@index([createdById])
 }
 
 model PurchaseOrderItem {
@@ -437,6 +461,7 @@ model StockReceipt {
   @@index([businessId])
   @@index([storeId])
   @@index([productId])
+  @@index([createdById])
 }
 
 model StoreInventory {
@@ -463,6 +488,8 @@ model StockTransfer {
   DestinationStore Store   @relation("DestinationStore", fields: [destStoreId], references: [id])
   CreatedBy        TenantUser @relation(fields: [createdById], references: [id])
   createdAt DateTime @default(now())
+
+  @@index([createdById])
 }
 
 model Expense {
@@ -484,6 +511,7 @@ model Expense {
   @@index([businessId])
   @@index([storeId])
   @@index([status])
+  @@index([createdById])
 }
 
 model Delivery {
@@ -502,6 +530,9 @@ model Delivery {
   purchaseOrderId String?        @db.Uuid
   PurchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
   createdAt DateTime @default(now())
+
+  @@index([businessId])
+  @@index([createdById])
 }
 
 model AuditLog {
@@ -537,6 +568,7 @@ model InventoryReconciliation {
 
   @@index([businessId])
   @@index([storeId])
+  @@index([userId])
 }
 
 model ReconciliationItem {
