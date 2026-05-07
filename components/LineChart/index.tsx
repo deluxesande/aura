@@ -44,7 +44,12 @@ const LineChart: React.FC<LineChartProps> = ({ timePeriod = 7 }) => {
                     `/invoice/analytics?timePeriod=${timePeriod}`
                 );
 
-                setChartData(response.data);
+                if (response.data) {
+                    setChartData({
+                        labels: response.data.labels || [],
+                        data: (response.data.revenue || []).map((v: number) => v / 1000),
+                    });
+                }
                 setLoading(false);
             } catch (error) {
                 console.error("Error fetching analytics:", error);
