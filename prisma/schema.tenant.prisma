@@ -27,6 +27,8 @@ model TenantUser {
   createdAt DateTime
   updatedAt DateTime
 
+  businessId String   @db.Uuid // Logical reference
+
   storeId   String?  @db.Uuid
   Store     Store?   @relation(fields: [storeId], references: [id])
 
@@ -40,6 +42,8 @@ model TenantUser {
   createdDeliveries     Delivery[]
   createdExpenses       Expense[]
   reconciliations       InventoryReconciliation[]
+
+  @@index([businessId])
 }
 
 model MpesaPayment {

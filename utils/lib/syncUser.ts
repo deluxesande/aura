@@ -31,6 +31,7 @@ export async function syncUserToTenant(clerkId: string) {
                 status: masterUser.status,
                 storeId: masterUser.storeId,
                 updatedAt: masterUser.updatedAt,
+                businessId: masterUser.businessId!,
             },
             create: {
                 id: masterUser.id,
@@ -43,6 +44,7 @@ export async function syncUserToTenant(clerkId: string) {
                 storeId: masterUser.storeId,
                 createdAt: masterUser.createdAt,
                 updatedAt: masterUser.updatedAt,
+                businessId: masterUser.businessId!,
             }
         });
 
@@ -83,8 +85,9 @@ export async function syncAllBusinessUsersToTenant(businessId: string) {
                         status: user.status,
                         storeId: user.storeId,
                         updatedAt: user.updatedAt,
-                        },
-                        create: {
+                        businessId: businessId,
+                    },
+                    create: {
                         id: user.id,
                         clerkId: user.clerkId,
                         email: user.email,
@@ -95,7 +98,9 @@ export async function syncAllBusinessUsersToTenant(businessId: string) {
                         storeId: user.storeId,
                         createdAt: user.createdAt,
                         updatedAt: user.updatedAt,
-                        }                })
+                        businessId: businessId,
+                    }
+                })
             )
         );
 
