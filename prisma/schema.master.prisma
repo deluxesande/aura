@@ -43,9 +43,11 @@ model User {
   lastLogin  DateTime?
   storeId    String?   @db.Uuid // Logical reference to Store in Tenant DB
 
-  @@index([businessId])
   // Relations within master
   invitationsSent UserInvitation[] @relation("Inviter")
+
+  @@index([businessId])
+  @@index([status])
 }
 
 model Business {
@@ -92,6 +94,7 @@ model UserInvitation {
   storeId           String?  @db.Uuid // Logical reference to Store in Tenant DB
 
   @@index([businessId])
+  @@index([status])
   @@index([invitedBy])
 }
 
@@ -150,6 +153,4 @@ model MpesaRouting {
   checkoutRequestId String @id
   businessId        String @db.Uuid
   createdAt         DateTime @default(now())
-
-  @@index([checkoutRequestId])
 }

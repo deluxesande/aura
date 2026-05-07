@@ -30,7 +30,7 @@ model TenantUser {
   businessId String   @db.Uuid // Logical reference
 
   storeId   String?  @db.Uuid
-  Store     Store?   @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  Store     Store?   @relation(fields: [storeId], references: [id])
 
   // Relations within tenant
   createdCustomers      Customer[]      @relation("CustomerCreator")
@@ -44,6 +44,7 @@ model TenantUser {
   reconciliations       InventoryReconciliation[]
 
   @@index([businessId])
+  @@index([storeId])
 }
 
 model MpesaPayment {
@@ -83,7 +84,7 @@ model Product {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   categoryId   String        @db.Uuid
-  Category     Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  Category     Category      @relation(fields: [categoryId], references: [id])
   inStock      Boolean       @default(false)
   invoiceItems InvoiceItem[]
   image        String?       @default("/images/default-product.png") @db.Text
@@ -103,9 +104,12 @@ model Product {
   purchaseOrderItems PurchaseOrderItem[]
   reconciliationItems ReconciliationItem[]
 
-  @@index([businessId])
   @@index([businessId, sku])
   @@index([businessId, categoryId])
+  @@index([businessId, createdAt])
+  @@index([name])
+  @@index([price])
+  @@index([inStock])
   @@index([createdBy])
 }
 
@@ -116,26 +120,33 @@ model Attribute {
   options    AttributeOption[]
 
   @@unique([name, businessId])
+  @@index([businessId])
 }
 
 model AttributeOption {
   id                String                  @id @default(uuid()) @map("_id") @db.Uuid
   value             String // e.g., "Red", "XL"
+  businessId        String                  @db.Uuid
   attributeId       String                  @db.Uuid
   attribute         Attribute               @relation(fields: [attributeId], references: [id], onDelete: Cascade)
   productAttributes ProductAttributeValue[]
 
   @@unique([value, attributeId])
+  @@index([attributeId])
+  @@index([businessId])
 }
 
 model ProductAttributeValue {
   id                String          @id @default(uuid()) @map("_id") @db.Uuid
+  businessId        String          @db.Uuid
   productId         String          @db.Uuid
   product           Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
   attributeOptionId String          @db.Uuid
   attributeOption   AttributeOption @relation(fields: [attributeOptionId], references: [id], onDelete: Cascade)
 
   @@unique([productId, attributeOptionId])
+  @@index([attributeOptionId])
+  @@index([businessId])
 }
 
 model Category {
@@ -156,7 +167,7 @@ model Invoice {
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   customerId          String?              @db.Uuid
-  Customer            Customer?            @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  Customer            Customer?            @relation(fields: [customerId], references: [id])
   invoiceItems        InvoiceItem[]
   totalAmount         Float
   paymentType         String               @default("CASH")
@@ -173,23 +184,30 @@ model Invoice {
 
   businessId          String               @db.Uuid // Logical reference
 
-  @@index([businessId])
+  @@index([businessId, createdAt])
+  @@index([businessId, status])
+  @@index([businessId, storeId])
+  @@index([customerId])
+  @@index([status])
+  @@index([paymentType])
   @@index([storeId])
   @@index([createdBy])
 }
 
 model InvoiceItem {
-  id        String   @id @default(uuid()) @map("_id") @db.Uuid
-  quantity  Int
-  price     Float
-  productId String   @db.Uuid
-  Product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
-  invoiceId String?  @db.Uuid
-  Invoice   Invoice? @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  createdBy String?
+  id         String   @id @default(uuid()) @map("_id") @db.Uuid
+  quantity   Int
+  price      Float
+  businessId String   @db.Uuid
+  productId  String   @db.Uuid
+  Product    Product  @relation(fields: [productId], references: [id])
+  invoiceId  String?  @db.Uuid
+  Invoice    Invoice? @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  createdBy  String?
 
   @@index([invoiceId])
   @@index([productId])
+  @@index([businessId])
   @@index([createdBy])
 }
 
@@ -211,7 +229,6 @@ model Customer {
 
   @@unique([businessId, email])
   @@unique([businessId, phoneNumber])
-  @@index([businessId])
   @@index([storeId])
   @@index([createdById])
 }
@@ -317,24 +334,28 @@ model PurchaseOrder {
 
   deliveries Delivery[]
 
-  @@index([businessId])
+  @@index([businessId, createdAt])
+  @@index([businessId, storeId])
   @@index([supplierId])
+  @@index([storeId])
   @@index([createdById])
 }
 
 model PurchaseOrderItem {
-  id       String @id @default(uuid()) @map("_id") @db.Uuid
-  quantity Int
-  unitCost Float
-
-  productId String  @db.Uuid
-  Product   Product @relation(fields: [productId], references: [id])
-
+  id              String        @id @default(uuid()) @map("_id") @db.Uuid
+  quantity        Int
+  unitCost        Float
+  businessId      String        @db.Uuid
+  productId       String        @db.Uuid
+  Product         Product       @relation(fields: [productId], references: [id])
   purchaseOrderId String        @db.Uuid
   PurchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  @@index([purchaseOrderId])
+  @@index([productId])
+  @@index([businessId])
 }
 
 model StockReceipt {
@@ -370,15 +391,16 @@ model StockReceipt {
 }
 
 model StoreInventory {
-  id        String @id @default(uuid()) @map("_id") @db.Uuid
-  storeId   String @db.Uuid
-  productId String @db.Uuid
-  quantity  Int    @default(0)
-
-  Store   Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  Product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id         String  @id @default(uuid()) @map("_id") @db.Uuid
+  businessId String  @db.Uuid
+  storeId    String  @db.Uuid
+  productId  String  @db.Uuid
+  quantity   Int     @default(0)
+  Store      Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  Product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([storeId, productId])
+  @@index([businessId])
 }
 
 model StockTransfer {
@@ -397,6 +419,9 @@ model StockTransfer {
 
   createdAt DateTime @default(now())
 
+  @@index([productId])
+  @@index([originStoreId])
+  @@index([destStoreId])
   @@index([createdById])
 }
 
@@ -459,9 +484,13 @@ model Expense {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([businessId])
+  @@index([businessId, createdAt])
+  @@index([businessId, status])
+  @@index([businessId, storeId])
   @@index([storeId])
   @@index([status])
+  @@index([category])
+  @@index([date])
   @@index([createdById])
 }
 
@@ -522,7 +551,10 @@ model Delivery {
 
   createdAt DateTime @default(now())
 
-  @@index([businessId])
+  @@index([businessId, createdAt])
+  @@index([supplierId])
+  @@index([storeId])
+  @@index([purchaseOrderId])
   @@index([createdById])
 }
 
@@ -539,8 +571,10 @@ model AuditLog {
   userId     String
   businessId String   @db.Uuid // Logical reference
 
-  @@index([businessId])
+  @@index([businessId, createdAt])
   @@index([userId])
+  @@index([action])
+  @@index([createdAt])
   @@index([entityType, entityId])
 }
 
@@ -569,6 +603,7 @@ model InventoryReconciliation {
 
 model ReconciliationItem {
   id               String @id @default(uuid()) @map("_id") @db.Uuid
+  businessId       String @db.Uuid
   reconciliationId String @db.Uuid
   productId        String @db.Uuid
   systemQuantity   Int // Qty in system at time of reconciliation
@@ -580,4 +615,5 @@ model ReconciliationItem {
 
   @@index([reconciliationId])
   @@index([productId])
+  @@index([businessId])
 }

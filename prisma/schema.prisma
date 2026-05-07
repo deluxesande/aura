@@ -221,11 +221,14 @@ model Attribute {
 model AttributeOption {
   id                String                  @id @default(uuid()) @map("_id") @db.Uuid
   value             String 
+  businessId        String                  @db.Uuid
   attributeId       String                  @db.Uuid
   attribute         Attribute               @relation(fields: [attributeId], references: [id], onDelete: Cascade)
   productAttributes ProductAttributeValue[]
 
   @@unique([value, attributeId])
+  @@index([attributeId])
+  @@index([businessId])
 }
 
 model ProductAttributeValue {
@@ -273,6 +276,12 @@ model Invoice {
   businessId          String               @db.Uuid 
 
   @@index([businessId])
+  @@index([businessId, createdAt])
+  @@index([businessId, status])
+  @@index([businessId, storeId])
+  @@index([customerId])
+  @@index([status])
+  @@index([paymentType])
   @@index([storeId])
   @@index([createdBy])
 }
@@ -472,14 +481,16 @@ model StockReceipt {
 }
 
 model StoreInventory {
-  id        String @id @default(uuid()) @map("_id") @db.Uuid
-  storeId   String @db.Uuid
-  productId String @db.Uuid
-  quantity  Int    @default(0)
-  Store     Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  Product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id         String  @id @default(uuid()) @map("_id") @db.Uuid
+  businessId String  @db.Uuid
+  storeId    String  @db.Uuid
+  productId  String  @db.Uuid
+  quantity   Int     @default(0)
+  Store      Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  Product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([storeId, productId])
+  @@index([businessId])
 }
 
 model StockTransfer {
@@ -555,7 +566,10 @@ model AuditLog {
   businessId String   @db.Uuid 
 
   @@index([businessId])
+  @@index([businessId, createdAt])
   @@index([userId])
+  @@index([action])
+  @@index([createdAt])
   @@index([entityType, entityId])
 }
 
@@ -580,6 +594,7 @@ model InventoryReconciliation {
 
 model ReconciliationItem {
   id               String @id @default(uuid()) @map("_id") @db.Uuid
+  businessId       String @db.Uuid
   reconciliationId String @db.Uuid
   productId        String @db.Uuid
   systemQuantity   Int 
@@ -590,6 +605,7 @@ model ReconciliationItem {
 
   @@index([reconciliationId])
   @@index([productId])
+  @@index([businessId])
 }
 
 model ContactFormMessage {
@@ -670,4 +686,21 @@ model ReferenceItem {
   value         String
   referenceData ReferenceData[]
   createdAt     DateTime        @default(now())
+}
+  @default(now())
+}
+  value         String
+  referenceData ReferenceData[]
+  createdAt     DateTime        @default(now())
+}
+  @default(now())
+}
+ceData[]
+  createdAt     DateTime        @default(now())
+}
+  @default(now())
+}
+t     DateTime        @default(now())
+}
+  @default(now())
 }
