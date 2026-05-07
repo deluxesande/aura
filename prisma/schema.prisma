@@ -48,6 +48,7 @@ model User {
   lastLogin  DateTime?
   storeId    String?   @db.Uuid // Logical reference to Store in Tenant DB
 
+  @@index([businessId])
   invitationsSent UserInvitation[] @relation("Inviter")
 }
 
@@ -123,6 +124,9 @@ model UserInvitation {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   storeId           String?  @db.Uuid // Logical reference to Store in Tenant DB
+
+  @@index([businessId])
+  @@index([invitedBy])
 }
 
 model Subscription {
@@ -165,6 +169,8 @@ model SubscriptionPayment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([subscriptionId])
 }
 
 model Product {

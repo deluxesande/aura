@@ -19,13 +19,12 @@ export default function ActiveTransactionsTracker() {
     );
 
     useEffect(() => {
-        const pending = transactions.filter((t) => t.status === "PENDING");
-        if (pending.length === 0) return;
+        const poll = async () => {
+            const pending = transactions.filter((t) => t.status === "PENDING");
+            if (pending.length === 0) return;
 
-        const interval = setInterval(async () => {
             for (const tx of pending) {
                 try {
-                    // Check status of invoice
                     const res = await apiClient.get(
                         `/invoice?id=${tx.invoiceId}`,
                     );
@@ -53,10 +52,16 @@ export default function ActiveTransactionsTracker() {
                     console.error("Polling error", e);
                 }
             }
-        }, 5000); // Poll every 5s
+        };
+
+        const hasPending = transactions.some((t) => t.status === "PENDING");
+        if (!hasPending) return;
+
+        poll();
+        const interval = setInterval(poll, 5000);
 
         return () => clearInterval(interval);
-    }, [transactions, dispatch]);
+    }, [transactions.length, dispatch]);
 
     if (transactions.length === 0) return null;
 
