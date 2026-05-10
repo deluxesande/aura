@@ -144,7 +144,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                     const attr = attrMap.get(aName);
                     if (attr && !optMap.has(`${attr.id}:${val}`)) {
                         const newOpt = await tx.attributeOption.create({
-                            data: { value: val, attributeId: attr.id },
+                            data: { value: val, attributeId: attr.id, businessId: bId },
                         });
                         optMap.set(`${attr.id}:${val}`, newOpt);
                     }
@@ -224,6 +224,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                                     attributeValues: {
                                         create: attributes.map((a: any) => ({
                                             attributeOptionId: optMap.get(`${attrMap.get(a.name).id}:${a.value}`).id,
+                                            businessId: bId,
                                         })),
                                     },
                                 },
@@ -265,6 +266,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                                 storeId: targetStoreId,
                                 productId: product.id,
                                 quantity: parsedQuantity,
+                                businessId: bId,
                             },
                         });
                         processedItems.push({ ...product, quantity: inventory.quantity });

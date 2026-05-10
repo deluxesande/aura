@@ -1,6 +1,7 @@
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
+import { verifyStoreAccess } from "@/utils/server/auth";
 
 export const getCustomers = async (
     req: NextApiRequest,
@@ -23,10 +24,20 @@ export const getCustomers = async (
             return res.status(200).json([]);
         }
 
-        const tenantPrisma = await getTenantPrisma(user.businessId);
+        const businessId = user.businessId;
+        const tenantPrisma = await getTenantPrisma(businessId);
         const activeStoreHeader = req.headers["x-store-id"] as string;
 
-        const targetStoreId = activeStoreHeader;
+        let targetStoreId = activeStoreHeader;
+
+        // Verify store access to prevent leakage
+        if (targetStoreId) {
+            const validatedStoreId = await verifyStoreAccess(businessId, targetStoreId);
+            if (!validatedStoreId && targetStoreId !== "all" && targetStoreId !== "All") {
+                return res.status(403).json({ error: "Unauthorized store access" });
+            }
+            targetStoreId = validatedStoreId || targetStoreId;
+        }
 
         if (!targetStoreId) {
             return res.status(200).json([]); // No store selected yet

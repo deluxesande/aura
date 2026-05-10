@@ -22,6 +22,7 @@ export const getInvoiceItem = async (
         const tenantPrisma = await getTenantPrisma(user.businessId);
 
         const invoiceItem = await tenantPrisma.invoiceItem.findMany({
+            where: { businessId: user.businessId },
             select: {
                 quantity: true,
                 Product: {

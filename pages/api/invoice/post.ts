@@ -6,6 +6,7 @@ import { Novu } from "@novu/api";
 import { getAuth } from "@clerk/nextjs/server";
 import { checkSubscription } from "@/utils/subscription/checkSubscription";
 import { logAction } from "@/utils/server/audit";
+import { verifyStoreAccess } from "@/utils/server/auth";
 
 const novu = new Novu({
     secretKey: process.env.NOVU_SECRET_KEY!,
@@ -69,10 +70,17 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         return res.status(400).json({ error: "No active store selected. Please select a branch first." });
     }
 
+    // Verify store access to prevent leakage
+    const validatedStoreId = await verifyStoreAccess(bId, targetStoreId);
+    if (!validatedStoreId) {
+        return res.status(403).json({ error: "Unauthorized store access" });
+    }
+    targetStoreId = validatedStoreId;
+
     try {
         if (customerId) {
-            const customerExists = await tenantPrisma.customer.findUnique({
-                where: { id: customerId },
+            const customerExists = await tenantPrisma.customer.findFirst({
+                where: { id: customerId, businessId: bId },
             });
             if (!customerExists) {
                 return res.status(400).json({ error: "Customer not found" });
@@ -84,6 +92,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             where: {
                 id: { in: invoiceItems.map((item: InvoiceItem) => item.id) },
                 invoiceId: { not: null },
+                businessId: bId,
             },
         });
 

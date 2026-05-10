@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { getAuth } from "@clerk/nextjs/server";
+import { verifyStoreAccess } from "@/utils/server/auth";
 
 export default async function handler(
     req: NextApiRequest,
@@ -29,13 +30,6 @@ export default async function handler(
         const businessId = user.businessId;
         const tenantPrisma = await getTenantPrisma(businessId);
 
-        // Fetch Business User IDs for inclusive filtering
-        const businessUsers = await masterPrisma.user.findMany({
-            where: { businessId },
-            select: { clerkId: true },
-        });
-        const userIds = businessUsers.map((u) => u.clerkId);
-
         // Fetch user store access from Tenant DB if not admin
         let targetStoreId = activeStoreHeader;
         if (user.role !== "admin") {
@@ -44,6 +38,15 @@ export default async function handler(
                 select: { storeId: true }
             });
             if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
+        }
+
+        // Verify store access to prevent leakage
+        if (targetStoreId) {
+            const validatedStoreId = await verifyStoreAccess(businessId, targetStoreId);
+            if (!validatedStoreId && targetStoreId !== "all" && targetStoreId !== "All") {
+                return res.status(403).json({ error: "Unauthorized store access" });
+            }
+            targetStoreId = validatedStoreId || targetStoreId;
         }
 
         if (!targetStoreId) {
@@ -73,14 +76,11 @@ export default async function handler(
         const [invoices, deliveries, expenses] = await Promise.all([
             tenantPrisma.invoice.findMany({
                 where: {
+                    businessId: businessId,
                     storeId: targetStoreId,
                     createdAt: { gte: startDate },
                     status: { in: ["PAID", "paid", "COMPLETED", "completed"] },
                     isDeleted: false,
-                    OR: [
-                        { businessId: businessId },
-                        { createdBy: { in: userIds } }
-                    ]
                 },
                 include: {
                     Customer: { select: { firstName: true, lastName: true } },

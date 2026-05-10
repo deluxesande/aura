@@ -5,6 +5,7 @@ import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { checkSubscription } from "@/utils/subscription/checkSubscription";
 import { syncUserToTenant } from "@/utils/lib/syncUser";
 import { z } from "zod";
+import { verifyStoreAccess } from "@/utils/server/auth";
 
 const addCustomerSchema = z.object({
     firstName: z.string().min(1),
@@ -75,6 +76,13 @@ const addCustomerHandler = async (
         if (!targetStoreId || targetStoreId === "all" || targetStoreId === "All") {
             return res.status(400).json({ error: "No active store selected. Please select a branch first." });
         }
+
+        // Verify store access to prevent leakage
+        const validatedStoreId = await verifyStoreAccess(bId, targetStoreId);
+        if (!validatedStoreId) {
+            return res.status(403).json({ error: "Unauthorized store access" });
+        }
+        targetStoreId = validatedStoreId;
 
         const { firstName, lastName, phoneNumber, email: rawEmail } = validation.data;
         const email = rawEmail && rawEmail.trim() !== "" ? rawEmail : null;

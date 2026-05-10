@@ -1,6 +1,7 @@
 import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { getAuth } from "@clerk/nextjs/server";
 import type { NextApiRequest, NextApiResponse } from "next";
+import { verifyStoreAccess } from "@/utils/server/auth";
 
 export default async function handler(
     req: NextApiRequest,
@@ -41,7 +42,16 @@ export default async function handler(
             if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
         }
 
-        // Fallback for admins if no store header is provided
+        // Verify store access to prevent leakage
+        if (targetStoreId) {
+            const validatedStoreId = await verifyStoreAccess(businessId, targetStoreId);
+            if (!validatedStoreId && targetStoreId !== "all" && targetStoreId !== "All") {
+                return res.status(403).json({ error: "Unauthorized store access" });
+            }
+            targetStoreId = validatedStoreId || targetStoreId;
+        }
+
+        // Fallback for admins if no store header is provided or validated
         if (!targetStoreId && user.role === "admin") {
             const firstStore = await tenantPrisma.store.findFirst({
                 where: { businessId, isActive: true },
@@ -57,13 +67,6 @@ export default async function handler(
                 mpesaBalance: 0,
             });
         }
-
-        // 2. Fetch Business User IDs for inclusive filtering
-        const businessUsers = await masterPrisma.user.findMany({
-            where: { businessId },
-            select: { clerkId: true },
-        });
-        const userIds = businessUsers.map((u) => u.clerkId);
 
         // 3. Define Time Ranges (UTC)
         const { timePeriod } = req.query;
@@ -102,12 +105,9 @@ export default async function handler(
             };
 
             const invoiceWhere: any = {
+                businessId,
                 storeId: targetStoreId,
                 isDeleted: false,
-                OR: [
-                    { businessId: businessId },
-                    { createdBy: { in: userIds } }
-                ]
             };
 
             // Only add createdAt to query if dates are provided

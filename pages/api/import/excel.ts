@@ -173,6 +173,7 @@ export default async function handler(
                                 storeId: userStoreId,
                                 productId: product.id,
                                 quantity: qty > 0 ? qty : 0,
+                                businessId: businessId,
                             },
                         });
                     }

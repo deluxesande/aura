@@ -44,6 +44,7 @@ async function main() {
           storeId: mainStore.id,
           productId: prod.id,
           quantity: prod.quantity, // Inherit existing global quantity
+          businessId: biz.id,
         },
       });
     }

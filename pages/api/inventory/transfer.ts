@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
 import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
+import { verifyStoreAccess } from "@/utils/server/auth";
 
 export default async function handler(
     req: NextApiRequest,
@@ -49,6 +50,17 @@ export default async function handler(
         }
 
         const businessId = requestor.businessId;
+
+        // Verify store access to prevent leakage
+        const [vFromStoreId, vToStoreId] = await Promise.all([
+            verifyStoreAccess(businessId, fromStoreId),
+            verifyStoreAccess(businessId, toStoreId)
+        ]);
+
+        if (!vFromStoreId || !vToStoreId) {
+            return res.status(403).json({ error: "Unauthorized store access" });
+        }
+
         const tenantPrisma = await getTenantPrisma(businessId);
         const parsedQty = Number(quantity);
 
@@ -56,9 +68,9 @@ export default async function handler(
         const result = await tenantPrisma.$transaction(async (tx) => {
             const originStock = await tx.storeInventory.findFirst({
                 where: {
-                    storeId: fromStoreId,
+                    storeId: vFromStoreId,
                     productId: productId,
-                    Store: { businessId: businessId },
+                    businessId: businessId,
                 },
             });
 
@@ -73,9 +85,9 @@ export default async function handler(
 
             const destStock = await tx.storeInventory.findFirst({
                 where: {
-                    storeId: toStoreId,
+                    storeId: vToStoreId,
                     productId: productId,
-                    Store: { businessId: businessId },
+                    businessId: businessId,
                 },
             });
 
@@ -87,9 +99,10 @@ export default async function handler(
             } else {
                 await tx.storeInventory.create({
                     data: {
-                        storeId: toStoreId,
+                        storeId: vToStoreId,
                         productId: productId,
                         quantity: parsedQty,
+                        businessId: businessId,
                     },
                 });
             }

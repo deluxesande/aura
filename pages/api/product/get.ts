@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
+import { verifyStoreAccess } from "@/utils/server/auth";
 
 export const getProducts = async (
     req: NextApiRequest,
@@ -36,7 +37,16 @@ export const getProducts = async (
             if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
         }
 
-        // Fallback for admins if no store header is provided
+        // Verify store access to prevent leakage
+        if (targetStoreId) {
+            const validatedStoreId = await verifyStoreAccess(businessId, targetStoreId);
+            if (!validatedStoreId && targetStoreId !== "all" && targetStoreId !== "All") {
+                return res.status(403).json({ error: "Unauthorized store access" });
+            }
+            targetStoreId = validatedStoreId || targetStoreId;
+        }
+
+        // Fallback for admins if no store header is provided or validated
         if (!targetStoreId && user.role === "admin") {
             const firstStore = await tenantPrisma.store.findFirst({
                 where: { businessId, isActive: true },

@@ -3,6 +3,7 @@ import { addCreatedBy } from "../middleware";
 import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { Novu } from "@novu/api";
 import { getAuth } from "@clerk/nextjs/server";
+import { verifyStoreAccess } from "@/utils/server/auth";
 
 const novu = new Novu({
     secretKey: process.env.NOVU_SECRET_KEY!,
@@ -55,9 +56,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
         }
 
-        if (!targetStoreId) {
-            return res.status(400).json({ error: "No active store selected." });
+        // Verify store access to prevent leakage
+        const validatedStoreId = await verifyStoreAccess(businessId, targetStoreId);
+        if (!validatedStoreId) {
+            return res.status(403).json({ error: "Unauthorized store access" });
         }
+        targetStoreId = validatedStoreId;
 
         const result = await tenantPrisma.$transaction(
             async (tx) => {
@@ -146,6 +150,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                                 quantity: item.quantity,
                                 price: product?.price || item.price, // Use actual product price
                                 createdBy,
+                                businessId: businessId,
                             };
                         }),
                     }),
@@ -213,4 +218,3 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 };
 
 export default addCreatedBy(handler);
-

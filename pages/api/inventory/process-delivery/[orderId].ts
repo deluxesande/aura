@@ -1,8 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
-import { prisma } from "@/utils/lib/client";
-import { getTenantPrisma } from "@/utils/lib/prisma";
+import { masterPrisma as prisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { logAction } from "@/utils/server/audit";
+import { verifyStoreAccess } from "@/utils/server/auth";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== "POST") return res.status(405).end();
@@ -24,8 +24,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         if (!items || !storeId) return res.status(400).json({ error: "Missing items or storeId" });
 
+        // Verify store access to prevent leakage
+        const validatedStoreId = await verifyStoreAccess(businessId, storeId);
+        if (!validatedStoreId) {
+            return res.status(403).json({ error: "Unauthorized store access" });
+        }
+
         const result = await tenantPrisma.$transaction(async (tx) => {
-            // 1. Update PO Status
+            // 1. Verify PO belongs to business
+            const poToUpdate = await tx.purchaseOrder.findFirst({
+                where: { id: orderId, businessId },
+            });
+            if (!poToUpdate) throw new Error("Purchase Order not found");
+
+            // 2. Update PO Status
             const po = await tx.purchaseOrder.update({
                 where: { id: orderId },
                 data: { status: "DELIVERED" },
@@ -43,7 +55,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                         totalCost: qty * cost,
                         reference: reference || po.reference,
                         productId: item.productId,
-                        storeId: storeId,
+                        storeId: validatedStoreId,
                         supplierId: po.supplierId,
                         businessId: businessId,
                         createdById: userId,
@@ -53,15 +65,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 // 3. Update Store Inventory (Upsert)
                 await tx.storeInventory.upsert({
                     where: {
-                        storeId_productId: { storeId, productId: item.productId },
+                        storeId_productId: { storeId: validatedStoreId, productId: item.productId },
                     },
                     update: {
                         quantity: { increment: qty },
                     },
                     create: {
-                        storeId,
+                        storeId: validatedStoreId,
                         productId: item.productId,
                         quantity: qty,
+                        businessId: businessId,
                     },
                 });
 

@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
-import { prisma } from "@/utils/lib/client";
-import { getTenantPrisma } from "@/utils/lib/prisma";
+import { masterPrisma as prisma, getTenantPrisma } from "@/utils/lib/prisma";
+import { verifyStoreAccess } from "@/utils/server/auth";
 
 export default async function handler(
     req: NextApiRequest,
@@ -19,11 +19,13 @@ export default async function handler(
         return res.status(403).json({ error: "Access denied." });
     }
 
-    const tenantPrisma = await getTenantPrisma(user.businessId);
+    const businessId = user.businessId;
+    const tenantPrisma = await getTenantPrisma(businessId);
 
     if (req.method === "GET") {
         try {
             const deliveries = await tenantPrisma.delivery.findMany({
+                where: { businessId: businessId },
                 orderBy: { createdAt: "desc" },
                 include: {
                     Store: { select: { name: true } },
@@ -114,6 +116,12 @@ export default async function handler(
                     .json({ error: "Missing required storeId field" });
             }
 
+            // Verify store access to prevent leakage
+            const validatedStoreId = await verifyStoreAccess(businessId, storeId);
+            if (!validatedStoreId) {
+                return res.status(403).json({ error: "Unauthorized store access" });
+            }
+
             let normalizedItems = [];
             if (items && Array.isArray(items) && items.length > 0) {
                 normalizedItems = items;
@@ -149,7 +157,7 @@ export default async function handler(
                     data: {
                         reference: reference || null,
                         totalCost: totalDeliveryCost,
-                        storeId,
+                        storeId: validatedStoreId,
                         supplierId:
                             supplierId &&
                             supplierId !== "null" &&
@@ -163,7 +171,7 @@ export default async function handler(
                                 ? purchaseOrderId
                                 : null,
                         createdById: user.id,
-                        businessId: user.businessId!,
+                        businessId: businessId,
                     },
                 });
 
@@ -188,7 +196,7 @@ export default async function handler(
                             totalCost: tCost,
                             reference: reference || null,
                             productId: item.productId,
-                            storeId,
+                            storeId: validatedStoreId,
                             supplierId:
                                 supplierId &&
                                 supplierId !== "null" &&
@@ -196,14 +204,14 @@ export default async function handler(
                                     ? supplierId
                                     : null,
                             createdById: user.id,
-                            businessId: user.businessId!,
+                            businessId: businessId,
                         },
                     });
 
                     await tx.storeInventory.upsert({
                         where: {
                             storeId_productId: {
-                                storeId,
+                                storeId: validatedStoreId,
                                 productId: item.productId,
                             },
                         },
@@ -211,9 +219,10 @@ export default async function handler(
                             quantity: { increment: qty },
                         },
                         create: {
-                            storeId,
+                            storeId: validatedStoreId,
                             productId: item.productId,
                             quantity: qty,
+                            businessId: businessId,
                         },
                     });
 

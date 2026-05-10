@@ -1,8 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
-import { prisma } from "@/utils/lib/client";
-import { getTenantPrisma } from "@/utils/lib/prisma";
+import { masterPrisma as prisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { notifyBusinessStaff } from "@/utils/server/novu";
+import { verifyStoreAccess } from "@/utils/server/auth";
 
 export default async function handler(
     req: NextApiRequest,
@@ -85,10 +85,19 @@ export default async function handler(
                         .status(400)
                         .json({ error: "Missing required fields" });
 
+                // Verify store access to prevent leakage
+                let validatedStoreId = null;
+                if (storeId) {
+                    validatedStoreId = await verifyStoreAccess(businessId, storeId);
+                    if (!validatedStoreId) {
+                        return res.status(403).json({ error: "Unauthorized store access" });
+                    }
+                }
+
                 const po = await tenantPrisma.purchaseOrder.create({
                     data: {
                         supplierId,
-                        storeId: storeId || null,
+                        storeId: validatedStoreId,
                         reference,
                         totalAmount: parseFloat(totalAmount),
                         status: status || "PENDING",
@@ -99,6 +108,7 @@ export default async function handler(
                                 productId: i.productId,
                                 quantity: parseInt(i.quantity),
                                 unitCost: parseFloat(i.unitCost),
+                                businessId,
                             })),
                         },
                     },

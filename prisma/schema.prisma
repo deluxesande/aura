@@ -46,7 +46,7 @@ model User {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   lastLogin  DateTime?
-  storeId    String?   @db.Uuid // Logical reference to Store in Tenant DB
+  storeId    String?   @db.Uuid
 
   @@index([businessId])
   invitationsSent UserInvitation[] @relation("Inviter")
@@ -233,12 +233,14 @@ model AttributeOption {
 
 model ProductAttributeValue {
   id                String          @id @default(uuid()) @map("_id") @db.Uuid
+  businessId        String          @db.Uuid
   productId         String          @db.Uuid
   product           Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
   attributeOptionId String          @db.Uuid
   attributeOption   AttributeOption @relation(fields: [attributeOptionId], references: [id], onDelete: Cascade)
 
   @@unique([productId, attributeOptionId])
+  @@index([businessId])
 }
 
 model Category {
@@ -287,17 +289,19 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id        String   @id @default(uuid()) @map("_id") @db.Uuid
-  quantity  Int
-  price     Float
-  productId String   @db.Uuid
-  Product   Product  @relation(fields: [productId], references: [id])
-  invoiceId String?  @db.Uuid
-  Invoice   Invoice? @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  createdBy String?
+  id         String   @id @default(uuid()) @map("_id") @db.Uuid
+  quantity   Int
+  price      Float
+  businessId String   @db.Uuid
+  productId  String   @db.Uuid
+  Product    Product  @relation(fields: [productId], references: [id])
+  invoiceId  String?  @db.Uuid
+  Invoice    Invoice? @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  createdBy  String?
 
   @@index([invoiceId])
   @@index([productId])
+  @@index([businessId])
   @@index([createdBy])
 }
 
@@ -443,15 +447,18 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderItem {
-  id       String @id @default(uuid()) @map("_id") @db.Uuid
-  quantity Int
-  unitCost Float
-  productId String  @db.Uuid
-  Product   Product @relation(fields: [productId], references: [id])
+  id              String        @id @default(uuid()) @map("_id") @db.Uuid
+  quantity        Int
+  unitCost        Float
+  businessId      String        @db.Uuid
+  productId       String        @db.Uuid
+  Product         Product       @relation(fields: [productId], references: [id])
   purchaseOrderId String        @db.Uuid
   PurchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([businessId])
 }
 
 model StockReceipt {
@@ -686,21 +693,4 @@ model ReferenceItem {
   value         String
   referenceData ReferenceData[]
   createdAt     DateTime        @default(now())
-}
-  @default(now())
-}
-  value         String
-  referenceData ReferenceData[]
-  createdAt     DateTime        @default(now())
-}
-  @default(now())
-}
-ceData[]
-  createdAt     DateTime        @default(now())
-}
-  @default(now())
-}
-t     DateTime        @default(now())
-}
-  @default(now())
 }

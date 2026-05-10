@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth } from "@clerk/nextjs/server";
 import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { logAction } from "@/utils/server/audit";
+import { verifyStoreAccess } from "@/utils/server/auth";
 
 export default async function handler(
     req: NextApiRequest,
@@ -57,12 +58,18 @@ export default async function handler(
                 return res.status(400).json({ error: "Missing required reconciliation data." });
             }
 
+            // Verify store access to prevent leakage
+            const validatedStoreId = await verifyStoreAccess(businessId, storeId);
+            if (!validatedStoreId) {
+                return res.status(403).json({ error: "Unauthorized store access" });
+            }
+
             const result = await tenantPrisma.$transaction(async (tx) => {
                 const reconciliation = await tx.inventoryReconciliation.create({
                     data: {
                         reference: reference || null,
                         notes: notes || null,
-                        storeId,
+                        storeId: validatedStoreId,
                         userId: user.id,
                         businessId: businessId, // Logical reference
                     },
@@ -74,7 +81,7 @@ export default async function handler(
                     const inventory = await tx.storeInventory.findUnique({
                         where: {
                             storeId_productId: {
-                                storeId,
+                                storeId: validatedStoreId,
                                 productId,
                             },
                         },
@@ -84,7 +91,7 @@ export default async function handler(
                         where: {
                             productId,
                             PurchaseOrder: {
-                                storeId,
+                                storeId: validatedStoreId,
                                 status: { in: ["PENDING", "IN_TRANSIT"] },
                                 isDeleted: false,
                             },
@@ -105,13 +112,14 @@ export default async function handler(
                             systemQuantity,
                             physicalQuantity,
                             discrepancy,
+                            businessId: businessId,
                         },
                     });
 
                     await tx.storeInventory.upsert({
                         where: {
                             storeId_productId: {
-                                storeId,
+                                storeId: validatedStoreId,
                                 productId,
                             },
                         },
@@ -119,9 +127,10 @@ export default async function handler(
                             quantity: physicalQuantity,
                         },
                         create: {
-                            storeId,
+                            storeId: validatedStoreId,
                             productId,
                             quantity: physicalQuantity,
+                            businessId: businessId,
                         },
                     });
                 }

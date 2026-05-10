@@ -3,6 +3,7 @@ import { addCreatedBy } from "../middleware";
 import { prisma } from "@/utils/lib/client";
 import { getTenantPrisma } from "@/utils/lib/prisma";
 import { notifyBusinessStaff } from "@/utils/server/novu";
+import { verifyStoreAccess } from "@/utils/server/auth";
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const { invoiceId = null, productId, quantity, price } = req.body;
@@ -18,21 +19,28 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
         if (!user || !user.businessId) return res.status(404).json({ error: "User or business not found" });
 
-        const tenantPrisma = await getTenantPrisma(user.businessId);
+        const bId = user.businessId;
+        const tenantPrisma = await getTenantPrisma(bId);
 
-        const targetStoreId = user.role === "admin" ? activeStoreHeader : (user.storeId as string);
+        let targetStoreId = user.role === "admin" ? activeStoreHeader : (user.storeId as string);
 
         if (!targetStoreId || targetStoreId === "all" || targetStoreId === "All") {
             return res.status(400).json({ error: "No active store selected. Please select a branch first." });
         }
 
+        // Verify store access to prevent leakage
+        const validatedStoreId = await verifyStoreAccess(bId, targetStoreId);
+        if (!validatedStoreId) {
+            return res.status(403).json({ error: "Unauthorized store access" });
+        }
+        targetStoreId = validatedStoreId;
+
         // 1. Check if the inventory exists for this store
-        const inventory = await tenantPrisma.storeInventory.findUnique({
+        const inventory = await tenantPrisma.storeInventory.findFirst({
             where: {
-                storeId_productId: {
-                    storeId: targetStoreId,
-                    productId: productId,
-                },
+                storeId: targetStoreId,
+                productId: productId,
+                businessId: bId,
             },
             include: { Product: true }
         });
@@ -69,6 +77,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
                 quantity,
                 price: inventory.Product.price, // Use actual product price
                 productId,
+                businessId: user.businessId,
                 createdBy: userId,
             },
         });

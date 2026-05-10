@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { getAuth } from "@clerk/nextjs/server";
 import { logAction } from "@/utils/server/audit";
+import { verifyStoreAccess } from "@/utils/server/auth";
 
 export const updateProduct = async (
     req: NextApiRequest,
@@ -32,14 +33,6 @@ export const updateProduct = async (
         const businessId = user.businessId;
         const tenantPrisma = await getTenantPrisma(businessId);
 
-        const product = await tenantPrisma.product.findUnique({
-            where: { id },
-        });
-
-        if (!product) {
-            return res.status(404).json({ error: "Product not found" });
-        }
-
         const activeStoreHeader = req.headers["x-store-id"] as string;
 
         // Fetch user store access from Tenant DB if not admin
@@ -52,8 +45,19 @@ export const updateProduct = async (
             if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
         }
 
-        if (!targetStoreId) {
-            return res.status(400).json({ error: "No active store selected." });
+        // Verify store access to prevent leakage
+        const validatedStoreId = await verifyStoreAccess(businessId, targetStoreId);
+        if (!validatedStoreId) {
+            return res.status(403).json({ error: "Unauthorized store access" });
+        }
+        targetStoreId = validatedStoreId;
+
+        const product = await tenantPrisma.product.findFirst({
+            where: { id, businessId },
+        });
+
+        if (!product) {
+            return res.status(404).json({ error: "Product not found" });
         }
 
         if (sku) {
@@ -101,6 +105,7 @@ export const updateProduct = async (
                         storeId: targetStoreId,
                         productId: id,
                         quantity,
+                        businessId: businessId,
                     },
                 }),
             ]);
