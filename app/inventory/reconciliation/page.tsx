@@ -1,31 +1,16 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
 import Navbar from "@/components/Navbar";
-import { apiClient } from "@/utils/apiClient";
-import {
-    Search,
-    Plus,
-    Trash2,
-    ChevronDown,
-    ClipboardCheck,
-    History as HistoryIcon,
-    AlertCircle,
-    CheckCircle2,
-    Loader2,
-    ArrowRight,
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "sonner";
-import { useSelector, useDispatch } from "react-redux";
-import { AppState } from "@/store";
-import {
-    setReconciliationHistory,
-    setLoading as setHistoryLoading,
-    addReconciliation,
-} from "@/store/slices/reconciliationSlice";
-import { useRouter } from "next/navigation";
 import ReconciliationDetailsSidebar from "@/components/ReconciliationDetailsSidebar";
+import { AppState } from "@/store";
+import { setReconciliationHistory } from "@/store/slices/reconciliationSlice";
+import { apiClient } from "@/utils/apiClient";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronDown, Plus, Search, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "sonner";
 
 export default function ReconciliationPage() {
     const dispatch = useDispatch();
@@ -64,9 +49,16 @@ export default function ReconciliationPage() {
             ]);
 
             setStores(storesRes.data || []);
+
+            // Safely handle the paginated product response
+            const fetchedProducts = Array.isArray(productsRes.data?.data)
+                ? productsRes.data.data
+                : Array.isArray(productsRes.data)
+                  ? productsRes.data
+                  : [];
+
             setProducts(
-                productsRes.data?.filter((p: any) => p.type !== "TEMPLATE") ||
-                    [],
+                fetchedProducts.filter((p: any) => p.type !== "TEMPLATE"),
             );
 
             // Fetch history if cache is stale (older than 5 minutes)
