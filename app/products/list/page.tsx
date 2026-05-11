@@ -37,8 +37,9 @@ export default function Page() {
     const fetchProducts = useCallback(async () => {
         try {
             const response = await apiClient.get("/product");
-            const fetchedProducts = Array.isArray(response.data)
-                ? response.data
+            // Correctly access the nested data array from the backend pagination object
+            const fetchedProducts = Array.isArray(response.data?.data)
+                ? response.data.data
                 : [];
             dispatch(setProducts(fetchedProducts));
         } catch (error) {
