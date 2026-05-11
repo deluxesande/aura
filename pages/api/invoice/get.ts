@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getAuth, clerkClient } from "@clerk/nextjs/server";
 import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
+import { verifyStoreAccess } from "@/utils/server/auth";
 
 export const getInvoices = async (
     req: NextApiRequest,
@@ -20,176 +21,61 @@ export const getInvoices = async (
         });
 
         if (!user || !user.businessId) {
-            return res.status(200).json([]);
+            return res
+                .status(200)
+                .json({ data: [], total: 0, page: 1, totalPages: 0 });
         }
 
         const tenantPrisma = await getTenantPrisma(user.businessId);
         const activeStoreHeader = req.headers["x-store-id"] as string;
 
-        // Fetch user store info from Tenant DB if not admin
+        // 2. Fetch user store info from Tenant DB if not admin
         let targetStoreId = activeStoreHeader;
         if (user.role !== "admin") {
             const tenantUser = await tenantPrisma.tenantUser.findUnique({
                 where: { clerkId: userId },
-                select: { storeId: true }
+                select: { storeId: true },
             });
             if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
         }
 
+        if (targetStoreId) {
+            const validatedStoreId = await verifyStoreAccess(
+                user.businessId,
+                targetStoreId,
+            );
+            if (
+                !validatedStoreId &&
+                targetStoreId !== "all" &&
+                targetStoreId !== "All"
+            ) {
+                return res
+                    .status(403)
+                    .json({ error: "Unauthorized store access" });
+            }
+            targetStoreId = validatedStoreId || targetStoreId;
+        }
+
+        // Fallback for admins if no store header is provided
+        if (!targetStoreId && user.role === "admin") {
+            const firstStore = await tenantPrisma.store.findFirst({
+                where: { businessId: user.businessId, isActive: true },
+                select: { id: true },
+            });
+            if (firstStore) targetStoreId = firstStore.id;
+        }
+
         if (!targetStoreId) {
-            return res.status(200).json([]);
+            return res
+                .status(200)
+                .json({ data: [], total: 0, page: 1, totalPages: 0 });
         }
 
-        // SELF-HEALING LOGIC: Handle Inventory Sync (Restock & Re-deduct) - Isolated to THIS business and store
-        const failedInvoices = await tenantPrisma.invoice.findMany({
-            where: {
-                status: { in: ["FAILED", "CANCELLED"] },
-                stockRestored: false,
-                storeId: targetStoreId,
-                businessId: user.businessId,
-            },
-            include: { invoiceItems: { include: { Product: { select: { type: true } } } } },
-        });
+        const isAllStores = targetStoreId === "all" || targetStoreId === "All";
 
-        if (failedInvoices.length > 0) {
-            await tenantPrisma.$transaction(async (tx) => {
-                for (const invoice of failedInvoices) {
-                    for (const item of invoice.invoiceItems) {
-                        if (item.Product.type === "TEMPLATE") continue;
-
-                        const inventory = await tx.storeInventory.findUnique({
-                            where: { storeId_productId: { storeId: targetStoreId, productId: item.productId } }
-                        });
-                        if (inventory) {
-                            await tx.storeInventory.update({
-                                where: { id: inventory.id },
-                                data: { quantity: { increment: item.quantity } },
-                            });
-                            await tx.product.update({
-                                where: { id: item.productId },
-                                data: { inStock: true }
-                            });
-                        }
-                    }
-                    await tx.invoice.update({
-                        where: { id: invoice.id },
-                        data: { stockRestored: true },
-                    });
-                }
-            });
-        }
-
-        const recoveredInvoices = await tenantPrisma.invoice.findMany({
-            where: {
-                status: { in: ["PAID", "COMPLETED"] },
-                stockRestored: true,
-                storeId: targetStoreId,
-                businessId: user.businessId,
-            },
-            include: { invoiceItems: { include: { Product: { select: { type: true } } } } },
-        });
-
-        if (recoveredInvoices.length > 0) {
-            await tenantPrisma.$transaction(async (tx) => {
-                for (const invoice of recoveredInvoices) {
-                    for (const item of invoice.invoiceItems) {
-                        if (item.Product.type === "TEMPLATE") continue;
-
-                        const inventory = await tx.storeInventory.findUnique({
-                            where: { storeId_productId: { storeId: targetStoreId, productId: item.productId } }
-                        });
-                        
-                        if (inventory) {
-                            const newQuantity = inventory.quantity - item.quantity;
-                            const isStillInStock = newQuantity > 0;
-
-                            await tx.storeInventory.update({
-                                where: { id: inventory.id },
-                                data: { quantity: { decrement: item.quantity } },
-                            });
-                            await tx.product.update({
-                                where: { id: item.productId },
-                                data: { inStock: isStillInStock },
-                            });
-                        }
-                    }
-                    await tx.invoice.update({
-                        where: { id: invoice.id },
-                        data: { stockRestored: false },
-                    });
-                }
-            });
-        }
-
-        // Get all users in the same business from Master DB
+        // 3. Get all users in the business sequentially first to build our query arrays
         const businessUsers = await masterPrisma.user.findMany({
             where: { businessId: user.businessId },
-            select: { clerkId: true },
-        });
-
-        const userIds = businessUsers.map((user) => user.clerkId);
-
-        const page = parseInt(req.query.page as string) || 1;
-        const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
-        const skip = (page - 1) * limit;
-
-        const baseWhere = {
-            createdBy: {
-                in: userIds,
-            },
-            storeId: targetStoreId,
-            businessId: user.businessId,
-            isDeleted: false,
-        };
-
-        // Get invoices created by any user in the same business AND for the current store from Tenant DB
-        const [invoices, total] = await Promise.all([
-            tenantPrisma.invoice.findMany({
-                where: baseWhere,
-                orderBy: {
-                    createdAt: "desc",
-                },
-                include: {
-                    invoiceItems: {
-                        select: {
-                            quantity: true,
-                            Product: {
-                                select: {
-                                    name: true,
-                                    price: true,
-                                    type: true,
-                                    attributeValues: {
-                                        include: {
-                                            attributeOption: true
-                                        }
-                                    }
-                                },
-                            },
-                        },
-                    },
-                    Customer: {
-                        select: {
-                            firstName: true,
-                            lastName: true,
-                            email: true,
-                            phoneNumber: true,
-                        },
-                    },
-                },
-                take: limit,
-                skip: skip,
-            }),
-            tenantPrisma.invoice.count({
-                where: baseWhere,
-            }),
-        ]);
-
-        // Get Clerk client to fetch user images
-        const clerk = await clerkClient();
-
-        // Fetch user details from Master DB and Clerk in Parallel
-        const dbUsers = await masterPrisma.user.findMany({
-            where: { clerkId: { in: userIds } },
             select: {
                 clerkId: true,
                 firstName: true,
@@ -197,45 +83,232 @@ export const getInvoices = async (
                 role: true,
             },
         });
+        const userIds = businessUsers.map((u) => u.clerkId);
 
-        const clerkUsersResults = await Promise.allSettled(
-            userIds.map((clerkId) => clerk.users.getUser(clerkId))
-        );
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+        const skip = (page - 1) * limit;
 
-        const usersMap = new Map();
-        
-        dbUsers.forEach((dbUser) => {
-            const result = clerkUsersResults.find(
-                (r) => r.status === "fulfilled" && r.value.id === dbUser.clerkId
+        const baseWhere: any = {
+            createdBy: { in: userIds },
+            businessId: user.businessId,
+            isDeleted: false,
+        };
+
+        const failedWhere: any = {
+            status: { in: ["FAILED", "CANCELLED"] },
+            stockRestored: false,
+            businessId: user.businessId,
+        };
+
+        const recoveredWhere: any = {
+            status: { in: ["PAID", "COMPLETED"] },
+            stockRestored: true,
+            businessId: user.businessId,
+        };
+
+        // Only filter by specific store if "all" is not selected
+        if (!isAllStores) {
+            baseWhere.storeId = targetStoreId;
+            failedWhere.storeId = targetStoreId;
+            recoveredWhere.storeId = targetStoreId;
+        }
+
+        const clerk = await clerkClient();
+
+        // 4. THE GOD PROMISE: Execute ALL heavy reads simultaneously
+        const [clerkUsers, invoices, total, failedInvoices, recoveredInvoices] =
+            await Promise.all([
+                clerk.users.getUserList({ userId: userIds }),
+
+                tenantPrisma.invoice.findMany({
+                    where: baseWhere,
+                    orderBy: { createdAt: "desc" },
+                    include: {
+                        invoiceItems: {
+                            select: {
+                                quantity: true,
+                                Product: {
+                                    select: {
+                                        name: true,
+                                        price: true,
+                                        type: true,
+                                        attributeValues: {
+                                            include: { attributeOption: true },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                        Customer: {
+                            select: {
+                                firstName: true,
+                                lastName: true,
+                                email: true,
+                                phoneNumber: true,
+                            },
+                        },
+                    },
+                    take: limit,
+                    skip: skip,
+                }),
+                tenantPrisma.invoice.count({ where: baseWhere }),
+
+                tenantPrisma.invoice.findMany({
+                    where: failedWhere,
+                    include: {
+                        invoiceItems: {
+                            include: { Product: { select: { type: true } } },
+                        },
+                    },
+                }),
+                tenantPrisma.invoice.findMany({
+                    where: recoveredWhere,
+                    include: {
+                        invoiceItems: {
+                            include: { Product: { select: { type: true } } },
+                        },
+                    },
+                }),
+            ]);
+
+        // 5. AGGREGATED SELF-HEALING
+        const healingPromises = [];
+
+        if (failedInvoices.length > 0) {
+            const restockMap = new Map();
+            failedInvoices.forEach((inv) => {
+                // Ensure we know which store to restock if viewing "All"
+                const targetStore = isAllStores ? inv.storeId : targetStoreId;
+
+                inv.invoiceItems.forEach((item) => {
+                    if (item.Product.type !== "TEMPLATE" && targetStore) {
+                        const key = `${targetStore}_${item.productId}`;
+                        restockMap.set(key, {
+                            storeId: targetStore,
+                            productId: item.productId,
+                            qty:
+                                (restockMap.get(key)?.qty || 0) + item.quantity,
+                        });
+                    }
+                });
+            });
+
+            healingPromises.push(
+                tenantPrisma.$transaction(async (tx) => {
+                    const ops = [];
+                    for (const { storeId, productId, qty } of Array.from(
+                        restockMap.values(),
+                    )) {
+                        ops.push(
+                            tx.storeInventory.updateMany({
+                                where: { storeId, productId },
+                                data: { quantity: { increment: qty } },
+                            }),
+                        );
+                        ops.push(
+                            tx.product.update({
+                                where: { id: productId },
+                                data: { inStock: true },
+                            }),
+                        );
+                    }
+                    ops.push(
+                        tx.invoice.updateMany({
+                            where: {
+                                id: { in: failedInvoices.map((i) => i.id) },
+                            },
+                            data: { stockRestored: true },
+                        }),
+                    );
+                    await Promise.all(ops);
+                }),
             );
+        }
 
-            if (result && result.status === "fulfilled") {
-                const clerkUser = result.value;
-                usersMap.set(dbUser.clerkId, {
-                    firstName: dbUser.firstName || clerkUser.firstName,
-                    lastName: dbUser.lastName || clerkUser.lastName,
-                    role: dbUser.role,
-                    imageUrl: clerkUser.imageUrl,
+        if (recoveredInvoices.length > 0) {
+            const deductMap = new Map();
+            recoveredInvoices.forEach((inv) => {
+                const targetStore = isAllStores ? inv.storeId : targetStoreId;
+
+                inv.invoiceItems.forEach((item) => {
+                    if (item.Product.type !== "TEMPLATE" && targetStore) {
+                        const key = `${targetStore}_${item.productId}`;
+                        deductMap.set(key, {
+                            storeId: targetStore,
+                            productId: item.productId,
+                            qty: (deductMap.get(key)?.qty || 0) + item.quantity,
+                        });
+                    }
                 });
-            } else {
-                usersMap.set(dbUser.clerkId, {
-                    firstName: dbUser.firstName,
-                    lastName: dbUser.lastName,
-                    role: dbUser.role,
-                    imageUrl: null,
-                });
-            }
+            });
+
+            healingPromises.push(
+                tenantPrisma.$transaction(async (tx) => {
+                    const ops = [];
+                    for (const { storeId, productId, qty } of Array.from(
+                        deductMap.values(),
+                    )) {
+                        ops.push(
+                            (async () => {
+                                const inv = await tx.storeInventory.findUnique({
+                                    where: {
+                                        storeId_productId: {
+                                            storeId,
+                                            productId,
+                                        },
+                                    },
+                                });
+                                if (inv) {
+                                    const newQty = inv.quantity - qty;
+                                    await tx.storeInventory.update({
+                                        where: { id: inv.id },
+                                        data: { quantity: newQty },
+                                    });
+                                    await tx.product.update({
+                                        where: { id: productId },
+                                        data: { inStock: newQty > 0 },
+                                    });
+                                }
+                            })(),
+                        );
+                    }
+                    ops.push(
+                        tx.invoice.updateMany({
+                            where: {
+                                id: { in: recoveredInvoices.map((i) => i.id) },
+                            },
+                            data: { stockRestored: false },
+                        }),
+                    );
+                    await Promise.all(ops);
+                }),
+            );
+        }
+
+        await Promise.all(healingPromises);
+
+        // 6. Map Clerk images to DB Users
+        const usersMap = new Map();
+        businessUsers.forEach((dbUser) => {
+            const clerkUser = clerkUsers.data.find(
+                (u) => u.id === dbUser.clerkId,
+            );
+            usersMap.set(dbUser.clerkId, {
+                firstName: dbUser.firstName || clerkUser?.firstName,
+                lastName: dbUser.lastName || clerkUser?.lastName,
+                role: dbUser.role,
+                imageUrl: clerkUser?.imageUrl || null,
+            });
         });
 
+        // 7. Format final JSON response
         const updatedInvoices = invoices.map((invoice) => {
             let mostExpensiveItem: any = null;
             let totalQuantity = 0;
 
             invoice.invoiceItems.forEach((item) => {
-                // Calculate total quantity
                 totalQuantity += item.quantity;
-
-                // Check for most expensive item
                 if (
                     !mostExpensiveItem ||
                     item.Product.price > mostExpensiveItem.Product.price
@@ -244,17 +317,13 @@ export const getInvoices = async (
                 }
             });
 
-            // Get creator user info
-            const creator = invoice.createdBy
-                ? usersMap.get(invoice.createdBy)
-                : null;
-
-            // Attach the most expensive item name and total quantity to the invoice object
             return {
                 ...invoice,
                 itemName: mostExpensiveItem?.Product.name,
                 totalQuantity,
-                creator: creator || null,
+                creator: invoice.createdBy
+                    ? usersMap.get(invoice.createdBy)
+                    : null,
             };
         });
 
