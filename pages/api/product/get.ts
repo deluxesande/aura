@@ -32,16 +32,25 @@ export const getProducts = async (
         if (user.role !== "admin") {
             const tenantUser = await tenantPrisma.tenantUser.findUnique({
                 where: { clerkId: userId },
-                select: { storeId: true }
+                select: { storeId: true },
             });
             if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
         }
 
         // Verify store access to prevent leakage
         if (targetStoreId) {
-            const validatedStoreId = await verifyStoreAccess(businessId, targetStoreId);
-            if (!validatedStoreId && targetStoreId !== "all" && targetStoreId !== "All") {
-                return res.status(403).json({ error: "Unauthorized store access" });
+            const validatedStoreId = await verifyStoreAccess(
+                businessId,
+                targetStoreId,
+            );
+            if (
+                !validatedStoreId &&
+                targetStoreId !== "all" &&
+                targetStoreId !== "All"
+            ) {
+                return res
+                    .status(403)
+                    .json({ error: "Unauthorized store access" });
             }
             targetStoreId = validatedStoreId || targetStoreId;
         }
@@ -63,10 +72,16 @@ export const getProducts = async (
         const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
         const skip = (page - 1) * limit;
 
-        const baseWhere = {
+        const isAllStores = targetStoreId === "all" || targetStoreId === "All";
+
+        const baseWhere: any = {
             businessId: businessId,
             isArchived: false,
-            OR: [
+        };
+
+        // Only filter by specific store if "all" is not selected
+        if (!isAllStores) {
+            baseWhere.OR = [
                 { type: "TEMPLATE" },
                 {
                     storeInventories: {
@@ -83,45 +98,73 @@ export const getProducts = async (
                         },
                     },
                 },
-            ],
-        };
+            ];
+        }
 
         const [products, total] = await Promise.all([
             tenantPrisma.product.findMany({
-                where: baseWhere as any,
+                where: baseWhere,
                 include: {
                     Category: true,
-                    storeInventories: {
-                        where: { storeId: targetStoreId },
-                        select: { quantity: true },
-                    },
-                    purchaseOrderItems: {
-                        where: {
-                            PurchaseOrder: {
-                                storeId: targetStoreId,
-                                status: { in: ["PENDING", "IN_TRANSIT"] },
-                                isDeleted: false,
-                            },
-                        },
-                        select: { quantity: true },
-                    },
+                    storeInventories: isAllStores
+                        ? { select: { quantity: true } }
+                        : {
+                              where: { storeId: targetStoreId },
+                              select: { quantity: true },
+                          },
+                    purchaseOrderItems: isAllStores
+                        ? {
+                              where: {
+                                  PurchaseOrder: {
+                                      status: { in: ["PENDING", "IN_TRANSIT"] },
+                                      isDeleted: false,
+                                  },
+                              },
+                              select: { quantity: true },
+                          }
+                        : {
+                              where: {
+                                  PurchaseOrder: {
+                                      storeId: targetStoreId,
+                                      status: { in: ["PENDING", "IN_TRANSIT"] },
+                                      isDeleted: false,
+                                  },
+                              },
+                              select: { quantity: true },
+                          },
                     variants: {
                         where: { isArchived: false },
                         include: {
-                            storeInventories: {
-                                where: { storeId: targetStoreId },
-                                select: { quantity: true },
-                            },
-                            purchaseOrderItems: {
-                                where: {
-                                    PurchaseOrder: {
-                                        storeId: targetStoreId,
-                                        status: { in: ["PENDING", "IN_TRANSIT"] },
-                                        isDeleted: false,
-                                    },
-                                },
-                                select: { quantity: true },
-                            },
+                            storeInventories: isAllStores
+                                ? { select: { quantity: true } }
+                                : {
+                                      where: { storeId: targetStoreId },
+                                      select: { quantity: true },
+                                  },
+                            purchaseOrderItems: isAllStores
+                                ? {
+                                      where: {
+                                          PurchaseOrder: {
+                                              status: {
+                                                  in: ["PENDING", "IN_TRANSIT"],
+                                              },
+                                              isDeleted: false,
+                                          },
+                                      },
+                                      select: { quantity: true },
+                                  }
+                                : {
+                                      where: {
+                                          PurchaseOrder: {
+                                              storeId: targetStoreId,
+                                              status: {
+                                                  in: ["PENDING", "IN_TRANSIT"],
+                                              },
+                                              isDeleted: false,
+                                          },
+                                      },
+                                      select: { quantity: true },
+                                  },
                             attributeValues: {
                                 include: {
                                     attributeOption: {
@@ -150,19 +193,31 @@ export const getProducts = async (
                 skip: skip,
             }),
             tenantPrisma.product.count({
-                where: baseWhere as any,
+                where: baseWhere,
             }),
         ]);
 
-        // Map quantity from storeInventories AND purchaseOrderItems to the flat quantity field for frontend compatibility
+        // Safely sum quantity from multiple store inventories if "all" is active
         const productsWithQuantity = products.map((p) => {
-            const inventoryQty = p.storeInventories[0]?.quantity || 0;
-            const pendingPOQty = p.purchaseOrderItems.reduce((sum, item) => sum + item.quantity, 0);
+            const inventoryQty = p.storeInventories.reduce(
+                (sum: number, inv: any) => sum + inv.quantity,
+                0,
+            );
+            const pendingPOQty = p.purchaseOrderItems.reduce(
+                (sum: number, item: any) => sum + item.quantity,
+                0,
+            );
             const quantity = inventoryQty + pendingPOQty;
 
-            const variants = p.variants.map((v) => {
-                const vInventoryQty = v.storeInventories[0]?.quantity || 0;
-                const vPendingPOQty = v.purchaseOrderItems.reduce((sum, item) => sum + item.quantity, 0);
+            const variants = p.variants.map((v: any) => {
+                const vInventoryQty = v.storeInventories.reduce(
+                    (sum: number, inv: any) => sum + inv.quantity,
+                    0,
+                );
+                const vPendingPOQty = v.purchaseOrderItems.reduce(
+                    (sum: number, item: any) => sum + item.quantity,
+                    0,
+                );
                 return {
                     ...v,
                     quantity: vInventoryQty + vPendingPOQty,
