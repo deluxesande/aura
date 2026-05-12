@@ -48,12 +48,13 @@ import { Search, Zap } from "lucide-react";
 import { addTransaction } from "@/store/slices/activeTransactionsSlice";
 import ActiveTransactionsTracker from "@/components/ActiveTransactionsTracker";
 
-const fetcher = (url: string) => apiClient.get(url).then((res) => {
-    if (res.data && res.data.data && Array.isArray(res.data.data)) {
-        return res.data.data;
-    }
-    return res.data;
-});
+const fetcher = (url: string) =>
+    apiClient.get(url).then((res) => {
+        if (res.data && res.data.data && Array.isArray(res.data.data)) {
+            return res.data.data;
+        }
+        return res.data;
+    });
 
 export default function Page() {
     const dispatch = useDispatch();
@@ -358,10 +359,10 @@ export default function Page() {
         try {
             const promise = async () => {
                 const res = await apiClient.post("/customer", {
-                    firstName: newCustomerDetails.firstName,
-                    lastName: newCustomerDetails.lastName,
+                    firstName: newCustomerDetails.firstName.trim(),
+                    lastName: newCustomerDetails.lastName.trim(),
                     phoneNumber: formatted,
-                    email: newCustomerDetails.email || null,
+                    email: newCustomerDetails.email?.trim() || null,
                 });
 
                 if (res.status === 201 || res.status === 200) {
@@ -389,7 +390,6 @@ export default function Page() {
         } catch (e: any) {
             const backendError =
                 e.response?.data?.error || "Failed to save customer";
-
             toast.error(backendError);
         }
     };

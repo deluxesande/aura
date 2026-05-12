@@ -7,16 +7,25 @@ import { syncUserToTenant } from "@/utils/lib/syncUser";
 import { z } from "zod";
 import { verifyStoreAccess } from "@/utils/server/auth";
 
-const addCustomerSchema = z.object({
-    firstName: z.string().min(1),
-    lastName: z.string().min(1),
-    phoneNumber: z.string().min(1),
-    email: z.string().email().optional().nullable(),
-}).strict();
+const addCustomerSchema = z
+    .object({
+        firstName: z.string().min(1),
+        lastName: z.string().min(1),
+        phoneNumber: z.string().min(1),
+        // Explicitly allow a valid email, an empty string, or null
+        email: z
+            .union([
+                z.string().email("Invalid email format"),
+                z.literal(""),
+                z.null(),
+            ])
+            .optional(),
+    })
+    .strict();
 
 const addCustomerHandler = async (
     req: NextApiRequest,
-    res: NextApiResponse
+    res: NextApiResponse,
 ) => {
     try {
         const { userId: clerkUserId } = getAuth(req);
@@ -28,13 +37,17 @@ const addCustomerHandler = async (
         // Validate request body
         const validation = addCustomerSchema.safeParse(req.body);
         if (!validation.success) {
-            return res.status(400).json({ 
-                error: "Invalid request body", 
-                details: validation.error.format() 
+            return res.status(400).json({
+                error: "Invalid request body",
+                details: validation.error.format(),
             });
         }
 
-        const { authorized, error: subError, businessId } = await checkSubscription(clerkUserId);
+        const {
+            authorized,
+            error: subError,
+            businessId,
+        } = await checkSubscription(clerkUserId);
 
         if (!authorized) {
             return res.status(403).json({ error: subError });
@@ -50,7 +63,9 @@ const addCustomerHandler = async (
         });
 
         if (!dbUser || !dbUser.businessId) {
-            return res.status(404).json({ error: "User or business not found" });
+            return res
+                .status(404)
+                .json({ error: "User or business not found" });
         }
 
         // 2. Get Tenant Prisma client
@@ -67,14 +82,20 @@ const addCustomerHandler = async (
             } else {
                 const tenantUser = await tenantPrisma.tenantUser.findUnique({
                     where: { clerkId: clerkUserId },
-                    select: { storeId: true }
+                    select: { storeId: true },
                 });
                 if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
             }
         }
 
-        if (!targetStoreId || targetStoreId === "all" || targetStoreId === "All") {
-            return res.status(400).json({ error: "No active store selected. Please select a branch first." });
+        if (
+            !targetStoreId ||
+            targetStoreId === "all" ||
+            targetStoreId === "All"
+        ) {
+            return res.status(400).json({
+                error: "No active store selected. Please select a branch first.",
+            });
         }
 
         // Verify store access to prevent leakage
@@ -84,7 +105,12 @@ const addCustomerHandler = async (
         }
         targetStoreId = validatedStoreId;
 
-        const { firstName, lastName, phoneNumber, email: rawEmail } = validation.data;
+        const {
+            firstName,
+            lastName,
+            phoneNumber,
+            email: rawEmail,
+        } = validation.data;
         const email = rawEmail && rawEmail.trim() !== "" ? rawEmail : null;
 
         // 3. Create Customer in Tenant DB
