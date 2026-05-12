@@ -14,7 +14,7 @@ export const getInvoices = async (
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        // 1. Get current user with their business from Master DB
+        // 1. Get current user from Master DB
         const user = await masterPrisma.user.findUnique({
             where: { clerkId: userId },
             select: { businessId: true, role: true },
@@ -29,15 +29,33 @@ export const getInvoices = async (
         const tenantPrisma = await getTenantPrisma(user.businessId);
         const activeStoreHeader = req.headers["x-store-id"] as string;
 
-        // 2. Fetch user store info from Tenant DB if not admin
+        // 2. EARLY PARALLELIZATION: Fetch routing rules AND business users simultaneously
+        const [tenantUser, firstStore, businessUsers] = await Promise.all([
+            user.role !== "admin"
+                ? tenantPrisma.tenantUser.findUnique({
+                      where: { clerkId: userId },
+                      select: { storeId: true },
+                  })
+                : Promise.resolve(null),
+            user.role === "admin" && !activeStoreHeader
+                ? tenantPrisma.store.findFirst({
+                      where: { businessId: user.businessId, isActive: true },
+                      select: { id: true },
+                  })
+                : Promise.resolve(null),
+            masterPrisma.user.findMany({
+                where: { businessId: user.businessId },
+                select: {
+                    clerkId: true,
+                    firstName: true,
+                    lastName: true,
+                    role: true,
+                },
+            }),
+        ]);
+
         let targetStoreId = activeStoreHeader;
-        if (user.role !== "admin") {
-            const tenantUser = await tenantPrisma.tenantUser.findUnique({
-                where: { clerkId: userId },
-                select: { storeId: true },
-            });
-            if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
-        }
+        if (tenantUser?.storeId) targetStoreId = tenantUser.storeId;
 
         if (targetStoreId) {
             const validatedStoreId = await verifyStoreAccess(
@@ -56,13 +74,9 @@ export const getInvoices = async (
             targetStoreId = validatedStoreId || targetStoreId;
         }
 
-        // Fallback for admins if no store header is provided
-        if (!targetStoreId && user.role === "admin") {
-            const firstStore = await tenantPrisma.store.findFirst({
-                where: { businessId: user.businessId, isActive: true },
-                select: { id: true },
-            });
-            if (firstStore) targetStoreId = firstStore.id;
+        // Fallback for admins
+        if (!targetStoreId && firstStore) {
+            targetStoreId = firstStore.id;
         }
 
         if (!targetStoreId) {
@@ -72,17 +86,6 @@ export const getInvoices = async (
         }
 
         const isAllStores = targetStoreId === "all" || targetStoreId === "All";
-
-        // 3. Get all users in the business sequentially first to build our query arrays
-        const businessUsers = await masterPrisma.user.findMany({
-            where: { businessId: user.businessId },
-            select: {
-                clerkId: true,
-                firstName: true,
-                lastName: true,
-                role: true,
-            },
-        });
         const userIds = businessUsers.map((u) => u.clerkId);
 
         const page = parseInt(req.query.page as string) || 1;
@@ -107,7 +110,6 @@ export const getInvoices = async (
             businessId: user.businessId,
         };
 
-        // Only filter by specific store if "all" is not selected
         if (!isAllStores) {
             baseWhere.storeId = targetStoreId;
             failedWhere.storeId = targetStoreId;
@@ -116,7 +118,7 @@ export const getInvoices = async (
 
         const clerk = await clerkClient();
 
-        // 4. THE GOD PROMISE: Execute ALL heavy reads simultaneously
+        // 3. THE GOD PROMISE: Execute all heavy reads simultaneously with STRICT LIMITS
         const [clerkUsers, invoices, total, failedInvoices, recoveredInvoices] =
             await Promise.all([
                 clerk.users.getUserList({ userId: userIds }),
@@ -154,33 +156,46 @@ export const getInvoices = async (
                 }),
                 tenantPrisma.invoice.count({ where: baseWhere }),
 
+                // BOUNDED HEALING: Only process 20 at a time to prevent Vercel 10s timeouts
                 tenantPrisma.invoice.findMany({
                     where: failedWhere,
-                    include: {
+                    select: {
+                        id: true,
+                        storeId: true,
                         invoiceItems: {
-                            include: { Product: { select: { type: true } } },
+                            select: {
+                                productId: true,
+                                quantity: true,
+                                Product: { select: { type: true } },
+                            },
                         },
                     },
+                    take: 20,
                 }),
                 tenantPrisma.invoice.findMany({
                     where: recoveredWhere,
-                    include: {
+                    select: {
+                        id: true,
+                        storeId: true,
                         invoiceItems: {
-                            include: { Product: { select: { type: true } } },
+                            select: {
+                                productId: true,
+                                quantity: true,
+                                Product: { select: { type: true } },
+                            },
                         },
                     },
+                    take: 20,
                 }),
             ]);
 
-        // 5. AGGREGATED SELF-HEALING
+        // 4. AGGREGATED SELF-HEALING (Now safely bounded)
         const healingPromises = [];
 
         if (failedInvoices.length > 0) {
             const restockMap = new Map();
             failedInvoices.forEach((inv) => {
-                // Ensure we know which store to restock if viewing "All"
                 const targetStore = isAllStores ? inv.storeId : targetStoreId;
-
                 inv.invoiceItems.forEach((item) => {
                     if (item.Product.type !== "TEMPLATE" && targetStore) {
                         const key = `${targetStore}_${item.productId}`;
@@ -194,43 +209,44 @@ export const getInvoices = async (
                 });
             });
 
-            healingPromises.push(
-                tenantPrisma.$transaction(async (tx) => {
-                    const ops = [];
-                    for (const { storeId, productId, qty } of Array.from(
-                        restockMap.values(),
-                    )) {
+            if (restockMap.size > 0) {
+                healingPromises.push(
+                    tenantPrisma.$transaction(async (tx) => {
+                        const ops = [];
+                        for (const { storeId, productId, qty } of Array.from(
+                            restockMap.values(),
+                        )) {
+                            ops.push(
+                                tx.storeInventory.updateMany({
+                                    where: { storeId, productId },
+                                    data: { quantity: { increment: qty } },
+                                }),
+                            );
+                            ops.push(
+                                tx.product.update({
+                                    where: { id: productId },
+                                    data: { inStock: true },
+                                }),
+                            );
+                        }
                         ops.push(
-                            tx.storeInventory.updateMany({
-                                where: { storeId, productId },
-                                data: { quantity: { increment: qty } },
+                            tx.invoice.updateMany({
+                                where: {
+                                    id: { in: failedInvoices.map((i) => i.id) },
+                                },
+                                data: { stockRestored: true },
                             }),
                         );
-                        ops.push(
-                            tx.product.update({
-                                where: { id: productId },
-                                data: { inStock: true },
-                            }),
-                        );
-                    }
-                    ops.push(
-                        tx.invoice.updateMany({
-                            where: {
-                                id: { in: failedInvoices.map((i) => i.id) },
-                            },
-                            data: { stockRestored: true },
-                        }),
-                    );
-                    await Promise.all(ops);
-                }),
-            );
+                        await Promise.all(ops);
+                    }),
+                );
+            }
         }
 
         if (recoveredInvoices.length > 0) {
             const deductMap = new Map();
             recoveredInvoices.forEach((inv) => {
                 const targetStore = isAllStores ? inv.storeId : targetStoreId;
-
                 inv.invoiceItems.forEach((item) => {
                     if (item.Product.type !== "TEMPLATE" && targetStore) {
                         const key = `${targetStore}_${item.productId}`;
@@ -243,52 +259,64 @@ export const getInvoices = async (
                 });
             });
 
-            healingPromises.push(
-                tenantPrisma.$transaction(async (tx) => {
-                    const ops = [];
-                    for (const { storeId, productId, qty } of Array.from(
-                        deductMap.values(),
-                    )) {
+            if (deductMap.size > 0) {
+                healingPromises.push(
+                    tenantPrisma.$transaction(async (tx) => {
+                        const ops = [];
+                        for (const { storeId, productId, qty } of Array.from(
+                            deductMap.values(),
+                        )) {
+                            ops.push(
+                                (async () => {
+                                    const inv =
+                                        await tx.storeInventory.findUnique({
+                                            where: {
+                                                storeId_productId: {
+                                                    storeId,
+                                                    productId,
+                                                },
+                                            },
+                                            select: {
+                                                id: true,
+                                                quantity: true,
+                                            },
+                                        });
+                                    if (inv) {
+                                        const newQty = inv.quantity - qty;
+                                        await tx.storeInventory.update({
+                                            where: { id: inv.id },
+                                            data: { quantity: newQty },
+                                        });
+                                        await tx.product.update({
+                                            where: { id: productId },
+                                            data: { inStock: newQty > 0 },
+                                        });
+                                    }
+                                })(),
+                            );
+                        }
                         ops.push(
-                            (async () => {
-                                const inv = await tx.storeInventory.findUnique({
-                                    where: {
-                                        storeId_productId: {
-                                            storeId,
-                                            productId,
-                                        },
+                            tx.invoice.updateMany({
+                                where: {
+                                    id: {
+                                        in: recoveredInvoices.map((i) => i.id),
                                     },
-                                });
-                                if (inv) {
-                                    const newQty = inv.quantity - qty;
-                                    await tx.storeInventory.update({
-                                        where: { id: inv.id },
-                                        data: { quantity: newQty },
-                                    });
-                                    await tx.product.update({
-                                        where: { id: productId },
-                                        data: { inStock: newQty > 0 },
-                                    });
-                                }
-                            })(),
+                                },
+                                data: { stockRestored: false },
+                            }),
                         );
-                    }
-                    ops.push(
-                        tx.invoice.updateMany({
-                            where: {
-                                id: { in: recoveredInvoices.map((i) => i.id) },
-                            },
-                            data: { stockRestored: false },
-                        }),
-                    );
-                    await Promise.all(ops);
-                }),
-            );
+                        await Promise.all(ops);
+                    }),
+                );
+            }
         }
 
-        await Promise.all(healingPromises);
+        // Wait for all bounded DB writes to finish
+        if (healingPromises.length > 0) {
+            await Promise.all(healingPromises);
+        }
 
-        // 6. Map Clerk images to DB Users
+        // 5. Map Clerk images to DB Users
         const usersMap = new Map();
         businessUsers.forEach((dbUser) => {
             const clerkUser = clerkUsers.data.find(
@@ -302,7 +330,7 @@ export const getInvoices = async (
             });
         });
 
-        // 7. Format final JSON response
+        // 6. Format final JSON response
         const updatedInvoices = invoices.map((invoice) => {
             let mostExpensiveItem: any = null;
             let totalQuantity = 0;
