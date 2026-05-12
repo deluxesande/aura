@@ -12,7 +12,6 @@ const addCustomerSchema = z
         firstName: z.string().min(1),
         lastName: z.string().min(1),
         phoneNumber: z.string().min(1),
-        // Explicitly allow a valid email, an empty string, or null
         email: z
             .union([
                 z.string().email("Invalid email format"),
@@ -20,6 +19,8 @@ const addCustomerSchema = z
                 z.null(),
             ])
             .optional(),
+        createdBy: z.string().optional(),
+        businessId: z.string().optional(),
     })
     .strict();
 
