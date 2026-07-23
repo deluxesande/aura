@@ -1,8 +1,10 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
+import { verifySafaricomSource } from "@/utils/server/safaricomIp";
 
 // Function to store responses in a JSON file
+// ponytail: plaintext data on disk — see confirmation.ts note. IP gate closes auth hole.
 const storeResponse = (response: any) => {
     const filePath = path.join(
         process.cwd(),
@@ -24,6 +26,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     if (req.method !== "POST") {
         return res.status(405).json({ error: "Method not allowed" });
     }
+
+    if (!verifySafaricomSource(req, res)) return;
 
     const result = req.body.Result;
 

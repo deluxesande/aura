@@ -295,7 +295,9 @@ export const updateBusiness = async (
 
         res.status(200).json(safeResponse);
     } catch (error: any) {
-        console.log(error);
+        // Log only the message — this handler holds tenantDatabaseUrl / M-Pesa
+        // secrets, so never dump the full error object (may carry query params).
+        console.error("Update Business Error:", error?.message);
         if (error.code === "P2002" && error.meta?.target?.includes("email")) {
             return res.status(409).json({
                 error: "This email is already in use by another business.",

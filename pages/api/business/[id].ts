@@ -3,6 +3,7 @@ import { updateBusiness } from "./update";
 import { deleteBusiness } from "./delete";
 import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 import { checkAndRenewStarterPlan } from "@/utils/subscription/subscription";
+import { requireBusinessAccess } from "@/utils/server/auth";
 
 async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
     let id = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
@@ -12,6 +13,12 @@ async function getBusinessById(req: NextApiRequest, res: NextApiResponse) {
         return res
             .status(400)
             .json({ error: "Invalid or missing Business ID" });
+    }
+
+    // Any member of the business may view its details; non-members get 404.
+    const access = await requireBusinessAccess(req, id, "member");
+    if (!access.ok) {
+        return res.status(access.status).json({ error: access.error });
     }
 
     try {

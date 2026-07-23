@@ -1,8 +1,12 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
+import { verifySafaricomSource } from "@/utils/server/safaricomIp";
 
 // Function to store confirmation data in a JSON file
+// ponytail: persists payer PII to a plaintext JSON file in the app tree
+// (unbounded growth + read-modify-write race). Move to the DB when this data
+// is actually consumed; for now the IP gate below closes the auth hole.
 const storeConfirmation = (confirmationData: any) => {
     const filePath = path.join(
         process.cwd(),
@@ -22,6 +26,8 @@ const storeConfirmation = (confirmationData: any) => {
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === "POST") {
+        if (!verifySafaricomSource(req, res)) return;
+
         const confirmationData = req.body;
 
         // Check if required fields are defined
