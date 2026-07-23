@@ -3,7 +3,7 @@ import type { NextApiRequest } from "next";
 import { masterPrisma, getTenantPrisma } from "@/utils/lib/prisma";
 
 type BusinessAccessResult =
-    | { ok: true; userId: string; createdBy: string }
+    | { ok: true; userId: string }
     | { ok: false; status: number; error: string };
 
 /**
@@ -46,7 +46,7 @@ export async function requireBusinessAccess(
             }
         }
 
-        return { ok: true, userId, createdBy: business.createdBy };
+        return { ok: true, userId };
     } catch (error) {
         console.error("requireBusinessAccess DB error:", (error as Error)?.message);
         return { ok: false, status: 500, error: "Internal server error" };
