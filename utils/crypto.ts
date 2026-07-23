@@ -25,6 +25,13 @@ export function encrypt(text: string): string {
 export function decrypt(text: string): string {
     const parts = text.split(":");
 
+    // Reject anything that isn't a recognised layout: 2 parts (legacy CBC) or
+    // 3 parts (GCM). Otherwise Buffer.from would throw opaquely or silently
+    // mis-parse a malformed value.
+    if (parts.length !== 2 && parts.length !== 3) {
+        throw new Error("Invalid ciphertext format");
+    }
+
     // Legacy CBC format (iv:ciphertext) — kept so data encrypted before the
     // GCM migration still decrypts. New writes always use GCM (3 parts).
     if (parts.length === 2) {

@@ -58,12 +58,18 @@ export function verifySafaricomSource(
         return true;
     }
 
-    console.warn(
-        `SECURITY: Safaricom endpoint hit from unauthorized IP: ${clientIp}`,
-    );
+    // clientIp is header-derived (attacker-controlled). Strip anything outside
+    // the IP charset and cap length so it can't inject newlines/control chars
+    // into the log, and pass it as a structured field rather than interpolated.
+    const safeIp = clientIp.replace(/[^0-9a-fA-F.:]/g, "?").slice(0, 45);
+    console.warn("SECURITY: Safaricom endpoint hit from unauthorized IP", {
+        clientIp: safeIp,
+    });
 
-    // Allow through in non-production so local/tunnelled testing still works.
-    if (process.env.NODE_ENV !== "production") {
+    // Local-dev bypass must be opt-in explicitly — never inferred from NODE_ENV
+    // (which is "production" on preview builds and unset/other on staging, both
+    // of which must stay denied). Default is deny.
+    if (process.env.SAFARICOM_ALLOW_INSECURE_LOCAL === "true") {
         return true;
     }
 

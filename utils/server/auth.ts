@@ -22,30 +22,35 @@ export async function requireBusinessAccess(
         return { ok: false, status: 401, error: "Unauthorized" };
     }
 
-    const business = await masterPrisma.business.findUnique({
-        where: { id: businessId },
-        select: { createdBy: true },
-    });
-
-    if (!business) {
-        return { ok: false, status: 404, error: "Business not found" };
-    }
-
-    if (mode === "owner") {
-        if (business.createdBy !== userId) {
-            return { ok: false, status: 404, error: "Business not found" };
-        }
-    } else {
-        const membership = await masterPrisma.user.findFirst({
-            where: { clerkId: userId, businessId },
-            select: { id: true },
+    try {
+        const business = await masterPrisma.business.findUnique({
+            where: { id: businessId },
+            select: { createdBy: true },
         });
-        if (!membership) {
+
+        if (!business) {
             return { ok: false, status: 404, error: "Business not found" };
         }
-    }
 
-    return { ok: true, userId, createdBy: business.createdBy };
+        if (mode === "owner") {
+            if (business.createdBy !== userId) {
+                return { ok: false, status: 404, error: "Business not found" };
+            }
+        } else {
+            const membership = await masterPrisma.user.findFirst({
+                where: { clerkId: userId, businessId },
+                select: { id: true },
+            });
+            if (!membership) {
+                return { ok: false, status: 404, error: "Business not found" };
+            }
+        }
+
+        return { ok: true, userId, createdBy: business.createdBy };
+    } catch (error) {
+        console.error("requireBusinessAccess DB error:", (error as Error)?.message);
+        return { ok: false, status: 500, error: "Internal server error" };
+    }
 }
 
 export async function verifyStoreAccess(businessId: string, storeId: string) {
