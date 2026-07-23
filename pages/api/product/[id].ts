@@ -20,9 +20,12 @@ async function getProductById(req: NextApiRequest, res: NextApiResponse) {
 
         const tenantPrisma = await getTenantPrisma(user.businessId);
 
-        const product = await tenantPrisma.product.findUnique({
+        // Scope by businessId: in SHARED tenant mode the DB holds every
+        // business's rows, so an id-only lookup would leak across tenants.
+        const product = await tenantPrisma.product.findFirst({
             where: {
                 id: id,
+                businessId: user.businessId,
             },
             include: {
                 Category: true,

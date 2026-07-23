@@ -1,8 +1,10 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import fs from "fs";
 import path from "path";
+import { verifySafaricomSource } from "@/utils/server/safaricomIp";
 
 // Function to store validation data in a JSON file
+// ponytail: plaintext PII on disk — see confirmation.ts note. IP gate closes auth hole.
 const storeValidation = (validationData: any) => {
     const filePath = path.join(
         process.cwd(),
@@ -22,6 +24,8 @@ const storeValidation = (validationData: any) => {
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === "POST") {
+        if (!verifySafaricomSource(req, res)) return;
+
         const validationData = req.body;
 
         // Check if required fields are defined
